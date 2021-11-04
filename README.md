@@ -3,19 +3,22 @@ A Star Trek Online build tool in Python
 
 ## Description
 
-TBD
+Pre-alpha version of build tool for STO
 
 ## Getting Started
 
 ### Dependencies
 
-* TBD
+* Pillow
+* requests-html
 
 ### Installing
 
-TBD
+> pip install -r requirements.txt
 
 ### Executing program
+
+> python main.py
 
 ## Authors
 
