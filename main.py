@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import filedialog
 from requests_html import Element, HTMLSession, HTML
-from PIL import Image, ImageTk, ImageGrab
+from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
 import os, requests, json, re
 
 class SETS():
@@ -220,6 +220,7 @@ class SETS():
     
     def setupBuildFrames(self):
         """Set up all relevant build frames"""
+        self.build['tier'] = self.backend['tier'].get()
         if self.backend['shipHtml'] is not None:
             self.shipBuildFrameSetup(self.backend['shipHtml'])
             self.boffFrameSetup(self.backend['shipHtml'])
@@ -227,6 +228,8 @@ class SETS():
         
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
+        if self.backend['ship'].get() == '':
+            return
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
         tier = self.backend['shipHtml'].find('td.field_tier', first=True).text
@@ -460,7 +463,7 @@ class SETS():
         skills = []
         for tr in trs:
             tds = tr.find('td')
-            if len(tds)>0 and tds[rank].text != '':
+            if len(tds)>0 and tds[rank+1].text.strip() != '':
                 skills.append(tr)
         skillVar = []
         images = []
@@ -488,16 +491,23 @@ class SETS():
         except:
             return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",width,height)
 
+
     def importCallback(self, event):
         """Callback for import button"""
-        with filedialog.askopenfile() as inFile:
-            self.build = json.load(inFile)
-            self.copyBuildToBackend('career')
-            self.copyBuildToBackend('species')
-            self.copyBuildToBackend('specPrimary')
-            self.copyBuildToBackend('specSecondary')
-            self.copyBuildToBackend('ship')
-            self.traitFrameSetup()
+        inFilename = filedialog.askopenfilename(filetypes=[("JSON file", '*.json'),("PNG image","*.png"),("All Files","*.*")])
+        if inFilename.endswith('.png'):
+            image = Image.open(inFilename)
+            self.build = json.loads(image.text['build'])
+        else:
+            with open(inFilename, 'r') as inFile:
+                self.build = json.load(inFile)
+        self.copyBuildToBackend('career')
+        self.copyBuildToBackend('species')
+        self.copyBuildToBackend('specPrimary')
+        self.copyBuildToBackend('specSecondary')
+        self.copyBuildToBackend('ship')
+        self.copyBuildToBackend('tier')
+        self.traitFrameSetup()
 
     def exportCallback(self, event):
         """Callback for export button"""
@@ -508,7 +518,9 @@ class SETS():
         """Callback for export as png button"""
         image = ImageGrab.grab(bbox=(self.window.winfo_rootx(), self.window.winfo_rooty(), self.window.winfo_width(), self.window.winfo_height()))
         outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
-        image.save(outFilename)
+        info = PngImagePlugin.PngInfo()
+        info.add_text('build', json.dumps(self.build))
+        image.save(outFilename, "PNG", pnginfo=info)
 
     def copyBackendToBuild(self, key):
         """Helper function to copy backend value to build dict"""
@@ -525,7 +537,13 @@ class SETS():
         self.copyBuildToBackend('specPrimary')
         self.copyBuildToBackend('specSecondary')
         self.copyBuildToBackend('ship')
-        self.traitFrameSetup()
+        self.backend['tier'].set('')
+        self.backend['shipHtml'] = None
+        for frame in [self.shipBuildFrame, self.traitFrame, self.boffFrame, self.doffFrame]:
+            for widget in frame.winfo_children():
+                widget.destroy()
+        self.shipImg = self.emptyImage
+        self.shipLabel.configure(image=self.shipImg)
 
     def clearBuild(self):
         """Initialize new build state"""
@@ -536,8 +554,17 @@ class SETS():
             'sciConsoles': [None] * 5, 'engConsoles': [None] * 5, 'devices': [None] * 5,
             'aftWeapons': [None] * 5, 'foreWeapons': [None] * 5, 'hangars': [None] * 2,
             'deflector': [None], 'engines': [None], 'warpCore': [None], 'shield': [None],
-            'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '', 'specSecondary': '' 
+            'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '', 
+            'specSecondary': '', "tier": ''
         }
+    
+    def clearBackend(self):
+        self.backend = { 
+                        "career": StringVar(self.window), "species": StringVar(self.window), 
+                        "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window), 
+                        "ship": StringVar(self.window), "tier": StringVar(self.window), 
+                        'cacheEquipment': dict(), "shipHtml": None
+            }
 
     def __init__(self):
         """Main setup function"""
@@ -546,10 +573,8 @@ class SETS():
         self.window.title("STO Equipment and Trait Selector")
         self.window.wm_attributes('-transparentcolor', 'magenta')
         self.session = HTMLSession()
-        self.backend = { "career": StringVar(self.window), "species": StringVar(self.window), "specPrimary": StringVar(self.window),
-            "specSecondary": StringVar(self.window), "ship": StringVar(self.window), "tier": StringVar(self.window), 'cacheEquipment': dict(),
-            "shipHtml": None}
         self.clearBuild()
+        self.clearBackend()
         self.backend['career'].trace('w', lambda v,i,m:self.copyBackendToBuild('career'))
         self.backend['species'].trace('w', lambda v,i,m:self.copyBackendToBuild('species'))
         self.backend['specPrimary'].trace('w', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
@@ -571,7 +596,7 @@ class SETS():
         l_species_names = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
         speciesMenu = OptionMenu(playerInfoFrame, self.backend["species"], *l_species_names).grid(column=1, row=1, sticky='nsew')
         r_specs = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Captain_specializations", "specs")
-        self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
+        self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
         labelSpecPrimary = Label(playerInfoFrame, text="SpecPrimary: ").grid(column=0, row = 2, sticky='nsew')
         specPrimaryMenu = OptionMenu(playerInfoFrame, self.backend["specPrimary"], '', *self.specNames).grid(column=1, row=2, sticky='nsew')
         labelSpecSecondary = Label(playerInfoFrame, text="SpecSecondary: ").grid(column=0, row = 3, sticky='nsew')
