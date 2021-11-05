@@ -69,6 +69,7 @@ class SETS():
         image1 = self.imageFromInfoboxName(item['rarity'],self.itemBoxX,self.itemBoxY)
         canvas.itemconfig(img0,image=image0)
         canvas.itemconfig(img1,image=image1)
+        canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, args[0]))
         self.build[key][i] = item
         self.backend['i_'+key][i] = [image0, image1]
             
@@ -278,12 +279,21 @@ class SETS():
             OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='n')
             self.backend['modifiers'].append(v)
             
-    def setupInfoboxFrame(self, item):
+    def setupInfoboxFrame(self, item, key):
         """Set up infobox frame with given item"""
         for widget in self.infoboxFrame.winfo_children():
             widget.destroy()
-        text = Text(self.infoboxFrame, height=25, width=50)
+        text = Text(self.infoboxFrame, height=25, width=30, font=('Helvetica', 10))
         text.pack(side="left", fill="both", expand=True)
+        html = self.backend['cacheEquipment'][key][item['item']]
+        text.insert(END, item['item']+' '+''.join(item['mods'])+'\n')
+        text.insert(END, item['rarity']+' '+ html.find('td.field_type', first=True).text.strip()+'\n')
+        # text.insert(END, html.find('td.field_who', first=True).text.strip())
+        for i in range(1,9):
+            for header in ['td.field_head','td.field_subhead','td.field_text']:
+                t = html.find(header+str(i), first=True).text
+                if t.strip() != '':
+                    text.insert(END, t+'\n')
             
     def sanitizeEquipmentName(self, name):
         """Strip irreleant bits of equipment name for easier icon matching"""
@@ -295,13 +305,9 @@ class SETS():
             return self.backend['cacheEquipment'][keyPhrase]
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         equipment = self.searchHtmlTable(self.infoboxes, 'td.field_type', phrases)
-        self.backend['cacheEquipment'][keyPhrase] = [self.sanitizeEquipmentName(item.find('td.field_name', first=True).text) for item in equipment]
+        self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(item.find('td.field_name', first=True).text): item for item in equipment}
         if 'Hangar' in keyPhrase:
-            self.backend['cacheEquipment'][keyPhrase] = [hangar for hangar in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in hangar and 'Hangar - Elite' not in hangar]
-        # if 'Shield' in keyPhrase:
-        #     self.backend['cacheEquipment'][keyPhrase].append('Tillys Review-Pending Modified Shield')
-        if 'Deflector' in keyPhrase:
-            self.backend['cacheEquipment'][keyPhrase].append('Elite Fleet Preservation Protomatter Deflector Array')
+            self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
 
     def pickEquipment(self, keyPhrase, title, nullPhrase):
         """Open the ship equipment picker window"""
@@ -310,7 +316,7 @@ class SETS():
         container = Frame(pickWindow)
         topbarFrame = Frame(container)
         self.backend['modifiers'] = []
-        rarity = StringVar()
+        rarity = StringVar(value=self.rarities[0])
         rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
         rarityOption.grid(row=0, column=0, sticky='nsew')
         modFrame = Frame(topbarFrame, bg='gray')
@@ -330,7 +336,7 @@ class SETS():
         self.precacheEquipment(keyPhrase)
         itemVar = []
         images = []
-        for item in self.backend['cacheEquipment'][keyPhrase]:
+        for item in list(self.backend['cacheEquipment'][keyPhrase].keys()):
             cname = item.replace(nullPhrase, '')
             cimg = self.imageFromInfoboxName(item, self.itemBoxX, self.itemBoxY)
             images.append(cimg)
@@ -569,9 +575,8 @@ class SETS():
     def __init__(self):
         """Main setup function"""
         self.window = Tk()
-        self.window.geometry('1200x650')
+        self.window.geometry('1280x650')
         self.window.title("STO Equipment and Trait Selector")
-        self.window.wm_attributes('-transparentcolor', 'magenta')
         self.session = HTMLSession()
         self.clearBuild()
         self.clearBackend()
