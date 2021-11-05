@@ -89,7 +89,7 @@ class SETS():
             img0 = canvas.create_image(0,0, anchor="nw",image=image0)
             img1 = canvas.create_image(0,0, anchor="nw",image=image1)
             if (args is not None):
-                canvas.bind('<Button-1>', lambda e,label=label,args=args,key=key:self.shipItemLabelCallback(e,canvas,img0,img1,0,args,key))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img0=img0,img1=img1,i=i,args=args,key=key:self.shipItemLabelCallback(e,canvas,img0,img1,i,args,key))
 
     def shipBuildFrameSetup(self, ship):
         """Set up UI frame containing ship equipment"""
@@ -114,7 +114,7 @@ class SETS():
         #todo ADD SECDEF
         self.shipBuildBlock("Deflector", 1, 'deflector', 1, ["Ship Deflector Dish", "Pick Deflector", ""])
         self.shipBuildBlock("Engines", 2, 'engines', 1, ["Impulse Engine", "Pick Engine", ""])
-        self.shipBuildBlock("Core", 3, 'warpCore', 1, ["Warp Core", "Pick Warp Core", ""])
+        self.shipBuildBlock("Core", 3, 'warpCore', 1, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
         self.shipBuildBlock("Shield", 4, 'shield' , 1, ["Ship Shields", "Pick Shield", ""])
         self.shipBuildBlock("Aft Weapons", 5, 'aftWeapons', self.backend['shipAftWeapons'], ["Ship Aft Weapon", "Pick aft weapon", ""])
         self.shipBuildBlock("Devices", 6, 'devices', self.backend['shipDevices'], ["Ship Device", "Pick Device", ""])
@@ -258,8 +258,10 @@ class SETS():
         win.destroy()
 
     def fetchModifiers(self):
-        """Placeholder for function to fetch equipment modifiers"""
-        return ['[CritD]', '[CritH]', '[Dmg]']
+        """Fetch equipment modifiers"""
+        modPage = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Modifier", "modifiers").find("div.mw-parser-output", first=True).html
+        mods = re.findall(r"(<td.*?>(<b>)*\[.*?\](</b>)*</td>)", modPage)
+        return list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
 
     def setupModFrame(self, frame, rarity):
         """Set up modifier frame in equipment picker"""
@@ -528,7 +530,7 @@ class SETS():
     def __init__(self):
         """Main setup function"""
         self.window = Tk()
-        self.window.geometry('1000x500')
+        self.window.geometry('1200x650')
         self.window.title("STO Equipment and Trait Selector")
         self.window.wm_attributes('-transparentcolor', 'magenta')
         self.session = HTMLSession()
@@ -583,6 +585,11 @@ class SETS():
         self.traitFrame.grid(column=2, row=0, sticky='nwse')
         self.boffFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
         self.boffFrame.grid(column=2, row=1, sticky='nwse')
+        
+        self.doffFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
+        self.doffFrame.grid(column=3, row=0, sticky='nwse')
+        self.infoboxFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
+        self.infoboxFrame.grid(column=3, row=1, sticky='nwse')
 
         self.r_ships = self.fetchOrRequestHtml(SETS.ship_query, "ship_list")
         self.l_ship_names = [e.text for e in self.r_ships.find("td.field_name")]
