@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import filedialog
 from requests_html import Element, HTMLSession, HTML
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageGrab
 import os, requests, json, re
 
 class SETS():
@@ -275,6 +275,13 @@ class SETS():
             OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='n')
             self.backend['modifiers'].append(v)
             
+    def setupInfoboxFrame(self, item):
+        """Set up infobox frame with given item"""
+        for widget in self.infoboxFrame.winfo_children():
+            widget.destroy()
+        text = Text(self.infoboxFrame, height=25, width=50)
+        text.pack(side="left", fill="both", expand=True)
+            
     def sanitizeEquipmentName(self, name):
         """Strip irreleant bits of equipment name for easier icon matching"""
         return re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip()
@@ -494,9 +501,14 @@ class SETS():
 
     def exportCallback(self, event):
         """Callback for export button"""
-        print(self.build)
         with filedialog.asksaveasfile() as outFile:
             json.dump(self.build, outFile)
+            
+    def exportPngCallback(self, event):
+        """Callback for export as png button"""
+        image = ImageGrab.grab(bbox=(self.window.winfo_rootx(), self.window.winfo_rooty(), self.window.winfo_width(), self.window.winfo_height()))
+        outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
+        image.save(outFilename)
 
     def copyBackendToBuild(self, key):
         """Helper function to copy backend value to build dict"""
@@ -575,6 +587,9 @@ class SETS():
         buttonClear = Button(exportImportFrame, text='Clear')
         buttonClear.grid(column=2, row=0, sticky='nsew')
         buttonClear.bind('<Button-1>', self.clearBuildCallback)
+        buttonExportPng = Button(exportImportFrame, text='Export .png')
+        buttonExportPng.grid(column=3, row=0, sticky='nsew')
+        buttonExportPng.bind('<Button-1>', self.exportPngCallback)
 
 
         self.shipInfoFrame = Frame(self.window, relief='raised', borderwidth=2)
