@@ -14,6 +14,9 @@ class SETS():
     #query for personal and reputation trait cargo table on the wiki
     trait_query = "https://sto.fandom.com/wiki/Special:CargoQuery?limit=2500&offset=0&tables=Traits&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&max_display_chars=300"
     
+    itemBoxX = 27
+    itemBoxY = 37
+
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
         cache_base = "cache"
@@ -59,59 +62,34 @@ class SETS():
         ship_list = [e for e in trs if isinstance(e.find('td.field_name', first=True), Element) and shipName in e.find('td.field_name', first=True).text]
         return [] if isinstance(ship_list, int) else ship_list[0]
     
-    def shipItemLabelCallback(self, e, label, label2, i, args, key):
+    def shipItemLabelCallback(self, e, canvas, img0, img1, i, args, key):
         """Common callback for ship equipment labels"""
         item = self.pickEquipment(*args)
-        image = self.imageFromInfoboxName(item['item'], 25, 35)
-        image2 = self.imageFromInfoboxName(item['rarity'],25,35)
-        label.configure(image=image)
-        #label2.configure(image=image2)
+        image0 = self.imageFromInfoboxName(item['item'], self.itemBoxX, self.itemBoxY)
+        image1 = self.imageFromInfoboxName(item['rarity'],self.itemBoxX,self.itemBoxY)
+        canvas.itemconfig(img0,image=image0)
+        canvas.itemconfig(img1,image=image1)
         self.build[key][i] = item
-        self.backend['i_'+key][i] = [image, image2]
-
-    def shipBuildBlockSmall(self, name, row, key, args=None):
-        """Set up 1-element line of ship equipment"""
-        self.backend['i_'+key] = [None]
-        label =  Label(self.shipBuildFrame, text=name)
-        label.grid(row=row, column=0, sticky='nsew', ipadx=5, pady=2)
-        if key in self.build and self.build[key][0] is not None:
-            image=self.imageFromInfoboxName(self.build[key][0]['item'],25,35)
-            image2=self.imageFromInfoboxName(self.build[key][0]['rarity'],25,35)
-            self.backend['i_'+key][0] = [image, image2]
-        else:
-            image=image2=self.emptyImage
-        frame = Frame(self.shipBuildFrame, relief='raised', borderwidth=1, width=27, height=37)
-        label = Label(frame, image=image)
-        label.pack()
-        label.place(x=0,y=0)
-        label2 = Label(frame, image=image2)
-        #label2.place(x=-2,y=0)
-        frame.grid(row=row, column=1, sticky='nse', padx=5, pady=2)
-        if (args is not None):
-            label.bind('<Button-1>', lambda e,label=label,label2=label2,args=args,key=key:self.shipItemLabelCallback(e,label,label2,0,args,key))
-            label2.bind('<Button-1>', lambda e,label=label,label2=label2,args=args,key=key:self.shipItemLabelCallback(e,label,label2,0,args,key))
+        self.backend['i_'+key][i] = [image0, image1]
             
-    def shipBuildBlockBig(self, name, row, key, n, args=None):
+    def shipBuildBlock(self, name, row, key, n, args=None):
         """Set up n-element line of ship equipment"""
         self.backend['i_'+key] = [None] * n
         label =  Label(self.shipBuildFrame, text=name)
-        label.grid(row=row, column=0, sticky='nsew', ipadx=5, pady=2)
+        label.grid(row=row, column=0, sticky='nsew', padx=5, pady=2)
         for i in range(n):
             if key in self.build and self.build[key][i] is not None:
-                image=self.imageFromInfoboxName(self.build[key][i]['item'],25,35)
-                image2=self.imageFromInfoboxName(self.build[key][i]['rarity'],25,35)
-                self.backend['i_'+key][i] = [image, image2]
+                image0=self.imageFromInfoboxName(self.build[key][i]['item'],self.itemBoxX,self.itemBoxY)
+                image1=self.imageFromInfoboxName(self.build[key][i]['rarity'],self.itemBoxX,self.itemBoxY)
+                self.backend['i_'+key][i] = [image0, image1]
             else:
-                image=image2=self.emptyImage
-            frame = Frame(self.shipBuildFrame, relief='raised', borderwidth=1, width=27, height=37)
-            frame.grid(row=row, column=i+1, sticky='nse', padx=5, pady=2)
-            label = Label(frame, image=image)
-            label.place(x=0,y=0)
-            label2 = Label(frame, image=image2)
-            #label2.place(x=0,y=0)
+                image0=image1=self.emptyImage
+            canvas = Canvas(self.shipBuildFrame, relief='raised', borderwidth=1, width=27, height=37)
+            canvas.grid(row=row, column=i+1, sticky='nse', padx=2, pady=2)
+            img0 = canvas.create_image(0,0, anchor="nw",image=image0)
+            img1 = canvas.create_image(0,0, anchor="nw",image=image1)
             if (args is not None):
-                label.bind('<Button-1>', lambda e,label=label,label2=label2,i=i,args=args,key=key:self.shipItemLabelCallback(e,label,label2,i,args,key))
-                #label2.bind('<Button-1>', lambda e,label=label,label2=label2,args=args,key=key:self.shipItemLabelCallback(e,label,label2,i,args,key))
+                canvas.bind('<Button-1>', lambda e,label=label,args=args,key=key:self.shipItemLabelCallback(e,canvas,img0,img1,0,args,key))
 
     def shipBuildFrameSetup(self, ship):
         """Set up UI frame containing ship equipment"""
@@ -132,32 +110,32 @@ class SETS():
             t5console = ship.find('td.field_t5uconsole', first=True).text
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
-        self.shipBuildBlockBig("Fore Weapons", 0, 'foreWeapons', self.backend['shipForeWeapons'], ["Ship Fore Weapon", "Pick Fore Weapon", ""])
+        self.shipBuildBlock("Fore Weapons", 0, 'foreWeapons', self.backend['shipForeWeapons'], ["Ship Fore Weapon", "Pick Fore Weapon", ""])
         #todo ADD SECDEF
-        self.shipBuildBlockSmall("Deflector", 1, 'deflector', ["Ship Deflector Dish", "Pick Deflector", ""])
-        self.shipBuildBlockSmall("Engines", 2, 'engines', ["Impulse Engine", "Pick Engine", ""])
-        self.shipBuildBlockSmall("Core", 3, 'warpCore', ["Warp Core", "Pick Warp Core", ""])
-        self.shipBuildBlockSmall("Shield", 4, 'shield' , ["Ship Shields", "Pick Shield", ""])
-        self.shipBuildBlockBig("Aft Weapons", 5, 'aftWeapons', self.backend['shipAftWeapons'], ["Ship Aft Weapon", "Pick aft weapon", ""])
-        self.shipBuildBlockBig("Devices", 6, 'devices', self.backend['shipDevices'], ["Ship Device", "Pick Device", ""])
+        self.shipBuildBlock("Deflector", 1, 'deflector', 1, ["Ship Deflector Dish", "Pick Deflector", ""])
+        self.shipBuildBlock("Engines", 2, 'engines', 1, ["Impulse Engine", "Pick Engine", ""])
+        self.shipBuildBlock("Core", 3, 'warpCore', 1, ["Warp Core", "Pick Warp Core", ""])
+        self.shipBuildBlock("Shield", 4, 'shield' , 1, ["Ship Shields", "Pick Shield", ""])
+        self.shipBuildBlock("Aft Weapons", 5, 'aftWeapons', self.backend['shipAftWeapons'], ["Ship Aft Weapon", "Pick aft weapon", ""])
+        self.shipBuildBlock("Devices", 6, 'devices', self.backend['shipDevices'], ["Ship Device", "Pick Device", ""])
         if self.backend['shipUniConsoles'] > 0:
-            self.shipBuildBlockBig("Uni Consoles", 7, 'uniConsoles', self.backend['shipUniConsoles'], ["Console", "Pick Uni Console", "Console - Universal - "])
-        self.shipBuildBlockBig("Sci Consoles", 8, 'sciConsoles', self.backend['shipSciConsoles'], ["Ship Science Console", "Pick Sci Console", "Console - Science - "])
-        self.shipBuildBlockBig("Eng Consoles", 9, 'engConsoles', self.backend['shipEngConsoles'], ["Ship Engineering Console", "Pick Eng Console", "Console - Engineering - "])
-        self.shipBuildBlockBig("Tac Consoles", 10, 'tacConsoles', self.backend['shipTacConsoles'], ["Ship Tactical Console", "Pick Tac Console", "Console - Tactical - "])
+            self.shipBuildBlock("Uni Consoles", 7, 'uniConsoles', self.backend['shipUniConsoles'], ["Console", "Pick Uni Console", "Console - Universal - "])
+        self.shipBuildBlock("Sci Consoles", 8, 'sciConsoles', self.backend['shipSciConsoles'], ["Ship Science Console", "Pick Sci Console", "Console - Science - "])
+        self.shipBuildBlock("Eng Consoles", 9, 'engConsoles', self.backend['shipEngConsoles'], ["Ship Engineering Console", "Pick Eng Console", "Console - Engineering - "])
+        self.shipBuildBlock("Tac Consoles", 10, 'tacConsoles', self.backend['shipTacConsoles'], ["Ship Tactical Console", "Pick Tac Console", "Console - Tactical - "])
         if self.backend['shipHangars'] > 0:
-            self.shipBuildBlockBig("Hangars", 11, 'hangars', self.backend['shipHangars'], ["Hangar Bay", "Pick Hangar Pet", "Hangar - "])
+            self.shipBuildBlock("Hangars", 11, 'hangars', self.backend['shipHangars'], ["Hangar Bay", "Pick Hangar Pet", "Hangar - "])
 
     def traitLabelCallback(self, e, label, key, table, i, reputation=False, active=False, starship=False):
         """Common callback for all trait labels"""
         if starship:
             item = self.pickStarshipTrait()
             name = item.find('td', first=True).text
-            image = self.imageFromInfoboxName(name, 25, 35)
+            image = self.imageFromInfoboxName(name, self.itemBoxX, self.itemBoxY)
         else:
             item = self.pickTrait(table, reputation, active)
             name = item.find('td.field_name', first=True).text.replace("Trait: ", '')
-            image = self.imageFromInfoboxName(name, 25, 35)
+            image = self.imageFromInfoboxName(name, self.itemBoxX, self.itemBoxY)
         label.configure(image=image)
         self.build[key][i] = name
         self.backend['i_'+key][i] = image
@@ -169,12 +147,12 @@ class SETS():
         label.grid(row=row, column=0, sticky='nsew', padx=5, pady=2)
         for i in range(n):
             if key in self.build and self.build[key][i] is not None:
-                image=self.imageFromInfoboxName(self.build[key][i],25,35)
+                image=self.imageFromInfoboxName(self.build[key][i],self.itemBoxX,self.itemBoxY)
                 self.backend['i_'+key][i] = image
             else:
                 image=self.emptyImage
             label = Label(self.traitFrame, image=image, relief='raised', borderwidth=1)
-            label.grid(row=row, column=i+1, sticky='nse', padx=5, pady=2)
+            label.grid(row=row, column=i+1, sticky='nse', padx=2, pady=2)
             if (args is not None):
                 label.bind('<Button-1>', lambda e,label=label,i=i,args=args,key=key:self.traitLabelCallback(e,label,key,self.traits,i,*args))
 
@@ -193,7 +171,7 @@ class SETS():
         """Common callback for boff labels"""
         item = self.pickBoffSkill(spec, sspec, rank)
         cname = item.find('td', first=True).text
-        image = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+cname.replace(' ', '_')+"_icon_(Federation).png", cname, 25, 35)
+        image = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+cname.replace(' ', '_')+"_icon_(Federation).png", cname, self.itemBoxX, self.itemBoxY)
         label.configure(image=image)
         self.build['boffs'][key][i] = cname
         self.backend['i_'+key][i] = image
@@ -226,7 +204,7 @@ class SETS():
             skills = []
             for i in range(rank):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i],25,35)
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i],self.itemBoxX,self.itemBoxY)
                     self.backend['i_'+boffSan][i] = image
                 else:
                     image=self.emptyImage
@@ -342,7 +320,7 @@ class SETS():
         images = []
         for item in self.backend['cacheEquipment'][keyPhrase]:
             cname = item.replace(nullPhrase, '')
-            cimg = self.imageFromInfoboxName(item, 25, 35)
+            cimg = self.imageFromInfoboxName(item, self.itemBoxX, self.itemBoxY)
             images.append(cimg)
             frame = Frame(scrollable_frame, relief='raised', borderwidth=1)
             label = Label(frame, text=cname, wraplength=120, justify=LEFT)
@@ -386,7 +364,7 @@ class SETS():
         images = []
         for trait in traits:
             cname = trait.find('td.field_name', first=True).text.replace("Trait: ", '')
-            cimg = self.imageFromInfoboxName(cname,25,35)
+            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY)
             images.append(cimg)
             frame = Frame(scrollable_frame, relief='raised', borderwidth=1)
             label = Label(frame, text=cname)
@@ -424,7 +402,7 @@ class SETS():
             if tds is None or len(tds)<1:
                 continue
             cname = tds[0].text
-            cimg = self.imageFromInfoboxName(cname,25,35)
+            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY)
             images.append(cimg)
             frame = Frame(scrollable_frame, relief='raised', borderwidth=1)
             label = Label(frame, text=cname)
@@ -479,7 +457,7 @@ class SETS():
         images = []
         for skill in skills:
             cname = skill.find('td', first=True).text.replace(':','')
-            cimg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+cname.replace(' ', '_')+"_icon_(Federation).png", cname,25,35)
+            cimg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+cname.replace(' ', '_')+"_icon_(Federation).png", cname,self.itemBoxX,self.itemBoxY)
             images.append(cimg)
             frame = Frame(scrollable_frame, relief='raised', borderwidth=1)
             label = Label(frame, text=cname)
@@ -567,7 +545,7 @@ class SETS():
         self.backend["species"].set("Alien")
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
 
-        self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",25,35)
+        self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestHtml(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestHtml(SETS.trait_query, "traits")
         playerInfoFrame = Frame(self.window, relief='raised', borderwidth=2)
