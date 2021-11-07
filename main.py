@@ -13,7 +13,7 @@ class SETS():
     item_query = 'https://sto.fandom.com/wiki/Special:CargoQuery?limit=5000&offset=0&tables=Infobox&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&max_display_chars=300'
     #query for personal and reputation trait cargo table on the wiki
     trait_query = "https://sto.fandom.com/wiki/Special:CargoQuery?limit=2500&offset=0&tables=Traits&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&max_display_chars=300"
-    
+
     itemBoxX = 27
     itemBoxY = 37
 
@@ -61,17 +61,17 @@ class SETS():
         trs = requestHtml.find('tr')
         ship_list = [e for e in trs if isinstance(e.find('td.field_name', first=True), Element) and shipName in e.find('td.field_name', first=True).text]
         return [] if isinstance(ship_list, int) else ship_list[0]
-    
+
     def getTierOptions(self, tier):
         """Get possible tier options from ship tier string"""
         return ['T5', 'T5-U', 'T5-X'] if int(tier) == 5 else ['T6', 'T6-X'] if int(tier) == 6 else ['T'+tier]
-    
+
     def setVarAndQuit(self, e, name, image, v, win):
         """Helper function to set variables from within UI callbacks"""
         v['item'] = name
         v['image'] = image
         win.destroy()
-        
+
     def getEmptyItem(self):
         return {"item": "", "image": self.emptyImage}
 
@@ -103,7 +103,7 @@ class SETS():
             mods = re.findall(r"(<td.*?>(<b>)*\[.*?\](</b>)*</td>)", modPage)
             self.backend['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
         return self.backend['modifiers']
-    
+
     def setListIndex(self, list, index, value):
         print(value)
         list[index] = value
@@ -133,18 +133,18 @@ class SETS():
             'sciConsoles': [None] * 5, 'engConsoles': [None] * 5, 'devices': [None] * 5,
             'aftWeapons': [None] * 5, 'foreWeapons': [None] * 5, 'hangars': [None] * 2,
             'deflector': [None], 'engines': [None], 'warpCore': [None], 'shield': [None],
-            'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '', 
+            'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '',
             'specSecondary': '', "tier": '', 'secdef': [None], 'experimental': [None]
         }
-    
+
     def clearBackend(self):
-        self.backend = { 
-                        "career": StringVar(self.window), "species": StringVar(self.window), 
-                        "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window), 
-                        "ship": StringVar(self.window), "tier": StringVar(self.window), 
+        self.backend = {
+                        "career": StringVar(self.window), "species": StringVar(self.window),
+                        "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
+                        "ship": StringVar(self.window), "tier": StringVar(self.window),
                         'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None
             }
-        
+
     def clearFrame(self, frame):
         for widget in frame.winfo_children():
             widget.destroy()
@@ -179,11 +179,11 @@ class SETS():
         i = 0
         for name,image in items_list:
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
-            label = Label(frame, text=name, wraplength=120, justify=LEFT)
+            label = Label(frame, image=image)
             label.grid(row=0, column=0, sticky='nsew')
             label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-            label = Label(frame, image=image)
+            label = Label(frame, text=name, wraplength=120, justify=LEFT)
             label.grid(row=0, column=1, sticky='nsew')
             label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
@@ -195,7 +195,7 @@ class SETS():
         pickWindow.grab_set()
         pickWindow.wait_window()
         return itemVar
-    
+
     def shipItemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
@@ -238,7 +238,7 @@ class SETS():
         canvas.itemconfig(img[0],image=item['image'])
         self.build[key][i] = item['item'].replace("Trait: ", '')
         self.backend['i_'+key][i] = item['image']
-        
+
     def boffLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for boff labels"""
         boffAbilities = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities", "boff_abilities")
@@ -272,7 +272,7 @@ class SETS():
         canvas.itemconfig(img,image=item['image'])
         self.build['boffs'][key][i] = item['item']
         self.backend['i_'+key][i] = item['image']
-        
+
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
         if self.backend['ship'].get() == '':
@@ -293,7 +293,7 @@ class SETS():
             self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Federation_Emblem.png", "federation_emblem", 260, 146)
             self.shipLabel.configure(image=self.shipImg)
         self.backend["tier"].set(self.getTierOptions(tier)[0])
-        
+
     def shipPickButtonCallback(self, *args):
         """Callback for ship picker button"""
         itemVar = self.getEmptyItem()
@@ -323,7 +323,7 @@ class SETS():
         """Callback for export button"""
         with filedialog.asksaveasfile() as outFile:
             json.dump(self.build, outFile)
-            
+
     def exportPngCallback(self, event):
         """Callback for export as png button"""
         image = ImageGrab.grab(bbox=(self.window.winfo_rootx(), self.window.winfo_rooty(), self.window.winfo_width(), self.window.winfo_height()))
@@ -367,7 +367,7 @@ class SETS():
         modFrame.grid(row=1, column=0, sticky='nsew')
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
-            
+
     def labelBuildBlock(self, frame, name, row, key, n, callback, args=None):
         """Set up n-element line of ship equipment"""
         self.backend['i_'+key] = [None] * n
@@ -472,7 +472,7 @@ class SETS():
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,args=[spec,sspec,i],key=boffSan,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,args))
-                
+
     def setupBuildFrames(self):
         """Set up all relevant build frames"""
         self.build['tier'] = self.backend['tier'].get()
@@ -492,7 +492,7 @@ class SETS():
             v = StringVar()
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
             OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='n')
-            
+
     def setupInfoboxFrame(self, item, key):
         """Set up infobox frame with given item"""
         self.clearFrame(self.infoboxFrame)
@@ -567,7 +567,7 @@ class SETS():
         self.traitFrame.grid(column=2, row=0, sticky='nwse')
         self.boffFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
         self.boffFrame.grid(column=2, row=1, sticky='nwse')
-        
+
         self.doffFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
         self.doffFrame.grid(column=3, row=0, sticky='nwse')
         self.infoboxFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
