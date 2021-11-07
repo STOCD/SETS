@@ -134,7 +134,7 @@ class SETS():
             'aftWeapons': [None] * 5, 'foreWeapons': [None] * 5, 'hangars': [None] * 2,
             'deflector': [None], 'engines': [None], 'warpCore': [None], 'shield': [None],
             'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '', 
-            'specSecondary': '', "tier": ''
+            'specSecondary': '', "tier": '', 'secdef': [None], 'experimental': [None]
         }
     
     def clearBackend(self):
@@ -142,7 +142,7 @@ class SETS():
                         "career": StringVar(self.window), "species": StringVar(self.window), 
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window), 
                         "ship": StringVar(self.window), "tier": StringVar(self.window), 
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None
+                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None
             }
         
     def clearFrame(self, frame):
@@ -284,9 +284,9 @@ class SETS():
         Label(self.shipTierFrame, text="Tier:").grid(row=0, column=0, sticky='nsew')
         OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier)).grid(column=1, row=0, sticky='nsew')
         ship_url = list(self.backend['shipHtml'].absolute_links)[0]
-        r_sp = self.fetchOrRequestHtml(ship_url, self.build['ship'])
+        self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
         try:
-            ship_image = list(r_sp.find('div.mw-parser-output a.image img'))[1].attrs['data-image-name']
+            ship_image = list(self.backend['shipHtmlFull'].find('div.mw-parser-output a.image img'))[1].attrs['data-image-name']
             self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
             self.shipLabel.configure(image=self.shipImg)
         except:
@@ -408,20 +408,23 @@ class SETS():
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
         self.labelBuildBlock(self.shipBuildFrame, "Fore Weapons", 0, 'foreWeapons', self.backend['shipForeWeapons'], self.shipItemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
-        #todo ADD SECDEF
-        self.labelBuildBlock(self.shipBuildFrame, "Deflector", 1, 'deflector', 1, self.shipItemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Engines", 2, 'engines', 1, self.shipItemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Core", 3, 'warpCore', 1, self.shipItemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Shield", 4, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Aft Weapons", 5, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Devices", 6, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
+        if '<a href="/wiki/Secondary_Deflector" title="Secondary Deflector">Secondary Deflector</a>' in self.backend['shipHtmlFull'].html:
+            self.labelBuildBlock(self.shipBuildFrame, "Secondary", 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
+        self.labelBuildBlock(self.shipBuildFrame, "Deflector", 2, 'deflector', 1, self.shipItemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
+        self.labelBuildBlock(self.shipBuildFrame, "Engines", 3, 'engines', 1, self.shipItemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
+        self.labelBuildBlock(self.shipBuildFrame, "Core", 4, 'warpCore', 1, self.shipItemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
+        self.labelBuildBlock(self.shipBuildFrame, "Shield", 5, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
+        self.labelBuildBlock(self.shipBuildFrame, "Aft Weapons", 6, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
+        if '<a href="/wiki/Experimental_Weapon" title="Experimental Weapon">Experimental Weapon</a>' in self.backend['shipHtmlFull'].html:
+            self.labelBuildBlock(self.shipBuildFrame, "Experimental", 7, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
+        self.labelBuildBlock(self.shipBuildFrame, "Devices", 8, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
         if self.backend['shipUniConsoles'] > 0:
-            self.labelBuildBlock(self.shipBuildFrame, "Uni Consoles", 7, 'uniConsoles', self.backend['shipUniConsoles'], self.shipItemLabelCallback, ["Console", "Pick Uni Console", "Console - Universal - "])
-        self.labelBuildBlock(self.shipBuildFrame, "Sci Consoles", 8, 'sciConsoles', self.backend['shipSciConsoles'], self.shipItemLabelCallback, ["Ship Science Console", "Pick Sci Console", "Console - Science - "])
-        self.labelBuildBlock(self.shipBuildFrame, "Eng Consoles", 9, 'engConsoles', self.backend['shipEngConsoles'], self.shipItemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", "Console - Engineering - "])
-        self.labelBuildBlock(self.shipBuildFrame, "Tac Consoles", 10, 'tacConsoles', self.backend['shipTacConsoles'], self.shipItemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", "Console - Tactical - "])
+            self.labelBuildBlock(self.shipBuildFrame, "Uni Consoles", 9, 'uniConsoles', self.backend['shipUniConsoles'], self.shipItemLabelCallback, ["Console", "Pick Uni Console", "Console - Universal - "])
+        self.labelBuildBlock(self.shipBuildFrame, "Sci Consoles", 10, 'sciConsoles', self.backend['shipSciConsoles'], self.shipItemLabelCallback, ["Ship Science Console", "Pick Sci Console", "Console - Science - "])
+        self.labelBuildBlock(self.shipBuildFrame, "Eng Consoles", 11, 'engConsoles', self.backend['shipEngConsoles'], self.shipItemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", "Console - Engineering - "])
+        self.labelBuildBlock(self.shipBuildFrame, "Tac Consoles", 12, 'tacConsoles', self.backend['shipTacConsoles'], self.shipItemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", "Console - Tactical - "])
         if self.backend['shipHangars'] > 0:
-            self.labelBuildBlock(self.shipBuildFrame, "Hangars", 11, 'hangars', self.backend['shipHangars'], self.shipItemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", "Hangar - "])
+            self.labelBuildBlock(self.shipBuildFrame, "Hangars", 13, 'hangars', self.backend['shipHangars'], self.shipItemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", "Hangar - "])
 
     def setupTraitFrame(self):
         """Set up UI frame containing traits"""
