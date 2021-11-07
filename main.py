@@ -149,13 +149,23 @@ class SETS():
         for widget in frame.winfo_children():
             widget.destroy()
 
-    def pickerGui(self, title, itemVar, items_list, top_bar_function=None):
+    def applyContentFilter(self, content, filter):
+        for key in content.keys():
+            if re.search(filter, key, re.IGNORECASE):
+                content[key][0].grid(row=content[key][1], column=content[key][2], sticky='nsew')
+            else:
+                content[key][0].grid_forget()
+
+    def pickerGui(self, title, itemVar, items_list, top_bar_functions=None):
         """Open a picker window"""
         pickWindow = Toplevel(self.window)
         pickWindow.title(title)
+        pickWindow.geometry("240x400")
         container = Frame(pickWindow)
-        if top_bar_function is not None:
-            top_bar_function(container, itemVar)
+        content = dict()
+        if top_bar_functions is not None:
+            for func in top_bar_functions:
+                func(container, itemVar, content)
         canvas = Canvas(container)
         scrollbar = Scrollbar(container, orient=VERTICAL, command=canvas.yview)
         scrollable_frame = Frame(canvas)
@@ -163,42 +173,35 @@ class SETS():
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-        container.pack()
+        container.pack(fill=BOTH, expand=True)
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side=RIGHT,fill=Y)
+        i = 0
         for name,image in items_list:
-            frame = Frame(scrollable_frame, relief='raised', borderwidth=1)
+            frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
             label = Label(frame, text=name, wraplength=120, justify=LEFT)
-            label.grid(row=0, column=0)
+            label.grid(row=0, column=0, sticky='nsew')
             label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
             label = Label(frame, image=image)
-            label.grid(row=0, column=1)
+            label.grid(row=0, column=1, sticky='nsew')
             label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-            frame.pack(fill=BOTH, expand=True)
+            frame.grid(row=i, column=0, sticky='nsew')
             frame.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             frame.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+            content[name] = (frame, i, 0)
+            i = i + 1
         pickWindow.grab_set()
         pickWindow.wait_window()
         return itemVar
-    
-    def setupRarityFrame(self,frame,itemVar):
-        topbarFrame = Frame(frame)
-        rarity = StringVar(value=self.rarities[0])
-        rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
-        rarityOption.grid(row=0, column=0, sticky='nsw')
-        modFrame = Frame(topbarFrame, bg='gray')
-        modFrame.grid(row=0, column=1, sticky='nsew')
-        rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
-        topbarFrame.pack()
     
     def shipItemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.rarities[0], "modifiers":[None]}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
-        item = self.pickerGui(args[1], itemVar, items_list, self.setupRarityFrame)
+        item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
         if 'rarity' not in item:
             item['rarity'] = self.rarities[0]
         image1 = self.imageFromInfoboxName(item['rarity'])
@@ -231,7 +234,7 @@ class SETS():
                 traits = [e for e in traits if isinstance(e.find('td.field_name', first=True), Element) and (('/wiki/Trait:_'+e.find('td.field_name', first=True).text.replace(' ','_') in list(actives)) == args[1])]
             items_list = [(trait.find('td.field_name', first=True).text.replace("Trait: ", ''), self.imageFromInfoboxName(trait.find('td.field_name', first=True).text.replace("Trait: ", ''),self.itemBoxX,self.itemBoxY)) for trait in traits]
         itemVar = self.getEmptyItem()
-        item = self.pickerGui("Pick trait", itemVar, items_list)
+        item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
         canvas.itemconfig(img[0],image=item['image'])
         self.build[key][i] = item['item'].replace("Trait: ", '')
         self.backend['i_'+key][i] = item['image']
@@ -265,7 +268,7 @@ class SETS():
             cimg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+cname.replace(' ', '_')+"_icon_(Federation).png", cname,self.itemBoxX,self.itemBoxY)
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
-        item = self.pickerGui("Pick Ability", itemVar, items_list)
+        item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
         canvas.itemconfig(img,image=item['image'])
         self.build['boffs'][key][i] = item['item']
         self.backend['i_'+key][i] = item['image']
@@ -277,8 +280,7 @@ class SETS():
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
         tier = self.backend['shipHtml'].find('td.field_tier', first=True).text
-        for widget in self.shipTierFrame.winfo_children():
-            widget.destroy()
+        self.clearFrame(self.shipTierFrame)
         Label(self.shipTierFrame, text="Tier:").grid(row=0, column=0, sticky='nsew')
         OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier)).grid(column=1, row=0, sticky='nsew')
         ship_url = list(self.backend['shipHtml'].absolute_links)[0]
@@ -296,7 +298,7 @@ class SETS():
         """Callback for ship picker button"""
         itemVar = self.getEmptyItem()
         items_list = [(name, self.emptyImage) for name in self.l_ship_names]
-        item = self.pickerGui("Pick Starship", itemVar, items_list)
+        item = self.pickerGui("Pick Starship", itemVar, items_list, [self.setupSearchFrame])
         self.shipButton.configure(text=item['item'])
         self.backend['ship'].set(item['item'])
 
@@ -345,6 +347,24 @@ class SETS():
                 widget.destroy()
         self.shipImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
+
+    def setupSearchFrame(self,frame,itemVar,content):
+        topbarFrame = Frame(frame)
+        searchText = StringVar()
+        Label(topbarFrame, text="Search:").grid(row=0, column=0, sticky='nsew')
+        Entry(topbarFrame, textvariable=searchText).grid(row=0, column=1, columnspan=5, sticky='nsew')
+        searchText.trace_add('write', lambda v,i,m,content=content:self.applyContentFilter(content, searchText.get()))
+        topbarFrame.pack()
+
+    def setupRarityFrame(self,frame,itemVar,content):
+        topbarFrame = Frame(frame)
+        rarity = StringVar(value=self.rarities[0])
+        rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
+        rarityOption.grid(row=0, column=0, sticky='nsw')
+        modFrame = Frame(topbarFrame, bg='gray')
+        modFrame.grid(row=1, column=0, sticky='nsew')
+        rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
+        topbarFrame.pack()
             
     def labelBuildBlock(self, frame, name, row, key, n, callback, args=None):
         """Set up n-element line of ship equipment"""
