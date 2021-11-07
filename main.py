@@ -352,7 +352,9 @@ class SETS():
         topbarFrame = Frame(frame)
         searchText = StringVar()
         Label(topbarFrame, text="Search:").grid(row=0, column=0, sticky='nsew')
-        Entry(topbarFrame, textvariable=searchText).grid(row=0, column=1, columnspan=5, sticky='nsew')
+        searchEntry = Entry(topbarFrame, textvariable=searchText)
+        searchEntry.grid(row=0, column=1, columnspan=5, sticky='nsew')
+        searchEntry.focus_set()
         searchText.trace_add('write', lambda v,i,m,content=content:self.applyContentFilter(content, searchText.get()))
         topbarFrame.pack()
 
