@@ -495,6 +495,8 @@ class SETS():
         self.clearFrame(self.infoboxFrame)
         text = Text(self.infoboxFrame, height=25, width=30, font=('Helvetica', 10))
         text.pack(side="left", fill="both", expand=True)
+        if item['item'] == '':
+            return
         html = self.backend['cacheEquipment'][key][item['item']]
         text.insert(END, item['item']+' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers']))+'\n')
         text.insert(END, item['rarity']+' '+ html.find('td.field_type', first=True).text.strip()+'\n')
