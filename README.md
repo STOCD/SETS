@@ -34,8 +34,8 @@ Linux:
 
 ## Authors
 
-Producer - Mara "Sizer" Morrigan - mara.mos714@gmail.com, Discord: Sizer#3498
-Programmer - Liraal2
+* Producer - Mara "Sizer" Morrigan - mara.mos714@gmail.com, Discord: Sizer#3498
+* Programmer - Liraal2
 
 ## Licence
 
