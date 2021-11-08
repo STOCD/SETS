@@ -533,7 +533,7 @@ class SETS():
                     text.insert(END, t+'\n')
     
     def setupLogoFrame(self):
-        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", self.window.winfo_screenwidth(), self.window.winfo_screenwidth()/1920 * 134)
+        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", self.window.winfo_screenwidth(), int(self.window.winfo_screenwidth()/1920 * 134))
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
         
     def setupMenuFrame(self):
