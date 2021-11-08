@@ -41,4 +41,6 @@ Linux:
 
 ## Licence
 
-This project is under The Unlicense
+SETS and its source code is licensed under The Unlicense
+
+Star Trek Online and its content is copyright of Cryptic Studios.
