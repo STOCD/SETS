@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import filedialog
+from tkinter import font
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
 import os, requests, json, re
@@ -55,6 +56,19 @@ class SETS():
         if(width is not None):
             image = image.resize((width,height),Image.ANTIALIAS)
         return ImageTk.PhotoImage(image)
+    
+    def loadLocalImage(self, filename, width = None, height = None):
+        """Request image from web or fetch from local cache"""
+        cache_base = "local"
+        if not os.path.exists(cache_base):
+            os.makedirs(cache_base)
+        filename = os.path.join(*filter(None, [cache_base, filename]))
+        if os.path.exists(filename):
+            image = Image.open(filename)
+            if(width is not None):
+                image = image.resize((width,height),Image.ANTIALIAS)
+            return ImageTk.PhotoImage(image)
+        return self.emptyImage
 
     def getShipFromName(self, requestHtml, shipName):
         """Find cargo table entry for given ship name"""
@@ -138,10 +152,10 @@ class SETS():
         }
 
     def clearBackend(self):
-        self.backend = {
-                        "career": StringVar(self.window), "species": StringVar(self.window),
-                        "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
-                        "ship": StringVar(self.window), "tier": StringVar(self.window),
+        self.backend = { 
+                        "career": StringVar(self.window), "species": StringVar(self.window), 
+                        "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window), 
+                        "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None
             }
 
@@ -183,7 +197,7 @@ class SETS():
             label.grid(row=0, column=0, sticky='nsew')
             label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-            label = Label(frame, text=name, wraplength=120, justify=LEFT)
+            label = Label(frame, text=name, wraplength=200, justify=LEFT)
             label.grid(row=0, column=1, sticky='nsew')
             label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
@@ -202,7 +216,7 @@ class SETS():
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.rarities[0], "modifiers":[None]}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
-        if 'rarity' not in item:
+        if 'rarity' not in item or item['item']=='':
             item['rarity'] = self.rarities[0]
         image1 = self.imageFromInfoboxName(item['rarity'])
         canvas.itemconfig(img[0],image=item['image'])
@@ -255,7 +269,7 @@ class SETS():
             table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[0].replace(' ','_')+'_Abilities', first=True), Element)]
             trs = table[0].find('tr')
         if args[1] is not None:
-            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[0].replace(' ','_')+'_Abilities', first=True), Element)]
+            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[1].replace(' ','_')+'_Abilities', first=True), Element)]
             trs = trs + table[0].find('tr')
         skills = []
         for tr in trs:
@@ -281,12 +295,14 @@ class SETS():
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
         tier = self.backend['shipHtml'].find('td.field_tier', first=True).text
         self.clearFrame(self.shipTierFrame)
-        Label(self.shipTierFrame, text="Tier:").grid(row=0, column=0, sticky='nsew')
-        OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier)).grid(column=1, row=0, sticky='nsew')
+        Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
+        m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
+        m.grid(column=1, row=0, sticky='nsew', pady=5)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         ship_url = list(self.backend['shipHtml'].absolute_links)[0]
         self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
         try:
-            ship_image = list(self.backend['shipHtmlFull'].find('div.mw-parser-output a.image img'))[1].attrs['data-image-name']
+            ship_image = self.backend['shipHtml'].find('td.field_image', first=True).text
             self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
             self.shipLabel.configure(image=self.shipImg)
         except:
@@ -297,7 +313,7 @@ class SETS():
     def shipPickButtonCallback(self, *args):
         """Callback for ship picker button"""
         itemVar = self.getEmptyItem()
-        items_list = [(name, self.emptyImage) for name in self.l_ship_names]
+        items_list = [(name, self.emptyImage) for name in self.shipNames]
         item = self.pickerGui("Pick Starship", itemVar, items_list, [self.setupSearchFrame])
         self.shipButton.configure(text=item['item'])
         self.backend['ship'].set(item['item'])
@@ -342,7 +358,7 @@ class SETS():
         self.copyBuildToBackend('ship')
         self.backend['tier'].set('')
         self.backend['shipHtml'] = None
-        for frame in [self.shipBuildFrame, self.traitFrame, self.boffFrame, self.doffFrame]:
+        for frame in [self.shipEquipmentFrame, self.shipTraitFrame, self.shipBoffFrame, self.doffFrame]:
             for widget in frame.winfo_children():
                 widget.destroy()
         self.shipImg = self.emptyImage
@@ -367,12 +383,18 @@ class SETS():
         modFrame.grid(row=1, column=0, sticky='nsew')
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
-
-    def labelBuildBlock(self, frame, name, row, key, n, callback, args=None):
+            
+    def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None):
         """Set up n-element line of ship equipment"""
         self.backend['i_'+key] = [None] * n
-        label =  Label(frame, text=name)
-        label.grid(row=row, column=0, sticky='nsew', pady=2)
+        cFrame = Frame(frame, bg='#3a3a3a')
+        cFrame.grid(row=row, column=col, columnspan=cspan, sticky='nsew')
+        lFrame = Frame(cFrame, bg='#3a3a3a')
+        lFrame.pack(fill=BOTH, expand=True)
+        label =  Label(lFrame, text=name, bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
+        label.pack(side='left')
+        iFrame = Frame(cFrame, bg='#3a3a3a')
+        iFrame.pack(fill=BOTH, expand=True)
         for i in range(n):
             image1=None
             if key in self.build and self.build[key][i] is not None:
@@ -382,7 +404,7 @@ class SETS():
                 self.backend['i_'+key][i] = [image0, image1]
             else:
                 image0=image1=self.emptyImage
-            canvas = Canvas(frame, relief='groove', borderwidth=1, width=25, height=35)
+            canvas = Canvas(iFrame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
             canvas.grid(row=row, column=i+1, sticky='nse', padx=2, pady=2)
             img0 = canvas.create_image(0,0, anchor="nw",image=image0)
             img1 = None if image1 is None else canvas.create_image(0,0, anchor="nw",image=image1)
@@ -391,7 +413,7 @@ class SETS():
 
     def setupShipBuildFrame(self, ship):
         """Set up UI frame containing ship equipment"""
-        self.clearFrame(self.shipBuildFrame)
+        self.clearFrame(self.shipEquipmentFrame)
         self.backend['shipForeWeapons'] = int(ship.find('td.field_fore', first=True).text)
         self.backend['shipAftWeapons'] = int(ship.find('td.field_aft', first=True).text)
         self.backend['shipDevices'] = int(ship.find('td.field_devices', first=True).text)
@@ -407,42 +429,41 @@ class SETS():
             t5console = ship.find('td.field_t5uconsole', first=True).text
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
-        self.labelBuildBlock(self.shipBuildFrame, "Fore Weapons", 0, 'foreWeapons', self.backend['shipForeWeapons'], self.shipItemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
-        if '<a href="/wiki/Secondary_Deflector" title="Secondary Deflector">Secondary Deflector</a>' in self.backend['shipHtmlFull'].html:
-            self.labelBuildBlock(self.shipBuildFrame, "Secondary", 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Deflector", 2, 'deflector', 1, self.shipItemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Engines", 3, 'engines', 1, self.shipItemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Core", 4, 'warpCore', 1, self.shipItemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Shield", 5, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Aft Weapons", 6, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Fore Weapons", 0, 0, 4, 'foreWeapons', self.backend['shipForeWeapons'], self.shipItemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
+        if ('<a href="/wiki/Secondary_Deflector" title="Secondary Deflector">Secondary Deflector</a>' in self.backend['shipHtmlFull'].html 
+            or '<a href="/wiki/Deteriorating_Secondary_Deflector" title="Deteriorating Secondary Deflector"><span class="common">Deteriorating Secondary Deflector</span></a>' in self.backend['shipHtmlFull'].html):
+            self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 4, 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Deflector", 2, 0, 1, 'deflector', 1, self.shipItemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Engines", 2, 1, 1, 'engines', 1, self.shipItemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Core", 2, 2, 1, 'warpCore', 1, self.shipItemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 2, 3, 1, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 4, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         if '<a href="/wiki/Experimental_Weapon" title="Experimental Weapon">Experimental Weapon</a>' in self.backend['shipHtmlFull'].html:
-            self.labelBuildBlock(self.shipBuildFrame, "Experimental", 7, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
-        self.labelBuildBlock(self.shipBuildFrame, "Devices", 8, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
+            self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 0, 4, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 4, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
         if self.backend['shipUniConsoles'] > 0:
-            self.labelBuildBlock(self.shipBuildFrame, "Uni Consoles", 9, 'uniConsoles', self.backend['shipUniConsoles'], self.shipItemLabelCallback, ["Console", "Pick Uni Console", "Console - Universal - "])
-        self.labelBuildBlock(self.shipBuildFrame, "Sci Consoles", 10, 'sciConsoles', self.backend['shipSciConsoles'], self.shipItemLabelCallback, ["Ship Science Console", "Pick Sci Console", "Console - Science - "])
-        self.labelBuildBlock(self.shipBuildFrame, "Eng Consoles", 11, 'engConsoles', self.backend['shipEngConsoles'], self.shipItemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", "Console - Engineering - "])
-        self.labelBuildBlock(self.shipBuildFrame, "Tac Consoles", 12, 'tacConsoles', self.backend['shipTacConsoles'], self.shipItemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", "Console - Tactical - "])
+            self.labelBuildBlock(self.shipEquipmentFrame, "Uni Consoles", 3, 5, 4, 'uniConsoles', self.backend['shipUniConsoles'], self.shipItemLabelCallback, ["Console", "Pick Uni Console", "Console - Universal - "])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Sci Consoles", 2, 5, 4, 'sciConsoles', self.backend['shipSciConsoles'], self.shipItemLabelCallback, ["Ship Science Console", "Pick Sci Console", "Console - Science - "])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Eng Consoles", 1, 5, 4, 'engConsoles', self.backend['shipEngConsoles'], self.shipItemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", "Console - Engineering - "])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Tac Consoles", 0, 5, 4, 'tacConsoles', self.backend['shipTacConsoles'], self.shipItemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", "Console - Tactical - "])
         if self.backend['shipHangars'] > 0:
-            self.labelBuildBlock(self.shipBuildFrame, "Hangars", 13, 'hangars', self.backend['shipHangars'], self.shipItemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", "Hangar - "])
+            self.labelBuildBlock(self.shipEquipmentFrame, "Hangars", 2, 4, 1, 'hangars', self.backend['shipHangars'], self.shipItemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", "Hangar - "])
 
     def setupTraitFrame(self):
         """Set up UI frame containing traits"""
-        self.clearFrame(self.traitFrame)
-        self.labelBuildBlock(self.traitFrame, "Personal", 0, 'personalSpaceTrait', 6 if ('Alien' in self.backend['species'].get()) else 5, self.traitLabelCallback, [False, False, False])
-        self.labelBuildBlock(self.traitFrame, "Personal", 1, 'personalSpaceTrait2', 5, self.traitLabelCallback, [False, False, False])
-        self.labelBuildBlock(self.traitFrame, "Starship", 2, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True])
-        self.labelBuildBlock(self.traitFrame, "SpaceRep", 3, 'spaceRepTrait', 5, self.traitLabelCallback, [True, False, False])
-        self.labelBuildBlock(self.traitFrame, "Active", 4, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False])
+        self.clearFrame(self.shipTraitFrame)
+        self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if ('Alien' in self.backend['species'].get()) else 5, self.traitLabelCallback, [False, False, False])
+        self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.traitLabelCallback, [False, False, False])
+        self.labelBuildBlock(self.shipTraitFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True])
+        self.labelBuildBlock(self.shipTraitFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.traitLabelCallback, [True, False, False])
+        self.labelBuildBlock(self.shipTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False])
 
     def setupBoffFrame(self, ship):
         """Set up UI frame containing boff skills"""
-        self.clearFrame(self.boffFrame)
+        self.clearFrame(self.shipBoffFrame)
         boffString = ship.find('td.field_boffs', first=True).html
         boffString = boffString.replace('<td class="field_boffs">', '').replace('</td>', '')
         boffs = [s.strip() for s in boffString.split('<span class="CargoDelimiter">•</span>')]
-        col = 0
-        row = 0
         for boff in boffs:
             rank = 3 if "Lieutenant Commander" in boff else 2 if "Lieutenant" in boff else 4 if "Commander" in boff else 1
             spec = "Tactical" if "Tactical" in boff else "Science" if 'Science' in boff else "Engineering" if "Engineering" in boff else "Universal"
@@ -451,16 +472,16 @@ class SETS():
                 if '-'+s in boff:
                     sspec = s
                     break
-            bFrame = Frame(self.boffFrame, width=120, height=80, relief='ridge', borderwidth=1, bg='#a7a8a7')
-            bFrame.grid(row=row,column=col, padx=10, pady=2, sticky='nsew')
+            bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
+            bFrame.pack(fill=BOTH, expand=True)
             boffSan = boff.replace(' ','_')
             self.backend['i_'+boffSan] = [None] * rank
-            row = row+1 if col == 1 else row
-            col = 0 if col == 1 else 1
-            specLabel = Label(bFrame, text=(spec if sspec is None else spec+' / '+sspec))
-            specLabel.grid(row=0, column=0, sticky='nsew')
-            bSubFrame = Frame(bFrame)
-            bSubFrame.grid(row=1, column=0, sticky='nsew')
+            bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
+            bSubFrame0.pack(fill=BOTH)
+            specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
+            specLabel0.pack(side='left')
+            bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
+            bSubFrame1.pack(fill=BOTH)
             for i in range(rank):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
                     image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i])
@@ -468,7 +489,7 @@ class SETS():
                 else:
                     image=self.emptyImage
                     self.build['boffs'][boffSan] = [None] * rank
-                canvas = Canvas(bSubFrame, relief='groove', borderwidth=1, width=25, height=35)
+                canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,args=[spec,sspec,i],key=boffSan,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,args))
@@ -480,6 +501,7 @@ class SETS():
             self.setupShipBuildFrame(self.backend['shipHtml'])
             self.setupBoffFrame(self.backend['shipHtml'])
             self.setupTraitFrame()
+            self.setupInfoboxFrame(self.getEmptyItem(),'')
 
     def setupModFrame(self, frame, rarity, itemVar):
         """Set up modifier frame in equipment picker"""
@@ -495,9 +517,10 @@ class SETS():
 
     def setupInfoboxFrame(self, item, key):
         """Set up infobox frame with given item"""
-        self.clearFrame(self.infoboxFrame)
-        text = Text(self.infoboxFrame, height=25, width=30, font=('Helvetica', 10))
-        text.pack(side="left", fill="both", expand=True)
+        self.clearFrame(self.shipInfoboxFrame)
+        Label(self.shipInfoboxFrame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
+        text = Text(self.shipInfoboxFrame, height=25, width=30, font=('Helvetica', 10), state=DISABLED, bg='#3a3a3a', fg='#ffffff')
+        text.pack(fill="both", expand=True, padx=2, pady=2)
         if item['item'] == '':
             return
         html = self.backend['cacheEquipment'][key][item['item']]
@@ -508,11 +531,114 @@ class SETS():
                 t = html.find(header+str(i), first=True).text
                 if t.strip() != '':
                     text.insert(END, t+'\n')
-
-    def __init__(self):
+    
+    def setupLogoFrame(self):
+        self.images['logoImage'] = self.loadLocalImage("logo_bar.png")
+        Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
+        
+    def setupMenuFrame(self):
+        buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff')
+        buttonSpace.grid(row=0, column=0, sticky='nsew')
+        buttonGround = Button(self.menuFrame, text="GROUND", bg='#6b6b6b', fg='#ffffff')
+        buttonGround.grid(row=0, column=1, sticky='nsew')
+        buttonSkill = Button(self.menuFrame, text="SKILL TREE", bg='#6b6b6b', fg='#ffffff')
+        buttonSkill.grid(row=0, column=2, sticky='nsew')
+        buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff')
+        buttonLibrary.grid(row=0, column=3, sticky='nsew')
+        buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff')
+        buttonSettings.grid(row=0, column=4, sticky='nsew')
+        for i in range(5):
+            self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
+            
+    def setupShipInfoFrame(self):
+        playerShipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
+        playerShipNameFrame.pack(fill=BOTH, expand=True)
+        Label(playerShipNameFrame, text="SHIP NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
+        Entry(playerShipNameFrame, textvariable=self.backend['playerShipName'], fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=1, sticky='nsew')
+        playerShipNameFrame.grid_columnconfigure(1, weight=1)
+        shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
+        shipLabelFrame.pack(fill=BOTH, expand=True)
+        self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
+        self.shipLabel.pack(fill=BOTH, expand=True)
+        shipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
+        shipNameFrame.pack(fill=BOTH, expand=True, padx=2)
+        Label(shipNameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='nwse')
+        self.shipButton = Button(shipNameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3')
+        self.shipButton.grid(column=1, row=0, sticky='nwse')
+        shipNameFrame.grid_columnconfigure(1, weight=1)
+        self.shipTierFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
+        self.shipTierFrame.pack(fill=BOTH, expand=True, padx=2)
+        tagsAndCharFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
+        tagsAndCharFrame.pack(fill=BOTH, expand=True, padx=2)
+        tagsAndCharFrame.grid_columnconfigure(0, weight=1)
+        tagsAndCharFrame.grid_columnconfigure(1, weight=1)
+        buildTagFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
+        buildTagFrame.grid(row=0, column=0, sticky='nsew')
+        charInfoFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
+        charInfoFrame.grid(row=0, column=1, sticky='nsew')
+        Label(buildTagFrame, text="BUILD TAGS", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
+            tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
+            tagFrame.pack(fill=BOTH, expand=True)
+            Checkbutton(tagFrame, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
+            Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
+        Label(charInfoFrame, text="CAPTAIN CAREER", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
+        m.pack(fill=BOTH, expand=True)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        Label(charInfoFrame, text="SPECIES", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
+        m.pack(fill=BOTH, expand=True)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        Label(charInfoFrame, text="PRIMARY SPEC", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
+        m.pack(fill=BOTH, expand=True)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        Label(charInfoFrame, text="SECONDARY SPEC", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
+        m.pack(fill=BOTH, expand=True, pady=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+    
+    def setupUIFrames(self):
+        defaultFont = font.nametofont('TkDefaultFont')
+        defaultFont.configure(family='Helvetica', size='12', weight='bold')
+        
+        self.containerFrame = Frame(self.window, bg='#c59129')
+        self.containerFrame.pack(fill=BOTH, expand=True)
+        self.logoFrame = Frame(self.containerFrame, bg='#c59129')
+        self.logoFrame.pack(fill=X)
+        self.menuFrame = Frame(self.containerFrame, bg='#c59129')
+        self.menuFrame.pack(fill=X, padx=15)
+        self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+        
+        self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
+        self.shipInfoFrame.grid(row=0,column=0,sticky='nsew', pady=5)
+        self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
+        self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
+        self.shipEquipmentFrame = Frame(self.shipMiddleFrame, bg='#3a3a3a')
+        self.shipEquipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
+        self.shipBoffFrame = Frame(self.shipMiddleFrame, bg='#3a3a3a')
+        self.shipBoffFrame.pack(side='left', fill=BOTH, expand=True)
+        self.shipTraitFrame = Frame(self.shipMiddleFrame, bg='#3a3a3a')
+        self.shipTraitFrame.pack(side='left', fill=BOTH, expand=True)
+        self.shipInfoboxFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
+        self.shipInfoboxFrame.grid(row=0,column=4,sticky='nsew', pady=5)
+        for i in range(5):
+            self.spaceBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
+        self.shipMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secCol")
+        self.shipMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secCol")
+        self.shipMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secCol")
+        
+        self.setupLogoFrame()
+        self.setupMenuFrame()
+        self.setupShipInfoFrame()
+        
+    def __init__(self) -> None:
         """Main setup function"""
         self.window = Tk()
-        self.window.geometry('1280x650')
+        # self.window.geometry('1280x650')
         self.window.title("STO Equipment and Trait Selector")
         self.session = HTMLSession()
         self.clearBuild()
@@ -522,72 +648,21 @@ class SETS():
         self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
         self.backend['specSecondary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specSecondary'))
         self.backend['tier'].trace_add('write', lambda v,i,m:self.setupBuildFrames())
-        self.backend["career"].set("Tactical")
-        self.backend["species"].set("Alien")
+        self.backend['ship'].trace_add('write', self.shipMenuCallback)
+        self.images = dict()
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
-
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestHtml(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestHtml(SETS.trait_query, "traits")
-        playerInfoFrame = Frame(self.window, relief='raised', borderwidth=2)
-        playerInfoFrame.grid(column=0, row=0, sticky='nwse')
-        Label(playerInfoFrame, text="Career: ").grid(column=0, row = 0, sticky='nsew')
-        OptionMenu(playerInfoFrame, self.backend["career"], "Tactical", "Engineering", "Science").grid(column=1, row=0, sticky='nsew')
-        Label(playerInfoFrame, text="Species: ").grid(column=0, row = 1, sticky='nsew')
         r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
-        l_species_names = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
-        OptionMenu(playerInfoFrame, self.backend["species"], *l_species_names).grid(column=1, row=1, sticky='nsew')
+        self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
         r_specs = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Captain_specializations", "specs")
         self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
-        Label(playerInfoFrame, text="SpecPrimary: ").grid(column=0, row = 2, sticky='nsew')
-        OptionMenu(playerInfoFrame, self.backend["specPrimary"], '', *self.specNames).grid(column=1, row=2, sticky='nsew')
-        Label(playerInfoFrame, text="SpecSecondary: ").grid(column=0, row = 3, sticky='nsew')
-        OptionMenu(playerInfoFrame, self.backend["specSecondary"], '', *self.specNames).grid(column=1, row=3, sticky='nsew')
-        exportImportFrame = Frame(playerInfoFrame)
-        exportImportFrame.grid(column=0, row=4, columnspan=2, sticky='nsew')
-        buttonExport = Button(exportImportFrame, text='Export')
-        buttonExport.grid(column=0, row=0, sticky='nsew')
-        buttonExport.bind('<Button-1>', self.exportCallback)
-        buttonImport = Button(exportImportFrame, text='Import')
-        buttonImport.grid(column=1, row=0, sticky='nsew')
-        buttonImport.bind('<Button-1>', self.importCallback)
-        buttonClear = Button(exportImportFrame, text='Clear')
-        buttonClear.grid(column=2, row=0, sticky='nsew')
-        buttonClear.bind('<Button-1>', self.clearBuildCallback)
-        buttonExportPng = Button(exportImportFrame, text='Export .png')
-        buttonExportPng.grid(column=3, row=0, sticky='nsew')
-        buttonExportPng.bind('<Button-1>', self.exportPngCallback)
-
-
-        self.shipInfoFrame = Frame(self.window, relief='raised', borderwidth=2)
-        self.shipInfoFrame.grid(column=0, row=1, sticky='nwse')
-        self.shipBuildFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
-        self.shipBuildFrame.grid(column=1, row=0, rowspan=2, sticky='nwse')
-        self.traitFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
-        self.traitFrame.grid(column=2, row=0, sticky='nwse')
-        self.boffFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
-        self.boffFrame.grid(column=2, row=1, sticky='nwse')
-
-        self.doffFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
-        self.doffFrame.grid(column=3, row=0, sticky='nwse')
-        self.infoboxFrame = Frame(self.window, bg='#a7a8a7', relief='raised', borderwidth=2)
-        self.infoboxFrame.grid(column=3, row=1, sticky='nwse')
-
         self.r_ships = self.fetchOrRequestHtml(SETS.ship_query, "ship_list")
-        self.l_ship_names = [e.text for e in self.r_ships.find("td.field_name")]
-        self.backend["ship"].set(self.l_ship_names[0])
-        labelShip = Label(self.shipInfoFrame, text="Ship: ")
-        labelShip.grid(column=0, row = 0, sticky='nwse')
-        # shipMenu = OptionMenu(self.shipInfoFrame, self.backend["ship"], *self.l_ship_names)
-        # shipMenu.grid(column=1, row=0, sticky='nwse')
-        self.shipButton = Button(self.shipInfoFrame, text="<Pick>", command=self.shipPickButtonCallback)
-        self.shipButton.grid(column=1, row=0, sticky='nwse')
-        self.shipTierFrame = Frame(self.shipInfoFrame)
-        self.shipTierFrame.grid(column=0, row=1, columnspan=2, sticky='nwse')
-        self.shipLabel = Label(self.shipInfoFrame)
-        self.shipLabel.grid(column=0, row=2, columnspan=2, sticky='nwse')
-
-        self.backend['ship'].trace_add('write', self.shipMenuCallback)
+        self.shipNames = [e.text for e in self.r_ships.find("td.field_name")]
+        self.setupUIFrames()
+        
+    def run(self):
         self.window.mainloop()
 
-SETS()
+SETS().run()
