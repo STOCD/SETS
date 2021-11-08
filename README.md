@@ -24,6 +24,8 @@ https://www.dropbox.com/sh/3rqhak69tr6ki2c/AADkuygAThVa9z9e_ckc4vB9a?dl=0
 
 > pip install -r requirements.txt
 
+Make also sure to have the 'local' folder downloaded and in the same folder as main.py to see the title banner.
+
 ### Executing program
 
 Windows:
