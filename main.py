@@ -476,7 +476,7 @@ class SETS():
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
         self.labelBuildBlock(self.shipEquipmentFrame, "Fore Weapons", 0, 0, 1, 'foreWeapons', self.backend['shipForeWeapons'], self.shipItemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
-        if ('<a href="/wiki/Secondary_Deflector" title="Secondary Deflector">Secondary Deflector</a>' in self.backend['shipHtmlFull'].html 
+        if ('/wiki/Secondary_Deflector' in self.backend['shipHtmlFull'].links 
             or '<a href="/wiki/Deteriorating_Secondary_Deflector" title="Deteriorating Secondary Deflector"><span class="common">Deteriorating Secondary Deflector</span></a>' in self.backend['shipHtmlFull'].html):
             self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.shipItemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
@@ -484,7 +484,7 @@ class SETS():
         self.labelBuildBlock(self.shipEquipmentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.shipItemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
-        if '<a href="/wiki/Experimental_Weapon" title="Experimental Weapon">Experimental Weapon</a>' in self.backend['shipHtmlFull'].html:
+        if '/wiki/Experimental_Weapon' in self.backend['shipHtmlFull'].links:
             self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
         if self.backend['shipUniConsoles'] > 0:
@@ -518,6 +518,8 @@ class SETS():
                 if '-'+s in boff:
                     sspec = s
                     break
+            if spec == 'Tactical' and rank == 3 and 'Science Destroyer' in self.build['ship']: #sci destroyers get tac mode turning lt cmdr to cmdr
+                rank = 4
             bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
             boffSan = boff.replace(' ','_')
