@@ -362,6 +362,7 @@ class SETS():
         self.hookBackend()
         self.setupShipInfoFrame()
         self.setupTierFrame(int(self.build['tier'][1]))
+        self.shipButton.configure(text=self.build['ship'])
         self.setupBuildFrames()
 
     def exportCallback(self, event):
