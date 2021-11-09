@@ -193,6 +193,9 @@ class SETS():
         self.backend['tier'].trace_add('write', lambda v,i,m:self.setupBuildFrames())
         self.backend['ship'].trace_add('write', self.shipMenuCallback)
 
+    def boffTitleToSpec(self, title):
+        return  "Tactical" if "Tactical" in title else "Science" if 'Science' in title else "Engineering" if "Engineering" in title else "Universal"
+
     def clearFrame(self, frame):
         for widget in frame.winfo_children():
             widget.destroy()
@@ -512,7 +515,8 @@ class SETS():
         boffs = [s.strip() for s in boffString.split('<span class="CargoDelimiter">•</span>')]
         for boff in boffs:
             rank = 3 if "Lieutenant Commander" in boff else 2 if "Lieutenant" in boff else 4 if "Commander" in boff else 1
-            spec = "Tactical" if "Tactical" in boff else "Science" if 'Science' in boff else "Engineering" if "Engineering" in boff else "Universal"
+            boff = boff.replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip()
+            spec = self.boffTitleToSpec(boff)
             sspec = None
             for s in self.specNames:
                 if '-'+s in boff:
@@ -526,8 +530,14 @@ class SETS():
             self.backend['i_'+boffSan] = [None] * rank
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
-            specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
-            specLabel0.pack(side='left')
+            v = StringVar(self.window, value=boff)
+            if spec == 'Universal':
+                specLabel0 = OptionMenu(bSubFrame0, v, boff, boff.replace('Universal', 'Tactical'), boff.replace('Universal', 'Engineering'), boff.replace('Universal', 'Science')) 
+                specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
+                specLabel0.pack(side='left')
+            else:
+                specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
+                specLabel0.pack(side='left')
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
             for i in range(rank):
@@ -540,7 +550,7 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,args=[spec,sspec,i],key=boffSan,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,args))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,v=v,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i]))
 
     def setupBuildFrames(self):
         """Set up all relevant build frames"""
