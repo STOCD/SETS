@@ -118,6 +118,31 @@ class SETS():
             self.backend['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
         return self.backend['modifiers']
 
+    def fetchDoffs(self):
+        if self.backend['doffs'] is not None:
+            return self.backend['doffs']
+        specPage = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Duty_officer#Specializations", "doffs")
+        trs = specPage.find('tr')
+        doffs = []
+        for tr in trs:
+            t = tr.text
+            if '[SP]' in t or '[GR]' in t:
+                doffs.append(tr)
+        spaceDoffs = []
+        groundDoffs = []
+        for tr in doffs:
+            tds = tr.find('td')
+            if len(tds)<2:
+                continue
+            spec = tds[0].text
+            for li in tds[1].find('li'):
+                if '[SP]' in li.text:
+                    spaceDoffs.append((spec, li.text.replace('[SP]','')))
+                if '[GR]' in li.text:
+                    groundDoffs.append((spec, li.text.replace('[GR]','')))
+        self.backend['doffs'] = (spaceDoffs,groundDoffs)
+        return self.backend['doffs']
+
     def setListIndex(self, list, index, value):
         print(value)
         list[index] = value
@@ -156,7 +181,7 @@ class SETS():
                         "career": StringVar(self.window), "species": StringVar(self.window), 
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window), 
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None
+                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "doffs": None
             }
 
     def clearFrame(self, frame):
@@ -364,6 +389,15 @@ class SETS():
         self.shipImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
 
+    def doffSpecCallback(self, om, v0, v1, isSpace=True):
+        if self.backend['doffs'] is None:
+            return
+        menu = om['menu']
+        menu.delete(0, END)
+        for power in self.backend['doffs'][0 if isSpace else 1]:
+            if v0.get() in power[0]:
+                menu.add_command(label=power[1], command=lambda value=power[1]: v1.set(value))
+
     def setupSearchFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
         searchText = StringVar()
@@ -501,6 +535,7 @@ class SETS():
             self.setupShipBuildFrame(self.backend['shipHtml'])
             self.setupBoffFrame(self.backend['shipHtml'])
             self.setupTraitFrame()
+            self.setupDoffFrame()
             self.setupInfoboxFrame(self.getEmptyItem(),'')
 
     def setupModFrame(self, frame, rarity, itemVar):
@@ -531,21 +566,62 @@ class SETS():
                 t = html.find(header+str(i), first=True).text
                 if t.strip() != '':
                     text.insert(END, t+'\n')
+
+    def setupDoffFrame(self):
+        self.clearFrame(self.shipDoffFrame)
+        mainFrame = Frame(self.shipDoffFrame, bg='#3a3a3a')
+        mainFrame.pack(side='left')
+        spaceDoffFrame = Frame(mainFrame, bg='#3a3a3a')
+        spaceDoffFrame.pack(side='left', fill=BOTH, expand=True)
+        groundDoffFrame = Frame(mainFrame, bg='#3a3a3a')
+        groundDoffFrame.pack(side='left', fill=BOTH, expand=True)
+        Label(spaceDoffFrame, text="SPACE DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff').grid(row=0, column=0,columnspan=3, sticky='nsew')
+        space,ground = self.fetchDoffs()
+        for i in range(6):
+            v0 = StringVar(self.window)
+            v1 = StringVar(self.window)
+            v2 = StringVar(self.window)
+            m = OptionMenu(spaceDoffFrame, v0, 'NAME', *['A','B','C'])
+            m.grid(row=i+1, column=0, sticky='nsew')
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
+            m = OptionMenu(spaceDoffFrame, v1, 'SPECIALIZATION', *list(set([doff[0] for doff in space])))
+            m.grid(row=i+1, column=1, sticky='nsew')
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
+            m = OptionMenu(spaceDoffFrame, v2, 'EFFECT\nOTHER', '')
+            m.grid(row=i+1, column=2, sticky='nsew')
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
+            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2:self.doffSpecCallback(menu, v0,v1, True))
+        Label(groundDoffFrame, text="GROUND DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff').grid(row=0, column=0,columnspan=3, sticky='nsew')
+        for i in range(6):
+            v0 = StringVar(self.window)
+            v1 = StringVar(self.window)
+            v2 = StringVar(self.window)
+            m = OptionMenu(groundDoffFrame, v0, 'NAME', *['A','B','C'])
+            m.grid(row=i+1, column=0, sticky='nsew')
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
+            m = OptionMenu(groundDoffFrame, v1, 'SPECIALIZATION', *list(set([doff[0] for doff in ground])))
+            m.grid(row=i+1, column=1, sticky='nsew')
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
+            m = OptionMenu(groundDoffFrame, v2, 'EFFECT\nOTHER', '')
+            m.grid(row=i+1, column=2, sticky='nsew')
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
+            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2:self.doffSpecCallback(menu, v0,v1, False))
     
     def setupLogoFrame(self):
         self.images['logoImage'] = self.loadLocalImage("logo_bar.png", self.window.winfo_screenwidth(), int(self.window.winfo_screenwidth()/1920 * 134))
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
         
     def setupMenuFrame(self):
-        buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff')
+        f = font.Font(family='Helvetica', size=12, weight='bold')
+        buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff', font=f)
         buttonSpace.grid(row=0, column=0, sticky='nsew')
-        buttonGround = Button(self.menuFrame, text="GROUND", bg='#6b6b6b', fg='#ffffff')
+        buttonGround = Button(self.menuFrame, text="GROUND", bg='#6b6b6b', fg='#ffffff', font=f)
         buttonGround.grid(row=0, column=1, sticky='nsew')
-        buttonSkill = Button(self.menuFrame, text="SKILL TREE", bg='#6b6b6b', fg='#ffffff')
+        buttonSkill = Button(self.menuFrame, text="SKILL TREE", bg='#6b6b6b', fg='#ffffff', font=f)
         buttonSkill.grid(row=0, column=2, sticky='nsew')
-        buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff')
+        buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f)
         buttonLibrary.grid(row=0, column=3, sticky='nsew')
-        buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff')
+        buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff', font=f)
         buttonSettings.grid(row=0, column=4, sticky='nsew')
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
@@ -602,7 +678,7 @@ class SETS():
     
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
-        defaultFont.configure(family='Helvetica', size='12', weight='bold')
+        defaultFont.configure(family='Helvetica', size='10')
         
         self.containerFrame = Frame(self.window, bg='#c59129')
         self.containerFrame.pack(fill=BOTH, expand=True)
@@ -614,17 +690,23 @@ class SETS():
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         
         self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
-        self.shipInfoFrame.grid(row=0,column=0,sticky='nsew', pady=5)
+        self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
         self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
-        self.shipEquipmentFrame = Frame(self.shipMiddleFrame, bg='#3a3a3a')
+        self.shipMiddleFrameUpper = Frame(self.shipMiddleFrame, bg='#3a3a3a')
+        self.shipMiddleFrameUpper.grid(row=0,column=1,columnspan=3,sticky='nsew')
+        self.shipEquipmentFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
         self.shipEquipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
-        self.shipBoffFrame = Frame(self.shipMiddleFrame, bg='#3a3a3a')
+        self.shipBoffFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
         self.shipBoffFrame.pack(side='left', fill=BOTH, expand=True)
-        self.shipTraitFrame = Frame(self.shipMiddleFrame, bg='#3a3a3a')
+        self.shipTraitFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
         self.shipTraitFrame.pack(side='left', fill=BOTH, expand=True)
+        self.shipMiddleFrameLower = Frame(self.shipMiddleFrame, bg='#3a3a3a')
+        self.shipMiddleFrameLower.grid(row=1,column=1,columnspan=3,sticky='nsew')
+        self.shipDoffFrame = Frame(self.shipMiddleFrameLower, bg='#3a3a3a')
+        self.shipDoffFrame.pack(fill=BOTH, expand=True, padx=20)
         self.shipInfoboxFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
-        self.shipInfoboxFrame.grid(row=0,column=4,sticky='nsew', pady=5)
+        self.shipInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', pady=5)
         for i in range(5):
             self.spaceBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
         self.shipMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secCol")
