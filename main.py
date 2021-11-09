@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter import font
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re
+import os, requests, json, re, string
 
 class SETS():
     """Main App Class"""
@@ -173,7 +173,8 @@ class SETS():
             'aftWeapons': [None] * 5, 'foreWeapons': [None] * 5, 'hangars': [None] * 2,
             'deflector': [None], 'engines': [None], 'warpCore': [None], 'shield': [None],
             'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '',
-            'specSecondary': '', "tier": '', 'secdef': [None], 'experimental': [None]
+            'specSecondary': '', "tier": '', 'secdef': [None], 'experimental': [None],
+            'doffs': {'space': [None]*6 , 'ground': [None]*6}, "tags": dict()
         }
 
     def clearBackend(self):
@@ -183,6 +184,14 @@ class SETS():
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "doffs": None
             }
+
+    def hookBackend(self):
+        self.backend['career'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('career'))
+        self.backend['species'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('species'))
+        self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
+        self.backend['specSecondary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specSecondary'))
+        self.backend['tier'].trace_add('write', lambda v,i,m:self.setupBuildFrames())
+        self.backend['ship'].trace_add('write', self.shipMenuCallback)
 
     def clearFrame(self, frame):
         for widget in frame.winfo_children():
@@ -275,8 +284,9 @@ class SETS():
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
         canvas.itemconfig(img[0],image=item['image'])
-        self.build[key][i] = item['item'].replace("Trait: ", '')
+        self.build[key][i] = item
         self.backend['i_'+key][i] = item['image']
+        item.pop('image')
 
     def boffLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for boff labels"""
@@ -320,19 +330,9 @@ class SETS():
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
         tier = self.backend['shipHtml'].find('td.field_tier', first=True).text
         self.clearFrame(self.shipTierFrame)
-        Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
-        m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
-        m.grid(column=1, row=0, sticky='nsew', pady=5)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         ship_url = list(self.backend['shipHtml'].absolute_links)[0]
         self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
-        try:
-            ship_image = self.backend['shipHtml'].find('td.field_image', first=True).text
-            self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
-            self.shipLabel.configure(image=self.shipImg)
-        except:
-            self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Federation_Emblem.png", "federation_emblem", 260, 146)
-            self.shipLabel.configure(image=self.shipImg)
+        self.setupTierFrame(tier)
         self.backend["tier"].set(self.getTierOptions(tier)[0])
 
     def shipPickButtonCallback(self, *args):
@@ -352,13 +352,17 @@ class SETS():
         else:
             with open(inFilename, 'r') as inFile:
                 self.build = json.load(inFile)
+        self.clearBackend()
         self.copyBuildToBackend('career')
         self.copyBuildToBackend('species')
         self.copyBuildToBackend('specPrimary')
         self.copyBuildToBackend('specSecondary')
         self.copyBuildToBackend('ship')
         self.copyBuildToBackend('tier')
-        self.setupTraitFrame()
+        self.hookBackend()
+        self.setupShipInfoFrame()
+        self.setupTierFrame(int(self.build['tier'][1]))
+        self.setupBuildFrames()
 
     def exportCallback(self, event):
         """Callback for export button"""
@@ -383,20 +387,27 @@ class SETS():
         self.copyBuildToBackend('ship')
         self.backend['tier'].set('')
         self.backend['shipHtml'] = None
-        for frame in [self.shipEquipmentFrame, self.shipTraitFrame, self.shipBoffFrame, self.doffFrame]:
-            for widget in frame.winfo_children():
-                widget.destroy()
+        self.setupShipInfoFrame()
         self.shipImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
 
-    def doffSpecCallback(self, om, v0, v1, isSpace=True):
+    def doffSpecCallback(self, om, v0, v1, row, isSpace=True):
         if self.backend['doffs'] is None:
             return
+        self.build['doffs']['space' if isSpace else 'groud'][row] = {"name": "", "spec": v0.get(), "effect": ''}
         menu = om['menu']
         menu.delete(0, END)
         for power in self.backend['doffs'][0 if isSpace else 1]:
             if v0.get() in power[0]:
                 menu.add_command(label=power[1], command=lambda value=power[1]: v1.set(value))
+
+    def doffEffectCallback(self, om, v0, v1, row, isSpace=True):
+        if self.backend['doffs'] is None:
+            return
+        self.build['doffs']['space' if isSpace else 'groud'][row]['effect'] = v1.get()
+
+    def tagBoxCallback(self, var, text):
+        self.build['tags'][text] = var.get()
 
     def setupSearchFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
@@ -534,8 +545,8 @@ class SETS():
         if self.backend['shipHtml'] is not None:
             self.setupShipBuildFrame(self.backend['shipHtml'])
             self.setupBoffFrame(self.backend['shipHtml'])
-            self.setupTraitFrame()
             self.setupDoffFrame()
+            self.setupTraitFrame()
             self.setupInfoboxFrame(self.getEmptyItem(),'')
 
     def setupModFrame(self, frame, rarity, itemVar):
@@ -589,8 +600,13 @@ class SETS():
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
             m = OptionMenu(spaceDoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
-            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2:self.doffSpecCallback(menu, v0,v1, True))
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20)
+            if self.build['doffs']['space'][i] is not None:
+                v0.set(self.build['doffs']['space'][i]['name'])
+                v1.set(self.build['doffs']['space'][i]['spec'])
+                v2.set(self.build['doffs']['space'][i]['effect'])
+            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1, row, True))
+            v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, True))
         Label(groundDoffFrame, text="GROUND DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff').grid(row=0, column=0,columnspan=3, sticky='nsew')
         for i in range(6):
             v0 = StringVar(self.window)
@@ -604,14 +620,21 @@ class SETS():
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
             m = OptionMenu(groundDoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
-            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2:self.doffSpecCallback(menu, v0,v1, False))
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20)
+            if self.build['doffs']['ground'][i] is not None:
+                v0.set(self.build['doffs']['space'][i]['name'])
+                v1.set(self.build['doffs']['space'][i]['spec'])
+                v2.set(self.build['doffs']['space'][i]['effect'])
+            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1,row, False))
+            v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, False))
     
     def setupLogoFrame(self):
+        self.clearFrame(self.logoFrame)
         self.images['logoImage'] = self.loadLocalImage("logo_bar.png", self.window.winfo_screenwidth(), int(self.window.winfo_screenwidth()/1920 * 134))
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
         
     def setupMenuFrame(self):
+        self.clearFrame(self.menuFrame)
         f = font.Font(family='Helvetica', size=12, weight='bold')
         buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff', font=f)
         buttonSpace.grid(row=0, column=0, sticky='nsew')
@@ -625,13 +648,44 @@ class SETS():
         buttonSettings.grid(row=0, column=4, sticky='nsew')
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
-            
+
+    def setupTierFrame(self, tier):
+        Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
+        m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
+        m.grid(column=1, row=0, sticky='nsew', pady=5)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
+        ship_url = list(self.backend['shipHtml'].absolute_links)[0]
+        self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
+        try:
+            ship_image = self.backend['shipHtml'].find('td.field_image', first=True).text
+            self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
+            self.shipLabel.configure(image=self.shipImg)
+        except:
+            self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Federation_Emblem.png", "federation_emblem", 260, 146)
+            self.shipLabel.configure(image=self.shipImg)
+
     def setupShipInfoFrame(self):
+        self.clearFrame(self.shipInfoFrame)
         playerShipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         playerShipNameFrame.pack(fill=BOTH, expand=True)
         Label(playerShipNameFrame, text="SHIP NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
         Entry(playerShipNameFrame, textvariable=self.backend['playerShipName'], fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=1, sticky='nsew')
         playerShipNameFrame.grid_columnconfigure(1, weight=1)
+        exportImportFrame = Frame(self.shipInfoFrame)
+        exportImportFrame.pack(fill=BOTH, expand=True)
+        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExport.pack(side='left', fill=BOTH, expand=True)
+        buttonExport.bind('<Button-1>', self.exportCallback)
+        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3')
+        buttonImport.pack(side='left', fill=BOTH, expand=True)
+        buttonImport.bind('<Button-1>', self.importCallback)
+        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3')
+        buttonClear.pack(side='left', fill=BOTH, expand=True)
+        buttonClear.bind('<Button-1>', self.clearBuildCallback)
+        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
+        buttonExportPng.bind('<Button-1>', self.exportPngCallback)
         shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipLabelFrame.pack(fill=BOTH, expand=True)
         self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
@@ -656,7 +710,9 @@ class SETS():
         for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
             tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
             tagFrame.pack(fill=BOTH, expand=True)
-            Checkbutton(tagFrame, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
+            v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
+            Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
+            v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
             Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
         Label(charInfoFrame, text="CAPTAIN CAREER", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
         m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
@@ -725,12 +781,7 @@ class SETS():
         self.session = HTMLSession()
         self.clearBuild()
         self.clearBackend()
-        self.backend['career'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('career'))
-        self.backend['species'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('species'))
-        self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
-        self.backend['specSecondary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specSecondary'))
-        self.backend['tier'].trace_add('write', lambda v,i,m:self.setupBuildFrames())
-        self.backend['ship'].trace_add('write', self.shipMenuCallback)
+        self.hookBackend()
         self.images = dict()
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
