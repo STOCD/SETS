@@ -398,6 +398,7 @@ class SETS():
     def importCallback(self, event):
         """Callback for import button"""
         inFilename = filedialog.askopenfilename(filetypes=[("JSON file", '*.json'),("PNG image","*.png"),("All Files","*.*")])
+        if not inFilename: return
         if inFilename.endswith('.png'):
             image = Image.open(inFilename)
             self.build = json.loads(image.text['build'])
