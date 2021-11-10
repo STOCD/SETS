@@ -45,13 +45,12 @@ class SETS():
             with open(filename, 'r', encoding='utf-8') as json_file:
                 json_data = json.load(json_file)
                 return json_data
-        r = self.session.get(url)
+        r = requests.get(url)
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
-        with open(filename, 'w', encoding="utf-8") as json_file:
-            json_file.dump(r.text,filename)
-            json_data = json.load(json_file)
-        return json_data
+        with open(filename, 'w') as json_file:
+            json.dump(r.json(),json_file)
+        return r.json()
 
     def fetchOrRequestImage(self, url, designation, width = None, height = None):
         """Request image from web or fetch from local cache"""
@@ -836,7 +835,7 @@ class SETS():
         self.images = dict()
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
-        self.infoboxes = self.fetchOrRequestHtml(SETS.item_query, "infoboxes")
+        self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestHtml(SETS.trait_query, "traits")
         r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
