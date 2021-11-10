@@ -201,7 +201,8 @@ class SETS():
         for widget in frame.winfo_children():
             widget.destroy()
 
-    def applyContentFilter(self, content, filter):
+    def applyContentFilter(self, frame, content, filter):
+        frame.event_generate('<<ResetScroll>>')
         for key in content.keys():
             if re.search(filter, key, re.IGNORECASE):
                 content[key][0].grid(row=content[key][1], column=content[key][2], sticky='nsew')
@@ -225,6 +226,8 @@ class SETS():
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+        startY = canvas.yview()[0]
+        container.bind("<<ResetScroll>>", lambda event: canvas.yview_moveto(startY))
         container.pack(fill=BOTH, expand=True)
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side=RIGHT,fill=Y)
@@ -424,7 +427,7 @@ class SETS():
         searchEntry = Entry(topbarFrame, textvariable=searchText)
         searchEntry.grid(row=0, column=1, columnspan=5, sticky='nsew')
         searchEntry.focus_set()
-        searchText.trace_add('write', lambda v,i,m,content=content:self.applyContentFilter(content, searchText.get()))
+        searchText.trace_add('write', lambda v,i,m,content=content,frame=frame:self.applyContentFilter(frame, content, searchText.get()))
         topbarFrame.pack()
 
     def setupRarityFrame(self,frame,itemVar,content):
