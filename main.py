@@ -176,12 +176,12 @@ class SETS():
         print(value)
         list[index] = value
 
-    def imageFromInfoboxName(self, name, width=None, height=None):
+    def imageFromInfoboxName(self, name, width=None, height=None,suffix=''):
         """Translate infobox name into wiki icon link"""
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
         try:
-            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+name.replace(' ', '_')+"_icon.png", name,width,height)
+            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+name.replace(' ', '_')+"_icon"+suffix+".png", name,width,height)
         except:
             return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",width,height)
 
@@ -339,7 +339,7 @@ class SETS():
         self.backend['i_'+key][i] = item['image']
         item.pop('image')
 
-    def boffLabelCallback(self, e, canvas, img, i, key, args):
+    def boffLabelCallback(self, e, canvas, img, i, key, args,idx):
         """Common callback for boff labels"""
         boffAbilities = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities", "boff_abilities")
         l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
@@ -365,13 +365,13 @@ class SETS():
         items_list = []
         for skill in skills:
             cname = skill.find('td', first=True).text.replace(':','')
-            cimg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+cname.replace(' ', '_')+"_icon_(Federation).png", cname,self.itemBoxX,self.itemBoxY)
+            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_(Federation)')
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
         canvas.itemconfig(img,image=item['image'])
         self.build['boffs'][key][i] = item['item']
-        self.backend['i_'+key][i] = item['image']
+        self.backend['i_'+key+'_'+str(idx)][i] = item['image']
 
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
@@ -584,6 +584,7 @@ class SETS():
         #boffString = ship.find('td.field_boffs', first=True).html
         #boffString = boffString.replace('<td class="field_boffs">', '').replace('</td>', '')
         #boffs = [s.strip() for s in boffString.split('<span class="CargoDelimiter">•</span>')]
+        idx = 0
         boffs = ship["boffs"]
         for boff in boffs:
             rank = 3 if "Lieutenant Commander" in boff else 2 if "Lieutenant" in boff else 4 if "Commander" in boff else 1
@@ -604,7 +605,8 @@ class SETS():
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value=boff)
             if spec == 'Universal':
-                specLabel0 = OptionMenu(bSubFrame0, v, boff, boff.replace('Universal', 'Tactical'), boff.replace('Universal', 'Engineering'), boff.replace('Universal', 'Science'))
+                v.set(boff.replace('Universal', 'Tactical'))
+                specLabel0 = OptionMenu(bSubFrame0, v, boff.replace('Universal', 'Tactical'), boff.replace('Universal', 'Engineering'), boff.replace('Universal', 'Science'))
                 specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
             else:
@@ -622,7 +624,8 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,v=v,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i]))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,idx=idx,v=v,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i], idx))
+            idx = idx + 1
 
     def setupBuildFrames(self):
         """Set up all relevant build frames"""
