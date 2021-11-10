@@ -551,6 +551,12 @@ class SETS():
         self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         #if '/wiki/Experimental_Weapon' in self.backend['shipHtmlFull'].links:
         #    self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
+        for e in range(len(ship["boffs"])):
+            if "Commander Tactical" in ship["boffs"][e] or ship["displaytype"] == "Science Destroyer" or (ship["type"] == "Raider" and ship["tier"] >= 5):
+                if ship["fore"] + ship["aft"] < 8:
+                    if ship["hangars"] != 2:
+                            self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
+                
         self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
         if self.backend['shipUniConsoles'] > 0:
             self.labelBuildBlock(self.shipEquipmentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.shipItemLabelCallback, ["Console", "Pick Uni Console", "Console - Universal - "])
