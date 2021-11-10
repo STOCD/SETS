@@ -546,9 +546,10 @@ class SETS():
     def setupBoffFrame(self, ship):
         """Set up UI frame containing boff skills"""
         self.clearFrame(self.shipBoffFrame)
-        boffString = ship.find('td.field_boffs', first=True).html
-        boffString = boffString.replace('<td class="field_boffs">', '').replace('</td>', '')
-        boffs = [s.strip() for s in boffString.split('<span class="CargoDelimiter">•</span>')]
+        #boffString = ship.find('td.field_boffs', first=True).html
+        #boffString = boffString.replace('<td class="field_boffs">', '').replace('</td>', '')
+        #boffs = [s.strip() for s in boffString.split('<span class="CargoDelimiter">•</span>')]
+        boffs = ship["boffs"]
         for boff in boffs:
             rank = 3 if "Lieutenant Commander" in boff else 2 if "Lieutenant" in boff else 4 if "Commander" in boff else 1
             boff = boff.replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip()
