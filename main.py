@@ -339,7 +339,7 @@ class SETS():
         self.backend['i_'+key][i] = item['image']
         item.pop('image')
 
-    def boffLabelCallback(self, e, canvas, img, i, key, args,idx):
+    def boffLabelCallback(self, e, canvas, img, i, key, args, idx):
         """Common callback for boff labels"""
         boffAbilities = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities", "boff_abilities")
         l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
@@ -600,7 +600,7 @@ class SETS():
             bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
             boffSan = boff.replace(' ','_')
-            self.backend['i_'+boffSan] = [None] * rank
+            self.backend['i_'+boffSan+'_'+str(idx)] = [None] * rank
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value=boff)
