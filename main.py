@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter import font
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, string
+import os, requests, json, re
 
 class SETS():
     """Main App Class"""
@@ -227,7 +227,8 @@ class SETS():
         for widget in frame.winfo_children():
             widget.destroy()
 
-    def applyContentFilter(self, content, filter):
+    def applyContentFilter(self, frame, content, filter):
+        frame.event_generate('<<ResetScroll>>')
         for key in content.keys():
             if re.search(filter, key, re.IGNORECASE):
                 content[key][0].grid(row=content[key][1], column=content[key][2], sticky='nsew')
@@ -239,6 +240,10 @@ class SETS():
         pickWindow = Toplevel(self.window)
         pickWindow.title(title)
         pickWindow.geometry("240x400")
+        origVar = dict()
+        for key in itemVar:
+            origVar[key] = itemVar[key]
+        pickWindow.protocol('WM_DELETE_WINDOW', lambda:self.pickerCloseCallback(pickWindow,origVar,itemVar))
         container = Frame(pickWindow)
         content = dict()
         if top_bar_functions is not None:
@@ -251,6 +256,8 @@ class SETS():
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+        startY = canvas.yview()[0]
+        container.bind("<<ResetScroll>>", lambda event: canvas.yview_moveto(startY))
         container.pack(fill=BOTH, expand=True)
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side=RIGHT,fill=Y)
@@ -273,6 +280,11 @@ class SETS():
         pickWindow.grab_set()
         pickWindow.wait_window()
         return itemVar
+
+    def pickerCloseCallback(self, window, origVar, currentVar):
+        for key in origVar:
+            currentVar[key] = origVar[key]
+        window.destroy()
 
     def shipItemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
@@ -451,7 +463,7 @@ class SETS():
         searchEntry = Entry(topbarFrame, textvariable=searchText)
         searchEntry.grid(row=0, column=1, columnspan=5, sticky='nsew')
         searchEntry.focus_set()
-        searchText.trace_add('write', lambda v,i,m,content=content:self.applyContentFilter(content, searchText.get()))
+        searchText.trace_add('write', lambda v,i,m,content=content,frame=frame:self.applyContentFilter(frame, content, searchText.get()))
         topbarFrame.pack()
 
     def setupRarityFrame(self,frame,itemVar,content):
@@ -463,7 +475,7 @@ class SETS():
         rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
         rarityOption.grid(row=0, column=1, sticky='nsw')
         modFrame = Frame(topbarFrame, bg='gray')
-        modFrame.grid(row=1, column=2, sticky='nsew')
+        modFrame.grid(row=1, column=0, sticky='nsew')
         mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
