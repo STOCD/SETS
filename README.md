@@ -38,6 +38,7 @@ Linux:
 
 * Producer - Mara "Sizer" Morrigan - mara.mos714@gmail.com, Discord: Sizer#3498
 * Programmer - Liraal2
+* Programmer | Linux Testing - Serious Table - Discord: Serious Table#8141
 
 ## Licence
 
