@@ -117,7 +117,8 @@ class SETS():
             return self.backend['cacheEquipment'][keyPhrase]
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
-        self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(item["name"]): item for item in equipment}
+        #self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(item.find('td.field_name', first=True).text): item for item in equipment}
+        self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
         if 'Hangar' in keyPhrase:
             self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
 
@@ -133,7 +134,9 @@ class SETS():
         results = []
         for e in range(len(html)):
             if field in html[e]:
-                results.append(html[e])
+                for phrase in phrases:
+                    if phrase in html[e][field]:
+                        results.append(html[e])
         return [] if isinstance(results, int) else results
 
     def fetchModifiers(self):
@@ -315,14 +318,18 @@ class SETS():
                 cimg = self.imageFromInfoboxName(cname)
                 items_list.append((cname,cimg))
         else:
-            trs = self.traits.find('tr')
-            traits = [e for e in trs if isinstance(e.find('td.field_chartype', first=True), Element) and 'char' in e.find('td.field_chartype', first=True).text]
-            traits = [e for e in traits if isinstance(e.find('td.field_environment', first=True), Element) and 'space' in e.find('td.field_environment', first=True).text]
-            traits = [e for e in traits if isinstance(e.find('td.field_type', first=True), Element) and (('reputation' in e.find('td.field_type', first=True).text) == args[0])]
+            #trs = self.traits.find('tr')
+            #traits = [e for e in trs if isinstance(e.find('td.field_chartype', first=True), Element) and 'char' in e.find('td.field_chartype', first=True).text]
+            #traits = [e for e in traits if isinstance(e.find('td.field_environment', first=True), Element) and 'space' in e.find('td.field_environment', first=True).text]
+            #traits = [e for e in traits if isinstance(e.find('td.field_type', first=True), Element) and (('reputation' in e.find('td.field_type', first=True).text) == args[0])]
+            traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
+            traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == "space"]
+            traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and traits[e]["type"] == "reputation"]
             if args[0]:
                 actives = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_abilities", "player_abilities").links
                 traits = [e for e in traits if isinstance(e.find('td.field_name', first=True), Element) and (('/wiki/Trait:_'+e.find('td.field_name', first=True).text.replace(' ','_') in list(actives)) == args[1])]
-            items_list = [(trait.find('td.field_name', first=True).text.replace("Trait: ", ''), self.imageFromInfoboxName(trait.find('td.field_name', first=True).text.replace("Trait: ", ''),self.itemBoxX,self.itemBoxY)) for trait in traits]
+            #items_list = [(trait.find('td.field_name', first=True).text.replace("Trait: ", ''), self.imageFromInfoboxName(trait.find('td.field_name', first=True).text.replace("Trait: ", ''),self.itemBoxX,self.itemBoxY)) for trait in traits]
+            items_list = [(traits[e]["name"], self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
         canvas.itemconfig(img[0],image=item['image'])
@@ -640,10 +647,12 @@ class SETS():
             return
         html = self.backend['cacheEquipment'][key][item['item']]
         text.insert(END, item['item']+' '+item['mark']+' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers']))+'\n')
-        text.insert(END, item['rarity']+' '+ html.find('td.field_type', first=True).text.strip()+'\n')
+        #text.insert(END, item['rarity']+' '+ html.find('td.field_type', first=True).text.strip()+'\n')
+        text.insert(END, item['rarity']+' '+ html["type"]+'\n')
         for i in range(1,9):
-            for header in ['td.field_head','td.field_subhead','td.field_text']:
-                t = html.find(header+str(i), first=True).text
+            for header in ["head", "subhead", "text"]: #['td.field_head','td.field_subhead','td.field_text']:
+                #t = html.find(header+str(i), first=True).text
+                t = html[header+str(i)]
                 if t.strip() != '':
                     text.insert(END, t+'\n')
         text.configure(state=DISABLED)
@@ -856,7 +865,7 @@ class SETS():
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
-        self.traits = self.fetchOrRequestHtml(SETS.trait_query, "traits")
+        self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
         r_specs = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Captain_specializations", "specs")
