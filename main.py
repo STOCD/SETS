@@ -116,8 +116,8 @@ class SETS():
         if keyPhrase in self.backend['cacheEquipment']:
             return self.backend['cacheEquipment'][keyPhrase]
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
-        equipment = self.searchHtmlTable(self.infoboxes, 'td.field_type', phrases)
-        self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(item.find('td.field_name', first=True).text): item for item in equipment}
+        equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
+        self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(item["name"]): item for item in equipment}
         if 'Hangar' in keyPhrase:
             self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
 
@@ -126,6 +126,14 @@ class SETS():
         trs = html.find('tr')
         fields = [tr.find(field, first=True) for tr in trs]
         results = [tr for tr,field in zip(trs,fields) if isinstance(field, Element) and any(phrase in field.text for phrase in phrases)]
+        return [] if isinstance(results, int) else results
+
+    def searchJsonTable(self, html, field, phrases):
+        """Return Json table elements containing 1 or more phrases"""
+        results = []
+        for e in range(len(html)):
+            if field in html[e]:
+                results.append(html[e])
         return [] if isinstance(results, int) else results
 
     def fetchModifiers(self):
