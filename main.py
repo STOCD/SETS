@@ -159,6 +159,7 @@ class SETS():
     def copyBackendToBuild(self, key):
         """Helper function to copy backend value to build dict"""
         self.build[key] = self.backend[key].get()
+
     def copyBuildToBackend(self, key):
         """Helper function to copy build value to backend dict"""
         self.backend[key].set(self.build[key])
@@ -250,7 +251,7 @@ class SETS():
     def shipItemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
-        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.rarities[0], "modifiers":[None]}
+        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.rarities[0], "mark": "Mk XII", "modifiers":[None]}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
         if 'rarity' not in item or item['item']=='':
@@ -413,6 +414,9 @@ class SETS():
     def tagBoxCallback(self, var, text):
         self.build['tags'][text] = var.get()
 
+    def markBoxCallback(self, itemVar, value):
+        itemVar['mark'] = value
+
     def setupSearchFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
         searchText = StringVar()
@@ -425,11 +429,15 @@ class SETS():
 
     def setupRarityFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
+        mark = StringVar()
+        markOption = OptionMenu(topbarFrame, mark, "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "Mk XIII", "Mk XIV", "Mk XV")
+        markOption.grid(row=0, column=0, sticky='nsw')
         rarity = StringVar(value=self.rarities[0])
         rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
-        rarityOption.grid(row=0, column=0, sticky='nsw')
+        rarityOption.grid(row=0, column=1, sticky='nsw')
         modFrame = Frame(topbarFrame, bg='gray')
-        modFrame.grid(row=1, column=0, sticky='nsew')
+        modFrame.grid(row=1, column=2, sticky='nsew')
+        mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
             
@@ -578,18 +586,19 @@ class SETS():
         """Set up infobox frame with given item"""
         self.clearFrame(self.shipInfoboxFrame)
         Label(self.shipInfoboxFrame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
-        text = Text(self.shipInfoboxFrame, height=25, width=30, font=('Helvetica', 10), state=DISABLED, bg='#3a3a3a', fg='#ffffff')
+        text = Text(self.shipInfoboxFrame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
         text.pack(fill="both", expand=True, padx=2, pady=2)
         if item['item'] == '':
             return
         html = self.backend['cacheEquipment'][key][item['item']]
-        text.insert(END, item['item']+' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers']))+'\n')
+        text.insert(END, item['item']+' '+item['mark']+' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers']))+'\n')
         text.insert(END, item['rarity']+' '+ html.find('td.field_type', first=True).text.strip()+'\n')
         for i in range(1,9):
             for header in ['td.field_head','td.field_subhead','td.field_text']:
                 t = html.find(header+str(i), first=True).text
                 if t.strip() != '':
                     text.insert(END, t+'\n')
+        text.configure(state=DISABLED)
 
     def setupDoffFrame(self):
         self.clearFrame(self.shipDoffFrame)
