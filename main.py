@@ -652,7 +652,7 @@ class SETS():
         for i in range(1,9):
             for header in ["head", "subhead", "text"]: #['td.field_head','td.field_subhead','td.field_text']:
                 #t = html.find(header+str(i), first=True).text
-                t = html[header+str(i)]
+                t = html[header+str(i)].replace(":",'').strip()
                 if t.strip() != '':
                     text.insert(END, t+'\n')
         text.configure(state=DISABLED)
