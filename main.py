@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter import font
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, string
+import os, requests, json, re
 
 class SETS():
     """Main App Class"""
@@ -214,6 +214,10 @@ class SETS():
         pickWindow = Toplevel(self.window)
         pickWindow.title(title)
         pickWindow.geometry("240x400")
+        origVar = dict()
+        for key in itemVar:
+            origVar[key] = itemVar[key]
+        pickWindow.protocol('WM_DELETE_WINDOW', lambda:self.pickerCloseCallback(pickWindow,origVar,itemVar))
         container = Frame(pickWindow)
         content = dict()
         if top_bar_functions is not None:
@@ -250,6 +254,11 @@ class SETS():
         pickWindow.grab_set()
         pickWindow.wait_window()
         return itemVar
+
+    def pickerCloseCallback(self, window, origVar, currentVar):
+        for key in origVar:
+            currentVar[key] = origVar[key]
+        window.destroy()
 
     def shipItemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
@@ -439,7 +448,7 @@ class SETS():
         rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
         rarityOption.grid(row=0, column=1, sticky='nsw')
         modFrame = Frame(topbarFrame, bg='gray')
-        modFrame.grid(row=1, column=2, sticky='nsew')
+        modFrame.grid(row=1, column=0, sticky='nsew')
         mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
