@@ -117,7 +117,6 @@ class SETS():
             return self.backend['cacheEquipment'][keyPhrase]
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
-        #self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(item.find('td.field_name', first=True).text): item for item in equipment}
         self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
         if 'Hangar' in keyPhrase:
             self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
@@ -319,18 +318,12 @@ class SETS():
                 cimg = self.imageFromInfoboxName(cname)
                 items_list.append((cname,cimg))
         else:
-            #trs = self.traits.find('tr')
-            #traits = [e for e in trs if isinstance(e.find('td.field_chartype', first=True), Element) and 'char' in e.find('td.field_chartype', first=True).text]
-            #traits = [e for e in traits if isinstance(e.find('td.field_environment', first=True), Element) and 'space' in e.find('td.field_environment', first=True).text]
-            #traits = [e for e in traits if isinstance(e.find('td.field_type', first=True), Element) and (('reputation' in e.find('td.field_type', first=True).text) == args[0])]
             traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
             traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == "space"]
             traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and traits[e]["type"] == "reputation"]
             if args[0]:
                 actives = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_abilities", "player_abilities").links
-                #traits = [e for e in traits if isinstance(e.find('td.field_name', first=True), Element) and (('/wiki/Trait:_'+e.find('td.field_name', first=True).text.replace(' ','_') in list(actives)) == args[1])]
                 traits = [traits[e] for e in range(len(traits)) if "name" in traits[e] and (('/wiki/Trait:_'+traits[e]["name"]).replace(' ','_') in list(actives)) == args[1]]
-            #items_list = [(trait.find('td.field_name', first=True).text.replace("Trait: ", ''), self.imageFromInfoboxName(trait.find('td.field_name', first=True).text.replace("Trait: ", ''),self.itemBoxX,self.itemBoxY)) for trait in traits]
             items_list = [(traits[e]["name"], self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
@@ -379,11 +372,8 @@ class SETS():
             return
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
-        #tier = self.backend['shipHtml'].find('td.field_tier', first=True).text
         tier = self.backend['shipHtml']["tier"]
         self.clearFrame(self.shipTierFrame)
-        #ship_url = list(self.backend['shipHtml'].absolute_links)[0]
-        #self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
         self.setupTierFrame(tier)
         self.backend["tier"].set(self.getTierOptions(tier)[0])
 
@@ -520,19 +510,19 @@ class SETS():
     def setupShipBuildFrame(self, ship):
         """Set up UI frame containing ship equipment"""
         self.clearFrame(self.shipEquipmentFrame)
-        self.backend['shipForeWeapons'] = int(ship["fore"])  #int(ship.find('td.field_fore', first=True).text)
-        self.backend['shipAftWeapons'] = int(ship["aft"])   #int(ship.find('td.field_aft', first=True).text)
-        self.backend['shipDevices'] = int(ship["devices"])  #int(ship.find('td.field_devices', first=True).text)
-        self.backend['shipTacConsoles'] = int(ship["consolestac"])  #int(ship.find('td.field_consolestac', first=True).text)
-        self.backend['shipEngConsoles'] = int(ship["consoleseng"])  #int(ship.find('td.field_consoleseng', first=True).text)
-        self.backend['shipSciConsoles'] = int(ship["consolessci"])  #int(ship.find('td.field_consolessci', first=True).text)
-        self.backend['shipUniConsoles'] = 1 if '-Miracle Worker' in ship["boffs"][0] else 0 #.find('td.field_boffs', first=True).text else 0
-        self.backend['shipHangars'] = 0 if ship["hangars"] == '' else int(ship["hangars"])  #ship.find('td.field_hangars', first=True).text == '' else int(ship.find('td.field_hangars', first=True).text)
+        self.backend['shipForeWeapons'] = int(ship["fore"])
+        self.backend['shipAftWeapons'] = int(ship["aft"])
+        self.backend['shipDevices'] = int(ship["devices"])
+        self.backend['shipTacConsoles'] = int(ship["consolestac"])
+        self.backend['shipEngConsoles'] = int(ship["consoleseng"])
+        self.backend['shipSciConsoles'] = int(ship["consolessci"])
+        self.backend['shipUniConsoles'] = 1 if '-Miracle Worker' in ship["boffs"][0] else 0
+        self.backend['shipHangars'] = 0 if ship["hangars"] == '' else int(ship["hangars"])
         if '-X' in self.backend['tier'].get():
             self.backend['shipUniConsoles'] = self.backend['shipUniConsoles'] + 1
             self.backend['shipDevices'] = self.backend['shipDevices'] + 1
         if 'T5-' in self.backend['tier'].get():
-            t5console = ship["t5uconsole"]  #ship.find('td.field_t5uconsole', first=True).text
+            t5console = ship["t5uconsole"]
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
         self.labelBuildBlock(self.shipEquipmentFrame, "Fore Weapons", 0, 0, 1, 'foreWeapons', self.backend['shipForeWeapons'], self.shipItemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
@@ -544,16 +534,11 @@ class SETS():
                 subsystem_targeting = True
         if sensor_analysis == True and subsystem_targeting == True:
             self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
-        #if ('/wiki/Secondary_Deflector' in self.backend['shipHtmlFull'].links
-        #    or '<a href="/wiki/Deteriorating_Secondary_Deflector" title="Deteriorating Secondary Deflector"><span class="common">Deteriorating Secondary Deflector</span></a>' in self.backend['shipHtmlFull'].html):
-        #    self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.shipItemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Engines", 2, 1, 1, 'engines', 1, self.shipItemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.shipItemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
-        #if '/wiki/Experimental_Weapon' in self.backend['shipHtmlFull'].links:
-        #    self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
         for e in range(len(ship["boffs"])):
             if "Commander Tactical" in ship["boffs"][e] or ship["displaytype"] == "Science Destroyer" or (ship["type"] == "Raider" and ship["tier"] >= 5):
                 if ship["fore"] + ship["aft"] < 8:
@@ -581,9 +566,6 @@ class SETS():
     def setupBoffFrame(self, ship):
         """Set up UI frame containing boff skills"""
         self.clearFrame(self.shipBoffFrame)
-        #boffString = ship.find('td.field_boffs', first=True).html
-        #boffString = boffString.replace('<td class="field_boffs">', '').replace('</td>', '')
-        #boffs = [s.strip() for s in boffString.split('<span class="CargoDelimiter">•</span>')]
         idx = 0
         boffs = ship["boffs"]
         for boff in boffs:
@@ -659,11 +641,9 @@ class SETS():
             return
         html = self.backend['cacheEquipment'][key][item['item']]
         text.insert(END, item['item']+' '+item['mark']+' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers']))+'\n')
-        #text.insert(END, item['rarity']+' '+ html.find('td.field_type', first=True).text.strip()+'\n')
         text.insert(END, item['rarity']+' '+ html["type"]+'\n')
         for i in range(1,9):
-            for header in ["head", "subhead", "text"]: #['td.field_head','td.field_subhead','td.field_text']:
-                #t = html.find(header+str(i), first=True).text
+            for header in ["head", "subhead", "text"]:
                 t = html[header+str(i)].replace(":",'').strip()
                 if t.strip() != '':
                     text.insert(END, t+'\n')
@@ -746,10 +726,8 @@ class SETS():
         m.grid(column=1, row=0, sticky='nsew', pady=5)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
-        #ship_url = list(self.backend['shipHtml'].absolute_links)[0]
-        #self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
         try:
-            ship_image = self.backend['shipHtml']["image"]   #.find('td.field_image', first=True).text
+            ship_image = self.backend['shipHtml']["image"]
             self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
             self.shipLabel.configure(image=self.shipImg)
         except:
