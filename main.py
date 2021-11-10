@@ -175,7 +175,7 @@ class SETS():
         print(value)
         list[index] = value
 
-    def imageFromInfoboxName(self, name, width=None, height=None,suffix=''):
+    def imageFromInfoboxName(self, name, width=None, height=None, suffix=''):
         """Translate infobox name into wiki icon link"""
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
