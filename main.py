@@ -9,11 +9,11 @@ class SETS():
     """Main App Class"""
 
     #query for ship cargo table on the wiki
-    ship_query = "https://sto.fandom.com/wiki/Special:CargoQuery?limit=2500&tables=Ships&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Cfaction__full%3Dfaction%2Cfacsort%3Dfacsort%2Crank%3Drank%2Cranklevel%3Dranklevel%2Ctier%3Dtier%2Cupgradecost%3Dupgradecost%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Changars%3Dhangars%2Ccost__full%3Dcost%2Cabilities__full%3Dabilities%2Cadmiraltyeng__full%3Dadmiraltyeng%2Cadmiraltytac__full%3Dadmiraltytac%2Cadmiraltysci__full%3Dadmiraltysci%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&max_display_chars=300"
+    ship_query = "https://sto.fandom.com/wiki/Special:CargoExport?tables=Ships&&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Ctier%3Dtier%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Changars%3Dhangars%2Cabilities__full%3Dabilities%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&&order+by=`_pageName`%2C`name`%2C`image`%2C`fc`%2C`faction__full`&limit=2500&format=json"
     #query for ship equipment cargo table on the wiki
-    item_query = 'https://sto.fandom.com/wiki/Special:CargoQuery?limit=5000&offset=0&tables=Infobox&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&max_display_chars=300'
+    item_query = 'https://sto.fandom.com/wiki/Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&&order+by=%60_pageName%60%2C%60name%60%2C%60rarity%60%2C%60type%60%2C%60boundto%60&limit=5000&format=json'
     #query for personal and reputation trait cargo table on the wiki
-    trait_query = "https://sto.fandom.com/wiki/Special:CargoQuery?limit=2500&offset=0&tables=Traits&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&max_display_chars=300"
+    trait_query = "https://sto.fandom.com/wiki/Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&&order+by=%60_pageName%60%2C%60name%60%2C%60chartype%60%2C%60environment%60%2C%60type%60&limit=2500&format=json"
 
     itemBoxX = 27
     itemBoxY = 37
@@ -34,6 +34,24 @@ class SETS():
         with open(filename, 'w', encoding="utf-8") as html_file:
             html_file.write(r.text)
         return r.html
+
+    def fetchOrRequestJson(self, url, designation):
+        """Request HTML document from web or fetch from local cache specifically for JSON formats"""
+        cache_base = "cache"
+        if not os.path.exists(cache_base):
+            os.makedirs(cache_base)
+        filename = os.path.join(*filter(None, [cache_base, designation]))+".json"
+        if os.path.exists(filename):
+            with open(filename, 'r', encoding='utf-8') as json_file:
+                json_data = json.load(json_file)
+                return json_data
+        r = self.session.get(url)
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        with open(filename, 'w', encoding="utf-8") as json_file:
+            json_file.dump(r.text,filename)
+            json_data = json.load(json_file)
+        return json_data
 
     def fetchOrRequestImage(self, url, designation, width = None, height = None):
         """Request image from web or fetch from local cache"""
@@ -56,7 +74,7 @@ class SETS():
         if(width is not None):
             image = image.resize((width,height),Image.ANTIALIAS)
         return ImageTk.PhotoImage(image)
-    
+
     def loadLocalImage(self, filename, width = None, height = None):
         """Request image from web or fetch from local cache"""
         cache_base = "local"
@@ -72,13 +90,14 @@ class SETS():
 
     def getShipFromName(self, requestHtml, shipName):
         """Find cargo table entry for given ship name"""
-        trs = requestHtml.find('tr')
-        ship_list = [e for e in trs if isinstance(e.find('td.field_name', first=True), Element) and shipName in e.find('td.field_name', first=True).text]
-        return [] if isinstance(ship_list, int) else ship_list[0]
+        for e in range(len(requestHtml)):
+            if requestHtml[e]["Page"] == shipName:
+                ship_list = requestHtml[e]
+        return [] if isinstance(ship_list, int) else ship_list
 
     def getTierOptions(self, tier):
         """Get possible tier options from ship tier string"""
-        return ['T5', 'T5-U', 'T5-X'] if int(tier) == 5 else ['T6', 'T6-X'] if int(tier) == 6 else ['T'+tier]
+        return ['T5', 'T5-U', 'T5-X'] if int(tier) == 5 else ['T6', 'T6-X'] if int(tier) == 6 else ['T'+str(tier)]
 
     def setVarAndQuit(self, e, name, image, v, win):
         """Helper function to set variables from within UI callbacks"""
@@ -179,9 +198,9 @@ class SETS():
         }
 
     def clearBackend(self):
-        self.backend = { 
-                        "career": StringVar(self.window), "species": StringVar(self.window), 
-                        "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window), 
+        self.backend = {
+                        "career": StringVar(self.window), "species": StringVar(self.window),
+                        "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "doffs": None
             }
@@ -332,10 +351,11 @@ class SETS():
             return
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
-        tier = self.backend['shipHtml'].find('td.field_tier', first=True).text
+        #tier = self.backend['shipHtml'].find('td.field_tier', first=True).text
+        tier = self.backend['shipHtml']["tier"]
         self.clearFrame(self.shipTierFrame)
-        ship_url = list(self.backend['shipHtml'].absolute_links)[0]
-        self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
+        #ship_url = list(self.backend['shipHtml'].absolute_links)[0]
+        #self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
         self.setupTierFrame(tier)
         self.backend["tier"].set(self.getTierOptions(tier)[0])
 
@@ -440,7 +460,7 @@ class SETS():
         mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
-            
+
     def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None):
         """Set up n-element line of ship equipment"""
         self.backend['i_'+key] = [None] * n
@@ -471,32 +491,40 @@ class SETS():
     def setupShipBuildFrame(self, ship):
         """Set up UI frame containing ship equipment"""
         self.clearFrame(self.shipEquipmentFrame)
-        self.backend['shipForeWeapons'] = int(ship.find('td.field_fore', first=True).text)
-        self.backend['shipAftWeapons'] = int(ship.find('td.field_aft', first=True).text)
-        self.backend['shipDevices'] = int(ship.find('td.field_devices', first=True).text)
-        self.backend['shipTacConsoles'] = int(ship.find('td.field_consolestac', first=True).text)
-        self.backend['shipEngConsoles'] = int(ship.find('td.field_consoleseng', first=True).text)
-        self.backend['shipSciConsoles'] = int(ship.find('td.field_consolessci', first=True).text)
-        self.backend['shipUniConsoles'] = 1 if '-Miracle Worker' in ship.find('td.field_boffs', first=True).text else 0
-        self.backend['shipHangars'] = 0 if ship.find('td.field_hangars', first=True).text == '' else int(ship.find('td.field_hangars', first=True).text)
+        self.backend['shipForeWeapons'] = int(ship["fore"])  #int(ship.find('td.field_fore', first=True).text)
+        self.backend['shipAftWeapons'] = int(ship["aft"])   #int(ship.find('td.field_aft', first=True).text)
+        self.backend['shipDevices'] = int(ship["devices"])  #int(ship.find('td.field_devices', first=True).text)
+        self.backend['shipTacConsoles'] = int(ship["consolestac"])  #int(ship.find('td.field_consolestac', first=True).text)
+        self.backend['shipEngConsoles'] = int(ship["consoleseng"])  #int(ship.find('td.field_consoleseng', first=True).text)
+        self.backend['shipSciConsoles'] = int(ship["consolessci"])  #int(ship.find('td.field_consolessci', first=True).text)
+        self.backend['shipUniConsoles'] = 1 if '-Miracle Worker' in ship["boffs"][0] else 0 #.find('td.field_boffs', first=True).text else 0
+        self.backend['shipHangars'] = 0 if ship["hangars"] == '' else int(ship["hangars"])  #ship.find('td.field_hangars', first=True).text == '' else int(ship.find('td.field_hangars', first=True).text)
         if '-X' in self.backend['tier'].get():
             self.backend['shipUniConsoles'] = self.backend['shipUniConsoles'] + 1
             self.backend['shipDevices'] = self.backend['shipDevices'] + 1
         if 'T5-' in self.backend['tier'].get():
-            t5console = ship.find('td.field_t5uconsole', first=True).text
+            t5console = ship["t5uconsole"]  #ship.find('td.field_t5uconsole', first=True).text
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
         self.labelBuildBlock(self.shipEquipmentFrame, "Fore Weapons", 0, 0, 1, 'foreWeapons', self.backend['shipForeWeapons'], self.shipItemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
-        if ('/wiki/Secondary_Deflector' in self.backend['shipHtmlFull'].links 
-            or '<a href="/wiki/Deteriorating_Secondary_Deflector" title="Deteriorating Secondary Deflector"><span class="common">Deteriorating Secondary Deflector</span></a>' in self.backend['shipHtmlFull'].html):
+        sensor_analysis, subsystem_targeting = False, False
+        for e in range(len(ship["abilities"])):
+            if ship["abilities"][e] == "Sensor Analysis":
+                sensor_analysis = True
+            elif ship["abilities"][e] == "Subsystem Targeting":
+                subsystem_targeting = True
+        if sensor_analysis == True and subsystem_targeting == True:
             self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
+        #if ('/wiki/Secondary_Deflector' in self.backend['shipHtmlFull'].links
+        #    or '<a href="/wiki/Deteriorating_Secondary_Deflector" title="Deteriorating Secondary Deflector"><span class="common">Deteriorating Secondary Deflector</span></a>' in self.backend['shipHtmlFull'].html):
+        #    self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.shipItemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Engines", 2, 1, 1, 'engines', 1, self.shipItemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.shipItemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
-        if '/wiki/Experimental_Weapon' in self.backend['shipHtmlFull'].links:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
+        #if '/wiki/Experimental_Weapon' in self.backend['shipHtmlFull'].links:
+        #    self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
         if self.backend['shipUniConsoles'] > 0:
             self.labelBuildBlock(self.shipEquipmentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.shipItemLabelCallback, ["Console", "Pick Uni Console", "Console - Universal - "])
@@ -540,7 +568,7 @@ class SETS():
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value=boff)
             if spec == 'Universal':
-                specLabel0 = OptionMenu(bSubFrame0, v, boff, boff.replace('Universal', 'Tactical'), boff.replace('Universal', 'Engineering'), boff.replace('Universal', 'Science')) 
+                specLabel0 = OptionMenu(bSubFrame0, v, boff, boff.replace('Universal', 'Tactical'), boff.replace('Universal', 'Engineering'), boff.replace('Universal', 'Science'))
                 specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
             else:
@@ -649,12 +677,12 @@ class SETS():
                 v2.set(self.build['doffs']['space'][i]['effect'])
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1,row, False))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, False))
-    
+
     def setupLogoFrame(self):
         self.clearFrame(self.logoFrame)
         self.images['logoImage'] = self.loadLocalImage("logo_bar.png", self.window.winfo_screenwidth(), int(self.window.winfo_screenwidth()/1920 * 134))
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
-        
+
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
         f = font.Font(family='Helvetica', size=12, weight='bold')
@@ -677,10 +705,10 @@ class SETS():
         m.grid(column=1, row=0, sticky='nsew', pady=5)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
-        ship_url = list(self.backend['shipHtml'].absolute_links)[0]
-        self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
+        #ship_url = list(self.backend['shipHtml'].absolute_links)[0]
+        #self.backend['shipHtmlFull'] = self.fetchOrRequestHtml(ship_url, self.build['ship'])
         try:
-            ship_image = self.backend['shipHtml'].find('td.field_image', first=True).text
+            ship_image = self.backend['shipHtml']["image"]   #.find('td.field_image', first=True).text
             self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
             self.shipLabel.configure(image=self.shipImg)
         except:
@@ -752,12 +780,12 @@ class SETS():
         m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
         m.pack(fill=BOTH, expand=True, pady=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-    
+
+
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family='Helvetica', size='10')
-        
+
         self.containerFrame = Frame(self.window, bg='#c59129')
         self.containerFrame.pack(fill=BOTH, expand=True)
         self.logoFrame = Frame(self.containerFrame, bg='#c59129')
@@ -766,7 +794,7 @@ class SETS():
         self.menuFrame.pack(fill=X, padx=15)
         self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
-        
+
         self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
         self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
@@ -790,11 +818,11 @@ class SETS():
         self.shipMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secCol")
         self.shipMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secCol")
         self.shipMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secCol")
-        
+
         self.setupLogoFrame()
         self.setupMenuFrame()
         self.setupShipInfoFrame()
-        
+
     def __init__(self) -> None:
         """Main setup function"""
         self.window = Tk()
@@ -813,10 +841,12 @@ class SETS():
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
         r_specs = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Captain_specializations", "specs")
         self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
-        self.r_ships = self.fetchOrRequestHtml(SETS.ship_query, "ship_list")
-        self.shipNames = [e.text for e in self.r_ships.find("td.field_name")]
+        self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
+        self.shipNames = [e["Page"] for e in self.r_ships]
+
+
         self.setupUIFrames()
-        
+
     def run(self):
         self.window.mainloop()
 
