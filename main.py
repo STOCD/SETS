@@ -104,6 +104,22 @@ class SETS():
         v['image'] = image
         win.destroy()
 
+    def makeRedditTable(self, c0, c1, c2):
+        result = '**{0}** | **{1}** | **{2}**\n'.format(c0[0],c1[0],c2[0])
+        result = result + ":--- | :--- | :---\n"
+        for i in range(1,len(c0)):
+            c0[i] = c0[i] if c0[i] is not None else '&nbsp;'
+            c1[i] = c1[i] if c1[i] is not None else '&nbsp;'
+            c2[i] = c2[i] if c2[i] is not None else '&nbsp;'
+            result = result + "{0} | {1}| {2}\n".format(c0[i],c1[i],c2[i])
+        return result
+
+    def makeRedditColumn(self, c0, length):
+        return c0+['&nbsp;']*(length-len(c0))+['--------------']
+
+    def preformatRedditEquipment(self, key,len):
+        return ["{0} {1} {2}".format(item['item'], item['mark'], ''.join(item['modifiers'])) for item in self.build[key] if item is not None][:len]
+
     def getEmptyItem(self):
         return {"item": "", "image": self.emptyImage}
 
@@ -197,7 +213,7 @@ class SETS():
         self.build = {
             "boffs": dict(), 'activeRepTrait': [None] * 5, 'spaceRepTrait': [None] * 5,
             'personalSpaceTrait': [None] * 6, 'personalSpaceTrait2': [None] * 5,
-            'starshipTrait': [None] * 6, 'tacConsoles': [None] * 5,
+            'starshipTrait': [None] * 6, 'uniConsoles': [None] * 5, 'tacConsoles': [None] * 5,
             'sciConsoles': [None] * 5, 'engConsoles': [None] * 5, 'devices': [None] * 5,
             'aftWeapons': [None] * 5, 'foreWeapons': [None] * 5, 'hangars': [None] * 2,
             'deflector': [None], 'engines': [None], 'warpCore': [None], 'shield': [None],
@@ -292,7 +308,7 @@ class SETS():
     def shipItemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
-        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.rarities[0], "mark": "Mk XII", "modifiers":[None]}
+        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.rarities[0], "mark": "Mk XII", "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
         if 'rarity' not in item or item['item']=='':
@@ -420,6 +436,59 @@ class SETS():
         info = PngImagePlugin.PngInfo()
         info.add_text('build', json.dumps(self.build))
         image.save(outFilename, "PNG", pnginfo=info)
+
+    def exportRedditCallback(self, event):
+        redditString = "**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'])
+        column0 = (self.makeRedditColumn(["**Fore Weapons:**"], self.backend['shipForeWeapons']) +
+                   self.makeRedditColumn(["**Aft Weapons:**"], self.backend['shipAftWeapons']) +
+                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + (["**Secondary Deflector**"] if
+                                         self.build['secdef'][0] is not None else ['&nbsp;']) + (["**Experimental Weapon**"] if self.build['experimental'][0] is not None else ['&nbsp;']),
+                                         7+max(self.backend['shipDevices']-1, 1)) +
+                   self.makeRedditColumn(["**Engineering Consoles:**"], self.backend['shipEngConsoles']) +
+                   self.makeRedditColumn(["**Science Consoles:**"], self.backend['shipSciConsoles']) +
+                   self.makeRedditColumn(["**Tactical Consoles:**"], self.backend['shipTacConsoles']) +
+                   self.makeRedditColumn(["**Universal Consoles:**"], self.backend['shipUniConsoles']))
+        column1 = (self.makeRedditColumn(self.preformatRedditEquipment('foreWeapons', self.backend['shipForeWeapons']), self.backend['shipForeWeapons']) +
+                   self.makeRedditColumn(self.preformatRedditEquipment('aftWeapons', self.backend['shipAftWeapons']), self.backend['shipAftWeapons']) +
+                   self.makeRedditColumn(self.preformatRedditEquipment('deflector', 1) +
+                                         self.preformatRedditEquipment('engines', 1) +
+                                         self.preformatRedditEquipment('warpCore', 1) +
+                                         self.preformatRedditEquipment('shield', 1) +
+                                         self.preformatRedditEquipment('devices', self.backend['shipDevices']) +
+                                         self.preformatRedditEquipment('secdef', 1 if self.build['secdef'][0] is not None else 0) +
+                                         self.preformatRedditEquipment('experimental', 1 if self.build['experimental'][0] is not None else 0), 7+max(self.backend['shipDevices']-1, 1)) +
+                   self.makeRedditColumn(self.preformatRedditEquipment('engConsoles', self.backend['shipEngConsoles']), self.backend['shipEngConsoles']) +
+                   self.makeRedditColumn(self.preformatRedditEquipment('sciConsoles', self.backend['shipSciConsoles']), self.backend['shipSciConsoles']) +
+                   self.makeRedditColumn(self.preformatRedditEquipment('tacConsoles', self.backend['shipTacConsoles']), self.backend['shipTacConsoles']) +
+                   self.makeRedditColumn(self.preformatRedditEquipment('uniConsoles', self.backend['shipUniConsoles']), max(self.backend['shipUniConsoles'], 1)))
+        redditString = redditString + self.makeRedditTable(['**Basic Information**']+column0, ['**Component**']+column1, ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n### Officers and Crew\n\n"
+        column0 = []
+        column1 = []
+        for boff in self.build['boffs'].keys():
+            column0 = column0 + self.makeRedditColumn([boff.replace("_"," ")], len(self.build['boffs'][boff]))
+            column1 = column1 + self.makeRedditColumn(self.build['boffs'][boff], len(self.build['boffs'][boff]))
+        redditString = redditString + self.makeRedditTable(['**Bridge Officer Information**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n"
+        column0 = list(range(1,7))
+        column1 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['spec'] for i in column0 if self.build['doffs']['space'][i-1] is not None], 6)
+        column2 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['effect'] for i in column0 if self.build['doffs']['space'][i-1] is not None], 6)
+        redditString = redditString + self.makeRedditTable(['**Bridge Officer Information**']+column0, ['**Power**']+column1, ['**Notes**']+column2)
+        redditString = redditString + "\n\n##    Traits\n\n"
+        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['personalSpaceTrait'] if trait is not None] +
+                                        [trait['item'] for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
+        redditString = redditString + self.makeRedditTable(['**Personal Space Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n"
+        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['spaceRepTrait'] if trait is not None], 5)
+        redditString = redditString + self.makeRedditTable(['**Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n"
+        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['starshipTrait'] if trait is not None], 6)
+        redditString = redditString + self.makeRedditTable(['**Starship Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n"
+        redditWindow = Toplevel(self.window)
+        redditText = Text(redditWindow)
+        redditText.pack(fill=BOTH, expand=True)
+        redditText.insert(END, redditString)
 
     def clearBuildCallback(self, event):
         """Callback for the clear build button"""
@@ -624,7 +693,7 @@ class SETS():
         self.clearFrame(frame)
         n = self.rarities.index(rarity)
         itemVar['rarity'] = rarity
-        itemVar['modifiers'] = [None]*n
+        itemVar['modifiers'] = ['']*n
         mods = self.fetchModifiers()
         for i in range(n):
             v = StringVar()
@@ -755,6 +824,9 @@ class SETS():
         buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3')
         buttonExportPng.pack(side='left', fill=BOTH, expand=True)
         buttonExportPng.bind('<Button-1>', self.exportPngCallback)
+        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
+        buttonExportReddit.bind('<Button-1>', self.exportRedditCallback)
         shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipLabelFrame.pack(fill=BOTH, expand=True)
         self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
