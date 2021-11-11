@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter import font
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re
+import os, requests, json, re, datetime
 
 class SETS():
     """Main App Class"""
@@ -25,9 +25,12 @@ class SETS():
             os.makedirs(cache_base)
         filename = os.path.join(*filter(None, [cache_base, designation]))+".html"
         if os.path.exists(filename):
-            with open(filename, 'r', encoding='utf-8') as html_file:
-                s = html_file.read()
-                return HTML(html=s, url = 'https://sto.fandom.com/')
+            modDate = os.path.getmtime(filename)
+            interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
+            if interval.days < 7:
+                with open(filename, 'r', encoding='utf-8') as html_file:
+                    s = html_file.read()
+                    return HTML(html=s, url = 'https://sto.fandom.com/')
         r = self.session.get(url)
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
@@ -42,9 +45,12 @@ class SETS():
             os.makedirs(cache_base)
         filename = os.path.join(*filter(None, [cache_base, designation]))+".json"
         if os.path.exists(filename):
-            with open(filename, 'r', encoding='utf-8') as json_file:
-                json_data = json.load(json_file)
-                return json_data
+            modDate = os.path.getmtime(filename)
+            interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
+            if interval.days < 7:
+                with open(filename, 'r', encoding='utf-8') as json_file:
+                    json_data = json.load(json_file)
+                    return json_data
         r = requests.get(url)
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
@@ -494,6 +500,15 @@ class SETS():
         redditText.pack(fill=BOTH, expand=True)
         redditText.insert(END, redditString)
 
+    def cacheInvalidateCallback(self, event):
+        for filename in os.listdir("cache"):
+            file_path = os.path.join("cache", filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
+
     def clearBuildCallback(self, event):
         """Callback for the clear build button"""
         self.clearBuild()
@@ -832,6 +847,9 @@ class SETS():
         buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3')
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
         buttonExportReddit.bind('<Button-1>', self.exportRedditCallback)
+        buttonInvalidateCache = Button(exportImportFrame, text='Invalidate cache', bg='#3a3a3a',fg='#b3b3b3')
+        buttonInvalidateCache.pack(side='left', fill=BOTH, expand=True)
+        buttonInvalidateCache.bind('<Button-1>', self.cacheInvalidateCallback)
         shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipLabelFrame.pack(fill=BOTH, expand=True)
         self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
