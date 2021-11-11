@@ -426,13 +426,17 @@ class SETS():
 
     def exportCallback(self, event):
         """Callback for export button"""
-        with filedialog.asksaveasfile() as outFile:
-            json.dump(self.build, outFile)
+        try:
+            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
+                json.dump(self.build, outFile)
+        except AttributeError:
+            pass
 
     def exportPngCallback(self, event):
         """Callback for export as png button"""
         image = ImageGrab.grab(bbox=(self.window.winfo_rootx(), self.window.winfo_rooty(), self.window.winfo_width(), self.window.winfo_height()))
         outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
+        if not outFilename: return
         info = PngImagePlugin.PngInfo()
         info.add_text('build', json.dumps(self.build))
         image.save(outFilename, "PNG", pnginfo=info)
