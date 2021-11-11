@@ -613,10 +613,11 @@ class SETS():
         self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         for e in range(len(ship["boffs"])):
-            if "Commander Tactical" in ship["boffs"][e] or ship["displaytype"] == "Science Destroyer" or (ship["type"] == "Raider" and ship["tier"] >= 5):
+            if "Commander Tactical" in ship["boffs"][e] or "Commander Universal" in ship["boffs"][e] or ship["displaytype"] == "Science Destroyer" or (ship["type"] == "Raider" and ship["tier"] >= 5):
                 if ship["fore"] + ship["aft"] < 8:
                     if ship["hangars"] != 2:
                             self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
+                            break
 
         self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
         if self.backend['shipUniConsoles'] > 0:
