@@ -527,9 +527,9 @@ class SETS():
         redditText.pack(fill=BOTH, expand=True)
         redditText.insert(END, redditString)
 
-    def cacheInvalidateCallback(self, event):
-        for filename in os.listdir("cache"):
-            file_path = os.path.join("cache", filename)
+    def cacheInvalidateCallback(self, dir):
+        for filename in os.listdir(dir):
+            file_path = os.path.join(dir, filename)
             try:
                 if os.path.isfile(file_path) or os.path.islink(file_path):
                     os.unlink(file_path)
@@ -1122,7 +1122,10 @@ class SETS():
     def setupSettingsFrame(self):
         buttonInvalidateCache = Button(self.settingsFrame, text='Invalidate cache', bg='#3a3a3a',fg='#b3b3b3')
         buttonInvalidateCache.pack(side='left')
-        buttonInvalidateCache.bind('<Button-1>', self.cacheInvalidateCallback)
+        buttonInvalidateCache.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="cache"))
+        buttonInvalidateImages = Button(self.settingsFrame, text='Refresh images (Warning: TAKES A LONG TIME)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonInvalidateImages.pack(side='left')
+        buttonInvalidateImages.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="images"))
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
