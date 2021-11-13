@@ -225,12 +225,16 @@ class SETS():
             'deflector': [None], 'engines': [None], 'warpCore': [None], 'shield': [None],
             'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '',
             'specSecondary': '', "tier": '', 'secdef': [None], 'experimental': [None],
+            'personalGroundTrait': [None] * 6, 'personalGroundTrait2': [None] * 5,
+            'groundRepTrait': [None] * 5, "groundKitModules": [None] * 5,
+            "groundKit": [None], "groundArmor": [None], "groundEV": [None],
+            "groundShield": [None], "groundWeapons": [None]*2, "groundDevices": [None]*5,
             'doffs': {'space': [None]*6 , 'ground': [None]*6}, "tags": dict()
         }
 
     def clearBackend(self):
         self.backend = {
-                        "career": StringVar(self.window), "species": StringVar(self.window),
+                        "career": StringVar(self.window), "species": StringVar(self.window), "playerName": StringVar(self.window),
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "doffs": None
@@ -241,7 +245,7 @@ class SETS():
         self.backend['species'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('species'))
         self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
         self.backend['specSecondary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specSecondary'))
-        self.backend['tier'].trace_add('write', lambda v,i,m:self.setupBuildFrames())
+        self.backend['tier'].trace_add('write', lambda v,i,m:self.setupSpaceBuildFrames())
         self.backend['ship'].trace_add('write', self.shipMenuCallback)
 
     def boffTitleToSpec(self, title):
@@ -311,7 +315,7 @@ class SETS():
             currentVar[key] = origVar[key]
         window.destroy()
 
-    def shipItemLabelCallback(self, e, canvas, img, i, key, args):
+    def itemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.rarities[0], "mark": "Mk XII", "modifiers":['']}
@@ -341,7 +345,7 @@ class SETS():
                 items_list.append((cname,cimg))
         else:
             traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
-            traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == "space"]
+            traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == args[3]]
             traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and (traits[e]["type"] == "reputation") == args[1]]
             if args[0]:
                 actives = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_abilities", "player_abilities").links
@@ -354,7 +358,7 @@ class SETS():
         self.backend['i_'+key][i] = item['image']
         item.pop('image')
 
-    def boffLabelCallback(self, e, canvas, img, i, key, args, idx):
+    def spaceBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
         """Common callback for boff labels"""
         boffAbilities = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities", "boff_abilities")
         l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
@@ -372,6 +376,29 @@ class SETS():
         if args[1] is not None:
             table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[1].replace(' ','_')+'_Abilities', first=True), Element)]
             trs = trs + table[0].find('tr')
+        skills = []
+        for tr in trs:
+            tds = tr.find('td')
+            if len(tds)>0 and tds[args[2]+1].text.strip() != '':
+                skills.append(tr)
+        items_list = []
+        for skill in skills:
+            cname = skill.find('td', first=True).text.replace(':','')
+            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_(Federation)')
+            items_list.append((cname,cimg))
+        itemVar = self.getEmptyItem()
+        item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
+        canvas.itemconfig(img,image=item['image'])
+        self.build['boffs'][key][i] = item['item']
+        self.backend['i_'+key+'_'+str(idx)][i] = item['image']
+
+    def groundBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
+        """Common callback for boff labels"""
+        boffAbilities = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities", "boff_abilities")
+        l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
+        l1 = boffAbilities.find('h2+h3+table+h3+table')
+        table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[0].replace(' ','_')+'_Abilities', first=True), Element)]
+        trs = table[0].find('tr')
         skills = []
         for tr in trs:
             tds = tr.find('td')
@@ -428,7 +455,7 @@ class SETS():
         self.setupShipInfoFrame()
         self.setupTierFrame(int(self.build['tier'][1]))
         self.shipButton.configure(text=self.build['ship'])
-        self.setupBuildFrames()
+        self.setupSpaceBuildFrames()
 
     def exportCallback(self, event):
         """Callback for export button"""
@@ -544,6 +571,41 @@ class SETS():
     def markBoxCallback(self, itemVar, value):
         itemVar['mark'] = value
 
+    def focusSpaceBuildFrameCallback(self):
+        self.groundBuildFrame.pack_forget()
+        self.skillTreeFrame.pack_forget()
+        self.glossaryFrame.pack_forget()
+        self.settingsFrame.pack_forget()
+        self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+
+    def focusGroundBuildFrameCallback(self):
+        self.spaceBuildFrame.pack_forget()
+        self.skillTreeFrame.pack_forget()
+        self.glossaryFrame.pack_forget()
+        self.settingsFrame.pack_forget()
+        self.groundBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+
+    def focusSkillTreeFrameCallback(self):
+        self.spaceBuildFrame.pack_forget()
+        self.groundBuildFrame.pack_forget()
+        self.glossaryFrame.pack_forget()
+        self.settingsFrame.pack_forget()
+        self.skillTreeFrame.pack(fill=BOTH, expand=True, padx=15)
+
+    def focusGlossaryFrameCallback(self):
+        self.spaceBuildFrame.pack_forget()
+        self.groundBuildFrame.pack_forget()
+        self.skillTreeFrame.pack_forget()
+        self.settingsFrame.pack_forget()
+        self.glossaryFrame.pack(fill=BOTH, expand=True, padx=15)
+
+    def focusSettingsFrameCallback(self):
+        self.spaceBuildFrame.pack_forget()
+        self.groundBuildFrame.pack_forget()
+        self.skillTreeFrame.pack_forget()
+        self.glossaryFrame.pack_forget()
+        self.settingsFrame.pack(fill=BOTH, expand=True, padx=15)
+
     def setupSearchFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
         searchText = StringVar()
@@ -613,35 +675,54 @@ class SETS():
             t5console = ship["t5uconsole"]
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
-        self.labelBuildBlock(self.shipEquipmentFrame, "Fore Weapons", 0, 0, 1, 'foreWeapons', self.backend['shipForeWeapons'], self.shipItemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Fore Weapons", 0, 0, 1, 'foreWeapons', self.backend['shipForeWeapons'], self.itemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
         if ship["secdeflector"] == 1:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.shipItemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.shipItemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Engines", 2, 1, 1, 'engines', 1, self.shipItemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.shipItemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.shipItemLabelCallback, ["Ship Shields", "Pick Shield", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.shipItemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
+            self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.itemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.itemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Engines", 2, 1, 1, 'engines', 1, self.itemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.itemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.itemLabelCallback, ["Ship Shields", "Pick Shield", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.itemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         if ship["experimental"] == 1:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.shipItemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.shipItemLabelCallback, ["Ship Device", "Pick Device", ""])
+            self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.itemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.itemLabelCallback, ["Ship Device", "Pick Device", ""])
         if self.backend['shipUniConsoles'] > 0:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.shipItemLabelCallback, ["Console", "Pick Uni Console", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Sci Consoles", 2, 2, 1, 'sciConsoles', self.backend['shipSciConsoles'], self.shipItemLabelCallback, ["Ship Science Console", "Pick Sci Console", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Eng Consoles", 1, 2, 1, 'engConsoles', self.backend['shipEngConsoles'], self.shipItemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Tac Consoles", 0, 2, 1, 'tacConsoles', self.backend['shipTacConsoles'], self.shipItemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", ""])
+            self.labelBuildBlock(self.shipEquipmentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.itemLabelCallback, ["Console", "Pick Uni Console", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Sci Consoles", 2, 2, 1, 'sciConsoles', self.backend['shipSciConsoles'], self.itemLabelCallback, ["Ship Science Console", "Pick Sci Console", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Eng Consoles", 1, 2, 1, 'engConsoles', self.backend['shipEngConsoles'], self.itemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Tac Consoles", 0, 2, 1, 'tacConsoles', self.backend['shipTacConsoles'], self.itemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", ""])
         if self.backend['shipHangars'] > 0:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Hangars", 4, 0, 1, 'hangars', self.backend['shipHangars'], self.shipItemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", ""])
+            self.labelBuildBlock(self.shipEquipmentFrame, "Hangars", 4, 0, 1, 'hangars', self.backend['shipHangars'], self.itemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", ""])
 
-    def setupTraitFrame(self):
+    def setupCharBuildFrame(self):
+        """Set up UI frame containing ship equipment"""
+        self.clearFrame(self.groundEquipmentFrame)
+        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 5, self.itemLabelCallback, ["Kit Module", "Pick Module", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit", "Pick Kit", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["Body Armor", "Pick EV Suit", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5, self.itemLabelCallback, ["Ground Device", "Pick Device", ""])
+
+    def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
         self.clearFrame(self.shipTraitFrame)
-        self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if ('Alien' in self.backend['species'].get()) else 5, self.traitLabelCallback, [False, False, False])
-        self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.traitLabelCallback, [False, False, False])
-        self.labelBuildBlock(self.shipTraitFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True])
-        self.labelBuildBlock(self.shipTraitFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.traitLabelCallback, [True, False, False])
-        self.labelBuildBlock(self.shipTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False])
+        self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if ('Alien' in self.backend['species'].get()) else 5, self.traitLabelCallback, [False, False, False, "space"])
+        self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.traitLabelCallback, [False, False, False, "space"])
+        self.labelBuildBlock(self.shipTraitFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True, "space"])
+        self.labelBuildBlock(self.shipTraitFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.traitLabelCallback, [True, False, False, "space"])
+        self.labelBuildBlock(self.shipTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False, "space"])
 
-    def setupBoffFrame(self, ship):
+    def setupGroundTraitFrame(self):
+        """Set up UI frame containing traits"""
+        self.clearFrame(self.groundTraitFrame)
+        self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if ('Alien' in self.backend['species'].get()) else 5, self.traitLabelCallback, [False, False, False, "ground"])
+        self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "ground"])
+        self.labelBuildBlock(self.groundTraitFrame, "SpaceRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
+        self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
+
+    def setupSpaceBoffFrame(self, ship):
         """Set up UI frame containing boff skills"""
         self.clearFrame(self.shipBoffFrame)
         idx = 0
@@ -684,18 +765,56 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,idx=idx,v=v,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i], idx))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,idx=idx,v=v,callback=self.spaceBoffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i], idx))
             idx = idx + 1
 
-    def setupBuildFrames(self):
-        """Set up all relevant build frames"""
+    def setupGroundBoffFrame(self):
+        """Set up UI frame containing ground boff skills"""
+        self.clearFrame(self.groundBoffFrame)
+        idx = 0
+        for i in range(4):
+            bFrame = Frame(self.groundBoffFrame, width=120, height=80, bg='#3a3a3a')
+            bFrame.pack(fill=BOTH, expand=True)
+            self.backend['i_'+"groundBoff"+'_'+str(idx)] = [None] * 4
+            bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
+            bSubFrame0.pack(fill=BOTH)
+            v = StringVar(self.window, value='Tactical')
+            specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
+            specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
+            specLabel0.pack(side='left')
+            bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
+            bSubFrame1.pack(fill=BOTH)
+            boffSan = "groundBoff"+str(idx)
+            for j in range(4):
+                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j])
+                    self.backend['i_'+boffSan][j] = image
+                else:
+                    image=self.emptyImage
+                    self.build['boffs'][boffSan] = [None] * 4
+                canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
+                canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
+                img0 = canvas.create_image(0,0, anchor="nw",image=image)
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=i,v=v,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), i], idx))
+
+    def setupSpaceBuildFrames(self):
+        """Set up all relevant space build frames"""
         self.build['tier'] = self.backend['tier'].get()
         if self.backend['shipHtml'] is not None:
             self.setupShipBuildFrame(self.backend['shipHtml'])
-            self.setupBoffFrame(self.backend['shipHtml'])
-            self.setupDoffFrame()
-            self.setupTraitFrame()
+            self.setupSpaceBoffFrame(self.backend['shipHtml'])
+            self.setupDoffFrame(self.shipDoffFrame)
+            self.setupSpaceTraitFrame()
             self.setupInfoboxFrame(self.getEmptyItem(),'')
+
+    def setupGroundBuildFrames(self):
+        """Set up all relevant build frames"""
+        self.build['tier'] = self.backend['tier'].get()
+        self.setupCharBuildFrame()
+        self.setupGroundBoffFrame()
+        self.setupDoffFrame(self.groundDoffFrame)
+        self.setupGroundTraitFrame()
+        self.setupInfoboxFrame(self.getEmptyItem(),'')
 
     def setupModFrame(self, frame, rarity, itemVar):
         """Set up modifier frame in equipment picker"""
@@ -727,9 +846,9 @@ class SETS():
                     text.insert(END, t+'\n')
         text.configure(state=DISABLED)
 
-    def setupDoffFrame(self):
-        self.clearFrame(self.shipDoffFrame)
-        mainFrame = Frame(self.shipDoffFrame, bg='#3a3a3a')
+    def setupDoffFrame(self, frame):
+        self.clearFrame(frame)
+        mainFrame = Frame(frame, bg='#3a3a3a')
         mainFrame.pack(side='left')
         spaceDoffFrame = Frame(mainFrame, bg='#3a3a3a')
         spaceDoffFrame.pack(side='left', fill=BOTH, expand=True)
@@ -785,15 +904,15 @@ class SETS():
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
         f = font.Font(family='Helvetica', size=12, weight='bold')
-        buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff', font=f)
+        buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSpaceBuildFrameCallback)
         buttonSpace.grid(row=0, column=0, sticky='nsew')
-        buttonGround = Button(self.menuFrame, text="GROUND", bg='#6b6b6b', fg='#ffffff', font=f)
+        buttonGround = Button(self.menuFrame, text="GROUND", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusGroundBuildFrameCallback)
         buttonGround.grid(row=0, column=1, sticky='nsew')
-        buttonSkill = Button(self.menuFrame, text="SKILL TREE", bg='#6b6b6b', fg='#ffffff', font=f)
+        buttonSkill = Button(self.menuFrame, text="SKILL TREE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSkillTreeFrameCallback)
         buttonSkill.grid(row=0, column=2, sticky='nsew')
-        buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f)
+        buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusGlossaryFrameCallback)
         buttonLibrary.grid(row=0, column=3, sticky='nsew')
-        buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff', font=f)
+        buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSettingsFrameCallback)
         buttonSettings.grid(row=0, column=4, sticky='nsew')
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
@@ -836,9 +955,6 @@ class SETS():
         buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3')
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
         buttonExportReddit.bind('<Button-1>', self.exportRedditCallback)
-        buttonInvalidateCache = Button(exportImportFrame, text='Invalidate cache', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateCache.pack(side='left', fill=BOTH, expand=True)
-        buttonInvalidateCache.bind('<Button-1>', self.cacheInvalidateCallback)
         shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipLabelFrame.pack(fill=BOTH, expand=True)
         self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
@@ -884,20 +1000,64 @@ class SETS():
         m.pack(fill=BOTH, expand=True, pady=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
 
+    def setupGroundInfoFrame(self):
+        self.clearFrame(self.groundInfoFrame)
+        playerNameFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
+        playerNameFrame.pack(fill=BOTH, expand=True)
+        Label(playerNameFrame, text="PLAYER NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
+        Entry(playerNameFrame, textvariable=self.backend['playerName'], fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=1, sticky='nsew')
+        playerNameFrame.grid_columnconfigure(1, weight=1)
+        exportImportFrame = Frame(self.groundInfoFrame)
+        exportImportFrame.pack(fill=BOTH, expand=True)
+        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExport.pack(side='left', fill=BOTH, expand=True)
+        buttonExport.bind('<Button-1>', self.exportCallback)
+        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3')
+        buttonImport.pack(side='left', fill=BOTH, expand=True)
+        buttonImport.bind('<Button-1>', self.importCallback)
+        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3')
+        buttonClear.pack(side='left', fill=BOTH, expand=True)
+        buttonClear.bind('<Button-1>', self.clearBuildCallback)
+        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
+        buttonExportPng.bind('<Button-1>', self.exportPngCallback)
+        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
+        buttonExportReddit.bind('<Button-1>', self.exportRedditCallback)
+        tagsAndCharFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
+        tagsAndCharFrame.pack(fill=BOTH, expand=True, padx=2)
+        tagsAndCharFrame.grid_columnconfigure(0, weight=1)
+        tagsAndCharFrame.grid_columnconfigure(1, weight=1)
+        buildTagFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
+        buildTagFrame.grid(row=0, column=0, sticky='nsew')
+        charInfoFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
+        charInfoFrame.grid(row=0, column=1, sticky='nsew')
+        Label(buildTagFrame, text="BUILD TAGS", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
+            tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
+            tagFrame.pack(fill=BOTH, expand=True)
+            v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
+            Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
+            v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
+            Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
+        Label(charInfoFrame, text="CAPTAIN CAREER", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
+        m.pack(fill=BOTH, expand=True)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        Label(charInfoFrame, text="SPECIES", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
+        m.pack(fill=BOTH, expand=True)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        Label(charInfoFrame, text="PRIMARY SPEC", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
+        m.pack(fill=BOTH, expand=True)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        Label(charInfoFrame, text="SECONDARY SPEC", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
+        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
+        m.pack(fill=BOTH, expand=True, pady=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
 
-    def setupUIFrames(self):
-        defaultFont = font.nametofont('TkDefaultFont')
-        defaultFont.configure(family='Helvetica', size='10')
-
-        self.containerFrame = Frame(self.window, bg='#c59129')
-        self.containerFrame.pack(fill=BOTH, expand=True)
-        self.logoFrame = Frame(self.containerFrame, bg='#c59129')
-        self.logoFrame.pack(fill=X)
-        self.menuFrame = Frame(self.containerFrame, bg='#c59129')
-        self.menuFrame.pack(fill=X, padx=15)
-        self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
-        self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
-
+    def setupSpaceBuildFrame(self):
         self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
         self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
@@ -917,14 +1077,74 @@ class SETS():
         self.shipInfoboxFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
         self.shipInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', pady=5)
         for i in range(5):
-            self.spaceBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
-        self.shipMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secCol")
-        self.shipMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secCol")
-        self.shipMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secCol")
+            self.spaceBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainColSpace")
+        self.shipMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secColSpace")
+        self.shipMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secColSpace")
+        self.shipMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secColSpace")
+
+    def setupGroundBuildFrame(self):
+        self.groundInfoFrame = Frame(self.groundBuildFrame, bg='#b3b3b3')
+        self.groundInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
+        self.groundMiddleFrame = Frame(self.groundBuildFrame, bg='#3a3a3a')
+        self.groundMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
+        self.groundMiddleFrameUpper = Frame(self.groundMiddleFrame, bg='#3a3a3a')
+        self.groundMiddleFrameUpper.grid(row=0,column=1,columnspan=3,sticky='nsew')
+        self.groundEquipmentFrame = Frame(self.groundMiddleFrameUpper, bg='#3a3a3a')
+        self.groundEquipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
+        self.groundBoffFrame = Frame(self.groundMiddleFrameUpper, bg='#3a3a3a')
+        self.groundBoffFrame.pack(side='left', fill=BOTH, expand=True)
+        self.groundTraitFrame = Frame(self.groundMiddleFrameUpper, bg='#3a3a3a')
+        self.groundTraitFrame.pack(side='left', fill=BOTH, expand=True)
+        self.groundMiddleFrameLower = Frame(self.groundMiddleFrame, bg='#3a3a3a')
+        self.groundMiddleFrameLower.grid(row=1,column=1,columnspan=3,sticky='nsew')
+        self.groundDoffFrame = Frame(self.groundMiddleFrameLower, bg='#3a3a3a')
+        self.groundDoffFrame.pack(fill=BOTH, expand=True, padx=20)
+        self.groundInfoboxFrame = Frame(self.groundBuildFrame, bg='#b3b3b3')
+        self.groundInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', pady=5)
+        for i in range(5):
+            self.groundBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainColGround")
+        self.groundMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secColGround")
+        self.groundMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secColGround")
+        self.groundMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secColGround")
+        self.setupGroundBuildFrames()
+
+    def setupSkillTreeFrame(self):
+        pass #placeholder
+
+    def setupGlossaryFrame(self):
+        pass #placeholder
+
+    def setupSettingsFrame(self):
+        buttonInvalidateCache = Button(self.settingsFrame, text='Invalidate cache', bg='#3a3a3a',fg='#b3b3b3')
+        buttonInvalidateCache.pack(side='left')
+        buttonInvalidateCache.bind('<Button-1>', self.cacheInvalidateCallback)
+
+    def setupUIFrames(self):
+        defaultFont = font.nametofont('TkDefaultFont')
+        defaultFont.configure(family='Helvetica', size='10')
+
+        self.containerFrame = Frame(self.window, bg='#c59129')
+        self.containerFrame.pack(fill=BOTH, expand=True)
+        self.logoFrame = Frame(self.containerFrame, bg='#c59129')
+        self.logoFrame.pack(fill=X)
+        self.menuFrame = Frame(self.containerFrame, bg='#c59129')
+        self.menuFrame.pack(fill=X, padx=15)
+        self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
+        self.skillTreeFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
+        self.glossaryFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
+        self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
+        self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
 
         self.setupLogoFrame()
         self.setupMenuFrame()
+        self.setupSpaceBuildFrame()
+        self.setupGroundBuildFrame()
+        self.setupSkillTreeFrame()
+        self.setupGlossaryFrame()
+        self.setupSettingsFrame()
         self.setupShipInfoFrame()
+        self.setupGroundInfoFrame()
 
     def __init__(self) -> None:
         """Main setup function"""
