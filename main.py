@@ -242,7 +242,7 @@ class SETS():
 
     def hookBackend(self):
         self.backend['career'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('career'))
-        self.backend['species'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('species'))
+        self.backend['species'].trace_add('write', lambda v,i,m:self.speciesUpdateCallback())
         self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
         self.backend['specSecondary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specSecondary'))
         self.backend['tier'].trace_add('write', lambda v,i,m:self.setupSpaceBuildFrames())
@@ -605,6 +605,11 @@ class SETS():
         self.skillTreeFrame.pack_forget()
         self.glossaryFrame.pack_forget()
         self.settingsFrame.pack(fill=BOTH, expand=True, padx=15)
+
+    def speciesUpdateCallback(self):
+        self.copyBackendToBuild('species')
+        self.setupSpaceTraitFrame()
+        self.setupGroundTraitFrame()
 
     def setupSearchFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
