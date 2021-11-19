@@ -42,6 +42,6 @@ Linux:
 
 ## Licence
 
-SETS and its source code is licensed under The Unlicense
+SETS and its source code is licensed under GPLv3
 
 Star Trek Online and its content is copyright of Cryptic Studios.
