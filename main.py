@@ -138,7 +138,10 @@ class SETS():
         if keyPhrase in self.backend['cacheEquipment']:
             return self.backend['cacheEquipment'][keyPhrase]
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
-        equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
+        if "Kit Frame" in keyPhrase:
+            equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not 'Module' in item['type']]
+        else:
+            equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
         self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
         if 'Hangar' in keyPhrase:
             self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
@@ -396,9 +399,13 @@ class SETS():
         """Common callback for boff labels"""
         boffAbilities = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities", "boff_abilities")
         l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
+        l0 = [l for l in l0 if "Pilot" not in l.text]
         l1 = boffAbilities.find('h2+h3+table+h3+table')
         table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[0].replace(' ','_')+'_Abilities', first=True), Element)]
         trs = table[0].find('tr')
+        if args[1] != '':
+            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[1].replace(' ','_')+'_Abilities', first=True), Element)]
+            trs = trs + table[0].find('tr')
         skills = []
         for tr in trs:
             tds = tr.find('td')
@@ -703,7 +710,7 @@ class SETS():
         """Set up UI frame containing ship equipment"""
         self.clearFrame(self.groundEquipmentFrame)
         self.labelBuildBlock(self.groundEquipmentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 5, self.itemLabelCallback, ["Kit Module", "Pick Module", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit", "Pick Kit", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["Body Armor", "Pick EV Suit", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield", ""])
@@ -787,6 +794,10 @@ class SETS():
             specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
             specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
             specLabel0.pack(side='left')
+            v2 = StringVar(self.window, value='')
+            specLabel1 = OptionMenu(bSubFrame0, v2, *self.specNames)
+            specLabel1.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
+            specLabel1.pack(side='left')
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
             boffSan = "groundBoff"+str(idx)
@@ -800,7 +811,7 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=i,v=v,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), i], idx))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=i,v=v,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx))
 
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
