@@ -4,6 +4,7 @@ from tkinter import font
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
 import os, requests, json, re, datetime
+import numpy as np
 
 class SETS():
     """Main App Class"""
@@ -15,8 +16,52 @@ class SETS():
     #query for personal and reputation trait cargo table on the wiki
     trait_query = "https://sto.fandom.com/wiki/Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&&order+by=%60_pageName%60%2C%60name%60%2C%60chartype%60%2C%60environment%60%2C%60type%60&limit=2500&format=json"
 
-    itemBoxX = 27
-    itemBoxY = 37
+    itemBoxX = 25
+    itemBoxY = 35
+
+    def encodeBuildInImage(self, src, message, dest):
+        img = Image.open(src, 'r')
+        width, height = img.size
+        array = np.array(list(img.getdata()))
+        if img.mode == 'RGB':
+            n = 3
+        elif img.mode == 'RGBA':
+            n = 4
+        total_pixels = array.size//n
+        message += "$t3g0"
+        b_message = ''.join([format(ord(i), "08b") for i in message])
+        req_pixels = len(b_message)
+        if req_pixels <= total_pixels:
+            index=0
+            for p in range(total_pixels):
+                for q in range(0, 3):
+                    if index < req_pixels:
+                        array[p][q] = int(bin(array[p][q])[2:9] + b_message[index], 2)
+                        index += 1
+            array=array.reshape(height, width, n)
+            enc_img = Image.fromarray(array.astype('uint8'), img.mode)
+            enc_img.save(dest)
+
+    def decodeBuildFromImage(self, src):
+        img = Image.open(src, 'r')
+        array = np.array(list(img.getdata()))
+        if img.mode == 'RGB':
+            n = 3
+        elif img.mode == 'RGBA':
+            n = 4
+        total_pixels = array.size//n
+        hidden_bits = ""
+        for p in range(total_pixels):
+            for q in range(0, 3):
+                hidden_bits += (bin(array[p][q])[2:][-1])
+        hidden_bits = [hidden_bits[i:i+8] for i in range(0, len(hidden_bits), 8)]
+        message = ""
+        for i in range(len(hidden_bits)):
+            if message[-5:] == "$t3g0":
+                break
+            else:
+                message += chr(int(hidden_bits[i], 2))
+        return message[:-5]
 
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
@@ -200,12 +245,12 @@ class SETS():
         print(value)
         list[index] = value
 
-    def imageFromInfoboxName(self, name, width=None, height=None, suffix=''):
+    def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon'):
         """Translate infobox name into wiki icon link"""
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
         try:
-            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+name.replace(' ', '_')+"_icon"+suffix+".png", name,width,height)
+            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+name.replace(' ', '_')+suffix+".png", name,width,height)
         except:
             return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",width,height)
 
@@ -329,7 +374,7 @@ class SETS():
         image1 = self.imageFromInfoboxName(item['rarity'])
         canvas.itemconfig(img[0],image=item['image'])
         canvas.itemconfig(img[1],image=image1)
-        canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, args[0]))
+        canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(self.shipInfoboxFrame, item, args[0]))
         self.build[key][i] = item
         self.backend['i_'+key][i] = [item['image'], image1]
         item.pop('image')
@@ -349,7 +394,7 @@ class SETS():
         else:
             traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
             traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == args[3]]
-            traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and (traits[e]["type"] == "reputation") == args[1]]
+            traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and (traits[e]["type"] == "reputation") == args[0]]
             if args[0]:
                 actives = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_abilities", "player_abilities").links
                 traits = [traits[e] for e in range(len(traits)) if "name" in traits[e] and (('/wiki/Trait:_'+traits[e]["name"]).replace(' ','_') in list(actives)) == args[1]]
@@ -387,13 +432,13 @@ class SETS():
         items_list = []
         for skill in skills:
             cname = skill.find('td', first=True).text.replace(':','')
-            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_(Federation)')
+            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
         canvas.itemconfig(img,image=item['image'])
         self.build['boffs'][key][i] = item['item']
-        self.backend['i_'+key+'_'+str(idx)][i] = item['image']
+        self.backend['i_'+item['item']+str(i)] = item['image']
 
     def groundBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
         """Common callback for boff labels"""
@@ -414,7 +459,7 @@ class SETS():
         items_list = []
         for skill in skills:
             cname = skill.find('td', first=True).text.replace(':','')
-            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_(Federation)')
+            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
@@ -446,8 +491,9 @@ class SETS():
         inFilename = filedialog.askopenfilename(filetypes=[("JSON file", '*.json'),("PNG image","*.png"),("All Files","*.*")])
         if not inFilename: return
         if inFilename.endswith('.png'):
-            image = Image.open(inFilename)
-            self.build = json.loads(image.text['build'])
+            # image = Image.open(inFilename)
+            # self.build = json.loads(image.text['build'])
+            self.build = json.loads(self.decodeBuildFromImage(inFilename))
         else:
             with open(inFilename, 'r') as inFile:
                 self.build = json.load(inFile)
@@ -477,9 +523,11 @@ class SETS():
         image = ImageGrab.grab(bbox=(self.window.winfo_rootx(), self.window.winfo_rooty(), self.window.winfo_width(), self.window.winfo_height()))
         outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
         if not outFilename: return
-        info = PngImagePlugin.PngInfo()
-        info.add_text('build', json.dumps(self.build))
-        image.save(outFilename, "PNG", pnginfo=info)
+        # info = PngImagePlugin.PngInfo()
+        # info.add_text('build', json.dumps(self.build))
+        # image.save(outFilename, "PNG", pnginfo=info)
+        image.save(outFilename, "PNG")
+        self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
 
     def exportRedditCallback(self, event):
         redditString = "**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'])
@@ -692,7 +740,7 @@ class SETS():
             self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.itemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.itemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Engines", 2, 1, 1, 'engines', 1, self.itemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.itemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp Core", "Pick Core", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.itemLabelCallback, ["Singularity Core" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp ", "Pick Core", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.itemLabelCallback, ["Ship Shields", "Pick Shield", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.itemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         if ship["experimental"] == 1:
@@ -716,6 +764,31 @@ class SETS():
         self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5, self.itemLabelCallback, ["Ground Device", "Pick Device", ""])
+
+    def setupSkillMainFrame(self):
+        self.clearFrame(self.skillMiddleFrame)
+        if "skills" not in self.backend:
+            with open("local/skills.json", "r") as f:
+                self.backend["skills"] = json.load(f)
+        skillTable = self.backend["skills"]["content"]
+        i = 0
+        for col in skillTable:
+            self.groundMiddleFrame.grid_columnconfigure(i, weight=1, uniform="skillColSpace")
+            i += 1
+            colFrame = Frame(self.skillMiddleFrame)
+            colFrame.pack(side='left', fill=BOTH, expand=True)
+            for row in col:
+                rowFrame = Frame(colFrame)
+                rowFrame.pack()
+                for cell in row:
+                    image0=self.imageFromInfoboxName(cell['image'], width=25, height=35, suffix='')
+                    self.backend['i_'+cell['name']] = image0
+                    frame = Frame(rowFrame, bg='yellow')
+                    frame.pack(side='left', anchor='center', pady=1, padx=1)
+                    canvas = Canvas(frame, highlightthickness=0, borderwidth=2, relief='groove', width=25, height=35, bg='yellow')
+                    canvas.pack()
+                    canvas.create_image(0,0, anchor="nw",image=image0)
+                    #canvas.bind('<Button-1>', lambda e,canvas=canvas)
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -821,7 +894,7 @@ class SETS():
             self.setupSpaceBoffFrame(self.backend['shipHtml'])
             self.setupDoffFrame(self.shipDoffFrame)
             self.setupSpaceTraitFrame()
-            self.setupInfoboxFrame(self.getEmptyItem(),'')
+            self.setupInfoboxFrame(self.shipInfoboxFrame, self.getEmptyItem(),'')
 
     def setupGroundBuildFrames(self):
         """Set up all relevant build frames"""
@@ -830,7 +903,12 @@ class SETS():
         self.setupGroundBoffFrame()
         self.setupDoffFrame(self.groundDoffFrame)
         self.setupGroundTraitFrame()
-        self.setupInfoboxFrame(self.getEmptyItem(),'')
+        self.setupInfoboxFrame(self.shipInfoboxFrame, self.getEmptyItem(),'')
+
+    def setupSkillBuildFrames(self):
+        """Set up all relevant build frames"""
+        self.setupSkillMainFrame()
+        self.setupInfoboxFrame(self.skillInfoboxFrame, self.getEmptyItem(),'')
 
     def setupModFrame(self, frame, rarity, itemVar):
         """Set up modifier frame in equipment picker"""
@@ -844,11 +922,11 @@ class SETS():
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
             OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='n')
 
-    def setupInfoboxFrame(self, item, key):
+    def setupInfoboxFrame(self, frame, item, key):
         """Set up infobox frame with given item"""
-        self.clearFrame(self.shipInfoboxFrame)
-        Label(self.shipInfoboxFrame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
-        text = Text(self.shipInfoboxFrame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
+        self.clearFrame(frame)
+        Label(frame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
+        text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
         text.pack(fill="both", expand=True, padx=2, pady=2)
         if item['item'] == '':
             return
@@ -1073,6 +1151,9 @@ class SETS():
         m.pack(fill=BOTH, expand=True, pady=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
 
+    def setupSkillInfoFrame(self):
+        self.clearFrame(self.skillInfoFrame)
+
     def setupSpaceBuildFrame(self):
         self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
         self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
@@ -1125,9 +1206,17 @@ class SETS():
         self.setupGroundBuildFrames()
 
     def setupSkillTreeFrame(self):
-        pass #placeholder
+        self.skillInfoFrame = Frame(self.skillTreeFrame, bg='#b3b3b3')
+        self.skillInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
+        self.skillMiddleFrame = Frame(self.skillTreeFrame, bg='#3a3a3a')
+        self.skillMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
+        self.skillInfoboxFrame = Frame(self.skillTreeFrame, bg='#b3b3b3')
+        self.skillInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', pady=5)
+        for i in range(5):
+            self.skillTreeFrame.grid_columnconfigure(i, weight=1, uniform="mainColSkill")
+        self.setupSkillBuildFrames()
 
-    def setupGlossaryFrame(self):
+    def setupLibraryFrame(self):
         pass #placeholder
 
     def setupSettingsFrame(self):
@@ -1160,10 +1249,11 @@ class SETS():
         self.setupSpaceBuildFrame()
         self.setupGroundBuildFrame()
         self.setupSkillTreeFrame()
-        self.setupGlossaryFrame()
+        self.setupLibraryFrame()
         self.setupSettingsFrame()
         self.setupShipInfoFrame()
         self.setupGroundInfoFrame()
+        self.setupSkillInfoFrame()
 
     def __init__(self) -> None:
         """Main setup function"""
