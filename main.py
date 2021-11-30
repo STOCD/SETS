@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import font
+from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
 import os, requests, json, re, datetime
@@ -277,7 +278,8 @@ class SETS():
             'groundRepTrait': [None] * 5, "groundKitModules": [None] * 5,
             "groundKit": [None], "groundArmor": [None], "groundEV": [None],
             "groundShield": [None], "groundWeapons": [None]*2, "groundDevices": [None]*5,
-            'doffs': {'space': [None]*6 , 'ground': [None]*6}, "tags": dict()
+            'doffs': {'space': [None]*6 , 'ground': [None]*6}, "tags": dict(),
+            'skills': [[], [], [], [], []]
         }
 
     def clearBackend(self):
@@ -285,7 +287,8 @@ class SETS():
                         "career": StringVar(self.window), "species": StringVar(self.window), "playerName": StringVar(self.window),
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "doffs": None
+                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "doffs": None,
+                        "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
             }
 
     def hookBackend(self):
@@ -523,11 +526,29 @@ class SETS():
         image = ImageGrab.grab(bbox=(self.window.winfo_rootx(), self.window.winfo_rooty(), self.window.winfo_width(), self.window.winfo_height()))
         outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
         if not outFilename: return
-        # info = PngImagePlugin.PngInfo()
-        # info.add_text('build', json.dumps(self.build))
-        # image.save(outFilename, "PNG", pnginfo=info)
         image.save(outFilename, "PNG")
         self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
+
+    def skillLabelCallback(self, skill, rank):
+        rankReqs = [0, 5, 15, 25, 35]
+        if(skill in self.build['skills'][rank]):
+            if (rank < 4 and len(self.build['skills'][rank+1])>0):
+                if self.backend['skillCount'] > rankReqs[rank+1]:
+                    self.build['skills'][rank].remove(skill)
+                    self.backend['skillLabels'][skill].configure(bg="gray")
+                    self.backend['skillCount'] -= 1
+                    if self.backend['skillCount'] < rankReqs[rank]:
+                        for s in self.backend['skillNames'][rank]:
+                            self.backend['skillLabels'][s].configure(bg="black")
+            return
+        if self.backend['skillCount'] < rankReqs[rank] or self.backend['skillCount'] == 46: return
+        self.build['skills'][rank].append(skill)
+        self.backend['skillLabels'][skill].configure(bg="yellow")
+        self.backend['skillCount'] += 1
+        if rank < 4 and self.backend['skillCount'] == rankReqs[rank+1]:
+            for s in self.backend['skillNames'][rank+1]:
+                self.backend['skillLabels'][s].configure(bg="grey")
+
 
     def exportRedditCallback(self, event):
         redditString = "**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'])
@@ -785,10 +806,12 @@ class SETS():
                     self.backend['i_'+cell['name']] = image0
                     frame = Frame(rowFrame, bg='yellow')
                     frame.pack(side='left', anchor='center', pady=1, padx=1)
-                    canvas = Canvas(frame, highlightthickness=0, borderwidth=2, relief='groove', width=25, height=35, bg='yellow')
+                    canvas = Canvas(frame, highlightthickness=0, borderwidth=3, relief='groove', width=25, height=35, bg= 'yellow' if cell['name'] in self.build['skills'][i-1] else ('black' if i != 1 else 'grey'))
                     canvas.pack()
                     canvas.create_image(0,0, anchor="nw",image=image0)
-                    #canvas.bind('<Button-1>', lambda e,canvas=canvas)
+                    self.backend['skillLabels'][cell['name']] = canvas
+                    self.backend['skillNames'][i-1].append(cell['name'])
+                    canvas.bind('<Button-1>', lambda e,skill=cell['name'],rank=i-1:self.skillLabelCallback(skill, rank))
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
