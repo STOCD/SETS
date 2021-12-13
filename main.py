@@ -439,9 +439,10 @@ class SETS():
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
-        canvas.itemconfig(img,image=item['image'])
+        if ('i_'+item['item']+str(i) not in self.backend):
+            self.backend['i_'+item['item']+str(i)] = item['image']
+        canvas.itemconfig(img,image=self.backend['i_'+item['item']+str(i)])
         self.build['boffs'][key][i] = item['item']
-        self.backend['i_'+item['item']+str(i)] = item['image']
 
     def groundBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
         """Common callback for boff labels"""
