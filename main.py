@@ -4,7 +4,7 @@ from tkinter import font
 from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, datetime
+import os, requests, json, re, datetime, html, urllib.parse
 import numpy as np
 
 class SETS():
@@ -251,7 +251,7 @@ class SETS():
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
         try:
-            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+name.replace(' ', '_')+suffix+".png", name,width,height)
+            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name,width,height)
         except:
             return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",width,height)
 
@@ -401,7 +401,7 @@ class SETS():
             if args[0]:
                 actives = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_abilities", "player_abilities").links
                 traits = [traits[e] for e in range(len(traits)) if "name" in traits[e] and (('/wiki/Trait:_'+traits[e]["name"]).replace(' ','_') in list(actives)) == args[1]]
-            items_list = [(traits[e]["name"], self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
+            items_list = [(html.unescape(traits[e]["name"]), self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
         canvas.itemconfig(img[0],image=item['image'])
