@@ -494,6 +494,9 @@ class SETS():
     def importCallback(self, event):
         """Callback for import button"""
         inFilename = filedialog.askopenfilename(filetypes=[("JSON file", '*.json'),("PNG image","*.png"),("All Files","*.*")])
+        self.importByFilename(inFilename)
+
+    def importByFilename(self, inFilename):
         if not inFilename: return
         if inFilename.endswith('.png'):
             # image = Image.open(inFilename)
@@ -1281,6 +1284,9 @@ class SETS():
         self.setupShipInfoFrame()
         self.setupGroundInfoFrame()
         self.setupSkillInfoFrame()
+        
+        if os.path.exists('.template.json'):
+            self.importByFilename('.template.json')
 
     def __init__(self) -> None:
         """Main setup function"""
