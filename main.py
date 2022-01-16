@@ -275,6 +275,7 @@ class SETS():
             'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '',
             'specSecondary': '', "tier": '', 'secdef': [None], 'experimental': [None],
             'personalGroundTrait': [None] * 6, 'personalGroundTrait2': [None] * 5,
+            'groundActiveRepTrait': [None] * 5,
             'groundRepTrait': [None] * 5, "groundKitModules": [None] * 5,
             "groundKit": [None], "groundArmor": [None], "groundEV": [None],
             "groundShield": [None], "groundWeapons": [None]*2, "groundDevices": [None]*5,
@@ -833,7 +834,7 @@ class SETS():
         self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if ('Alien' in self.backend['species'].get()) else 5, self.traitLabelCallback, [False, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
-        self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
+        self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
     def setupSpaceBoffFrame(self, ship):
         """Set up UI frame containing boff skills"""
