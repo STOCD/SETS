@@ -341,6 +341,7 @@ class SETS():
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side=RIGHT,fill=Y)
         i = 0
+        items_list.sort()
         for name,image in items_list:
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
             label = Label(frame, image=image)
@@ -630,17 +631,17 @@ class SETS():
     def doffSpecCallback(self, om, v0, v1, row, isSpace=True):
         if self.backend['doffs'] is None:
             return
-        self.build['doffs']['space' if isSpace else 'groud'][row] = {"name": "", "spec": v0.get(), "effect": ''}
+        self.build['doffs']['space' if isSpace else 'ground'][row] = {"name": "", "spec": v0.get(), "effect": ''}
         menu = om['menu']
         menu.delete(0, END)
-        for power in self.backend['doffs'][0 if isSpace else 1]:
+        for power in sorted(self.backend['doffs'][0 if isSpace else 1]):
             if v0.get() in power[0]:
                 menu.add_command(label=power[1], command=lambda value=power[1]: v1.set(value))
 
     def doffEffectCallback(self, om, v0, v1, row, isSpace=True):
         if self.backend['doffs'] is None:
             return
-        self.build['doffs']['space' if isSpace else 'groud'][row]['effect'] = v1.get()
+        self.build['doffs']['space' if isSpace else 'ground'][row]['effect'] = v1.get()
 
     def tagBoxCallback(self, var, text):
         self.build['tags'][text] = var.get()
@@ -828,7 +829,7 @@ class SETS():
         self.clearFrame(self.groundTraitFrame)
         self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if ('Alien' in self.backend['species'].get()) else 5, self.traitLabelCallback, [False, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "ground"])
-        self.labelBuildBlock(self.groundTraitFrame, "SpaceRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
+        self.labelBuildBlock(self.groundTraitFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
     def setupSpaceBoffFrame(self, ship):
@@ -940,7 +941,7 @@ class SETS():
         n = self.rarities.index(rarity)
         itemVar['rarity'] = rarity
         itemVar['modifiers'] = ['']*n
-        mods = self.fetchModifiers()
+        mods = sorted(self.fetchModifiers())
         for i in range(n):
             v = StringVar()
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
@@ -981,7 +982,8 @@ class SETS():
             m = OptionMenu(spaceDoffFrame, v0, 'NAME', *['A','B','C'])
             m.grid(row=i+1, column=0, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
-            m = OptionMenu(spaceDoffFrame, v1, 'SPECIALIZATION', *list(set([doff[0] for doff in space])))
+            doff_list_space = sorted(list(set([doff[0] for doff in space])))
+            m = OptionMenu(spaceDoffFrame, v1, 'SPECIALIZATION', *doff_list_space)
             m.grid(row=i+1, column=1, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
             m = OptionMenu(spaceDoffFrame, v2, 'EFFECT\nOTHER', '')
@@ -1001,16 +1003,17 @@ class SETS():
             m = OptionMenu(groundDoffFrame, v0, 'NAME', *['A','B','C'])
             m.grid(row=i+1, column=0, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
-            m = OptionMenu(groundDoffFrame, v1, 'SPECIALIZATION', *list(set([doff[0] for doff in ground])))
+            doff_list_ground = sorted(list(set([doff[0] for doff in ground])))
+            m = OptionMenu(groundDoffFrame, v1, 'SPECIALIZATION', *doff_list_ground)
             m.grid(row=i+1, column=1, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
             m = OptionMenu(groundDoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20)
             if self.build['doffs']['ground'][i] is not None:
-                v0.set(self.build['doffs']['space'][i]['name'])
-                v1.set(self.build['doffs']['space'][i]['spec'])
-                v2.set(self.build['doffs']['space'][i]['effect'])
+                v0.set(self.build['doffs']['ground'][i]['name'])
+                v1.set(self.build['doffs']['ground'][i]['spec'])
+                v2.set(self.build['doffs']['ground'][i]['effect'])
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1,row, False))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, False))
 
