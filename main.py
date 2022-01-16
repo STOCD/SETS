@@ -442,7 +442,7 @@ class SETS():
         if ('i_'+item['item']+str(i) not in self.backend):
             self.backend['i_'+item['item']+str(i)] = item['image']
         canvas.itemconfig(img,image=self.backend['i_'+item['item']+str(i)])
-        self.build['boffs'][key][i] = item['item']
+        self.build['boffs'][key+'_'+str(idx)][i] = item['item']
 
     def groundBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
         """Common callback for boff labels"""
@@ -865,12 +865,12 @@ class SETS():
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
             for i in range(rank):
-                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i])
-                    self.backend['i_'+boffSan][i] = image
+                if boffSan+'_'+str(idx) in self.build['boffs'] and self.build['boffs'][boffSan+'_'+str(idx)][i] is not None:
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan+'_'+str(idx)][i])
+                    self.backend['i_'+boffSan+'_'+str(idx)][i] = image
                 else:
                     image=self.emptyImage
-                    self.build['boffs'][boffSan] = [None] * rank
+                    self.build['boffs'][boffSan+'_'+str(idx)] = [None] * rank
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
