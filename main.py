@@ -280,6 +280,7 @@ class SETS():
             'aftWeapons': [None] * 5, 'foreWeapons': [None] * 5, 'hangars': [None] * 2,
             'deflector': [None], 'engines': [None], 'warpCore': [None], 'shield': [None],
             'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '',
+            'playerShipName': '',
             'specSecondary': '', "tier": '', 'secdef': [None], 'experimental': [None],
             'personalGroundTrait': [None] * 6, 'personalGroundTrait2': [None] * 5,
             'groundActiveRepTrait': [None] * 5,
@@ -300,7 +301,7 @@ class SETS():
             }
 
     def hookBackend(self):
-        self.backend['playerShipName'].trace_add('write', lambda v,i,m:self.playerShipNameUpdateCallback())
+        self.backend['playerShipName'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerShipName'))
         self.backend['career'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('career'))
         self.backend['species'].trace_add('write', lambda v,i,m:self.speciesUpdateCallback())
         self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
@@ -651,6 +652,7 @@ class SETS():
     def clearBuildCallback(self, event):
         """Callback for the clear build button"""
         self.clearBuild()
+        self.copyBuildToBackend('playerShipName')
         self.copyBuildToBackend('career')
         self.copyBuildToBackend('species')
         self.copyBuildToBackend('specPrimary')
@@ -720,9 +722,6 @@ class SETS():
         self.skillTreeFrame.pack_forget()
         self.glossaryFrame.pack_forget()
         self.settingsFrame.pack(fill=BOTH, expand=True, padx=15)
-
-    def playerShipNameUpdateCallback(self):
-        self.copyBackendToBuild('playerShipName')
 
     def speciesUpdateCallback(self):
         self.copyBackendToBuild('species')
@@ -823,7 +822,7 @@ class SETS():
         self.labelBuildBlock(self.groundEquipmentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 5, self.itemLabelCallback, ["Kit Module", "Pick Module", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["Body Armor", "Pick EV Suit", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["EV Suit", "Pick EV Suit", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5, self.itemLabelCallback, ["Ground Device", "Pick Device", ""])
