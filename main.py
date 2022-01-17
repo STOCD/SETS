@@ -515,6 +515,7 @@ class SETS():
             with open(inFilename, 'r') as inFile:
                 self.build = json.load(inFile)
         self.clearBackend()
+        self.copyBuildToBackend('playerShipName')
         self.copyBuildToBackend('career')
         self.copyBuildToBackend('species')
         self.copyBuildToBackend('specPrimary')
