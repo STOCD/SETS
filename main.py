@@ -327,7 +327,13 @@ class SETS():
         """Open a picker window"""
         pickWindow = Toplevel(self.window)
         pickWindow.title(title)
-        pickWindow.geometry("240x400")
+        windowheight = self.window.winfo_height() - 100
+        windowwidth = int(self.window.winfo_width() / 6)
+        if windowheight < 400:
+            windowheight = 400
+        if windowwidth < 240:
+            windowwidth = 240
+        pickWindow.geometry(str(windowwidth)+"x"+str(windowheight))
         origVar = dict()
         for key in itemVar:
             origVar[key] = itemVar[key]
@@ -357,7 +363,7 @@ class SETS():
             label.grid(row=0, column=0, sticky='nsew')
             label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-            label = Label(frame, text=name, wraplength=200, justify=LEFT)
+            label = Label(frame, text=name, wraplength=windowwidth-40, justify=LEFT)
             label.grid(row=0, column=1, sticky='nsew')
             label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
             label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
