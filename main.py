@@ -1062,7 +1062,7 @@ class SETS():
         footerLabel = Label(self.footerFrame, text=footer, fg='#3a3a3a', bg='#c59129')
         footerLabel.grid(row=0, column=0)
         footerLabel.pack(fill='both', side='right', expand=True)
-        self.footerFrame.pack(fill='both', side='right', expand=True)
+        self.footerFrame.pack(fill='both', side='bottom', expand=True)
         
 
     def setupMenuFrame(self):
