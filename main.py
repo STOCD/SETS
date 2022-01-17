@@ -1362,7 +1362,7 @@ class SETS():
         """Main setup function"""
         self.window = Tk()
         # self.window.geometry('1280x650')
-        self.window.iconphoto(False, PhotoImage(file='icon.PNG'))
+        self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
         self.session = HTMLSession()
         self.clearBuild()
