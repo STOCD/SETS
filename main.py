@@ -988,13 +988,15 @@ class SETS():
     def setupDoffFrame(self, frame):
         self.clearFrame(frame)
         mainFrame = Frame(frame, bg='#3a3a3a')
-        mainFrame.pack(side='left')
-        spaceDoffFrame = Frame(mainFrame, bg='#3a3a3a')
+        mainFrame.pack(side='left', fill=BOTH, expand=True)
+        spaceDoffFrame = Frame(mainFrame, bg='#3a3a3a', padx=10)
         spaceDoffFrame.pack(side='left', fill=BOTH, expand=True)
-        groundDoffFrame = Frame(mainFrame, bg='#3a3a3a')
-        groundDoffFrame.pack(side='left', fill=BOTH, expand=True)
-        Label(spaceDoffFrame, text="SPACE DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff').grid(row=0, column=0,columnspan=3, sticky='nsew')
+        groundDoffFrame = Frame(mainFrame, bg='#3a3a3a', padx=10)
+        groundDoffFrame.pack(side='right', fill=BOTH, expand=True)
+        spaceDoffLabel = Label(spaceDoffFrame, text="SPACE DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff')
+        spaceDoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
         space,ground = self.fetchDoffs()
+        f = font.Font(family='Helvetica', size=9)
         for i in range(6):
             v0 = StringVar(self.window)
             v1 = StringVar(self.window)
@@ -1008,13 +1010,16 @@ class SETS():
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
             m = OptionMenu(spaceDoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20)
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20,font=f, wraplength=280)
             if self.build['doffs']['space'][i] is not None:
                 v0.set(self.build['doffs']['space'][i]['name'])
                 v1.set(self.build['doffs']['space'][i]['spec'])
                 v2.set(self.build['doffs']['space'][i]['effect'])
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1, row, True))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, True))
+
+        spaceDoffFrame.grid_columnconfigure(2, weight=1, uniform="spaceDoffList")
+        
         Label(groundDoffFrame, text="GROUND DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff').grid(row=0, column=0,columnspan=3, sticky='nsew')
         for i in range(6):
             v0 = StringVar(self.window)
@@ -1029,13 +1034,15 @@ class SETS():
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
             m = OptionMenu(groundDoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20)
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20, font=f, wraplength=280)
             if self.build['doffs']['ground'][i] is not None:
                 v0.set(self.build['doffs']['ground'][i]['name'])
                 v1.set(self.build['doffs']['ground'][i]['spec'])
                 v2.set(self.build['doffs']['ground'][i]['effect'])
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1,row, False))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, False))
+
+        groundDoffFrame.grid_columnconfigure(2, weight=1, uniform="groundDoffList")
 
     def setupLogoFrame(self):
         self.clearFrame(self.logoFrame)
@@ -1223,7 +1230,7 @@ class SETS():
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
         self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         self.shipMiddleFrameUpper = Frame(self.shipMiddleFrame, bg='#3a3a3a')
-        self.shipMiddleFrameUpper.grid(row=0,column=1,columnspan=3,sticky='nsew')
+        self.shipMiddleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nesw')
         self.shipEquipmentFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
         self.shipEquipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
         self.shipBoffFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
@@ -1231,7 +1238,7 @@ class SETS():
         self.shipTraitFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
         self.shipTraitFrame.pack(side='left', fill=BOTH, expand=True)
         self.shipMiddleFrameLower = Frame(self.shipMiddleFrame, bg='#3a3a3a')
-        self.shipMiddleFrameLower.grid(row=1,column=1,columnspan=3,sticky='nsew')
+        self.shipMiddleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
         self.shipDoffFrame = Frame(self.shipMiddleFrameLower, bg='#3a3a3a')
         self.shipDoffFrame.pack(fill=BOTH, expand=True, padx=20)
         self.shipInfoboxFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
@@ -1241,6 +1248,7 @@ class SETS():
         self.shipMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secColSpace")
         self.shipMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secColSpace")
         self.shipMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secColSpace")
+        self.shipMiddleFrameLower.grid_columnconfigure(0, weight=1, uniform="secColSpace2")
 
     def setupGroundBuildFrame(self):
         self.groundInfoFrame = Frame(self.groundBuildFrame, bg='#b3b3b3')
