@@ -195,7 +195,7 @@ class SETS():
             equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not 'Module' in item['type']]
         else:
             equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
-        self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
+        self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in np.unique(range(len(equipment)), axis=0)}
         if 'Hangar' in keyPhrase:
             self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
 
