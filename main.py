@@ -527,11 +527,14 @@ class SETS():
         self.setupSpaceBuildFrames()
         self.window.update()
 
+        self.setupFooterFrame(inFilename+' -- loaded', '')
+
     def exportCallback(self, event):
         """Callback for export button"""
         try:
             with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
                 json.dump(self.build, outFile)
+                self.setupFooterFrame(outFile.name+' -- saved', '')
         except AttributeError:
             pass
 
@@ -545,11 +548,14 @@ class SETS():
         screenBottomRightX = screenTopLeftX + self.window.winfo_width()
         screenBottomRightY = screenTopLeftY + self.window.winfo_height()
         image = ImageGrab.grab(bbox=(screenTopLeftX, screenTopLeftY, screenBottomRightX, screenBottomRightY))
+        
+        self.setupFooterFrame('Image size: '+str(image.size), '')
 
         outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
         if not outFilename: return
         image.save(outFilename, "PNG")
         self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
+        self.setupFooterFrame(outFilename+' -- saved, Image size: '+str(image.size), '')
 
     def skillLabelCallback(self, skill, rank):
         rankReqs = [0, 5, 15, 25, 35]
@@ -1064,12 +1070,17 @@ class SETS():
         
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
 
-    def setupFooterFrame(self, side, footer):
+    def setupFooterFrame(self, leftnote, rightnote):
         """Set up footer frame with given item"""
-        self.clearFrame(self.footerFrame)
-        footerLabel = Label(self.footerFrame, text=footer, fg='#3a3a3a', bg='#c59129')
-        footerLabel.grid(row=0, column=0)
-        footerLabel.pack(fill='both', side='right', expand=True)
+        #self.clearFrame(self.footerFrame)
+        if leftnote is not None:
+            footerLabelL = Label(self.footerFrame, text=leftnote, fg='#3a3a3a', bg='#c59129', anchor='e')
+            footerLabelL.grid(row=0, column=0, sticky='w')
+        if rightnote is not None:
+            footerLabelR = Label(self.footerFrame, text=rightnote, fg='#3a3a3a', bg='#c59129', anchor='e')
+            footerLabelR.grid(row=0, column=1, sticky='e')
+        #footerLabelR.pack(fill='both', side='right', expand=True)
+        self.footerFrame.grid_columnconfigure(0, weight=1, uniform="footerlabel")
         self.footerFrame.pack(fill='both', side='bottom', expand=True)
         
 
@@ -1312,7 +1323,7 @@ class SETS():
         factor = ( dpi / 96 ) * scale
         self.window.call('tk', 'scaling', factor)
         
-        self.setupFooterFrame(2, '{:>4}dpi (x{:>4})'.format(dpi, (factor * scale)))
+        self.setupFooterFrame('', '{:>4}dpi (x{:>4}) '.format(dpi, (factor * scale)))
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
