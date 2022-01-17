@@ -273,7 +273,7 @@ class SETS():
     def clearBuild(self):
         """Initialize new build state"""
         self.build = {
-            "boffs": dict(), 'activeRepTrait': [None] * 5, 'spaceRepTrait': [None] * 5,
+            "boffs": dict(), 'boffseats': [None] * 6, 'activeRepTrait': [None] * 5, 'spaceRepTrait': [None] * 5,
             'personalSpaceTrait': [None] * 6, 'personalSpaceTrait2': [None] * 5,
             'starshipTrait': [None] * 6, 'uniConsoles': [None] * 5, 'tacConsoles': [None] * 5,
             'sciConsoles': [None] * 5, 'engConsoles': [None] * 5, 'devices': [None] * 5,
@@ -648,6 +648,9 @@ class SETS():
         self.shipImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
 
+    def boffUniversalCallback(self, v, idx, isSpace=True):
+        self.build['boffseats'][idx] = v.get()
+
     def doffSpecCallback(self, om, v0, v1, row, isSpace=True):
         if self.backend['doffs'] is None:
             return
@@ -876,10 +879,15 @@ class SETS():
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value=boff)
             if spec == 'Universal':
-                v.set(boff.replace('Universal', 'Tactical'))
-                specLabel0 = OptionMenu(bSubFrame0, v, boff.replace('Universal', 'Tactical'), boff.replace('Universal', 'Engineering'), boff.replace('Universal', 'Science'))
+                if self.build['boffseats'][idx] is not None:
+                    v.set(self.build['boffseats'][idx])
+                else:
+                    v.set('Tactical')
+                    self.build['boffseats'][idx] = 'Tactical'
+                specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
                 specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
+                v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, True))
             else:
                 specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
