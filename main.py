@@ -4,9 +4,16 @@ from tkinter import font
 from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, datetime, html, urllib.parse
+import os, requests, json, re, datetime, html, urllib.parse, ctypes
 import numpy as np
 
+
+"""This section will improve display, but may require sizing adjustments to activate"""
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(2) # windows version >= 8.1
+except:
+    ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
+    
 class SETS():
     """Main App Class"""
 
@@ -518,6 +525,7 @@ class SETS():
         self.setupTierFrame(int(self.build['tier'][1]))
         self.shipButton.configure(text=self.build['ship'])
         self.setupSpaceBuildFrames()
+        self.window.update()
 
     def exportCallback(self, event):
         """Callback for export button"""
@@ -529,7 +537,15 @@ class SETS():
 
     def exportPngCallback(self, event):
         """Callback for export as png button"""
-        image = ImageGrab.grab(bbox=(self.window.winfo_rootx(), self.window.winfo_rooty(), self.window.winfo_width(), self.window.winfo_height()))
+        # pixel correction
+        self.window.update()
+
+        screenTopLeftX = self.window.winfo_rootx()
+        screenTopLeftY = self.window.winfo_rooty()
+        screenBottomRightX = screenTopLeftX + self.window.winfo_width()
+        screenBottomRightY = screenTopLeftY + self.window.winfo_height()
+        image = ImageGrab.grab(bbox=(screenTopLeftX, screenTopLeftY, screenBottomRightX, screenBottomRightY))
+
         outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
         if not outFilename: return
         image.save(outFilename, "PNG")
@@ -1023,8 +1039,24 @@ class SETS():
 
     def setupLogoFrame(self):
         self.clearFrame(self.logoFrame)
-        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", self.window.winfo_screenwidth(), int(self.window.winfo_screenwidth()/1920 * 134))
+        
+        logoWidth = 1920
+        logoHeight = 134
+        maxWidth = self.window.winfo_screenwidth()
+        if maxWidth > logoWidth:
+            maxWidth = logoWidth
+        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", maxWidth, int(maxWidth/logoWidth * logoHeight))
+        
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
+
+    def setupFooterFrame(self, side, footer):
+        """Set up footer frame with given item"""
+        self.clearFrame(self.footerFrame)
+        footerLabel = Label(self.footerFrame, text=footer, fg='#3a3a3a', bg='#c59129')
+        footerLabel.grid(row=0, column=0)
+        footerLabel.pack(fill='both', side='right', expand=True)
+        self.footerFrame.pack(fill='both', side='right', expand=True)
+        
 
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
@@ -1258,6 +1290,14 @@ class SETS():
         buttonInvalidateImages.pack(side='left')
         buttonInvalidateImages.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="images"))
 
+    def setupUIScaling(self, scale):
+         # pixel correction
+        dpi = round(self.window.winfo_fpixels('1i'), 0)
+        factor = ( dpi / 96 ) * scale
+        self.window.call('tk', 'scaling', factor)
+        
+        self.setupFooterFrame(2, '{:>4}dpi (x{:>4})'.format(dpi, (factor * scale)))
+
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family='Helvetica', size='10')
@@ -1274,7 +1314,9 @@ class SETS():
         self.glossaryFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
-
+        self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
+        self.setupUIScaling(1)
+        
         self.setupLogoFrame()
         self.setupMenuFrame()
         self.setupSpaceBuildFrame()
@@ -1309,7 +1351,6 @@ class SETS():
         self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
         self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
         self.shipNames = [e["Page"] for e in self.r_ships]
-
 
         self.setupUIFrames()
 
