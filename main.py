@@ -273,21 +273,47 @@ class SETS():
     def clearBuild(self):
         """Initialize new build state"""
         self.build = {
-            "boffs": dict(), 'boffseats': [None] * 6, 'activeRepTrait': [None] * 5, 'spaceRepTrait': [None] * 5,
-            'personalSpaceTrait': [None] * 6, 'personalSpaceTrait2': [None] * 5,
-            'starshipTrait': [None] * 6, 'uniConsoles': [None] * 5, 'tacConsoles': [None] * 5,
-            'sciConsoles': [None] * 5, 'engConsoles': [None] * 5, 'devices': [None] * 5,
-            'aftWeapons': [None] * 5, 'foreWeapons': [None] * 5, 'hangars': [None] * 2,
-            'deflector': [None], 'engines': [None], 'warpCore': [None], 'shield': [None],
-            'career': 'Tactical', 'species': 'Alien', 'ship': '', 'specPrimary': '',
+            'boffs': dict(),
+            'boffseats': [None] * 6,
+            'activeRepTrait': [None] * 5,
+            'spaceRepTrait': [None] * 5,
+            'personalSpaceTrait': [None] * 6,
+            'personalSpaceTrait2': [None] * 5,
+            'starshipTrait': [None] * 6,
+            'uniConsoles': [None] * 5,
+            'tacConsoles': [None] * 5,
+            'sciConsoles': [None] * 5,
+            'engConsoles': [None] * 5,
+            'devices': [None] * 5,
+            'aftWeapons': [None] * 5,
+            'foreWeapons': [None] * 5,
+            'hangars': [None] * 2,
+            'deflector': [None],
+            'engines': [None],
+            'warpCore': [None],
+            'shield': [None],
+            'career': 'Tactical',
+            'species': 'Alien',
+            'ship': '',
+            'specPrimary': '',
             'playerShipName': '',
-            'specSecondary': '', "tier": '', 'secdef': [None], 'experimental': [None],
-            'personalGroundTrait': [None] * 6, 'personalGroundTrait2': [None] * 5,
+            'specSecondary': '',
+            'tier': '',
+            'secdef': [None],
+            'experimental': [None],
+            'personalGroundTrait': [None] * 6,
+            'personalGroundTrait2': [None] * 5,
             'groundActiveRepTrait': [None] * 5,
-            'groundRepTrait': [None] * 5, "groundKitModules": [None] * 5,
-            "groundKit": [None], "groundArmor": [None], "groundEV": [None],
-            "groundShield": [None], "groundWeapons": [None]*2, "groundDevices": [None]*5,
-            'doffs': {'space': [None]*6 , 'ground': [None]*6}, "tags": dict(),
+            'groundRepTrait': [None] * 5,
+            'groundKitModules': [None] * 5,
+            'groundKit': [None],
+            'groundArmor': [None],
+            'groundEV': [None],
+            'groundShield': [None],
+            'groundWeapons': [None] * 2,
+            'groundDevices': [None] * 5,
+            'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
+            'tags': dict(),
             'skills': [[], [], [], [], []]
         }
 
@@ -459,7 +485,7 @@ class SETS():
         if ('i_'+item['item']+str(i) not in self.backend):
             self.backend['i_'+item['item']+str(i)] = item['image']
         canvas.itemconfig(img,image=self.backend['i_'+item['item']+str(i)])
-        self.build['boffs'][key+'_'+str(idx)][i] = item['item']
+        self.build['boffs'][key][i] = item['item']
 
     def groundBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
         """Common callback for boff labels"""
@@ -484,9 +510,19 @@ class SETS():
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
-        canvas.itemconfig(img,image=item['image'])
+        # 'i_'+item['item']+str(i) in space version
+        if ('i_'+key+'_'+str(i) not in self.backend):
+            self.backend['i_'+key+'_'+str(i)] = item['image']
+        canvas.itemconfig(img,image=self.backend['i_'+key+'_'+str(i)])
+        
+        # ['boffs'][key+'_'+str(idx)][i] in space version
         self.build['boffs'][key][i] = item['item']
-        self.backend['i_'+key+'_'+str(idx)][i] = item['image']
+        #self.build['boffs'][key+'_'+str(idx)][i] = item['item']
+
+
+
+
+
 
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
@@ -890,7 +926,8 @@ class SETS():
             bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
             boffSan = boff.replace(' ','_')
-            self.backend['i_'+boffSan+'_'+str(idx)] = [None] * rank
+            boffSan = boffSan+"_"+str(idx)
+            self.backend['i_'+boffSan] = [None] * rank
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value=boff)
@@ -910,12 +947,12 @@ class SETS():
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
             for i in range(rank):
-                if boffSan+'_'+str(idx) in self.build['boffs'] and self.build['boffs'][boffSan+'_'+str(idx)][i] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan+'_'+str(idx)][i])
-                    self.backend['i_'+boffSan+'_'+str(idx)][i] = image
+                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i])
+                    self.backend['i_'+boffSan][i] = image
                 else:
                     image=self.emptyImage
-                    self.build['boffs'][boffSan+'_'+str(idx)] = [None] * rank
+                    self.build['boffs'][boffSan] = [None] * rank
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
@@ -929,7 +966,8 @@ class SETS():
         for i in range(4):
             bFrame = Frame(self.groundBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
-            self.backend['i_'+"groundBoff"+'_'+str(idx)] = [None] * 4
+            boffSan = "groundBoff"+'_'+str(idx)
+            self.backend['i_'+boffSan] = [None] * 4
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value='Tactical')
@@ -942,7 +980,7 @@ class SETS():
             specLabel1.pack(side='left')
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
-            boffSan = "groundBoff"+str(idx)
+
             for j in range(4):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
                     image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j])
