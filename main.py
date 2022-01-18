@@ -993,7 +993,7 @@ class SETS():
                 v2.set(self.build['boffseats']['ground_spec'][idx])
             else:
                 self.build['boffseats']['ground_spec'][idx] = v2.get()
-            specLabel1 = OptionMenu(bSubFrame0, v2, *self.specNames)
+            specLabel1 = OptionMenu(bSubFrame0, v2, *self.boffGroundSpecNames)
             specLabel1.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
             specLabel1.pack(side='left')
             v2.trace_add("write", lambda v2,i,m,v0=v2,idx=idx:self.boffUniversalCallback(v0, idx, 'ground_spec'))
@@ -1452,6 +1452,7 @@ class SETS():
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
         r_specs = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Captain_specializations", "specs")
         self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
+        self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
         self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
         self.shipNames = [e["Page"] for e in self.r_ships]
 
