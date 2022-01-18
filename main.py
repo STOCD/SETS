@@ -694,8 +694,7 @@ class SETS():
         self.setupShipInfoFrame()
         self.clearFrame(self.shipEquipmentFrame)
         self.clearFrame(self.shipBoffFrame)
-        self.setupGroundBoffFrame()
-        self.setupDoffFrame(self.groundDoffFrame)
+        self.setupGroundBuildFrames()
         self.shipImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
 
@@ -729,6 +728,7 @@ class SETS():
         self.glossaryFrame.pack_forget()
         self.settingsFrame.pack_forget()
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.setupShipInfoFrame() #get updates from info changes
 
     def focusGroundBuildFrameCallback(self):
         self.spaceBuildFrame.pack_forget()
@@ -736,6 +736,7 @@ class SETS():
         self.glossaryFrame.pack_forget()
         self.settingsFrame.pack_forget()
         self.groundBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.setupGroundInfoFrame() #get updates from info changes
 
     def focusSkillTreeFrameCallback(self):
         self.spaceBuildFrame.pack_forget()
