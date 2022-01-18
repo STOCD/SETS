@@ -827,7 +827,8 @@ class SETS():
         self.backend['shipTacConsoles'] = int(ship["consolestac"])
         self.backend['shipEngConsoles'] = int(ship["consoleseng"])
         self.backend['shipSciConsoles'] = int(ship["consolessci"])
-        self.backend['shipUniConsoles'] = 1 if '-Miracle Worker' in ship["boffs"][0] else 0
+        self.backend['shipUniConsoles'] = 1 if 'Innovation Effects' in ship["abilities"] else 0
+        #self.backend['shipUniConsoles'] = 1 if '-Miracle Worker' in ship["boffs"][0] else 0
         self.backend['shipHangars'] = 0 if ship["hangars"] == '' else int(ship["hangars"])
         if '-X' in self.backend['tier'].get():
             self.backend['shipUniConsoles'] = self.backend['shipUniConsoles'] + 1
@@ -946,6 +947,9 @@ class SETS():
                 specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
                 v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, 'space'))
+                if sspec is not None:
+                    specLabel1 = Label(bSubFrame0, text=' / '+sspec, bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
+                    specLabel1.pack(side='left')
             else:
                 specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
