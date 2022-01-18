@@ -552,13 +552,8 @@ class SETS():
             with open(inFilename, 'r') as inFile:
                 self.build = json.load(inFile)
         self.clearBackend()
-        self.copyBuildToBackend('playerShipName')
-        self.copyBuildToBackend('career')
-        self.copyBuildToBackend('species')
-        self.copyBuildToBackend('specPrimary')
-        self.copyBuildToBackend('specSecondary')
-        self.copyBuildToBackend('ship')
-        self.copyBuildToBackend('tier')
+        self.buildToBackendSeries()
+        
         self.hookBackend()
         self.setupShipInfoFrame()
         self.setupTierFrame(int(self.build['tier'][1]))
@@ -680,16 +675,21 @@ class SETS():
             except Exception as e:
                 print('Failed to delete %s. Reason: %s' % (file_path, e))
 
-    def clearBuildCallback(self, event):
-        """Callback for the clear build button"""
-        self.clearBuild()
+    def buildToBackendSeries(self):
         self.copyBuildToBackend('playerShipName')
         self.copyBuildToBackend('career')
         self.copyBuildToBackend('species')
         self.copyBuildToBackend('specPrimary')
         self.copyBuildToBackend('specSecondary')
         self.copyBuildToBackend('ship')
-        self.backend['tier'].set('')
+        self.copyBuildToBackend('tier')
+
+    def clearBuildCallback(self, event):
+        """Callback for the clear build button"""
+        self.clearBuild()
+        self.buildToBackendSeries()
+
+        #self.backend['tier'].set('')
         self.backend['shipHtml'] = None
         self.setupShipInfoFrame()
         self.shipImg = self.emptyImage
