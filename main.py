@@ -692,6 +692,8 @@ class SETS():
         #self.backend['tier'].set('')
         self.backend['shipHtml'] = None
         self.setupShipInfoFrame()
+        self.clearFrame(self.shipEquipmentFrame)
+        self.clearFrame(self.shipBoffFrame)
         self.shipImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
 
