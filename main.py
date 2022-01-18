@@ -1011,7 +1011,7 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,v=v,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,v=v,v2=v2,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx))
             idx = idx + 1
 
     def setupSpaceBuildFrames(self):
