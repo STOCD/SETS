@@ -946,6 +946,9 @@ class SETS():
                 specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
                 v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, 'space'))
+                if sspec is not None:
+                    specLabel1 = Label(bSubFrame0, text=' / '+sspec, bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
+                    specLabel1.pack(side='left')
             else:
                 specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
