@@ -827,7 +827,8 @@ class SETS():
         self.backend['shipTacConsoles'] = int(ship["consolestac"])
         self.backend['shipEngConsoles'] = int(ship["consoleseng"])
         self.backend['shipSciConsoles'] = int(ship["consolessci"])
-        self.backend['shipUniConsoles'] = 1 if '-Miracle Worker' in ship["boffs"][0] else 0
+        self.backend['shipUniConsoles'] = 1 if 'Innovation Effects' in ship["abilities"] else 0
+        #self.backend['shipUniConsoles'] = 1 if '-Miracle Worker' in ship["boffs"][0] else 0
         self.backend['shipHangars'] = 0 if ship["hangars"] == '' else int(ship["hangars"])
         if '-X' in self.backend['tier'].get():
             self.backend['shipUniConsoles'] = self.backend['shipUniConsoles'] + 1
