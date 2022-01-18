@@ -982,6 +982,7 @@ class SETS():
                 canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,v=v,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx))
+            idx = idx + 1
 
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
@@ -1120,6 +1121,7 @@ class SETS():
         #footerLabelR.pack(fill='both', side='right', expand=True)
         self.footerFrame.grid_columnconfigure(0, weight=1, uniform="footerlabel")
         self.footerFrame.pack(fill='both', side='bottom', expand=True)
+        self.window.update()
         
 
     def setupMenuFrame(self):
