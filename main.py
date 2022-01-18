@@ -729,6 +729,8 @@ class SETS():
         self.settingsFrame.pack_forget()
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.setupShipInfoFrame() #get updates from info changes
+        if self.shipImg is not None:
+            self.shipLabel.configure(image=self.shipImg)
 
     def focusGroundBuildFrameCallback(self):
         self.spaceBuildFrame.pack_forget()
@@ -1252,6 +1254,9 @@ class SETS():
         m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
         m.pack(fill=BOTH, expand=True, pady=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        if self.build['ship'] is not None:
+            self.shipButton.configure(text=self.build['ship'])
+            self.backend['ship'].set(self.build['ship'])
 
     def setupGroundInfoFrame(self):
         self.clearFrame(self.groundInfoFrame)
