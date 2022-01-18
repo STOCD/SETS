@@ -274,7 +274,7 @@ class SETS():
         """Initialize new build state"""
         self.build = {
             'boffs': dict(),
-            'boffseats': [None] * 6,
+            'boffseats': dict(),
             'activeRepTrait': [None] * 5,
             'spaceRepTrait': [None] * 5,
             'personalSpaceTrait': [None] * 6,
@@ -698,8 +698,8 @@ class SETS():
         self.shipImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
 
-    def boffUniversalCallback(self, v, idx, isSpace=True):
-        self.build['boffseats'][idx] = v.get()
+    def boffUniversalCallback(self, v, idx, key):
+        self.build['boffseats'][key][idx] = v.get()
 
     def doffSpecCallback(self, om, v0, v1, row, isSpace=True):
         if self.backend['doffs'] is None:
@@ -910,6 +910,9 @@ class SETS():
     def setupSpaceBoffFrame(self, ship):
         """Set up UI frame containing boff skills"""
         self.clearFrame(self.shipBoffFrame)
+        if not 'space' in self.build['boffseats']:
+            self.build['boffseats']['space'] = [None] * 6
+        
         idx = 0
         boffs = ship["boffs"]
         for boff in boffs:
@@ -931,15 +934,15 @@ class SETS():
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value=boff)
             if spec == 'Universal':
-                if self.build['boffseats'][idx] is not None:
-                    v.set(self.build['boffseats'][idx])
+                if self.build['boffseats']['space'][idx] is not None:
+                    v.set(self.build['boffseats']['space'][idx])
                 else:
                     v.set('Tactical')
-                    self.build['boffseats'][idx] = 'Tactical'
+                    self.build['boffseats']['space'][idx] = 'Tactical'
                 specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
                 specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
-                v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, True))
+                v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, 'space'))
             else:
                 specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
@@ -961,6 +964,11 @@ class SETS():
     def setupGroundBoffFrame(self):
         """Set up UI frame containing ground boff skills"""
         self.clearFrame(self.groundBoffFrame)
+        if not 'ground' in self.build['boffseats']:
+            self.build['boffseats']['ground'] = [None] * 4
+        if not 'ground_spec' in self.build['boffseats']:
+            self.build['boffseats']['ground_spec'] = [None] * 4
+            
         idx = 0
         for i in range(4):
             bFrame = Frame(self.groundBoffFrame, width=120, height=80, bg='#3a3a3a')
@@ -969,14 +977,27 @@ class SETS():
             self.backend['i_'+boffSan] = [None] * 4
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
+            
             v = StringVar(self.window, value='Tactical')
+            if 'ground' in self.build['boffseats'] and self.build['boffseats']['ground'][idx] is not None:
+                v.set(self.build['boffseats']['ground'][idx])
+            else:
+                self.build['boffseats']['ground'][idx] = v.get()
             specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
             specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
             specLabel0.pack(side='left')
+            v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, 'ground'))
+            
             v2 = StringVar(self.window, value='')
+            if 'ground_spec' in self.build['boffseats'] and self.build['boffseats']['ground_spec'][idx] is not None:
+                v2.set(self.build['boffseats']['ground_spec'][idx])
+            else:
+                self.build['boffseats']['ground_spec'][idx] = v2.get()
             specLabel1 = OptionMenu(bSubFrame0, v2, *self.specNames)
             specLabel1.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
             specLabel1.pack(side='left')
+            v2.trace_add("write", lambda v2,i,m,v0=v2,idx=idx:self.boffUniversalCallback(v0, idx, 'ground_spec'))
+            
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
 
