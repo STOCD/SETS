@@ -447,10 +447,13 @@ class SETS():
             items_list = [(html.unescape(traits[e]["name"]), self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
-        canvas.itemconfig(img[0],image=item['image'])
-        self.build[key][i] = item
-        self.backend['i_'+key][i] = item['image']
+
+        if ('i_'+item['item']+str(i) not in self.backend):
+            self.backend['i_'+item['item']+str(i)] = item['image']
+        canvas.itemconfig(img[0],image=self.backend['i_'+item['item']+str(i)])
         item.pop('image')
+        self.build[key][i] = item
+
 
     def spaceBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
         """Common callback for boff labels"""
@@ -561,6 +564,7 @@ class SETS():
         self.setupTierFrame(int(self.build['tier'][1]))
         self.shipButton.configure(text=self.build['ship'])
         self.setupSpaceBuildFrames()
+        self.setupGroundBuildFrames()
         self.window.update()
 
         self.setupFooterFrame(inFilename+' -- loaded', '')
@@ -1157,9 +1161,9 @@ class SETS():
     def setupShipInfoFrame(self):
         self.clearFrame(self.shipInfoFrame)
         playerShipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
-        playerShipNameFrame.pack(fill=BOTH, expand=True)
+        playerShipNameFrame.pack(fill=BOTH, expand=False)
         Label(playerShipNameFrame, text="SHIP NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
-        Entry(playerShipNameFrame, textvariable=self.backend['playerShipName'], fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=1, sticky='nsew')
+        Entry(playerShipNameFrame, textvariable=self.backend['playerShipName'], fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
         playerShipNameFrame.grid_columnconfigure(1, weight=1)
         exportImportFrame = Frame(self.shipInfoFrame)
         exportImportFrame.pack(fill=BOTH, expand=True)
@@ -1226,9 +1230,9 @@ class SETS():
     def setupGroundInfoFrame(self):
         self.clearFrame(self.groundInfoFrame)
         playerNameFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
-        playerNameFrame.pack(fill=BOTH, expand=True)
+        playerNameFrame.pack(fill=BOTH, expand=False)
         Label(playerNameFrame, text="PLAYER NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
-        Entry(playerNameFrame, textvariable=self.backend['playerName'], fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=1, sticky='nsew')
+        Entry(playerNameFrame, textvariable=self.backend['playerName'], fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
         playerNameFrame.grid_columnconfigure(1, weight=1)
         exportImportFrame = Frame(self.groundInfoFrame)
         exportImportFrame.pack(fill=BOTH, expand=True)
@@ -1247,6 +1251,10 @@ class SETS():
         buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3')
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
         buttonExportReddit.bind('<Button-1>', self.exportRedditCallback)
+        charLabelFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
+        charLabelFrame.pack(fill=BOTH, expand=True)
+        self.charLabel = Label(charLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
+        self.charLabel.pack(fill=BOTH, expand=True)
         tagsAndCharFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
         tagsAndCharFrame.pack(fill=BOTH, expand=True, padx=2)
         tagsAndCharFrame.grid_columnconfigure(0, weight=1)
