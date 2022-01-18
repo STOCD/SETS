@@ -510,19 +510,10 @@ class SETS():
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
-        # 'i_'+item['item']+str(i) in space version
-        if ('i_'+key+'_'+str(i) not in self.backend):
-            self.backend['i_'+key+'_'+str(i)] = item['image']
-        canvas.itemconfig(img,image=self.backend['i_'+key+'_'+str(i)])
-        
-        # ['boffs'][key+'_'+str(idx)][i] in space version
+        if ('i_'+item['item']+'_'+str(i) not in self.backend):
+            self.backend['i_'+item['item']+'_'+str(i)] = item['image']
+        canvas.itemconfig(img,image=self.backend['i_'+item['item']+'_'+str(i)])
         self.build['boffs'][key][i] = item['item']
-        #self.build['boffs'][key+'_'+str(idx)][i] = item['item']
-
-
-
-
-
 
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
@@ -925,8 +916,7 @@ class SETS():
                 rank = 4
             bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
-            boffSan = boff.replace(' ','_')
-            boffSan = boffSan+"_"+str(idx)
+            boffSan = boff.replace(' ','_')+"_"+str(idx)
             self.backend['i_'+boffSan] = [None] * rank
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
@@ -991,7 +981,7 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=i,v=v,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,v=v,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx))
 
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
