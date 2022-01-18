@@ -132,3 +132,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+firststart.py
+GETPYTHON.bat
+readme.txt
+RUN.bat
+RUNNOUPDATE.bat
+SETS_Package_v5.2.exe
+SETUP.bat
+.template.json
