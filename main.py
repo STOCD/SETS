@@ -694,6 +694,8 @@ class SETS():
         self.setupShipInfoFrame()
         self.clearFrame(self.shipEquipmentFrame)
         self.clearFrame(self.shipBoffFrame)
+        self.setupGroundBoffFrame()
+        self.setupDoffFrame(self.groundDoffFrame)
         self.shipImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
 
@@ -1255,7 +1257,7 @@ class SETS():
         buttonExportReddit.bind('<Button-1>', self.exportRedditCallback)
         charLabelFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
         charLabelFrame.pack(fill=BOTH, expand=True)
-        self.charLabel = Label(charLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
+        self.charLabel = Label(charLabelFrame, fg='#3a3a3a', bg='#b3b3b3', height=5)
         self.charLabel.pack(fill=BOTH, expand=True)
         tagsAndCharFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
         tagsAndCharFrame.pack(fill=BOTH, expand=True, padx=2)
@@ -1299,7 +1301,7 @@ class SETS():
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
         self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         self.shipMiddleFrameUpper = Frame(self.shipMiddleFrame, bg='#3a3a3a')
-        self.shipMiddleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nesw')
+        self.shipMiddleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nsew')
         self.shipEquipmentFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
         self.shipEquipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
         self.shipBoffFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
@@ -1333,7 +1335,7 @@ class SETS():
         self.groundTraitFrame = Frame(self.groundMiddleFrameUpper, bg='#3a3a3a')
         self.groundTraitFrame.pack(side='left', fill=BOTH, expand=True)
         self.groundMiddleFrameLower = Frame(self.groundMiddleFrame, bg='#3a3a3a')
-        self.groundMiddleFrameLower.grid(row=1,column=1,columnspan=3,sticky='nsew')
+        self.groundMiddleFrameLower.grid(row=1,column=0,columnspan=5,sticky='nsew')
         self.groundDoffFrame = Frame(self.groundMiddleFrameLower, bg='#3a3a3a')
         self.groundDoffFrame.pack(fill=BOTH, expand=True, padx=20)
         self.groundInfoboxFrame = Frame(self.groundBuildFrame, bg='#b3b3b3')
@@ -1343,6 +1345,7 @@ class SETS():
         self.groundMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secColGround")
         self.groundMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secColGround")
         self.groundMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secColGround")
+        self.groundMiddleFrameLower.grid_columnconfigure(0, weight=1, uniform="secColGround2")
         self.setupGroundBuildFrames()
 
     def setupSkillTreeFrame(self):
