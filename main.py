@@ -731,6 +731,7 @@ class SETS():
         self.setupShipInfoFrame() #get updates from info changes
         if self.shipImg is not None:
             self.shipLabel.configure(image=self.shipImg)
+        self.setupJustTierFrame(int(self.backend['tier'].get()[1]))
 
     def focusGroundBuildFrameCallback(self):
         self.spaceBuildFrame.pack_forget()
@@ -1141,16 +1142,19 @@ class SETS():
         
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
 
-    def setupFooterFrame(self, leftnote, rightnote):
+    def setupFooterFrame(self, leftnote, rightnote=None):
         """Set up footer frame with given item"""
-        #self.clearFrame(self.footerFrame)
         if leftnote is not None:
-            footerLabelL = Label(self.footerFrame, text=leftnote, fg='#3a3a3a', bg='#c59129', anchor='e')
-            footerLabelL.grid(row=0, column=0, sticky='w')
+            self.leftnote = leftnote
         if rightnote is not None:
-            footerLabelR = Label(self.footerFrame, text=rightnote, fg='#3a3a3a', bg='#c59129', anchor='e')
+            self.rightnote = rightnote
+        #self.clearFrame(self.footerFrame)
+        if self.leftnote is not None:
+            footerLabelL = Label(self.footerFrame, text=self.leftnote, fg='#3a3a3a', bg='#c59129', anchor='e')
+            footerLabelL.grid(row=0, column=0, sticky='w')
+        if self.rightnote is not None:
+            footerLabelR = Label(self.footerFrame, text=self.rightnote, fg='#3a3a3a', bg='#c59129', anchor='e')
             footerLabelR.grid(row=0, column=1, sticky='e')
-        #footerLabelR.pack(fill='both', side='right', expand=True)
         self.footerFrame.grid_columnconfigure(0, weight=1, uniform="footerlabel")
         self.footerFrame.pack(fill='both', side='bottom', expand=True)
         self.window.update()
@@ -1172,11 +1176,14 @@ class SETS():
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
 
-    def setupTierFrame(self, tier):
+    def setupJustTierFrame(self, tier):
         Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
         m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
         m.grid(column=1, row=0, sticky='nsew', pady=5)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+    def setupTierFrame(self, tier):
+        self.setupJustTierFrame(tier)
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
         try:
             ship_image = self.backend['shipHtml']["image"]
@@ -1256,7 +1263,6 @@ class SETS():
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         if self.build['ship'] is not None:
             self.shipButton.configure(text=self.build['ship'])
-            self.backend['ship'].set(self.build['ship'])
 
     def setupGroundInfoFrame(self):
         self.clearFrame(self.groundInfoFrame)
