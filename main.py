@@ -4,15 +4,16 @@ from tkinter import font
 from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, datetime, html, urllib.parse, ctypes
+import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys
 import numpy as np
 
 
 """This section will improve display, but may require sizing adjustments to activate"""
-try:
-    ctypes.windll.shcore.SetProcessDpiAwareness(2) # windows version >= 8.1
-except:
-    ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
+if sys.platform.startswith('win'):
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2) # windows version >= 8.1
+    except:
+        ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
     
 class SETS():
     """Main App Class"""
@@ -556,7 +557,8 @@ class SETS():
         
         self.hookBackend()
         self.setupShipInfoFrame()
-        self.setupTierFrame(int(self.build['tier'][1]))
+        if 'tier' in self.build and len(self.build['tier']) > 1:
+            self.setupTierFrame(int(self.build['tier'][1]))
         self.shipButton.configure(text=self.build['ship'])
         self.setupSpaceBuildFrames()
         self.setupGroundBuildFrames()
