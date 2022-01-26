@@ -733,7 +733,8 @@ class SETS():
         self.setupShipInfoFrame() #get updates from info changes
         if self.shipImg is not None:
             self.shipLabel.configure(image=self.shipImg)
-        self.setupJustTierFrame(int(self.backend['tier'].get()[1]))
+        if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
+            self.setupJustTierFrame(int(self.backend['tier'].get()[1]))
 
     def focusGroundBuildFrameCallback(self):
         self.spaceBuildFrame.pack_forget()
@@ -1337,6 +1338,7 @@ class SETS():
     def setupSpaceBuildFrame(self):
         self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
         self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
+        self.shipImg = self.emptyImage
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
         self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         self.shipMiddleFrameUpper = Frame(self.shipMiddleFrame, bg='#3a3a3a')
