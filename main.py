@@ -731,8 +731,7 @@ class SETS():
         self.settingsFrame.pack_forget()
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.setupShipInfoFrame() #get updates from info changes
-        if self.shipImg is not None:
-            self.shipLabel.configure(image=self.shipImg)
+        self.shipLabel.configure(image=self.shipImg)
         if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
             self.setupJustTierFrame(int(self.backend['tier'].get()[1]))
 
