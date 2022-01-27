@@ -164,6 +164,7 @@ class SETS():
     def fetchOrRequestImage(self, url, designation, width = None, height = None):
         """Request image from web or fetch from local cache"""
         cache_base = "images"
+        designation.replace("/", "_") # Missed by the path sanitizer
         designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
         if not os.path.exists(cache_base):
             os.makedirs(cache_base)
