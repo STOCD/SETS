@@ -112,9 +112,59 @@ class SETS():
             json.dump(r.json(),json_file)
         return r.json()
 
+    def filePathSanitize(self, txt, chr_set='printable'):
+        """Converts txt to a valid filename.
+
+        Args:
+            txt: The str to convert.
+            chr_set:
+                'printable':    Any printable character except those disallowed on Windows/*nix.
+                'extended':     'printable' + extended ASCII character codes 128-255
+                'universal':    For almost *any* file system. '-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        """
+
+        FILLER = '-'
+        MAX_LEN = 255  # Maximum length of filename is 255 bytes in Windows and some *nix flavors.
+
+        # Step 1: Remove excluded characters.
+        BLACK_LIST = set(chr(127) + r'<>:"/\|?*')                           # 127 is unprintable, the rest are illegal in Windows.
+        white_lists = {
+            'universal': {'-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'},
+            'printable': {chr(x) for x in range(32, 127)} - BLACK_LIST,     # 0-32, 127 are unprintable,
+            'extended' : {chr(x) for x in range(32, 256)} - BLACK_LIST,
+        }
+        white_list = white_lists[chr_set]
+        result = ''.join(x
+                         if x in white_list else FILLER
+                         for x in txt)
+
+        # Step 2: Device names, '.', and '..' are invalid filenames in Windows.
+        DEVICE_NAMES = 'CON,PRN,AUX,NUL,COM1,COM2,COM3,COM4,' \
+                       'COM5,COM6,COM7,COM8,COM9,LPT1,LPT2,' \
+                       'LPT3,LPT4,LPT5,LPT6,LPT7,LPT8,LPT9,' \
+                       'CONIN$,CONOUT$,..,.'.split()  # This list is an O(n) operation.
+        if result in DEVICE_NAMES:
+            result = f'-{result}-'
+
+        # Step 3: Truncate long files while preserving the file extension.
+        if len(result) > MAX_LEN:
+            if '.' in txt:
+                result, _, ext = result.rpartition('.')
+                ext = '.' + ext
+            else:
+                ext = ''
+            result = result[:MAX_LEN - len(ext)] + ext
+
+        # Step 4: Windows does not allow filenames to end with '.' or ' ' or begin with ' '.
+        result = re.sub(r"[. ]$", FILLER, result)
+        result = re.sub(r"^ ", FILLER, result)
+
+        return result
+    
     def fetchOrRequestImage(self, url, designation, width = None, height = None):
         """Request image from web or fetch from local cache"""
         cache_base = "images"
+        designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
         if not os.path.exists(cache_base):
             os.makedirs(cache_base)
         extension = "jpeg" if "jpeg" in url or "jpg" in url else "png"
@@ -124,9 +174,21 @@ class SETS():
             if(width is not None):
                 image = image.resize((width,height),Image.ANTIALIAS)
             return ImageTk.PhotoImage(image)
+        if designation in self.imagesFail and self.imagesFail[designation]:
+            # Previously failed this session, do not attempt download again until next run
+            return self.emptyImage
+        # No existing image, no record of failure -- attempt to download
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
-        img_data = requests.get(url).content
+        self.logWrite('fetch: '+url)
+        img_request = requests.get(url)
+        img_data = img_request.content
+        self.logWrite('fetch: response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
+        if not img_request.ok:
+            # No response on icon grab, mark for no downlaad attempt till restart
+            self.imagesFail[designation] = 1
+            return self.emptyImage
+        self.logWrite('fetch: '+filename)
         with open(filename, 'wb') as handler:
             handler.write(img_data)
         image = Image.open(filename)
@@ -1417,6 +1479,10 @@ class SETS():
         self.window.call('tk', 'scaling', factor)
         
         self.setupFooterFrame('', '{:>4}dpi (x{:>4}) '.format(dpi, (factor * scale)))
+        
+    def logWrite(self, notice, level=1):
+        if self.debug >= level:
+            sys.stderr.write(notice+'\n')
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
@@ -1453,6 +1519,7 @@ class SETS():
 
     def __init__(self) -> None:
         """Main setup function"""
+        self.debug = 1 if os.path.exists('.debug') else 0
         self.window = Tk()
         # self.window.geometry('1280x650')
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
@@ -1462,6 +1529,7 @@ class SETS():
         self.clearBackend()
         self.hookBackend()
         self.images = dict()
+        self.imagesFail = dict()
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
