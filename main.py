@@ -260,7 +260,7 @@ class SETS():
         """Populate in-memory cache of ship equipment lists for faster loading"""
         if keyPhrase in self.backend['cacheEquipment']:
             return self.backend['cacheEquipment'][keyPhrase]
-        phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
+        phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         if "Kit Frame" in keyPhrase:
             equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not 'Module' in item['type']]
         else:
@@ -579,7 +579,8 @@ class SETS():
                 skills.append(tr)
         items_list = []
         for skill in skills:
-            cname = skill.find('td', first=True).text.replace(':','')
+            # text.replace nullified, future removal if stable
+            cname = skill.find('td', first=True).text.replace(':',':')
             cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
