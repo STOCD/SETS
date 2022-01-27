@@ -181,15 +181,21 @@ class SETS():
         # No existing image, no record of failure -- attempt to download
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
-        self.logWrite('fetch: '+url)
+        self.logWrite('fetch : '+url)
         img_request = requests.get(url)
         img_data = img_request.content
-        self.logWrite('fetch: response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
+        self.logWrite('fetch : response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
+        if not img_request.ok and "(Federation)" in url:
+            url = re.sub('_\(Federation\)', '', url)
+            self.logWrite('fetch2: '+url)
+            img_request = requests.get(url)
+            img_data = img_request.content
+            self.logWrite('fetch2: response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
             self.imagesFail[designation] = 1
             return self.emptyImage
-        self.logWrite('fetch: '+filename)
+        self.logWrite('STORE: '+filename)
         with open(filename, 'wb') as handler:
             handler.write(img_data)
         image = Image.open(filename)
@@ -544,7 +550,8 @@ class SETS():
                 skills.append(tr)
         items_list = []
         for skill in skills:
-            cname = skill.find('td', first=True).text.replace(':','')
+            # The colon becomes necessary to find some icons, improved sanitization elsewhere should support this removal.  Was in original commit, so could not confirm any other function.
+            cname = skill.find('td', first=True).text.replace(':',':')
             cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
