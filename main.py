@@ -254,7 +254,11 @@ class SETS():
 
     def sanitizeEquipmentName(self, name):
         """Strip irreleant bits of equipment name for easier icon matching"""
-        return html.unescape(re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip())
+        name = re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip()
+        name = html.unescape(name)
+        name = name.replace('&#34;', '"')
+        name = name.replace('&#39;', '\'')
+        return name
 
     def precacheEquipment(self, keyPhrase):
         """Populate in-memory cache of ship equipment lists for faster loading"""
