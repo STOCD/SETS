@@ -517,7 +517,7 @@ class SETS():
         else:
             traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
             traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == args[3]]
-            traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and (traits[e]["type"] == "reputation") == args[0]]
+            traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and ("reputation" in traits[e]["type"]) == args[0]]
             if args[0]:
                 actives = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_abilities", "player_abilities").links
                 traits = [traits[e] for e in range(len(traits)) if "name" in traits[e] and (('/wiki/Trait:_'+traits[e]["name"]).replace(' ','_') in list(actives)) == args[1]]
@@ -927,7 +927,7 @@ class SETS():
         self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.itemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         if ship["experimental"] == 1:
             self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.itemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.itemLabelCallback, ["Ship Device", "Pick Device", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.itemLabelCallback, ["Ship Device", "Pick Device (S)", ""])
         if self.backend['shipUniConsoles'] > 0:
             self.labelBuildBlock(self.shipEquipmentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.itemLabelCallback, ["Console", "Pick Uni Console", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Sci Consoles", 2, 2, 1, 'sciConsoles', self.backend['shipSciConsoles'], self.itemLabelCallback, ["Ship Science Console", "Pick Sci Console", ""])
@@ -943,9 +943,9 @@ class SETS():
         self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["EV Suit", "Pick EV Suit", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5, self.itemLabelCallback, ["Ground Device", "Pick Device", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield (G)", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", ""])
 
     def setupSkillMainFrame(self):
         self.clearFrame(self.skillMiddleFrame)
@@ -1482,12 +1482,36 @@ class SETS():
         pass #placeholder
 
     def setupSettingsFrame(self):
-        buttonInvalidateCache = Button(self.settingsFrame, text='Invalidate cache', bg='#3a3a3a',fg='#b3b3b3')
+        self.settingsTopFrame = Frame(self.settingsFrame, bg='#b3b3b3')
+        self.settingsTopFrame.pack(side='top', fill=BOTH, expand=True)
+        self.settingsBottomFrame = Frame(self.settingsFrame, bg='#b3b3b3')
+        self.settingsBottomFrame.pack(side='bottom', fill=BOTH, expand=True)
+        
+        
+        self.settingsTopLeftFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
+        self.settingsTopLeftFrame.pack(side='left', fill=BOTH, expand=True)
+        #self.settingsLeftFrame.grid(row=0,column=0,sticky='nsew', pady=5)
+        self.settingsTopMiddleFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
+        self.settingsTopMiddleFrame.pack(side='left', fill=BOTH, expand=True)
+        #self.settingsMiddleFrame.grid(row=0,column=1,sticky='nsew', pady=5)
+        self.settingsTopRightFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
+        self.settingsTopRightFrame.pack(side='right', fill=BOTH, expand=True)
+        #self.settingsRightFrame.grid(row=0,column=2,sticky='nsew', pady=5)
+        
+        buttonInvalidateCache = Button(self.settingsTopLeftFrame, text='Invalidate cache', bg='#3a3a3a',fg='#b3b3b3')
         buttonInvalidateCache.pack(side='left')
         buttonInvalidateCache.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="cache"))
-        buttonInvalidateImages = Button(self.settingsFrame, text='Refresh images (Warning: TAKES A LONG TIME)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonInvalidateImages = Button(self.settingsTopLeftFrame, text='Refresh images (Warning: TAKES A LONG TIME)', bg='#3a3a3a',fg='#b3b3b3')
         buttonInvalidateImages.pack(side='left')
         buttonInvalidateImages.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="images"))
+
+        self.settingsTopLeftFrame.grid_columnconfigure(0, weight=1, uniform="settingsColSpace")
+        self.settingsTopMiddleFrame.grid_columnconfigure(1, weight=1, uniform="settingsColSpace")
+        self.settingsTopRightFrame.grid_columnconfigure(2, weight=1, uniform="settingsColSpace")
+        self.settingsTopLeftFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
+        self.settingsTopMiddleFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
+        self.settingsTopRightFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
+        self.window.update()
 
     def setupUIScaling(self, scale):
          # pixel correction
