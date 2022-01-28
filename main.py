@@ -927,7 +927,7 @@ class SETS():
         self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.itemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         if ship["experimental"] == 1:
             self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.itemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.itemLabelCallback, ["Ship Device", "Pick Space Device", ""])
+        self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.itemLabelCallback, ["Ship Device", "Pick Device (S)", ""])
         if self.backend['shipUniConsoles'] > 0:
             self.labelBuildBlock(self.shipEquipmentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.itemLabelCallback, ["Console", "Pick Uni Console", ""])
         self.labelBuildBlock(self.shipEquipmentFrame, "Sci Consoles", 2, 2, 1, 'sciConsoles', self.backend['shipSciConsoles'], self.itemLabelCallback, ["Ship Science Console", "Pick Sci Console", ""])
@@ -943,9 +943,9 @@ class SETS():
         self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", ""])
         self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["EV Suit", "Pick EV Suit", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Ground Shield", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Ground Weapon", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5, self.itemLabelCallback, ["Ground Device", "Pick Ground Device", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield (G)", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", ""])
 
     def setupSkillMainFrame(self):
         self.clearFrame(self.skillMiddleFrame)
