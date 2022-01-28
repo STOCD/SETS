@@ -185,12 +185,15 @@ class SETS():
         img_request = requests.get(url)
         img_data = img_request.content
         self.logWrite('fetch : response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
-        if not img_request.ok and "(Federation)" in url:
-            url = re.sub('_\(Federation\)', '', url)
-            self.logWrite('fetch2: '+url)
-            img_request = requests.get(url)
-            img_data = img_request.content
-            self.logWrite('fetch2: response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
+        if not img_request.ok:
+            url2 = url.replace('Q%27s_Ornament%3A_', '')
+            if "(Federation)" in url:
+                url2 = re.sub('_\(Federation\)', '', url2)
+            if url2 is not url:
+                self.logWrite('fetch2: '+url2)
+                img_request = requests.get(url2)
+                img_data = img_request.content
+                self.logWrite('fetch2: response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
             self.imagesFail[designation] = 1
@@ -266,7 +269,7 @@ class SETS():
             return self.backend['cacheEquipment'][keyPhrase]
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         if "Kit Frame" in keyPhrase:
-            equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not 'Module' in item['type']]
+            equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "fake" in item['type'] and not 'Module' in item['type']]
         else:
             equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
         self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
