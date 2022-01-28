@@ -4,15 +4,16 @@ from tkinter import font
 from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, datetime, html, urllib.parse, ctypes
+import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys
 import numpy as np
 
 
 """This section will improve display, but may require sizing adjustments to activate"""
-try:
-    ctypes.windll.shcore.SetProcessDpiAwareness(2) # windows version >= 8.1
-except:
-    ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
+if sys.platform.startswith('win'):
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2) # windows version >= 8.1
+    except:
+        ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
     
 class SETS():
     """Main App Class"""
@@ -111,9 +112,60 @@ class SETS():
             json.dump(r.json(),json_file)
         return r.json()
 
+    def filePathSanitize(self, txt, chr_set='printable'):
+        """Converts txt to a valid filename.
+
+        Args:
+            txt: The str to convert.
+            chr_set:
+                'printable':    Any printable character except those disallowed on Windows/*nix.
+                'extended':     'printable' + extended ASCII character codes 128-255
+                'universal':    For almost *any* file system. '-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        """
+
+        FILLER = '-'
+        MAX_LEN = 255  # Maximum length of filename is 255 bytes in Windows and some *nix flavors.
+
+        # Step 1: Remove excluded characters.
+        BLACK_LIST = set(chr(127) + r'<>:"/\|?*')                           # 127 is unprintable, the rest are illegal in Windows.
+        white_lists = {
+            'universal': {'-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'},
+            'printable': {chr(x) for x in range(32, 127)} - BLACK_LIST,     # 0-32, 127 are unprintable,
+            'extended' : {chr(x) for x in range(32, 256)} - BLACK_LIST,
+        }
+        white_list = white_lists[chr_set]
+        result = ''.join(x
+                         if x in white_list else FILLER
+                         for x in txt)
+
+        # Step 2: Device names, '.', and '..' are invalid filenames in Windows.
+        DEVICE_NAMES = 'CON,PRN,AUX,NUL,COM1,COM2,COM3,COM4,' \
+                       'COM5,COM6,COM7,COM8,COM9,LPT1,LPT2,' \
+                       'LPT3,LPT4,LPT5,LPT6,LPT7,LPT8,LPT9,' \
+                       'CONIN$,CONOUT$,..,.'.split()  # This list is an O(n) operation.
+        if result in DEVICE_NAMES:
+            result = f'-{result}-'
+
+        # Step 3: Truncate long files while preserving the file extension.
+        if len(result) > MAX_LEN:
+            if '.' in txt:
+                result, _, ext = result.rpartition('.')
+                ext = '.' + ext
+            else:
+                ext = ''
+            result = result[:MAX_LEN - len(ext)] + ext
+
+        # Step 4: Windows does not allow filenames to end with '.' or ' ' or begin with ' '.
+        result = re.sub(r"[. ]$", FILLER, result)
+        result = re.sub(r"^ ", FILLER, result)
+
+        return result
+    
     def fetchOrRequestImage(self, url, designation, width = None, height = None):
         """Request image from web or fetch from local cache"""
         cache_base = "images"
+        designation.replace("/", "_") # Missed by the path sanitizer
+        designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
         if not os.path.exists(cache_base):
             os.makedirs(cache_base)
         extension = "jpeg" if "jpeg" in url or "jpg" in url else "png"
@@ -123,9 +175,30 @@ class SETS():
             if(width is not None):
                 image = image.resize((width,height),Image.ANTIALIAS)
             return ImageTk.PhotoImage(image)
+        if designation in self.imagesFail and self.imagesFail[designation]:
+            # Previously failed this session, do not attempt download again until next run
+            return self.emptyImage
+        # No existing image, no record of failure -- attempt to download
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
-        img_data = requests.get(url).content
+        self.logWrite('fetch : '+url)
+        img_request = requests.get(url)
+        img_data = img_request.content
+        self.logWrite('fetch : response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
+        if not img_request.ok:
+            url2 = url.replace('Q%27s_Ornament%3A_', '')
+            if "(Federation)" in url:
+                url2 = re.sub('_\(Federation\)', '', url2)
+            if url2 is not url:
+                self.logWrite('fetch2: '+url2)
+                img_request = requests.get(url2)
+                img_data = img_request.content
+                self.logWrite('fetch2: response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
+        if not img_request.ok:
+            # No response on icon grab, mark for no downlaad attempt till restart
+            self.imagesFail[designation] = 1
+            return self.emptyImage
+        self.logWrite('STORE: '+filename)
         with open(filename, 'wb') as handler:
             handler.write(img_data)
         image = Image.open(filename)
@@ -184,15 +257,19 @@ class SETS():
 
     def sanitizeEquipmentName(self, name):
         """Strip irreleant bits of equipment name for easier icon matching"""
-        return html.unescape(re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip())
+        name = re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip()
+        name = html.unescape(name)
+        name = name.replace('&#34;', '"')
+        name = name.replace('&#39;', '\'')
+        return name
 
     def precacheEquipment(self, keyPhrase):
         """Populate in-memory cache of ship equipment lists for faster loading"""
         if keyPhrase in self.backend['cacheEquipment']:
             return self.backend['cacheEquipment'][keyPhrase]
-        phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
+        phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         if "Kit Frame" in keyPhrase:
-            equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not 'Module' in item['type']]
+            equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "fake" in item['type'] and not 'Module' in item['type']]
         else:
             equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
         self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
@@ -480,7 +557,8 @@ class SETS():
                 skills.append(tr)
         items_list = []
         for skill in skills:
-            cname = skill.find('td', first=True).text.replace(':','')
+            # The colon becomes necessary to find some icons, improved sanitization elsewhere should support this removal.  Was in original commit, so could not confirm any other function.
+            cname = skill.find('td', first=True).text.replace(':',':')
             cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
@@ -508,7 +586,8 @@ class SETS():
                 skills.append(tr)
         items_list = []
         for skill in skills:
-            cname = skill.find('td', first=True).text.replace(':','')
+            # text.replace nullified, future removal if stable
+            cname = skill.find('td', first=True).text.replace(':',':')
             cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
@@ -556,7 +635,8 @@ class SETS():
         
         self.hookBackend()
         self.setupShipInfoFrame()
-        self.setupTierFrame(int(self.build['tier'][1]))
+        if 'tier' in self.build and len(self.build['tier']) > 1:
+            self.setupTierFrame(int(self.build['tier'][1]))
         self.shipButton.configure(text=self.build['ship'])
         self.setupSpaceBuildFrames()
         self.setupGroundBuildFrames()
@@ -729,9 +809,9 @@ class SETS():
         self.settingsFrame.pack_forget()
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.setupShipInfoFrame() #get updates from info changes
-        if self.shipImg is not None:
-            self.shipLabel.configure(image=self.shipImg)
-        self.setupJustTierFrame(int(self.backend['tier'].get()[1]))
+        self.shipLabel.configure(image=self.shipImg)
+        if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
+            self.setupJustTierFrame(int(self.backend['tier'].get()[1]))
 
     def focusGroundBuildFrameCallback(self):
         self.spaceBuildFrame.pack_forget()
@@ -932,7 +1012,7 @@ class SETS():
                 rank = 4
             bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
-            boffSan = boff.replace(' ','_')+"_"+str(idx)
+            boffSan = 'spaceBoff_' + str(idx)
             self.backend['i_'+boffSan] = [None] * rank
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
@@ -953,6 +1033,7 @@ class SETS():
             else:
                 specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
+                self.build['boffseats']['space'][idx] = spec
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
             for i in range(rank):
@@ -1335,6 +1416,7 @@ class SETS():
     def setupSpaceBuildFrame(self):
         self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
         self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
+        self.shipImg = self.emptyImage
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
         self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         self.shipMiddleFrameUpper = Frame(self.shipMiddleFrame, bg='#3a3a3a')
@@ -1414,6 +1496,10 @@ class SETS():
         self.window.call('tk', 'scaling', factor)
         
         self.setupFooterFrame('', '{:>4}dpi (x{:>4}) '.format(dpi, (factor * scale)))
+        
+    def logWrite(self, notice, level=1):
+        if self.debug >= level:
+            sys.stderr.write(notice+'\n')
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
@@ -1450,6 +1536,7 @@ class SETS():
 
     def __init__(self) -> None:
         """Main setup function"""
+        self.debug = 1 if os.path.exists('.debug') else 0
         self.window = Tk()
         # self.window.geometry('1280x650')
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
@@ -1459,6 +1546,7 @@ class SETS():
         self.clearBackend()
         self.hookBackend()
         self.images = dict()
+        self.imagesFail = dict()
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
