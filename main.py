@@ -1012,7 +1012,7 @@ class SETS():
                 rank = 4
             bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
-            boffSan = boff.replace(' ','_')+"_"+str(idx)
+            boffSan = 'spaceBoff_' + str(idx)
             self.backend['i_'+boffSan] = [None] * rank
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
@@ -1033,6 +1033,7 @@ class SETS():
             else:
                 specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
+                self.build['boffseats']['space'][idx] = spec
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
             for i in range(rank):
