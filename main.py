@@ -615,6 +615,7 @@ class SETS():
         item = self.pickerGui("Pick Starship", itemVar, items_list, [self.setupSearchFrame])
         self.shipButton.configure(text=item['item'])
         self.backend['ship'].set(item['item'])
+        self.setupSpaceBoffFrame(self.backend['shipHtml'])
 
     def importCallback(self, event):
         """Callback for import button"""
@@ -1014,6 +1015,8 @@ class SETS():
             bFrame.pack(fill=BOTH, expand=True)
             boffSan = 'spaceBoff_' + str(idx)
             self.backend['i_'+boffSan] = [None] * rank
+            if spec != 'Universal' and spec != self.build['boffseats']['space'][idx]:
+                self.build['boffs'][boffSan] = [None] * rank
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value=boff)
@@ -1036,6 +1039,12 @@ class SETS():
                 self.build['boffseats']['space'][idx] = spec
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
+            if boffSan in self.build['boffs']:
+                boffExistingLen = len(self.build['boffs'][boffSan])
+                if boffExistingLen < rank:
+                    self.build['boffs'][boffSan].append([None] * (rank - boffExistingLen))
+                elif boffExistingLen > rank:
+                    self.build['boffs'][boffSan] = self.build['boffs'][boffSan][slice(rank)]
             for i in range(rank):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
                     image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i])
