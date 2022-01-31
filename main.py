@@ -617,7 +617,7 @@ class SETS():
         self.backend['ship'].set(item['item'])
         self.setupSpaceBoffFrame(self.backend['shipHtml'])
 
-    def importCallback(self, event):
+    def importCallback(self, event=None):
         """Callback for import button"""
         inFilename = filedialog.askopenfilename(filetypes=[("JSON file", '*.json'),("PNG image","*.png"),("All Files","*.*")])
         self.importByFilename(inFilename)
@@ -645,7 +645,7 @@ class SETS():
 
         self.setupFooterFrame(inFilename+' -- loaded', '')
 
-    def exportCallback(self, event):
+    def exportCallback(self, event=None):
         """Callback for export button"""
         try:
             with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
@@ -654,7 +654,7 @@ class SETS():
         except AttributeError:
             pass
 
-    def exportPngCallback(self, event):
+    def exportPngCallback(self, event=None):
         """Callback for export as png button"""
         # pixel correction
         self.window.update()
@@ -694,7 +694,7 @@ class SETS():
                 self.backend['skillLabels'][s].configure(bg="grey")
 
 
-    def exportRedditCallback(self, event):
+    def exportRedditCallback(self, event=None):
         redditString = "**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'])
         column0 = (self.makeRedditColumn(["**Fore Weapons:**"], self.backend['shipForeWeapons']) +
                    self.makeRedditColumn(["**Aft Weapons:**"], self.backend['shipAftWeapons']) +
@@ -765,7 +765,7 @@ class SETS():
         self.copyBuildToBackend('ship')
         self.copyBuildToBackend('tier')
 
-    def clearBuildCallback(self, event):
+    def clearBuildCallback(self, event=None):
         """Callback for the clear build button"""
         self.clearBuild()
         self.buildToBackendSeries()
@@ -1296,21 +1296,16 @@ class SETS():
         playerShipNameFrame.grid_columnconfigure(1, weight=1)
         exportImportFrame = Frame(self.shipInfoFrame)
         exportImportFrame.pack(fill=BOTH, expand=True)
-        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
         buttonExport.pack(side='left', fill=BOTH, expand=True)
-        buttonExport.bind('<Button-1>', self.exportCallback)
-        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3')
+        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
         buttonImport.pack(side='left', fill=BOTH, expand=True)
-        buttonImport.bind('<Button-1>', self.importCallback)
-        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3')
+        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
         buttonClear.pack(side='left', fill=BOTH, expand=True)
-        buttonClear.bind('<Button-1>', self.clearBuildCallback)
-        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3', command=self.exportPngCallback)
         buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportPng.bind('<Button-1>', self.exportPngCallback)
-        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit.bind('<Button-1>', self.exportRedditCallback)
         shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipLabelFrame.pack(fill=BOTH, expand=True)
         self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
@@ -1367,21 +1362,16 @@ class SETS():
         playerNameFrame.grid_columnconfigure(1, weight=1)
         exportImportFrame = Frame(self.groundInfoFrame)
         exportImportFrame.pack(fill=BOTH, expand=True)
-        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
         buttonExport.pack(side='left', fill=BOTH, expand=True)
-        buttonExport.bind('<Button-1>', self.exportCallback)
-        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3')
+        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
         buttonImport.pack(side='left', fill=BOTH, expand=True)
-        buttonImport.bind('<Button-1>', self.importCallback)
-        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3')
+        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
         buttonClear.pack(side='left', fill=BOTH, expand=True)
-        buttonClear.bind('<Button-1>', self.clearBuildCallback)
-        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3', command=self.exportPngCallback)
         buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportPng.bind('<Button-1>', self.exportPngCallback)
-        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3')
+        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit.bind('<Button-1>', self.exportRedditCallback)
         charLabelFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
         charLabelFrame.pack(fill=BOTH, expand=True)
         self.charLabel = Label(charLabelFrame, fg='#3a3a3a', bg='#b3b3b3', height=5)
