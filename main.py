@@ -1350,31 +1350,31 @@ class SETS():
             Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
             v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
             Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
-        
-        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
-        m.grid(column=1, row=0, sticky='swe', pady=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 1, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
-        m.grid(column=1, row=1, sticky='swe', pady=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 2, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
-        m.grid(column=1, row=2, sticky='swe', pady=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 3, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
-        m.grid(column=1, row=3, sticky='swe', pady=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 4, sticky='e')
+
+        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='e')
         m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
-        m.grid(column=1, row=4, sticky='swe', pady=2)
+        m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
         m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
+
+        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 1, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
+        m.grid(column=1, row=1, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 2, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
+        m.grid(column=1, row=2, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 3, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
+        m.grid(column=1, row=3, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 4, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
+        m.grid(column=1, row=4, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
         charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
         
@@ -1421,30 +1421,30 @@ class SETS():
             v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
             Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
 
-        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
-        m.grid(column=1, row=0, sticky='swe', pady=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 1, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
-        m.grid(column=1, row=1, sticky='swe', pady=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 2, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
-        m.grid(column=1, row=2, sticky='swe', pady=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 3, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
-        m.grid(column=1, row=3, sticky='swe', pady=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 4, sticky='e')
-        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3')
-        m.grid(column=1, row=4, sticky='swe', pady=2)
+        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='e')
+        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
+        m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
         m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
+
+        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 1, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
+        m.grid(column=1, row=1, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 2, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
+        m.grid(column=1, row=2, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 3, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
+        m.grid(column=1, row=3, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 4, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
+        m.grid(column=1, row=4, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
         charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
 
