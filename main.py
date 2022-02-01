@@ -392,7 +392,7 @@ class SETS():
             'groundShield': [None],
             'groundWeapons': [None] * 2,
             'groundDevices': [None] * 5,
-            'eliteCaptain': '',
+            'eliteCaptain': 0,
             'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
             'tags': dict(),
             'skills': [[], [], [], [], []]
