@@ -830,7 +830,6 @@ class SETS():
         for power in sorted(self.backend['doffsAll'][0 if isSpace else 1]):
             if v0.get() in power[0]:
                 menu.add_command(label=power[1], command=lambda value=power[1]: v1.set(value))
-        self.logWrite(str(isSpace), 1)
 
         self.setupDoffFrame(self.shipDoffFrame)
         self.setupDoffFrame(self.groundDoffFrame)
