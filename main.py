@@ -1027,7 +1027,6 @@ class SETS():
             bonusPersonalTraits += 1
         if ('Alien' in self.backend['species'].get()) or 1:
             bonusPersonalTraits += 1
-        self.logWrite(str(bonusPersonalTraits))
         self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if bonusPersonalTraits >= 2 else 5, self.traitLabelCallback, [False, False, False, "space"])
         self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5 if bonusPersonalTraits else 4, self.traitLabelCallback, [False, False, False, "space"])
         self.labelBuildBlock(self.shipTraitFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True, "space"])
