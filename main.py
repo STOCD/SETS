@@ -921,7 +921,7 @@ class SETS():
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
 
-    def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None):
+    def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
         """Set up n-element line of ship equipment"""
         self.backend['i_'+key] = [None] * n
         cFrame = Frame(frame, bg='#3a3a3a')
@@ -932,21 +932,26 @@ class SETS():
         label.pack(side='left')
         iFrame = Frame(cFrame, bg='#3a3a3a')
         iFrame.pack(fill=BOTH, expand=True)
+        disabledStart = n - disabledCount
         for i in range(n):
             image1=None
-            if key in self.build and self.build[key][i] is not None:
+            if key in self.build and self.build[key][i] is not None and i < disabledStart:
                 image0=self.imageFromInfoboxName(self.build[key][i]['item'])
                 if 'rarity' in self.build[key][i]:
                     image1=self.imageFromInfoboxName(self.build[key][i]['rarity'])
                 self.backend['i_'+key][i] = [image0, image1]
             else:
                 image0=image1=self.emptyImage
-            canvas = Canvas(iFrame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
-            canvas.grid(row=row, column=i+1, sticky='nse', padx=2, pady=2)
+            canvas = Canvas(iFrame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray' if i < disabledStart else 'black')
+            canvas.grid(row=row, column=i+1, sticky='nse', padx=(25 + 3 * 2) if i >= disabledStart else 2, pady=2)
             img0 = canvas.create_image(0,0, anchor="nw",image=image0)
             img1 = None if image1 is None else canvas.create_image(0,0, anchor="nw",image=image1)
-            if (args is not None):
+            if i >= disabledStart:
+                canvas.itemconfig(img0, state=DISABLED)
+                canvas.itemconfig(img1, state=DISABLED)
+            if (args is not None and i < disabledStart):
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
+
 
     def setupShipBuildFrame(self, ship):
         """Set up UI frame containing ship equipment"""
@@ -1028,12 +1033,10 @@ class SETS():
         self.clearFrame(self.shipTraitFrame)
         bonusPersonalTraits = 0
         # Two will get an extra slot in top section, but currently we leave the extra slot in the bottom until species-specific traits can be auto-set.
-        if self.backend['eliteCaptain'].get():
-            bonusPersonalTraits += 1
-        if ('Alien' in self.backend['species'].get()) or 1:
-            bonusPersonalTraits += 1
-        self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if bonusPersonalTraits >= 2 else 5, self.traitLabelCallback, [False, False, False, "space"])
-        self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5 if bonusPersonalTraits else 4, self.traitLabelCallback, [False, False, False, "space"])
+        traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
+        traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
+        self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "space"])
+        self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.traitLabelCallback, [False, False, False, "space"], 1 if not traitAlien else 0)
         self.labelBuildBlock(self.shipTraitFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True, "space"])
         self.labelBuildBlock(self.shipTraitFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.traitLabelCallback, [True, False, False, "space"])
         self.labelBuildBlock(self.shipTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False, "space"])
