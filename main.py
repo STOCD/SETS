@@ -351,13 +351,13 @@ class SETS():
     def initSettings(self):
         """Initialize session settings state"""
         self.fileDebug = '.debug'
-        debugDefault = 1 if os.path.exists(self.fileDebug) else 0
+        self.debugDefault = 1 if os.path.exists(self.fileDebug) else 0
         
         self.log = StringVar()
         self.logmini = StringVar()
         self.fileConfig = '.config.json'
         self.settings = {
-            'debug': debugDefault,
+            'debug': self.debugDefault,
             'template': '.template.json'
         }
         
@@ -1653,11 +1653,16 @@ class SETS():
         if os.path.exists(self.fileConfig):
             with open(self.fileConfig, 'r') as inFile:
                 try:
+                    self.logWrite(self.fileConfig+' -- loading as Config')
                     self.settings = json.load(inFile)
-                    self.logWrite(self.fileConfig+' -- loaded as Config')
-                    self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
                 except ValueError:
                     self.logWrite(self.fileConfig+' -- file load error')
+                    
+                if self.args.debug:
+                    self.settings['debug'] = self.args.debug
+                elif self.debugDefault or not 'debug' in self.settings:
+                    self.settings['debug'] = self.debugDefault
+                self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
     
     def __init__(self) -> None:
         """Main setup function"""
