@@ -345,12 +345,13 @@ class SETS():
 
     def copyBuildToBackend(self, key):
         """Helper function to copy build value to backend dict"""
-        self.backend[key].set(self.build[key])
+        if key in self.build:
+            self.backend[key].set(self.build[key])
 
     def clearBuild(self):
         """Initialize new build state"""
-        # VersionJSON Should be updated when JSON format changes, currently number-as-date
-        self.versionJSON = 20220201
+        # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
+        self.versionJSON = 2022020203
         self.build = {
             'versionJSON': self.versionJSON,
             'boffs': dict(),
@@ -377,6 +378,8 @@ class SETS():
             'ship': '',
             'specPrimary': '',
             'playerShipName': '',
+            'playerShipDesc': '',
+            'playerDesc': '',
             'specSecondary': '',
             'tier': '',
             'secdef': [None],
@@ -403,6 +406,7 @@ class SETS():
                         "career": StringVar(self.window), "species": StringVar(self.window), "playerName": StringVar(self.window),
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
+                        "playerShipDesc": StringVar(self.window), "playerDesc": StringVar(self.window),
                         'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), "doffs": None,
                         "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
             }
@@ -771,6 +775,8 @@ class SETS():
 
     def buildToBackendSeries(self):
         self.copyBuildToBackend('playerShipName')
+        self.copyBuildToBackend('playerShipDesc')
+        self.copyBuildToBackend('playerDesc')
         self.copyBuildToBackend('career')
         self.copyBuildToBackend('species')
         self.copyBuildToBackend('specPrimary')
@@ -1370,6 +1376,12 @@ class SETS():
         
         charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
         
+    def updateShipDesc(self, event):
+        self.build['playerShipDesc'] = self.shipDescText.get("1.0", END)
+    
+    def updatePlayerDesc(self, event):
+        self.build['playerDesc'] = self.charDescText.get("1.0", END)
+        
     def setupShipInfoFrame(self):
         self.clearFrame(self.shipInfoFrame)
         playerShipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
@@ -1393,6 +1405,17 @@ class SETS():
         self.shipTierFrame = Frame(shipNameFrame, bg='#b3b3b3')
         self.shipTierFrame.grid(column=2, row=0, sticky='e')
         
+        shipDescFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
+        shipDescFrame.pack(fill=BOTH, expand=True, padx=2)
+        Label(shipDescFrame, text="Desc:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nw')
+        # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
+        self.shipDescText = Text(shipDescFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
+        self.shipDescText.grid(row=0, column=1, sticky='nsw', pady=2, padx=2)
+        self.shipDescText.bind('<KeyRelease>', self.updateShipDesc)
+        if 'playerShipDesc' in self.build:
+            self.shipDescText.delete(1.0, END)
+            self.shipDescText.insert(1.0, self.build['playerShipDesc'])
+        
         self.setupTagsAndCharFrame(self.shipInfoFrame)
         
         if self.build['ship'] is not None:
@@ -1412,6 +1435,16 @@ class SETS():
         charLabelFrame.pack(fill=BOTH, expand=True)
         self.charLabel = Label(charLabelFrame, fg='#3a3a3a', bg='#b3b3b3', height=5)
         self.charLabel.pack(fill=BOTH, expand=True)
+        
+        charDescFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
+        charDescFrame.pack(fill=BOTH, expand=True, padx=2)
+        Label(charDescFrame, text="Desc (G):", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nw')
+        self.charDescText = Text(charDescFrame, height=3, width=43, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
+        self.charDescText.grid(row=0, column=1, sticky='nsw', pady=2, padx=2)
+        self.charDescText.bind('<KeyRelease>', self.updatePlayerDesc)
+        if 'playerShipDesc' in self.build:
+            self.charDescText.delete(1.0, END)
+            self.charDescText.insert(1.0, self.build['playerDesc'])
         
         self.setupTagsAndCharFrame(self.groundInfoFrame)
 
