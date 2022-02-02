@@ -142,3 +142,4 @@ SETUP.bat
 .template.json
 .debug
 test.json
+.config.json
