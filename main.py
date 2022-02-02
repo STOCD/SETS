@@ -4,7 +4,7 @@ from tkinter import font
 from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys
+import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse
 import numpy as np
 
 
@@ -1563,13 +1563,13 @@ class SETS():
     def logminiWrite(self, notice, level=0):
         if level == 0:
             self.setFooterFrame('', notice)
-        if self.debug >= level:
+        if self.debug > 0 and self.debug >= level:
             sys.stderr.write(notice+'\n')
             
     def logWrite(self, notice, level=0):
         if level == 0:
             self.setFooterFrame(notice, '')
-        if self.debug >= level:
+        if self.debug > 0 and self.debug >= level:
             sys.stderr.write(notice+'\n')
 
     def setupUIFrames(self):
@@ -1602,14 +1602,31 @@ class SETS():
         self.setupGroundInfoFrame()
         self.setupSkillInfoFrame()
         
-        if os.path.exists('.template.json'):
+        if self.args.file is not None:
+            self.importByFilename(self.args.file)
+        elif os.path.exists('.template.json'):
             self.importByFilename('.template.json')
             
         self.setupSpaceBuildFrames()
 
+    def argParserSetup(self):
+        parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
+        parser.add_argument('--debug', type=int, help='Set debug level (default: 0)')
+        parser.add_argument('--file', type=str, help='File to import on open')
+
+        self.args = parser.parse_args()
+        
+        if self.args.debug is not None:
+            self.debug = self.args.debug
+            
+        self.logWrite('Debug level is: '+str(self.debug), 1)
+
+    
     def __init__(self) -> None:
         """Main setup function"""
         self.debug = 1 if os.path.exists('.debug') else 0
+        
+        self.argParserSetup()
         self.window = Tk()
         # self.window.geometry('1280x650')
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
