@@ -1021,13 +1021,14 @@ class SETS():
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
         self.clearFrame(self.shipTraitFrame)
+        # Two will get an extra slot in top section, but currently we leave the extra slot in the bottom until species-specific traits can be auto-set.
         bonusPersonalTraits = 0
         if ('Alien' in self.backend['species'].get()) and self.backend['eliteCaptain'].get():
             bonusPersonalTraits += 1
         if ('Alien' in self.backend['species'].get()) or self.backend['eliteCaptain'].get():
             bonusPersonalTraits += 1
         self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if bonusPersonalTraits >= 2 else 5, self.traitLabelCallback, [False, False, False, "space"])
-        self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5 if bonusPersonalTraits else 4, self.traitLabelCallback, [False, False, False, "space"])
+        self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5 if bonusPersonalTraits else 5, self.traitLabelCallback, [False, False, False, "space"])
         self.labelBuildBlock(self.shipTraitFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True, "space"])
         self.labelBuildBlock(self.shipTraitFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.traitLabelCallback, [True, False, False, "space"])
         self.labelBuildBlock(self.shipTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False, "space"])
@@ -1035,13 +1036,14 @@ class SETS():
     def setupGroundTraitFrame(self):
         """Set up UI frame containing traits"""
         self.clearFrame(self.groundTraitFrame)
+        # Two will get an extra slot in top section, but currently we leave the extra slot in the bottom until species-specific traits can be auto-set.
         bonusPersonalTraits = 0
         if ('Alien' in self.backend['species'].get()) and self.backend['eliteCaptain'].get():
             bonusPersonalTraits += 1
         if ('Alien' in self.backend['species'].get()) or self.backend['eliteCaptain'].get():
             bonusPersonalTraits += 1
         self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if bonusPersonalTraits >= 2 else 5, self.traitLabelCallback, [False, False, False, "ground"])
-        self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5 if bonusPersonalTraits else 4, self.traitLabelCallback, [False, False, False, "ground"])
+        self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5 if bonusPersonalTraits else 5, self.traitLabelCallback, [False, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
