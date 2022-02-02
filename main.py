@@ -302,8 +302,8 @@ class SETS():
         return self.backend['modifiers']
 
     def fetchDoffs(self):
-        if self.backend['doffs'] is not None:
-            return self.backend['doffs']
+        if self.backend['doffsAll'] is not None:
+            return self.backend['doffsAll']
         specPage = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Duty_officer#Specializations", "doffs")
         trs = specPage.find('tr')
         doffs = []
@@ -323,8 +323,8 @@ class SETS():
                     spaceDoffs.append((spec, li.text.replace('[SP]','')))
                 if '[GR]' in li.text:
                     groundDoffs.append((spec, li.text.replace('[GR]','')))
-        self.backend['doffs'] = (spaceDoffs,groundDoffs)
-        return self.backend['doffs']
+        self.backend['doffsAll'] = (spaceDoffs,groundDoffs)
+        return self.backend['doffsAll']
 
     def setListIndex(self, list, index, value):
         print(value)
@@ -428,7 +428,7 @@ class SETS():
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         "playerShipDesc": StringVar(self.window), "playerDesc": StringVar(self.window),
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), "doffs": None,
+                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), "doffsAll": None,
                         "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
             }
 
@@ -678,7 +678,6 @@ class SETS():
             self.setupSpaceBuildFrames()
             self.setupGroundBuildFrames()
             self.window.update()
-
             self.logWrite(inFilename+' -- loaded')
         else:
             self.logWrite(inFilename+' -- version mismatch: '+str(self.buildImport['versionJSON'])+' < '+str(self.versionJSON))
@@ -823,19 +822,25 @@ class SETS():
         self.build['boffseats'][key][idx] = v.get()
 
     def doffSpecCallback(self, om, v0, v1, row, isSpace=True):
-        if self.backend['doffs'] is None:
+        if self.backend['doffsAll'] is None:
             return
         self.build['doffs']['space' if isSpace else 'ground'][row] = {"name": "", "spec": v0.get(), "effect": ''}
         menu = om['menu']
         menu.delete(0, END)
-        for power in sorted(self.backend['doffs'][0 if isSpace else 1]):
+        for power in sorted(self.backend['doffsAll'][0 if isSpace else 1]):
             if v0.get() in power[0]:
                 menu.add_command(label=power[1], command=lambda value=power[1]: v1.set(value))
+        self.logWrite(str(isSpace), 1)
+
+        self.setupDoffFrame(self.shipDoffFrame)
+        self.setupDoffFrame(self.groundDoffFrame)
 
     def doffEffectCallback(self, om, v0, v1, row, isSpace=True):
-        if self.backend['doffs'] is None:
+        if self.backend['doffsAll'] is None:
             return
         self.build['doffs']['space' if isSpace else 'ground'][row]['effect'] = v1.get()
+        self.setupDoffFrame(self.shipDoffFrame)
+        self.setupDoffFrame(self.groundDoffFrame)
 
     def tagBoxCallback(self, var, text):
         self.build['tags'][text] = var.get()
@@ -856,6 +861,7 @@ class SETS():
         self.shipLabel.configure(image=self.shipImg)
         if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
             self.setupJustTierFrame(int(self.backend['tier'].get()[1]))
+        self.setupDoffFrame(self.shipDoffFrame)
 
     def focusGroundBuildFrameCallback(self):
         self.spaceBuildFrame.pack_forget()
@@ -864,6 +870,7 @@ class SETS():
         self.settingsFrame.pack_forget()
         self.groundBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.setupGroundInfoFrame() #get updates from info changes
+        self.setupDoffFrame(self.groundDoffFrame)
 
     def focusSkillTreeFrameCallback(self):
         self.spaceBuildFrame.pack_forget()
@@ -1249,6 +1256,10 @@ class SETS():
                 v0.set(self.build['doffs']['space'][i]['name'])
                 v1.set(self.build['doffs']['space'][i]['spec'])
                 v2.set(self.build['doffs']['space'][i]['effect'])
+                m['menu'].delete(0, END)
+                for power in sorted(self.backend['doffsAll'][0]):
+                    if v1.get() in power[0]:
+                        m['menu'].add_command(label=power[1], command=lambda v2=v2,value=power[1]: v2.set(value))
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1, row, True))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, True))
 
@@ -1273,6 +1284,10 @@ class SETS():
                 v0.set(self.build['doffs']['ground'][i]['name'])
                 v1.set(self.build['doffs']['ground'][i]['spec'])
                 v2.set(self.build['doffs']['ground'][i]['effect'])
+                m['menu'].delete(0, END)
+                for power in sorted(self.backend['doffsAll'][0]):
+                    if v1.get() in power[0]:
+                        m['menu'].add_command(label=power[1], command=lambda v2=v2,value=power[1]: v2.set(value))
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1,row, False))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, False))
 
