@@ -734,11 +734,10 @@ class SETS():
 
     def exportRedditCallback(self, event=None):
         redditString = "**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'])
+        deviceBlanks = [None] * 6
         column0 = (self.makeRedditColumn(["**Fore Weapons:**"], self.backend['shipForeWeapons']) +
                    self.makeRedditColumn(["**Aft Weapons:**"], self.backend['shipAftWeapons']) +
-                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + (["**Secondary Deflector**"] if
-                                         self.build['secdef'][0] is not None else ['&nbsp;']) + (["**Experimental Weapon**"] if self.build['experimental'][0] is not None else ['&nbsp;']),
-                                         7+max(self.backend['shipDevices']-1, 1)) +
+                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + deviceBlanks[0:(self.backend['shipDevices']-1)] + (["**Secondary Deflector**"] if self.build['secdef'][0] is not None else ['&nbsp;']) + (["**Experimental Weapon**"] if self.build['experimental'][0] is not None else ['&nbsp;']), 7+max(self.backend['shipDevices']-1, 1)) +
                    self.makeRedditColumn(["**Engineering Consoles:**"], self.backend['shipEngConsoles']) +
                    self.makeRedditColumn(["**Science Consoles:**"], self.backend['shipSciConsoles']) +
                    self.makeRedditColumn(["**Tactical Consoles:**"], self.backend['shipTacConsoles']) +
