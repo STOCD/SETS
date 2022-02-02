@@ -181,24 +181,24 @@ class SETS():
         # No existing image, no record of failure -- attempt to download
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
-        self.logWrite('fetch : '+url)
+        self.logWrite('fetch : '+url, 1)
         img_request = requests.get(url)
         img_data = img_request.content
-        self.logWrite('fetch : response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
+        self.logWrite('fetch : response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')), 1)
         if not img_request.ok:
             url2 = url.replace('Q%27s_Ornament%3A_', '')
             if "(Federation)" in url:
                 url2 = re.sub('_\(Federation\)', '', url2)
             if url2 is not url:
-                self.logWrite('fetch2: '+url2)
+                self.logWrite('fetch2: '+url2, 1)
                 img_request = requests.get(url2)
                 img_data = img_request.content
-                self.logWrite('fetch2: response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')))
+                self.logWrite('fetch2: response:'+str(img_request.status_code)+' size:'+str(img_request.headers.get('Content-Length')), 1)
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
             self.imagesFail[designation] = 1
             return self.emptyImage
-        self.logWrite('STORE: '+filename)
+        self.logWrite('STORE: '+filename, 1)
         with open(filename, 'wb') as handler:
             handler.write(img_data)
         image = Image.open(filename)
@@ -639,7 +639,7 @@ class SETS():
                 self.buildImport = json.load(inFile)
         
         if 'versionJSON' not in self.buildImport:
-            self.setupFooterFrame(inFilename+' -- version mismatch: no version found (older format)', '')
+            self.logWrite(inFilename+' -- version mismatch: no version found (older format)')
         elif self.buildImport['versionJSON'] >= self.versionJSON:
             self.build = self.buildImport
             self.clearBackend()
@@ -654,16 +654,16 @@ class SETS():
             self.setupGroundBuildFrames()
             self.window.update()
 
-            self.setupFooterFrame(inFilename+' -- loaded', '')
+            self.logWrite(inFilename+' -- loaded')
         else:
-            self.setupFooterFrame(inFilename+' -- version mismatch: '+str(self.buildImport['versionJSON'])+' < '+str(self.versionJSON), '')
+            self.logWrite(inFilename+' -- version mismatch: '+str(self.buildImport['versionJSON'])+' < '+str(self.versionJSON))
 
     def exportCallback(self, event=None):
         """Callback for export button"""
         try:
             with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
                 json.dump(self.build, outFile)
-                self.setupFooterFrame(outFile.name+' -- saved', '')
+                self.logWrite(outFile.name+' -- saved')
         except AttributeError:
             pass
 
@@ -678,13 +678,13 @@ class SETS():
         screenBottomRightY = screenTopLeftY + self.window.winfo_height()
         image = ImageGrab.grab(bbox=(screenTopLeftX, screenTopLeftY, screenBottomRightX, screenBottomRightY))
         
-        self.setupFooterFrame('Image size: '+str(image.size), '')
+        self.logWrite('Image size: '+str(image.size))
 
         outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
         if not outFilename: return
         image.save(outFilename, "PNG")
         self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
-        self.setupFooterFrame(outFilename+' -- saved, Image size: '+str(image.size), '')
+        self.logWrite(outFilename+' -- saved, Image size: '+str(image.size))
 
     def skillLabelCallback(self, skill, rank):
         rankReqs = [0, 5, 15, 25, 35]
@@ -1252,21 +1252,29 @@ class SETS():
         
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
 
-    def setupFooterFrame(self, leftnote, rightnote=None):
-        """Set up footer frame with given item"""
-        if leftnote is not None:
-            self.leftnote = leftnote
-        if rightnote is not None:
-            self.rightnote = rightnote
-        #self.clearFrame(self.footerFrame)
-        if self.leftnote is not None:
-            footerLabelL = Label(self.footerFrame, text=self.leftnote, fg='#3a3a3a', bg='#c59129', anchor='e')
-            footerLabelL.grid(row=0, column=0, sticky='w')
-        if self.rightnote is not None:
-            footerLabelR = Label(self.footerFrame, text=self.rightnote, fg='#3a3a3a', bg='#c59129', anchor='e')
-            footerLabelR.grid(row=0, column=1, sticky='e')
-        self.footerFrame.grid_columnconfigure(0, weight=1, uniform="footerlabel")
+    def setupFooterFrame(self):
+        self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
+        footerLabelL = Label(self.footerFrame, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=('Helvetica', 8, 'bold'))
+        footerLabelL.grid(row=0, column=0, sticky='w')
+        footerLabelR = Label(self.footerFrame, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=('Helvetica', 8, 'bold'))
+        footerLabelR.grid(row=0, column=1, sticky='e')
+        self.footerFrame.grid_columnconfigure(0, weight=5, uniform="footerlabel")
+        self.footerFrame.grid_columnconfigure(1, weight=1, uniform="footerlabel")
         self.footerFrame.pack(fill='both', side='bottom', expand=True)
+        
+    def setFooterFrame(self, leftnote, rightnote=None):
+        """Set up footer frame with given item"""
+
+        if not len(leftnote):
+            self.log.set(self.log.get())
+        else:
+            self.log.set(leftnote)
+            
+        if not len(rightnote):
+            self.logmini.set(self.logmini.get())
+        else:
+            self.logmini.set(rightnote)
+
         self.window.update()
         
 
@@ -1303,6 +1311,65 @@ class SETS():
             self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Federation_Emblem.png", "federation_emblem", 260, 146)
             self.shipLabel.configure(image=self.shipImg)
 
+    def setupButtonExportImportFrame(self, frame):
+        exportImportFrame = Frame(frame)
+        exportImportFrame.pack(fill=BOTH, expand=True)
+        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
+        buttonExport.pack(side='left', fill=BOTH, expand=True)
+        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
+        buttonImport.pack(side='left', fill=BOTH, expand=True)
+        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
+        buttonClear.pack(side='left', fill=BOTH, expand=True)
+        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3', command=self.exportPngCallback)
+        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
+        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
+        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
+    
+    def setupTagsAndCharFrame(self, frame):
+        tagsAndCharFrame = Frame(frame, bg='#b3b3b3')
+        tagsAndCharFrame.pack(fill=X, expand=True, padx=2, side=BOTTOM)
+        tagsAndCharFrame.grid_columnconfigure(0, weight=1)
+        tagsAndCharFrame.grid_columnconfigure(1, weight=1)
+        buildTagFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
+        buildTagFrame.grid(row=0, column=0, sticky='sew')
+        charInfoFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
+        charInfoFrame.grid(row=0, column=1, sticky='sew')
+        Label(buildTagFrame, text="BUILD TAGS", fg='#3a3a3a', bg='#b3b3b3').pack(fill=X, expand=False)
+        for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
+            tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
+            tagFrame.pack(fill=X, expand=False)
+            v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
+            Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
+            v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
+            Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
+
+        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='e')
+        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
+        m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
+        m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
+
+        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 1, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
+        m.grid(column=1, row=1, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 2, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
+        m.grid(column=1, row=2, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 3, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
+        m.grid(column=1, row=3, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 4, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
+        m.grid(column=1, row=4, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
+        
     def setupShipInfoFrame(self):
         self.clearFrame(self.shipInfoFrame)
         playerShipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
@@ -1310,18 +1377,9 @@ class SETS():
         Label(playerShipNameFrame, text="SHIP NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
         Entry(playerShipNameFrame, textvariable=self.backend['playerShipName'], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
         playerShipNameFrame.grid_columnconfigure(1, weight=1)
-        exportImportFrame = Frame(self.shipInfoFrame)
-        exportImportFrame.pack(fill=BOTH, expand=True)
-        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
-        buttonExport.pack(side='left', fill=BOTH, expand=True)
-        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
-        buttonImport.pack(side='left', fill=BOTH, expand=True)
-        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
-        buttonClear.pack(side='left', fill=BOTH, expand=True)
-        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3', command=self.exportPngCallback)
-        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
-        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
+        
+        self.setupButtonExportImportFrame(self.shipInfoFrame)
+        
         shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipLabelFrame.pack(fill=BOTH, expand=True)
         self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
@@ -1329,124 +1387,33 @@ class SETS():
         shipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipNameFrame.pack(fill=BOTH, expand=True, padx=2)
         Label(shipNameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='nwse')
-        self.shipButton = Button(shipNameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3')
+        self.shipButton = Button(shipNameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
         self.shipButton.grid(column=1, row=0, sticky='nwse')
         shipNameFrame.grid_columnconfigure(1, weight=1)
-        self.shipTierFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
-        self.shipTierFrame.pack(fill=BOTH, expand=True, padx=2)
-        tagsAndCharFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
-        tagsAndCharFrame.pack(fill=X, expand=True, padx=2, side=BOTTOM)
-        tagsAndCharFrame.grid_columnconfigure(0, weight=1)
-        tagsAndCharFrame.grid_columnconfigure(1, weight=1, minsize=100)
-        buildTagFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
-        buildTagFrame.grid(row=0, column=0, sticky='nsew')
-        charInfoFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
-        charInfoFrame.grid(row=0, column=1, sticky='sew')
-        Label(buildTagFrame, text="BUILD TAGS", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
-        for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
-            tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
-            tagFrame.pack(fill=X, expand=True)
-            v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
-            Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
-            v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
-            Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
-
-        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='e')
-        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
-        m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
-        m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
-
-        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 1, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
-        m.grid(column=1, row=1, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        self.shipTierFrame = Frame(shipNameFrame, bg='#b3b3b3')
+        self.shipTierFrame.grid(column=2, row=0, sticky='e')
         
-        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 2, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
-        m.grid(column=1, row=2, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 3, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
-        m.grid(column=1, row=3, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 4, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
-        m.grid(column=1, row=4, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
+        self.setupTagsAndCharFrame(self.shipInfoFrame)
         
         if self.build['ship'] is not None:
             self.shipButton.configure(text=self.build['ship'])
 
     def setupGroundInfoFrame(self):
         self.clearFrame(self.groundInfoFrame)
-        playerNameFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
-        playerNameFrame.pack(fill=BOTH, expand=False)
-        Label(playerNameFrame, text="PLAYER NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
-        Entry(playerNameFrame, textvariable=self.backend['playerName'], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
-        playerNameFrame.grid_columnconfigure(1, weight=1)
-        exportImportFrame = Frame(self.groundInfoFrame)
-        exportImportFrame.pack(fill=BOTH, expand=True)
-        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
-        buttonExport.pack(side='left', fill=BOTH, expand=True)
-        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
-        buttonImport.pack(side='left', fill=BOTH, expand=True)
-        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
-        buttonClear.pack(side='left', fill=BOTH, expand=True)
-        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3', command=self.exportPngCallback)
-        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
-        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
+        playerGroundNameFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
+        playerGroundNameFrame.pack(fill=BOTH, expand=False)
+        Label(playerGroundNameFrame, text="PLAYER NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
+        Entry(playerGroundNameFrame, textvariable=self.backend['playerName'], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
+        playerGroundNameFrame.grid_columnconfigure(1, weight=1)
+        
+        self.setupButtonExportImportFrame(self.groundInfoFrame)
+        
         charLabelFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
         charLabelFrame.pack(fill=BOTH, expand=True)
         self.charLabel = Label(charLabelFrame, fg='#3a3a3a', bg='#b3b3b3', height=5)
         self.charLabel.pack(fill=BOTH, expand=True)
-        tagsAndCharFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
-        tagsAndCharFrame.pack(fill=X, expand=True, padx=2, side=BOTTOM)
-        tagsAndCharFrame.grid_columnconfigure(0, weight=1)
-        tagsAndCharFrame.grid_columnconfigure(1, weight=1, minsize=100)
-        buildTagFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
-        buildTagFrame.grid(row=0, column=0, sticky='nsew')
-        charInfoFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
-        charInfoFrame.grid(row=0, column=1, sticky='sew')
-        Label(buildTagFrame, text="BUILD TAGS", fg='#3a3a3a', bg='#b3b3b3').pack(fill=BOTH, expand=True)
-        for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
-            tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
-            tagFrame.pack(fill=X, expand=True)
-            v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
-            Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
-            v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
-            Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
-
-        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='e')
-        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
-        m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
-        m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
-
-        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 1, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
-        m.grid(column=1, row=1, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
-        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 2, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
-        m.grid(column=1, row=2, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 3, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
-        m.grid(column=1, row=3, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 4, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
-        m.grid(column=1, row=4, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
+        self.setupTagsAndCharFrame(self.groundInfoFrame)
 
 
     def setupSkillInfoFrame(self):
@@ -1558,9 +1525,17 @@ class SETS():
         factor = ( dpi / 96 ) * scale
         self.window.call('tk', 'scaling', factor)
         
-        self.setupFooterFrame('', '{:>4}dpi (x{:>4}) '.format(dpi, (factor * scale)))
+        self.logminiWrite('{:>4}dpi (x{:>4}) '.format(dpi, (factor * scale)))
         
-    def logWrite(self, notice, level=1):
+    def logminiWrite(self, notice, level=0):
+        if level == 0:
+            self.setFooterFrame('', notice)
+        if self.debug >= level:
+            sys.stderr.write(notice+'\n')
+            
+    def logWrite(self, notice, level=0):
+        if level == 0:
+            self.setFooterFrame(notice, '')
         if self.debug >= level:
             sys.stderr.write(notice+'\n')
 
@@ -1580,7 +1555,7 @@ class SETS():
         self.glossaryFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
-        self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
+        self.setupFooterFrame()
         self.setupUIScaling(1)
         
         self.setupLogoFrame()
@@ -1623,7 +1598,9 @@ class SETS():
         self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
         self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
         self.shipNames = [e["Page"] for e in self.r_ships]
-
+        self.log = StringVar()
+        self.logmini = StringVar()
+        
         self.setupUIFrames()
 
     def run(self):
