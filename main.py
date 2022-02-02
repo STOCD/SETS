@@ -348,6 +348,26 @@ class SETS():
         if key in self.build:
             self.backend[key].set(self.build[key])
 
+    def initSettings(self):
+        """Initialize session settings state"""
+        self.fileDebug = '.debug'
+        self.debug = 1 if os.path.exists(self.fileDebug) else 0
+        self.log = StringVar()
+        self.logmini = StringVar()
+        
+        self.fileConfig = '.config.json'
+        self.settings = {
+            'template': '.template.json'
+        }
+        
+    def exportSettings(self):
+        try:
+            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
+                json.dump(self.settings, outFile)
+                self.logWrite(outFile.name+' -- saved as config file')
+        except AttributeError:
+            pass
+
     def clearBuild(self):
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
@@ -1538,11 +1558,13 @@ class SETS():
         #self.settingsRightFrame.grid(row=0,column=2,sticky='nsew', pady=5)
         
         buttonInvalidateCache = Button(self.settingsTopLeftFrame, text='Invalidate cache', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateCache.pack(side='left')
+        buttonInvalidateCache.pack(side='top')
         buttonInvalidateCache.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="cache"))
         buttonInvalidateImages = Button(self.settingsTopLeftFrame, text='Refresh images (Warning: TAKES A LONG TIME)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateImages.pack(side='left')
+        buttonInvalidateImages.pack(side='top')
         buttonInvalidateImages.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="images"))
+        buttonExportSettings = Button(self.settingsTopLeftFrame, text='Export SETS settings', bg='#3a3a3a',fg='#b3b3b3', command=self.exportSettings)
+        buttonExportSettings.pack(side='top')
 
         self.settingsTopLeftFrame.grid_columnconfigure(0, weight=1, uniform="settingsColSpace")
         self.settingsTopMiddleFrame.grid_columnconfigure(1, weight=1, uniform="settingsColSpace")
@@ -1564,13 +1586,15 @@ class SETS():
         if level == 0:
             self.setFooterFrame('', notice)
         if self.debug > 0 and self.debug >= level:
-            sys.stderr.write(notice+'\n')
+            sys.stderr.write(notice)
+            sys.stderr.write('\n')
             
     def logWrite(self, notice, level=0):
         if level == 0:
             self.setFooterFrame(notice, '')
         if self.debug > 0 and self.debug >= level:
-            sys.stderr.write(notice+'\n')
+            sys.stderr.write(notice)
+            sys.stderr.write('\n')
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
@@ -1602,15 +1626,16 @@ class SETS():
         self.setupGroundInfoFrame()
         self.setupSkillInfoFrame()
         
-        if self.args.file is not None:
+        if self.args.file is not None and os.path.exists(self.args.file):
             self.importByFilename(self.args.file)
-        elif os.path.exists('.template.json'):
-            self.importByFilename('.template.json')
+        elif os.path.exists(self.settings['template']):
+            self.importByFilename(self.settings['template'])
             
         self.setupSpaceBuildFrames()
 
     def argParserSetup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
+        parser.add_argument('--config', type=int, help='Set configuration file (must be .JSON)')
         parser.add_argument('--debug', type=int, help='Set debug level (default: 0)')
         parser.add_argument('--file', type=str, help='File to import on open')
 
@@ -1619,15 +1644,29 @@ class SETS():
         if self.args.debug is not None:
             self.debug = self.args.debug
             
+        if self.args.config is not None:
+            self.fileConfig = self.args.config
+            
         self.logWrite('Debug level is: '+str(self.debug), 1)
 
+    def configFileLoad(self):
+        # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
+        if os.path.exists(self.fileConfig):
+            with open(self.fileConfig, 'r') as inFile:
+                try:
+                    self.settings = json.load(inFile)
+                    self.logWrite(self.fileConfig+' -- loaded as Config')
+                except ValueError:
+                    self.logWrite(self.fileConfig+' -- file load error')
     
     def __init__(self) -> None:
         """Main setup function"""
-        self.debug = 1 if os.path.exists('.debug') else 0
-        
-        self.argParserSetup()
+
         self.window = Tk()
+        # Debug, CLI args, and config file loading
+        self.initSettings()
+        self.argParserSetup()
+        self.configFileLoad()
         # self.window.geometry('1280x650')
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
@@ -1648,8 +1687,6 @@ class SETS():
         self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
         self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
         self.shipNames = [e["Page"] for e in self.r_ships]
-        self.log = StringVar()
-        self.logmini = StringVar()
         
         self.setupUIFrames()
 
