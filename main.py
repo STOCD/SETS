@@ -7,6 +7,7 @@ from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
 import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse
 import numpy as np
 
+CLEANR = re.compile('<.*?>') 
 
 """This section will improve display, but may require sizing adjustments to activate"""
 if sys.platform.startswith('win'):
@@ -24,6 +25,8 @@ class SETS():
     item_query = 'https://sto.fandom.com/wiki/Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&&order+by=%60_pageName%60%2C%60name%60%2C%60rarity%60%2C%60type%60%2C%60boundto%60&limit=5000&format=json'
     #query for personal and reputation trait cargo table on the wiki
     trait_query = "https://sto.fandom.com/wiki/Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&&order+by=%60_pageName%60%2C%60name%60%2C%60chartype%60%2C%60environment%60%2C%60type%60&limit=2500&format=json"
+    #query for DOFF types and specializations
+    doff_query =    "https://sto.fandom.com/wiki/Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&order+by=Specializations.name&limit=1000&offset=0&format=json"
 
     itemBoxX = 25
     itemBoxY = 35
@@ -208,6 +211,17 @@ class SETS():
             image = image.resize((width,height),Image.ANTIALIAS)
         return ImageTk.PhotoImage(image)
 
+    def deWikify(self, textBlock, leaveHtml=False):
+        textBlock = html.unescape(html.unescape(textBlock))
+        if not leaveHtml:
+            textBlock = re.sub(CLEANR, '', textBlock)
+        textBlock.replace('&#34;', '"')
+        textBlock.replace('&#39;', '\'')
+        textBlock.replace('&#91;', '[')
+        textBlock.replace('&#93;', ']')
+        #self.logWrite(textBlock, 1)
+        return textBlock
+    
     def loadLocalImage(self, filename, width = None, height = None):
         """Request image from web or fetch from local cache"""
         cache_base = "local"
@@ -259,10 +273,8 @@ class SETS():
 
     def sanitizeEquipmentName(self, name):
         """Strip irreleant bits of equipment name for easier icon matching"""
+        name = self.deWikify(name)
         name = re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip()
-        name = html.unescape(name)
-        name = name.replace('&#34;', '"')
-        name = name.replace('&#39;', '\'')
         return name
 
     def precacheEquipment(self, keyPhrase):
@@ -302,31 +314,18 @@ class SETS():
             mods = re.findall(r"(<td.*?>(<b>)*\[.*?\](</b>)*</td>)", modPage)
             self.backend['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
         return self.backend['modifiers']
+        
+    def precacheDoffs(self, keyPhrase):
+        """Populate in-memory cache of doff lists for faster loading"""
+        if keyPhrase in self.backend['cacheDoffs']:
+            return self.backend['cacheDoffs'][keyPhrase]
+            
+        phrases = [keyPhrase]
+        doffMatches = self.searchJsonTable(self.doffs, "shipdutytype", phrases)
 
-    def fetchDoffs(self):
-        if self.backend['doffsAll'] is not None:
-            return self.backend['doffsAll']
-        specPage = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Duty_officer#Specializations", "doffs")
-        trs = specPage.find('tr')
-        doffs = []
-        for tr in trs:
-            t = tr.text
-            if '[SP]' in t or '[GR]' in t:
-                doffs.append(tr)
-        spaceDoffs = []
-        groundDoffs = []
-        for tr in doffs:
-            tds = tr.find('td')
-            if len(tds)<2:
-                continue
-            spec = tds[0].text
-            for li in tds[1].find('li'):
-                if '[SP]' in li.text:
-                    spaceDoffs.append((spec, li.text.replace('[SP]','')))
-                if '[GR]' in li.text:
-                    groundDoffs.append((spec, li.text.replace('[GR]','')))
-        self.backend['doffsAll'] = (spaceDoffs,groundDoffs)
-        return self.backend['doffsAll']
+        self.backend['cacheDoffs'][keyPhrase] = {self.deWikify(doffMatches[item]['name'])+str(doffMatches[item]['powertype']): doffMatches[item] for item in range(len(doffMatches))}
+        self.backend['cacheDoffNames'][keyPhrase] = {self.deWikify(doffMatches[item]['name']): '' for item in range(len(doffMatches))}
+
 
     def setListIndex(self, list, index, value):
         print(value)
@@ -430,7 +429,7 @@ class SETS():
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         "playerShipDesc": StringVar(self.window), "playerDesc": StringVar(self.window),
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), "doffsAll": None,
+                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(),
                         "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
             }
 
@@ -826,21 +825,30 @@ class SETS():
     def boffUniversalCallback(self, v, idx, key):
         self.build['boffseats'][key][idx] = v.get()
 
+    def doffStripPrefix(self, textBlock, isSpace=True):
+        textBlock = self.deWikify(textBlock)
+        if (isSpace and textBlock.startswith('[SP]')) or (not isSpace and textBlock.startswith('[GR]')):
+            return textBlock[len('[--]'):]
+        return textBlock    
+    
     def doffSpecCallback(self, om, v0, v1, row, isSpace=True):
-        if self.backend['doffsAll'] is None:
+        if self.backend['cacheDoffs'] is None:
             return
         self.build['doffs']['space' if isSpace else 'ground'][row] = {"name": "", "spec": v0.get(), "effect": ''}
         menu = om['menu']
         menu.delete(0, END)
-        for power in sorted(self.backend['doffsAll'][0 if isSpace else 1]):
-            if v0.get() in power[0]:
-                menu.add_command(label=power[1], command=lambda value=power[1]: v1.set(value))
+        
+        
+        doff_desclist_space = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Space' if isSpace else 'Ground'][item]['description']) for item in list(self.backend['cacheDoffs']['Space' if isSpace else 'Ground'].keys()) if v0.get() in item])
+        
+        for desc in doff_desclist_space:
+            menu.add_command(label=desc, command=lambda v1=v1,value=desc: v1.set(value))
 
         self.setupDoffFrame(self.shipDoffFrame)
         self.setupDoffFrame(self.groundDoffFrame)
 
     def doffEffectCallback(self, om, v0, v1, row, isSpace=True):
-        if self.backend['doffsAll'] is None:
+        if self.backend['cacheDoffs'] is None:
             return
         self.build['doffs']['space' if isSpace else 'ground'][row]['effect'] = v1.get()
         self.setupDoffFrame(self.shipDoffFrame)
@@ -1241,9 +1249,13 @@ class SETS():
         spaceDoffFrame.pack(side='left', fill=BOTH, expand=True)
         groundDoffFrame = Frame(mainFrame, bg='#3a3a3a', padx=10)
         groundDoffFrame.pack(side='right', fill=BOTH, expand=True)
+        
+        self.precacheDoffs("Space")
+        doff_list_space = sorted([self.deWikify(item) for item in list(self.backend['cacheDoffNames']['Space'].keys())])
+        
         spaceDoffLabel = Label(spaceDoffFrame, text="SPACE DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff')
         spaceDoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
-        space,ground = self.fetchDoffs()
+        
         f = font.Font(family='Helvetica', size=9)
         for i in range(6):
             v0 = StringVar(self.window)
@@ -1252,7 +1264,6 @@ class SETS():
             m = OptionMenu(spaceDoffFrame, v0, 'NAME', *['A','B','C'])
             m.grid(row=i+1, column=0, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
-            doff_list_space = sorted(list(set([doff[0] for doff in space])))
             m = OptionMenu(spaceDoffFrame, v1, 'SPECIALIZATION', *doff_list_space)
             m.grid(row=i+1, column=1, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
@@ -1264,13 +1275,18 @@ class SETS():
                 v1.set(self.build['doffs']['space'][i]['spec'])
                 v2.set(self.build['doffs']['space'][i]['effect'])
                 m['menu'].delete(0, END)
-                for power in sorted(self.backend['doffsAll'][0]):
-                    if v1.get() in power[0]:
-                        m['menu'].add_command(label=power[1], command=lambda v2=v2,value=power[1]: v2.set(value))
+                doff_desclist_space = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Space'][item]['description']) for item in list(self.backend['cacheDoffs']['Space'].keys()) if v1.get() in self.backend['cacheDoffs']['Space'][item]['name']])
+        
+                for desc in doff_desclist_space:
+                    m['menu'].add_command(label=desc, command=lambda v2=v2,value=desc: v2.set(value))
+                        
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1, row, True))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, True))
 
         spaceDoffFrame.grid_columnconfigure(2, weight=1, uniform="spaceDoffList")
+        
+        self.precacheDoffs("Ground")
+        doff_list_ground = sorted([self.deWikify(item) for item in list(self.backend['cacheDoffNames']['Ground'].keys())])
         
         Label(groundDoffFrame, text="GROUND DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff').grid(row=0, column=0,columnspan=3, sticky='nsew')
         for i in range(6):
@@ -1280,7 +1296,6 @@ class SETS():
             m = OptionMenu(groundDoffFrame, v0, 'NAME', *['A','B','C'])
             m.grid(row=i+1, column=0, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
-            doff_list_ground = sorted(list(set([doff[0] for doff in ground])))
             m = OptionMenu(groundDoffFrame, v1, 'SPECIALIZATION', *doff_list_ground)
             m.grid(row=i+1, column=1, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
@@ -1292,9 +1307,12 @@ class SETS():
                 v1.set(self.build['doffs']['ground'][i]['spec'])
                 v2.set(self.build['doffs']['ground'][i]['effect'])
                 m['menu'].delete(0, END)
-                for power in sorted(self.backend['doffsAll'][0]):
-                    if v1.get() in power[0]:
-                        m['menu'].add_command(label=power[1], command=lambda v2=v2,value=power[1]: v2.set(value))
+                
+                doff_desclist_ground = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Ground'][item]['description']) for item in list(self.backend['cacheDoffs']['Ground'].keys()) if v1.get() in self.backend['cacheDoffs']['Ground'][item]['name']])
+        
+                for desc in doff_desclist_ground:
+                    m['menu'].add_command(label=desc, command=lambda v2=v2,value=desc: v2.set(value))
+
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1,row, False))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, False))
 
@@ -1718,6 +1736,7 @@ class SETS():
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
+        self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
         r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
         r_specs = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Captain_specializations", "specs")
