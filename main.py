@@ -90,6 +90,7 @@ class SETS():
             os.makedirs(os.path.dirname(filename))
         with open(filename, 'w', encoding="utf-8") as html_file:
             html_file.write(r.text)
+            self.logWrite('STORE: '+designation+' -- '+str(os.path.getsize(filename)))
         return r.html
 
     def fetchOrRequestJson(self, url, designation):
@@ -110,6 +111,7 @@ class SETS():
             os.makedirs(os.path.dirname(filename))
         with open(filename, 'w') as json_file:
             json.dump(r.json(),json_file)
+            self.logWrite('STORE: '+designation+' -- '+str(os.path.getsize(filename)))
         return r.json()
 
     def filePathSanitize(self, txt, chr_set='printable'):
@@ -785,12 +787,15 @@ class SETS():
 
     def cacheInvalidateCallback(self, dir):
         for filename in os.listdir(dir):
-            file_path = os.path.join(dir, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-            except Exception as e:
-                print('Failed to delete %s. Reason: %s' % (file_path, e))
+            if not filename.endswith('.bak'):
+                file_path = os.path.join(dir, filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        if os.path.isfile(file_path+'.bak') or os.path.islink(file_path+'.bak'):
+                            os.unlink(file_path+'.bak')
+                        os.rename(file_path, file_path+'.bak')
+                except Exception as e:
+                    log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
 
     def buildToBackendSeries(self):
         self.copyBuildToBackend('playerShipName')
