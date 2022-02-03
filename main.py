@@ -841,7 +841,7 @@ class SETS():
         menu.delete(0, END)
         
         
-        doff_desclist_space = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Space' if isSpace else 'Ground'][item]['description']) for item in list(self.backend['cacheDoffs']['Space' if isSpace else 'Ground'].keys()) if v0.get() in item])
+        doff_desclist_space = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Space' if isSpace else 'Ground'][item]['description'], isSpace) for item in list(self.backend['cacheDoffs']['Space' if isSpace else 'Ground'].keys()) if v0.get() in item])
         
         for desc in doff_desclist_space:
             menu.add_command(label=desc, command=lambda v1=v1,value=desc: v1.set(value))
@@ -1278,7 +1278,7 @@ class SETS():
                 v1.set(self.build['doffs']['space'][i]['spec'])
                 v2.set(self.build['doffs']['space'][i]['effect'])
                 m['menu'].delete(0, END)
-                doff_desclist_space = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Space'][item]['description']) for item in list(self.backend['cacheDoffs']['Space'].keys()) if v1.get() in self.backend['cacheDoffs']['Space'][item]['name']])
+                doff_desclist_space = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Space'][item]['description'], True) for item in list(self.backend['cacheDoffs']['Space'].keys()) if v1.get() in self.backend['cacheDoffs']['Space'][item]['name']])
         
                 for desc in doff_desclist_space:
                     m['menu'].add_command(label=desc, command=lambda v2=v2,value=desc: v2.set(value))
@@ -1311,7 +1311,7 @@ class SETS():
                 v2.set(self.build['doffs']['ground'][i]['effect'])
                 m['menu'].delete(0, END)
                 
-                doff_desclist_ground = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Ground'][item]['description']) for item in list(self.backend['cacheDoffs']['Ground'].keys()) if v1.get() in self.backend['cacheDoffs']['Ground'][item]['name']])
+                doff_desclist_ground = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Ground'][item]['description'], False) for item in list(self.backend['cacheDoffs']['Ground'].keys()) if v1.get() in self.backend['cacheDoffs']['Ground'][item]['name']])
         
                 for desc in doff_desclist_ground:
                     m['menu'].add_command(label=desc, command=lambda v2=v2,value=desc: v2.set(value))
