@@ -820,7 +820,9 @@ class SETS():
         self.clearFrame(self.shipBoffFrame)
         self.setupGroundBuildFrames()
         self.shipImg = self.emptyImage
+        self.groundImg = self.emptyImage
         self.shipLabel.configure(image=self.shipImg)
+        self.charLabel.configure(image=self.groundImg)
 
     def boffUniversalCallback(self, v, idx, key):
         self.build['boffseats'][key][idx] = v.get()
@@ -882,6 +884,7 @@ class SETS():
         self.settingsFrame.pack_forget()
         self.groundBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.setupGroundInfoFrame() #get updates from info changes
+        self.charLabel.configure(image=self.groundImg)
         self.setupDoffFrame(self.groundDoffFrame)
 
     def focusSkillTreeFrameCallback(self):
@@ -1554,6 +1557,7 @@ class SETS():
     def setupGroundBuildFrame(self):
         self.groundInfoFrame = Frame(self.groundBuildFrame, bg='#b3b3b3')
         self.groundInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
+        self.groundImg = self.emptyImage
         self.groundMiddleFrame = Frame(self.groundBuildFrame, bg='#3a3a3a')
         self.groundMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         self.groundMiddleFrameUpper = Frame(self.groundMiddleFrame, bg='#3a3a3a')
