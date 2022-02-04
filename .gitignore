@@ -143,3 +143,4 @@ SETUP.bat
 .debug
 test.json
 .config.json
+.state_SETS.json

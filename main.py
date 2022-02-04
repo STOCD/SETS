@@ -500,7 +500,7 @@ class SETS():
     def itemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
-        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.rarities[0], "mark": "Mk XII", "modifiers":['']}
+        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
         if 'rarity' not in item or item['item']=='':
@@ -885,6 +885,7 @@ class SETS():
         self.skillTreeFrame.pack_forget()
         self.glossaryFrame.pack_forget()
         self.settingsFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.logDisplayUpdate()
 
     def speciesUpdateCallback(self):
         self.copyBackendToBuild('species')
@@ -904,9 +905,12 @@ class SETS():
     def setupRarityFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
         mark = StringVar()
-        markOption = OptionMenu(topbarFrame, mark, "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "Mk XIII", "Mk XIV", "Mk XV")
+        if 'markDefault' in self.persistent and self.persistent['markDefault'] is not None:
+            self.logWrite('self.persistent["markDefault"]: '+self.persistent['markDefault'], 2)
+            mark.set(self.persistent['markDefault'])
+        markOption = OptionMenu(topbarFrame, mark, *self.marks)
         markOption.grid(row=0, column=0, sticky='nsw')
-        rarity = StringVar(value=self.rarities[0])
+        rarity = StringVar(value=self.persistent['rarityDefault'])
         rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
         rarityOption.grid(row=0, column=1, sticky='nsew')
         modFrame = Frame(topbarFrame, bg='gray')
@@ -1321,6 +1325,10 @@ class SETS():
         self.footerFrame.grid_columnconfigure(1, weight=1, uniform="footerlabel")
         self.footerFrame.pack(fill='both', side='bottom', expand=True)
         
+        
+    def lineTruncate(self, content, length=100):
+        return '\n'.join(content.split('\n')[-60:])
+        
     def setFooterFrame(self, leftnote, rightnote=None):
         """Set up footer frame with given item"""
 
@@ -1581,32 +1589,50 @@ class SETS():
         self.settingsBottomFrame = Frame(self.settingsFrame, bg='#b3b3b3')
         self.settingsBottomFrame.pack(side='bottom', fill=BOTH, expand=True)
         
-        
         self.settingsTopLeftFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
-        self.settingsTopLeftFrame.pack(side='left', fill=BOTH, expand=True)
-        #self.settingsLeftFrame.grid(row=0,column=0,sticky='nsew', pady=5)
-        self.settingsTopMiddleFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
-        self.settingsTopMiddleFrame.pack(side='left', fill=BOTH, expand=True)
-        #self.settingsMiddleFrame.grid(row=0,column=1,sticky='nsew', pady=5)
+        self.settingsTopLeftFrame.grid(row=0,column=0,sticky='nsew', pady=5)
+        self.settingsTopMiddleLeftFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
+        self.settingsTopMiddleLeftFrame.grid(row=0,column=1,sticky='nsew', pady=5)
+        self.settingsTopMiddleRightFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
+        self.settingsTopMiddleRightFrame.grid(row=0,column=2,sticky='nsew', pady=5)
         self.settingsTopRightFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
-        self.settingsTopRightFrame.pack(side='right', fill=BOTH, expand=True)
-        #self.settingsRightFrame.grid(row=0,column=2,sticky='nsew', pady=5)
+        self.settingsTopRightFrame.grid(row=0,column=3,sticky='nsew', pady=5)
         
-        buttonInvalidateCache = Button(self.settingsTopLeftFrame, text='Invalidate cache', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateCache.pack(side='top')
+        self.settingsTopFrame.grid_columnconfigure(0, weight=6, uniform="settingsColSpace")
+        self.settingsTopFrame.grid_columnconfigure(1, weight=2, uniform="settingsColSpace")
+        self.settingsTopFrame.grid_columnconfigure(2, weight=1, uniform="settingsColSpace")
+        self.settingsTopFrame.grid_columnconfigure(3, weight=2, uniform="settingsColSpace")
+        
+        self.logDisplay = Text(self.settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=120)
+        self.logDisplay.grid(row=0, column=0, columnspan=2, sticky="n")
+        self.logDisplay.insert('0.0', self.logFull.get())
+        
+        label = Label(self.settingsTopMiddleLeftFrame, text='Default settings (auto-saved)', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
+        label.grid(row=0, column=0, columnspan=2, sticky="n")
+        label = Label(self.settingsTopMiddleLeftFrame, text='Mark', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=1, column=0, sticky="e", pady=2, padx=2)
+        mark = StringVar(value=self.persistent['markDefault'])
+        markOption = OptionMenu(self.settingsTopMiddleLeftFrame, mark, *self.marks, command=self.persistentMark)
+        markOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        markOption.grid(row=1, column=1, sticky='nw', pady=2, padx=2)
+        label = Label(self.settingsTopMiddleLeftFrame, text='Rarity', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=2, column=0, sticky="e", pady=2, padx=2)
+        rarity = StringVar(value=self.persistent['rarityDefault'])
+        rarityOption = OptionMenu(self.settingsTopMiddleLeftFrame, rarity, *self.rarities, command=self.persistentRarity)
+        rarityOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        rarityOption.grid(row=2, column=1, sticky='nw', pady=2, padx=2)
+        
+        label = Label(self.settingsTopRightFrame, text='Maintenance', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
+        label.grid(row=0, column=0, sticky="n")
+        buttonInvalidateCache = Button(self.settingsTopRightFrame, text='Clear data cache (automatic download)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonInvalidateCache.grid(row=1, column=0, sticky='nwe', pady=2, padx=2)
         buttonInvalidateCache.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="cache"))
-        buttonInvalidateImages = Button(self.settingsTopLeftFrame, text='Refresh images (Warning: TAKES A LONG TIME)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateImages.pack(side='top')
+        buttonInvalidateImages = Button(self.settingsTopRightFrame, text='VERY SLOW! Clear image cache (automatic download)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonInvalidateImages.grid(row=2, column=0, sticky='nwe', pady=2, padx=2)
         buttonInvalidateImages.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="images"))
-        buttonExportSettings = Button(self.settingsTopLeftFrame, text='Export SETS settings', bg='#3a3a3a',fg='#b3b3b3', command=self.exportSettings)
-        buttonExportSettings.pack(side='top')
+        buttonExportSettings = Button(self.settingsTopRightFrame, text='Export SETS manual settings', bg='#3a3a3a',fg='#b3b3b3', command=self.exportSettings)
+        buttonExportSettings.grid(row=3, column=0, sticky='nwe', pady=2, padx=2)
 
-        self.settingsTopLeftFrame.grid_columnconfigure(0, weight=1, uniform="settingsColSpace")
-        self.settingsTopMiddleFrame.grid_columnconfigure(1, weight=1, uniform="settingsColSpace")
-        self.settingsTopRightFrame.grid_columnconfigure(2, weight=1, uniform="settingsColSpace")
-        self.settingsTopLeftFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
-        self.settingsTopMiddleFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
-        self.settingsTopRightFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
 
     def setupUIScaling(self, scale):
          # pixel correction
@@ -1616,6 +1642,14 @@ class SETS():
         
         self.logminiWrite('{:>4}dpi (x{:>4}) '.format(dpi, (factor * scale)))
         
+    def logDisplayUpdate(self):
+        self.logDisplay.delete('0.0', END)
+        self.logDisplay.insert('0.0', self.logFull.get())
+        self.logDisplay.yview_pickplace(END)
+        
+    def logFullWrite(self, notice):
+        self.logFull.set(self.lineTruncate(self.logFull.get()+'\n'+notice))
+    
     def logminiWrite(self, notice, level=0):
         if level == 0:
             self.setFooterFrame('', notice)
@@ -1625,9 +1659,11 @@ class SETS():
     def logWrite(self, notice, level=0):
         if level == 0:
             self.setFooterFrame(notice, '')
+            self.logFullWrite(notice)
         if self.settings['debug'] > 0 and self.settings['debug'] >= level:
             sys.stderr.write(notice)
             sys.stderr.write('\n')
+            self.logFullWrite(notice)
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
@@ -1786,6 +1822,14 @@ class SETS():
                 self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
         else:
             self.logWrite(configFile+' -- state file NOT found', 1)
+ 
+    def persistentMark(self, choice):
+        self.persistent['markDefault'] = choice
+        self.persistentSave()
+        
+    def persistentRarity(self, choice):
+        self.persistent['rarityDefault'] = choice
+        self.persistentSave()
             
     def persistentSave(self):
         configFile = self.stateFileLocation()
@@ -1815,23 +1859,36 @@ class SETS():
         else:
             self.logWrite(configFile+' -- config file NOT found', 2)
 
-    def initSettings(self):
-        """Initialize session settings state"""
-        self.fileDebug = '.debug'
-        self.debugDefault = 1 if os.path.exists(self.fileDebug) else 0
-        
-        self.log = StringVar()
-        self.logmini = StringVar()
-        self.fileStateName = '.state_SETS.json'
+    def resetPersistent(self):
         # self.persistent will be auto-saved and auto-loaded for persistent state data
         self.persistent = {
+            'markDefault': '',
+            'rarityDefault': '',
         }
-        self.fileConfigName = '.config.json'
+    
+    def resetSettings(self):
         # self.settings are optionally loaded from config, but manually edited or saved
         self.settings = {
             'debug': self.debugDefault,
             'template': '.template.json'
         }
+    
+    def initSettings(self):
+        """Initialize session settings state"""
+        self.fileDebug = '.debug'
+        self.debugDefault = 1 if os.path.exists(self.fileDebug) else 0
+        
+        # log and logmini are the bottom text, logFull provides a history
+        self.log = StringVar()
+        self.logmini = StringVar()
+        self.logFull = StringVar()
+        
+        self.fileStateName = '.state_SETS.json'
+        self.resetPersistent()
+
+        self.fileConfigName = '.config.json'
+        self.resetSettings()
+
         self.logWrite('CWD: '+os.getcwd(), 1)
         
     def exportSettings(self):
@@ -1862,6 +1919,7 @@ class SETS():
         self.images = dict()
         self.imagesFail = dict()
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
+        self.marks = ["Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "Mk XIII", "Mk XIV", "Mk XV"]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
