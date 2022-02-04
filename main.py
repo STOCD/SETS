@@ -356,7 +356,7 @@ class SETS():
         
         self.log = StringVar()
         self.logmini = StringVar()
-        self.fileConfig = '.config.json'
+        self.fileConfigName = '.config.json'
         self.settings = {
             'debug': self.debugDefault,
             'template': '.template.json'
@@ -678,8 +678,7 @@ class SETS():
             self.shipButton.configure(text=self.build['ship'])
             self.setupSpaceBuildFrames()
             self.setupGroundBuildFrames()
-            self.window.update()
-            self.logWrite(inFilename+' -- loaded')
+            self.logWrite(inFilename+' -- template loaded')
         else:
             self.logWrite(inFilename+' -- version mismatch: '+str(self.buildImport['versionJSON'])+' < '+str(self.versionJSON))
 
@@ -1356,6 +1355,7 @@ class SETS():
         else:
             self.logmini.set(rightnote)
 
+        # Force update for assured data display
         self.window.update()
         
 
@@ -1628,7 +1628,6 @@ class SETS():
         self.settingsTopLeftFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
         self.settingsTopMiddleFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
         self.settingsTopRightFrame.grid_rowconfigure(0, weight=1, uniform="settingsRowSpace")
-        self.window.update()
 
     def setupUIScaling(self, scale):
          # pixel correction
@@ -1683,8 +1682,8 @@ class SETS():
         
         if self.args.file is not None and os.path.exists(self.args.file):
             self.importByFilename(self.args.file)
-        elif os.path.exists(self.settings['template']):
-            self.importByFilename(self.settings['template'])
+        else:
+            self.templateFileLoad()
             
         self.setupSpaceBuildFrames()
 
@@ -1701,23 +1700,95 @@ class SETS():
             self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
             
         if self.args.config is not None:
-            self.fileConfig = self.args.config
+            self.fileConfigName = self.args.config
 
+    def configLocation(self):
+        # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
+        system = sys.platform
+        if system == 'win32':
+            # (onedrive or documents -- Python intercepts AppData)
+            if sys.getwindowsversion().major < 6:
+                # earlier than WinvVista,7+
+                filePath = os.path.join(os.path.expanduser('~'), 'Documents', 'SETS')
+            else:
+                # WinVista,7+
+                if os.path.exists(os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents')):
+                    filePath = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents', 'SETS')
+                else:
+                    filePath = os.path.join(os.path.expanduser('~'), 'Documents', 'SETS')
+        elif system == 'darwin':
+            # OSX
+            filePath = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support', 'SETS')
+        else:
+            # Unix
+            filePath = os.path.join(os.path.expanduser('~'), '.config', 'SETS')
+            
+        if not os.path.exists(filePath):
+            self.logWrite('makedirs: '+filePath, 2)
+            try:
+                errMakeDirs = os.makedirs(filePath)
+            except:
+                self.logWrite(filePath+" -- makedirs failed: "+errMakeDirs, 2)
+        
+        return filePath
+
+    def configFileLocation(self):
+        filePath = self.configLocation()
+        
+        if os.path.exists(filePath):
+            fileName = os.path.join(filePath, self.fileConfigName)
+        else:
+            fileName = self.fileConfigName
+        
+        return fileName
+        
+    def templateFileLocation(self):
+        filePath = self.configLocation()
+        
+        if os.path.exists(filePath):
+            fileName = os.path.join(filePath, self.settings['template'])
+        else:
+            fileName = self.settings['template']
+        
+        return fileName
+    
     def configFileLoad(self):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
-        if os.path.exists(self.fileConfig):
-            with open(self.fileConfig, 'r') as inFile:
+        configFile = self.configFileLocation()
+        if not os.path.exists(configFile):
+            configFile = self.fileConfigName
+            
+        if os.path.exists(configFile):
+            self.logWrite(configFile+' -- config file found', 2)
+            with open(configFile, 'r') as inFile:
                 try:
-                    self.logWrite(self.fileConfig+' -- loading as Config')
                     self.settings = json.load(inFile)
-                except ValueError:
-                    self.logWrite(self.fileConfig+' -- file load error')
+                    self.logWrite(configFile+' -- config file loaded')
+                except:
+                    self.logWrite(configFile+' -- file load error')
                     
                 if self.args.debug:
                     self.settings['debug'] = self.args.debug
                 elif self.debugDefault or not 'debug' in self.settings:
                     self.settings['debug'] = self.debugDefault
                 self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
+        else:
+            self.logWrite(configFile+' -- config file NOT found', 2)
+            
+    def templateFileLoad(self):
+        configFile = self.templateFileLocation()
+        if not os.path.exists(configFile):
+            configFile = self.settings['template']
+            
+        if os.path.exists(configFile):
+            self.logWrite(configFile+' -- template file found', 2)
+            with open(configFile, 'r') as inFile:
+                try:
+                    self.importByFilename(configFile)
+                except:
+                    self.logWrite(configFile+' -- file load error')
+        else:
+            self.logWrite(configFile+' -- config file NOT found', 2)
     
     def __init__(self) -> None:
         """Main setup function"""
@@ -1727,6 +1798,8 @@ class SETS():
         self.initSettings()
         self.argParserSetup()
         self.configFileLoad()
+        self.logWrite('CWD: '+os.getcwd(), 2)
+        
         # self.window.geometry('1280x650')
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
