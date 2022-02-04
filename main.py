@@ -1708,7 +1708,7 @@ class SETS():
         
         if self.args.debug is not None:
             self.settings['debug'] = self.args.debug
-            self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
+            self.logWrite('Debug set by arg: '+str(self.settings['debug']), 1)
             
         if self.args.config is not None:
             self.fileConfigName = self.args.config
@@ -1758,7 +1758,8 @@ class SETS():
         
         if os.path.exists(filePath):
             fileName = os.path.join(filePath, self.fileStateName)
-            open(fileName, 'w')
+            if not os.path.exists(fileName):
+                open(fileName, 'w')
         else:
             fileName = self.fileStateName
         
@@ -1811,12 +1812,6 @@ class SETS():
                     self.logWrite(configFile+' -- state file loaded')
                 except:
                     self.logWrite(configFile+' -- file load error')
-                    
-                if self.args.debug:
-                    self.settings['debug'] = self.args.debug
-                elif not 'debug' in self.settings or self.debugDefault > self.settings['debug']:
-                    self.settings['debug'] = self.debugDefault
-                self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
         else:
             self.logWrite(configFile+' -- state file NOT found', 1)
  
@@ -1904,6 +1899,7 @@ class SETS():
         self.initSettings()
         self.argParserSetup()
         self.stateFileLoad()
+        self.persistentSave()
         self.configFileLoad()
         
         # self.window.geometry('1280x650')
