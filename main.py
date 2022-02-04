@@ -93,7 +93,7 @@ class SETS():
             os.makedirs(os.path.dirname(filename))
         with open(filename, 'w', encoding="utf-8") as html_file:
             html_file.write(r.text)
-            self.logWrite('STORE: '+designation+' -- '+str(os.path.getsize(filename)))
+            self.logWrite('CACHE STORE: '+designation+' -- '+str(os.path.getsize(filename))+' bytes')
         return r.html
 
     def fetchOrRequestJson(self, url, designation):
@@ -114,7 +114,7 @@ class SETS():
             os.makedirs(os.path.dirname(filename))
         with open(filename, 'w') as json_file:
             json.dump(r.json(),json_file)
-            self.logWrite('STORE: '+designation+' -- '+str(os.path.getsize(filename)))
+            self.logWrite('CACHE STORE: '+designation+' -- '+str(os.path.getsize(filename))+' bytes')
         return r.json()
 
     def filePathSanitize(self, txt, chr_set='printable'):
@@ -203,7 +203,7 @@ class SETS():
             # No response on icon grab, mark for no downlaad attempt till restart
             self.imagesFail[designation] = 1
             return self.emptyImage
-        self.logWrite('STORE: '+filename, 1)
+        self.logWrite('IMAGE STORE: '+filename+' -- '+str(os.path.getsize(filename))+' bytes', 1)
         with open(filename, 'wb') as handler:
             handler.write(img_data)
         image = Image.open(filename)
@@ -411,6 +411,7 @@ class SETS():
                         'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(),
                         "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
             }
+        self.persistentToBackend()
 
     def hookBackend(self):
         self.backend['playerShipName'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerShipName'))
@@ -503,8 +504,12 @@ class SETS():
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
-        if 'rarity' not in item or item['item']=='':
-            item['rarity'] = self.rarities[0]
+        if 'item' in item and 'rarity' in self.backend['cacheEquipment'][args[0]][item['item']]:
+            rarityDefaultItem = self.backend['cacheEquipment'][args[0]][item['item']]['rarity']
+        else:
+            rarityDefaultItem = self.rarities[0]
+        if 'rarity' not in item or item['item']=='' or item['rarity']=='':
+            item['rarity'] = rarityDefaultItem
         image1 = self.imageFromInfoboxName(item['rarity'])
         canvas.itemconfig(img[0],image=item['image'])
         canvas.itemconfig(img[1],image=image1)
@@ -633,7 +638,7 @@ class SETS():
         inFilename = filedialog.askopenfilename(filetypes=[("JSON file", '*.json'),("PNG image","*.png"),("All Files","*.*")])
         self.importByFilename(inFilename)
 
-    def importByFilename(self, inFilename):
+    def importByFilename(self, inFilename, force=False):
         if not inFilename: return
         if inFilename.endswith('.png'):
             # image = Image.open(inFilename)
@@ -643,10 +648,14 @@ class SETS():
             with open(inFilename, 'r') as inFile:
                 self.buildImport = json.load(inFile)
         
-        if 'versionJSON' not in self.buildImport:
+        if 'versionJSON' not in self.buildImport and not force:
             self.logWrite(inFilename+' -- version mismatch: no version found (older format)')
-        elif self.buildImport['versionJSON'] >= self.versionJSON:
-            self.build = self.buildImport
+            if self.persistent['forceJsonLoad']:
+                self.importByFilename(inFilename, True)
+        elif self.buildImport['versionJSON'] >= self.versionJSON or force:
+            logNote = ' (fields:'+str(len(self.build))+'+'+str(len(self.buildImport))+' is '
+            self.build.update(self.buildImport)
+            logNote = logNote+str(len(self.build))+' merged)'
             self.clearBackend()
             self.buildToBackendSeries()
             
@@ -657,9 +666,14 @@ class SETS():
             self.shipButton.configure(text=self.build['ship'])
             self.setupSpaceBuildFrames()
             self.setupGroundBuildFrames()
-            self.logWrite(inFilename+' -- template loaded')
+            
+            if force:
+                logNote=' (FORCE LOAD)'+logNote
+
+            self.logWrite(inFilename+' -- template loaded'+logNote)
         else:
             self.logWrite(inFilename+' -- version mismatch: '+str(self.buildImport['versionJSON'])+' < '+str(self.versionJSON))
+            self.importByFilename(inFilename, True)
 
     def exportCallback(self, event=None):
         """Callback for export button"""
@@ -785,6 +799,7 @@ class SETS():
         self.copyBuildToBackend('ship')
         self.copyBuildToBackend('tier')
         self.copyBuildToBackend('eliteCaptain')
+        self.persistentToBackend()
 
     def clearBuildCallback(self, event=None):
         """Callback for the clear build button"""
@@ -906,7 +921,7 @@ class SETS():
         topbarFrame = Frame(frame)
         mark = StringVar()
         if 'markDefault' in self.persistent and self.persistent['markDefault'] is not None:
-            self.logWrite('self.persistent["markDefault"]: '+self.persistent['markDefault'], 2)
+            self.logWrite('self.persistent["markDefault"]: '+self.persistent['markDefault'], 3)
             mark.set(self.persistent['markDefault'])
         markOption = OptionMenu(topbarFrame, mark, *self.marks)
         markOption.grid(row=0, column=0, sticky='nsw')
@@ -1322,8 +1337,8 @@ class SETS():
         self.footerFrame.pack(fill='both', side='bottom', expand=True)
         
         
-    def lineTruncate(self, content, length=100):
-        return '\n'.join(content.split('\n')[-60:])
+    def lineTruncate(self, content, length=500):
+        return '\n'.join(content.split('\n')[-1*length:])
         
     def setFooterFrame(self, leftnote, rightnote=None):
         """Set up footer frame with given item"""
@@ -1614,20 +1629,29 @@ class SETS():
         label = Label(self.settingsTopMiddleLeftFrame, text='Rarity', fg='#3a3a3a', bg='#b3b3b3')
         label.grid(row=2, column=0, sticky="e", pady=2, padx=2)
         rarity = StringVar(value=self.persistent['rarityDefault'])
-        rarityOption = OptionMenu(self.settingsTopMiddleLeftFrame, rarity, *self.rarities, command=self.persistentRarity)
+        raritiesDefault = [""]+self.rarities
+        rarityOption = OptionMenu(self.settingsTopMiddleLeftFrame, rarity, *raritiesDefault, command=self.persistentRarity)
         rarityOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         rarityOption.grid(row=2, column=1, sticky='nw', pady=2, padx=2)
         
         label = Label(self.settingsTopRightFrame, text='Maintenance', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
-        label.grid(row=0, column=0, sticky="n")
+        label.grid(row=0, column=0, columnspan=2, sticky="n")
         buttonInvalidateCache = Button(self.settingsTopRightFrame, text='Clear data cache (automatic download)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateCache.grid(row=1, column=0, sticky='nwe', pady=2, padx=2)
+        buttonInvalidateCache.grid(row=1, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
         buttonInvalidateCache.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="cache"))
         buttonInvalidateImages = Button(self.settingsTopRightFrame, text='VERY SLOW! Clear image cache (automatic download)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateImages.grid(row=2, column=0, sticky='nwe', pady=2, padx=2)
+        buttonInvalidateImages.grid(row=2, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
         buttonInvalidateImages.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="images"))
         buttonExportSettings = Button(self.settingsTopRightFrame, text='Export SETS manual settings', bg='#3a3a3a',fg='#b3b3b3', command=self.exportSettings)
-        buttonExportSettings.grid(row=3, column=0, sticky='nwe', pady=2, padx=2)
+        buttonExportSettings.grid(row=3, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
+
+        label = Label(self.settingsTopRightFrame, text='Force out of date JSON loading', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=4, column=0, sticky="e", pady=2, padx=2)        
+        forceLoad = StringVar(value='Yes' if self.persistent['forceJsonLoad'] else 'No')
+        forceLoadOptions = ["Yes", "No"]
+        forceLoadOption = OptionMenu(self.settingsTopRightFrame, forceLoad, *forceLoadOptions, command=self.persistentForceLoad)
+        forceLoadOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        forceLoadOption.grid(row=4, column=1, sticky='nw', pady=2, padx=2)
 
 
     def setupUIScaling(self, scale):
@@ -1785,8 +1809,10 @@ class SETS():
             self.logWrite(configFile+' -- config file found', 1)
             with open(configFile, 'r') as inFile:
                 try:
-                    self.settings = json.load(inFile)
-                    self.logWrite(configFile+' -- config file loaded')
+                    settingsNew = json.load(inFile)
+                    self.logWrite(configFile+' -- config file loaded ('+str(len(settingsNew))+' vs '+str(len(self.settings))+' items)')
+                    self.settings.update(settingsNew)
+                    self.logWrite('Merged config count: '+str(len(self.settings)), 1)
                 except:
                     self.logWrite(configFile+' -- file load error')
                     
@@ -1808,22 +1834,33 @@ class SETS():
             self.logWrite(configFile+' -- state file found', 1)
             with open(configFile, 'r') as inFile:
                 try:
-                    self.persistent = json.load(inFile)
-                    self.logWrite(configFile+' -- state file loaded')
+                    persistentNew = json.load(inFile)
                 except:
                     self.logWrite(configFile+' -- file load error')
+                    return
+                self.persistent.update(persistentNew)
+                self.logWrite(configFile+' -- state file loaded ('+str(len(persistentNew))+' vs '+str(len(self.persistent))+' items)')
+                self.logWrite('Merged persistent count: '+str(len(self.persistent)), 1)
         else:
             self.logWrite(configFile+' -- state file NOT found', 1)
  
+    def persistentToBackend(self):
+        # Nothing yet
+        return
+    
     def persistentMark(self, choice):
         self.persistent['markDefault'] = choice
-        self.persistentSave()
+        self.stateSave()
         
     def persistentRarity(self, choice):
         self.persistent['rarityDefault'] = choice
-        self.persistentSave()
+        self.stateSave()
+        
+    def persistentForceLoad(self, choice):
+        self.persistent['forceJsonLoad'] = 1 if choice=='Yes' else 0
+        self.stateSave()
             
-    def persistentSave(self):
+    def stateSave(self):
         configFile = self.stateFileLocation()
         if not os.path.exists(configFile):
             configFile = self.fileStateName
@@ -1856,6 +1893,7 @@ class SETS():
         self.persistent = {
             'markDefault': '',
             'rarityDefault': '',
+            'forceJsonLoad': 0
         }
     
     def resetSettings(self):
@@ -1899,7 +1937,7 @@ class SETS():
         self.initSettings()
         self.argParserSetup()
         self.stateFileLoad()
-        self.persistentSave()
+        self.stateSave()
         self.configFileLoad()
         
         # self.window.geometry('1280x650')
@@ -1911,8 +1949,8 @@ class SETS():
         self.hookBackend()
         self.images = dict()
         self.imagesFail = dict()
-        self.rarities = ["", "Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
-        self.marks = ["", "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "Mk XIII", "Mk XIV", "Mk XV"]
+        self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
+        self.marks = ["", "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "∞", "Mk XIII", "Mk XIV", "Mk XV"]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
