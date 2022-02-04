@@ -361,6 +361,7 @@ class SETS():
             'debug': self.debugDefault,
             'template': '.template.json'
         }
+        self.logWrite('CWD: '+os.getcwd(), 1)
         
     def exportSettings(self):
         try:
@@ -1759,7 +1760,7 @@ class SETS():
             configFile = self.fileConfigName
             
         if os.path.exists(configFile):
-            self.logWrite(configFile+' -- config file found', 2)
+            self.logWrite(configFile+' -- config file found', 1)
             with open(configFile, 'r') as inFile:
                 try:
                     self.settings = json.load(inFile)
@@ -1769,11 +1770,11 @@ class SETS():
                     
                 if self.args.debug:
                     self.settings['debug'] = self.args.debug
-                elif self.debugDefault or not 'debug' in self.settings:
+                elif not 'debug' in self.settings or self.debugDefault > self.settings['debug']:
                     self.settings['debug'] = self.debugDefault
                 self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
         else:
-            self.logWrite(configFile+' -- config file NOT found', 2)
+            self.logWrite(configFile+' -- config file NOT found', 1)
             
     def templateFileLoad(self):
         configFile = self.templateFileLocation()
@@ -1798,7 +1799,6 @@ class SETS():
         self.initSettings()
         self.argParserSetup()
         self.configFileLoad()
-        self.logWrite('CWD: '+os.getcwd(), 2)
         
         # self.window.geometry('1280x650')
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
