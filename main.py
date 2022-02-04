@@ -349,28 +349,6 @@ class SETS():
         if key in self.build:
             self.backend[key].set(self.build[key])
 
-    def initSettings(self):
-        """Initialize session settings state"""
-        self.fileDebug = '.debug'
-        self.debugDefault = 1 if os.path.exists(self.fileDebug) else 0
-        
-        self.log = StringVar()
-        self.logmini = StringVar()
-        self.fileConfigName = '.config.json'
-        self.settings = {
-            'debug': self.debugDefault,
-            'template': '.template.json'
-        }
-        self.logWrite('CWD: '+os.getcwd(), 1)
-        
-    def exportSettings(self):
-        try:
-            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
-                json.dump(self.settings, outFile)
-                self.logWrite(outFile.name+' -- saved as config file')
-        except AttributeError:
-            pass
-
     def clearBuild(self):
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
@@ -1743,6 +1721,16 @@ class SETS():
         
         return fileName
         
+    def stateFileLocation(self):
+        filePath = self.configLocation()
+        
+        if os.path.exists(filePath):
+            fileName = os.path.join(filePath, self.fileStateName)
+        else:
+            fileName = self.fileStateName
+        
+        return fileName
+        
     def templateFileLocation(self):
         filePath = self.configLocation()
         
@@ -1776,6 +1764,42 @@ class SETS():
         else:
             self.logWrite(configFile+' -- config file NOT found', 1)
             
+    def stateFileLoad(self):
+        # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
+        configFile = self.stateFileLocation()
+        if not os.path.exists(configFile):
+            configFile = self.fileStateName
+            
+        if os.path.exists(configFile):
+            self.logWrite(configFile+' -- state file found', 1)
+            with open(configFile, 'r') as inFile:
+                try:
+                    self.persistent = json.load(inFile)
+                    self.logWrite(configFile+' -- state file loaded')
+                except:
+                    self.logWrite(configFile+' -- file load error')
+                    
+                if self.args.debug:
+                    self.settings['debug'] = self.args.debug
+                elif not 'debug' in self.settings or self.debugDefault > self.settings['debug']:
+                    self.settings['debug'] = self.debugDefault
+                self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
+        else:
+            self.logWrite(configFile+' -- state file NOT found', 1)
+            
+    def persistentSave(self):
+        configFile = self.stateFileLocation()
+        if not os.path.exists(configFile):
+            configFile = self.fileStateName
+            
+        try:
+            with open(configFile, "w") as outFile:
+                json.dump(self.persistent, outFile)
+                self.logWrite(outFile.name+' -- saved as state file')
+        except AttributeError:
+            self.logWrite(outFile.name+' -- save failure')
+            pass
+            
     def templateFileLoad(self):
         configFile = self.templateFileLocation()
         if not os.path.exists(configFile):
@@ -1790,6 +1814,33 @@ class SETS():
                     self.logWrite(configFile+' -- file load error')
         else:
             self.logWrite(configFile+' -- config file NOT found', 2)
+
+    def initSettings(self):
+        """Initialize session settings state"""
+        self.fileDebug = '.debug'
+        self.debugDefault = 1 if os.path.exists(self.fileDebug) else 0
+        
+        self.log = StringVar()
+        self.logmini = StringVar()
+        self.fileStateName = '.state_SETS.json'
+        # self.persistent will be auto-saved and auto-loaded for persistent state data
+        self.persistent = {
+        }
+        self.fileConfigName = '.config.json'
+        # self.settings are optionally loaded from config, but manually edited or saved
+        self.settings = {
+            'debug': self.debugDefault,
+            'template': '.template.json'
+        }
+        self.logWrite('CWD: '+os.getcwd(), 1)
+        
+    def exportSettings(self):
+        try:
+            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
+                json.dump(self.settings, outFile)
+                self.logWrite(outFile.name+' -- saved as config file')
+        except AttributeError:
+            pass
     
     def __init__(self) -> None:
         """Main setup function"""
@@ -1798,6 +1849,7 @@ class SETS():
         # Debug, CLI args, and config file loading
         self.initSettings()
         self.argParserSetup()
+        self.stateFileLoad()
         self.configFileLoad()
         
         # self.window.geometry('1280x650')
