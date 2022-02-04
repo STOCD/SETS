@@ -1029,8 +1029,7 @@ class SETS():
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
         self.clearFrame(self.shipTraitFrame)
-        bonusPersonalTraits = 0
-        # Two will get an extra slot in top section, but currently we leave the extra slot in the bottom until species-specific traits can be auto-set.
+
         traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
         self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "space"])
@@ -1042,14 +1041,11 @@ class SETS():
     def setupGroundTraitFrame(self):
         """Set up UI frame containing traits"""
         self.clearFrame(self.groundTraitFrame)
-        bonusPersonalTraits = 0
-        # Two will get an extra slot in top section, but currently we leave the extra slot in the bottom until species-specific traits can be auto-set.
-        if self.backend['eliteCaptain'].get():
-            bonusPersonalTraits += 1
-        if ('Alien' in self.backend['species'].get()) or 1:
-            bonusPersonalTraits += 1
-        self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if bonusPersonalTraits >= 2 else 5, self.traitLabelCallback, [False, False, False, "ground"])
-        self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5 if bonusPersonalTraits else 4, self.traitLabelCallback, [False, False, False, "ground"])
+
+        traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
+        traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
+        self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "space"])
+        self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "space"], 1 if not traitAlien else 0)
         self.labelBuildBlock(self.groundTraitFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
@@ -1762,6 +1758,7 @@ class SETS():
         
         if os.path.exists(filePath):
             fileName = os.path.join(filePath, self.fileStateName)
+            open(fileName, 'w')
         else:
             fileName = self.fileStateName
         
@@ -1918,8 +1915,8 @@ class SETS():
         self.hookBackend()
         self.images = dict()
         self.imagesFail = dict()
-        self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
-        self.marks = ["Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "Mk XIII", "Mk XIV", "Mk XV"]
+        self.rarities = ["", "Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
+        self.marks = ["", "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "Mk XIII", "Mk XIV", "Mk XV"]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
