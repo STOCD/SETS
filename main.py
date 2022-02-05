@@ -773,7 +773,7 @@ class SETS():
         column1 = []
         for spaceboff in self.build['boffs'].keys():
             if "spaceboff" in spaceboff.lower():
-                column0 = column0 + self.makeRedditColumn([spaceboff.replace("_"," ")], len(self.build['boffs'][spaceboff]))
+                column0 = column0 + self.makeRedditColumn([self.backend['shipHtml']['boffs'][int(spaceboff[-1])].replace("-", " / ")], len(self.build['boffs'][spaceboff]))
                 column1 = column1 + self.makeRedditColumn(self.build['boffs'][spaceboff], len(self.build['boffs'][spaceboff]))
         redditString = redditString + self.makeRedditTable(['**Profession**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n## Active Space Duty Officers\n\n"
@@ -793,9 +793,7 @@ class SETS():
         redditString = redditString + "\n\n"
         column0 = self.makeRedditColumn([trait['item'] for trait in self.build['activeRepTrait'] if trait is not None], 5)
         redditString = redditString + self.makeRedditTable(['**Active Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
-        
         #Ground Build Below
-        
         redditString = redditString + "\n\n\n## **<u>Ground</u>**\n\n## Personal Equipment\n\n"
         column0 = (self.makeRedditColumn(["**Kit:**"],1)+
                    self.makeRedditColumn(["**Body Armor:**"],1)+
@@ -827,9 +825,14 @@ class SETS():
         column0 = self.makeRedditColumn([self.build['doffs']['ground'][i-1]['spec'] for i in range(1,7) if self.build['doffs']['ground'][i-1] is not None], 6)
         column1 = self.makeRedditColumn([self.build['doffs']['ground'][i-1]['effect'] for i in range(1,7) if self.build['doffs']['ground'][i-1] is not None], 6)
         redditString = redditString + self.makeRedditTable(['**Specialization**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
-
-
-
+        redditString = redditString + "\n\n## Away Team\n\n"
+        column0 = []
+        column1 = []
+        for groundboff in self.build['boffs'].keys():
+            if "groundboff" in groundboff.lower():
+                column0 = column0 + self.makeRedditColumn(["#"+str(int(groundboff[-1])+1)+": "+self.build['boffseats']['ground'][int(groundboff[-1])]+" / "+self.build['boffseats']['ground_spec'][int(groundboff[-1])]], len(self.build['boffs'][groundboff]))
+                column1 = column1 + self.makeRedditColumn(self.build['boffs'][groundboff], len(self.build['boffs'][groundboff]))
+        redditString = redditString + self.makeRedditTable(['**Profession**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
         #End of Ground Build
         redditWindow = Toplevel(self.window)
         redditText = Text(redditWindow)
