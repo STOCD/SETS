@@ -1761,17 +1761,23 @@ class SETS():
     def configLocation(self):
         # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
         system = sys.platform
-        if system == 'win32':
+        if os.path.exists(self.fileConfigName):
+            # We already have a config file in the app home directory, use portable mode
+            filePath=''
+        elif system == 'win32':
             # (onedrive or documents -- Python intercepts AppData)
+            filePathOnedrive = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents')
+            filePathOnedriveSETS = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents', 'SETS')
+            filePathDocumentsSETS = os.path.join(os.path.expanduser('~'), 'Documents', 'SETS')
             if sys.getwindowsversion().major < 6:
                 # earlier than WinvVista,7+
-                filePath = os.path.join(os.path.expanduser('~'), 'Documents', 'SETS')
+                filePath = filePathDocumentsSETS
             else:
                 # WinVista,7+
-                if os.path.exists(os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents')):
-                    filePath = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents', 'SETS')
+                if os.path.exists(filePathOnedrive):
+                    filePath = filePathOnedriveSETS
                 else:
-                    filePath = os.path.join(os.path.expanduser('~'), 'Documents', 'SETS')
+                    filePath = filePathDocumentsSETS
         elif system == 'darwin':
             # OSX
             filePath = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support', 'SETS')
@@ -1779,12 +1785,12 @@ class SETS():
             # Unix
             filePath = os.path.join(os.path.expanduser('~'), '.config', 'SETS')
             
-        if not os.path.exists(filePath):
+        if filePath != '' and not os.path.exists(filePath):
             self.logWrite('makedirs: '+filePath, 2)
             try:
                 errMakeDirs = os.makedirs(filePath)
             except:
-                self.logWrite(filePath+" -- makedirs failed: "+errMakeDirs, 2)
+                self.logWrite(filePath+" -- makedirs failed", 2)
         
         return filePath
 
@@ -1826,7 +1832,7 @@ class SETS():
         if not os.path.exists(configFile):
             configFile = self.fileConfigName
             
-        if os.path.exists(configFile):
+        if os.path.exists(configFile) and os.path.getsize(configFile) > 0:
             self.logWrite(configFile+' -- config file found', 1)
             with open(configFile, 'r') as inFile:
                 try:
@@ -1844,7 +1850,7 @@ class SETS():
                     self.settings['debug'] = self.debugDefault
                 self.logWrite('Debug level is: '+str(self.settings['debug']), 1)
         else:
-            self.logWrite(configFile+' -- config file NOT found', 1)
+            self.logWrite(configFile+' -- config file not found or zero size', 1)
             
     def stateFileLoad(self):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
