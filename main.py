@@ -352,6 +352,7 @@ class SETS():
     def clearBuild(self):
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
+        self.versionJSONminimum = 0
         self.versionJSON = 2022020203
         self.build = {
             'versionJSON': self.versionJSON,
@@ -471,7 +472,12 @@ class SETS():
         container.pack(fill=BOTH, expand=True)
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side=RIGHT,fill=Y)
-        i = 0
+
+        clearSlotButton = Button(scrollable_frame, text='Clear Slot', padx=5, bg='#3a3a3a',fg='#b3b3b3')
+        clearSlotButton.grid(row=0, column=0, sticky='nsew')
+        clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
+
+        i = 1
         items_list.sort()
         for name,image in items_list:
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
@@ -505,19 +511,28 @@ class SETS():
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
         #if 'item' in item and len(item['item']):
-        if 'item' in item and len(item['item']) and 'rarity' in self.backend['cacheEquipment'][args[0]][item['item']]:
-            rarityDefaultItem = self.backend['cacheEquipment'][args[0]][item['item']]['rarity']
-        else:
-            rarityDefaultItem = self.rarities[0]
-        if 'rarity' not in item or item['item']=='' or item['rarity']=='':
-            item['rarity'] = rarityDefaultItem
-        image1 = self.imageFromInfoboxName(item['rarity'])
-        canvas.itemconfig(img[0],image=item['image'])
-        canvas.itemconfig(img[1],image=image1)
-        canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(self.shipInfoboxFrame, item, args[0]))
-        self.build[key][i] = item
-        self.backend['i_'+key][i] = [item['image'], image1]
-        item.pop('image')
+        if 'item' in item and len(item['item']):
+            if item['item'] == 'X':
+                item['item'] = ''
+                canvas.itemconfig(img[0],image=self.emptyImage)
+                canvas.itemconfig(img[1],image=self.emptyImage)
+                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(self.shipInfoboxFrame, item, args[0]))
+                self.build[key][i] = item
+                self.backend['i_'+key][i] = [item['image'], self.emptyImage]
+            else:
+                if 'rarity' in self.backend['cacheEquipment'][args[0]][item['item']]:
+                    rarityDefaultItem = self.backend['cacheEquipment'][args[0]][item['item']]['rarity']
+                else:
+                    rarityDefaultItem = self.rarities[0]
+                if 'rarity' not in item or item['item']=='' or item['rarity']=='':
+                    item['rarity'] = rarityDefaultItem
+                image1 = self.imageFromInfoboxName(item['rarity'])
+                canvas.itemconfig(img[0],image=item['image'])
+                canvas.itemconfig(img[1],image=image1)
+                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(self.shipInfoboxFrame, item, args[0]))
+                self.build[key][i] = item
+                self.backend['i_'+key][i] = [item['image'], image1]
+                item.pop('image')
 
     def traitLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for all trait labels"""
@@ -653,8 +668,8 @@ class SETS():
             self.logWrite(inFilename+' -- version mismatch: no version found (older format)')
             if self.persistent['forceJsonLoad']:
                 self.importByFilename(inFilename, True)
-        elif self.buildImport['versionJSON'] >= self.versionJSON or force:
-            logNote = ' (fields:'+str(len(self.build))+'+'+str(len(self.buildImport))+' is '
+        elif self.buildImport['versionJSON'] >= self.versionJSONminimum or force:
+            logNote = ' (fields:['+str(len(self.buildImport))+'=>'+str(len(self.build))+']='
             self.build.update(self.buildImport)
             logNote = logNote+str(len(self.build))+' merged)'
             self.clearBackend()
@@ -916,6 +931,7 @@ class SETS():
         searchEntry.grid(row=0, column=1, columnspan=5, sticky='nsew')
         searchEntry.focus_set()
         searchText.trace_add('write', lambda v,i,m,content=content,frame=frame:self.applyContentFilter(frame, content, searchText.get()))
+        
         topbarFrame.pack()
 
     def setupRarityFrame(self,frame,itemVar,content):
@@ -1784,7 +1800,7 @@ class SETS():
         if os.path.exists(filePath):
             fileName = os.path.join(filePath, self.fileStateName)
             if not os.path.exists(fileName):
-                open(fileName, 'w')
+                open(fileName, 'w').close()
         else:
             fileName = self.fileStateName
         
@@ -1811,9 +1827,10 @@ class SETS():
             with open(configFile, 'r') as inFile:
                 try:
                     settingsNew = json.load(inFile)
-                    self.logWrite(configFile+' -- config file loaded ('+str(len(settingsNew))+' vs '+str(len(self.settings))+' items)')
+                    logNote = ' (fields:['+str(len(settingsNew))+'=>'+str(len(self.settings))+']='
                     self.settings.update(settingsNew)
-                    self.logWrite('Merged config count: '+str(len(self.settings)), 1)
+                    logNote = logNote + str(len(self.settings)) + ')'
+                    self.logWrite(configFile+' -- config file loaded' + logNote)
                 except:
                     self.logWrite(configFile+' -- file load error')
                     
@@ -1839,9 +1856,10 @@ class SETS():
                 except:
                     self.logWrite(configFile+' -- file load error')
                     return
+                logNote = ' (fields:['+str(len(persistentNew))+'=>'+str(len(self.persistent))+']='
                 self.persistent.update(persistentNew)
-                self.logWrite(configFile+' -- state file loaded ('+str(len(persistentNew))+' vs '+str(len(self.persistent))+' items)')
-                self.logWrite('Merged persistent count: '+str(len(self.persistent)), 1)
+                logNote = logNote + str(len(self.persistent)) + ')'
+                self.logWrite(configFile+' -- state file loaded' + logNote)
         else:
             self.logWrite(configFile+' -- state file NOT found', 1)
  
