@@ -504,7 +504,8 @@ class SETS():
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
-        if 'item' in item and 'rarity' in self.backend['cacheEquipment'][args[0]][item['item']]:
+        #if 'item' in item and len(item['item']):
+        if 'item' in item and len(item['item']) and 'rarity' in self.backend['cacheEquipment'][args[0]][item['item']]:
             rarityDefaultItem = self.backend['cacheEquipment'][args[0]][item['item']]['rarity']
         else:
             rarityDefaultItem = self.rarities[0]
