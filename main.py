@@ -203,9 +203,13 @@ class SETS():
             # No response on icon grab, mark for no downlaad attempt till restart
             self.imagesFail[designation] = 1
             return self.emptyImage
-        self.logWrite('IMAGE STORE: '+filename+' -- '+str(os.path.getsize(filename))+' bytes', 1)
         with open(filename, 'wb') as handler:
             handler.write(img_data)
+        if os.path.exists(filename):
+            logNote = str(os.path.getsize(filename))+' bytes'
+        else:
+            logNote = 'no file'
+        self.logWrite('IMAGE STORE: '+filename+' -- '+logNote, 1)
         image = Image.open(filename)
         if(width is not None):
             image = image.resize((width,height),Image.ANTIALIAS)
