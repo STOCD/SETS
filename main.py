@@ -515,7 +515,6 @@ class SETS():
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
-        #if 'item' in item and len(item['item']):
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
                 item['item'] = ''
@@ -523,7 +522,7 @@ class SETS():
                 canvas.itemconfig(img[1],image=self.emptyImage)
                 canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(self.shipInfoboxFrame, item, args[0]))
                 self.build[key][i] = item
-                self.backend['i_'+key][i] = [item['image'], self.emptyImage]
+                self.backend['i_'+key][i] = [self.emptyImage, self.emptyImage]
             else:
                 if 'rarity' in self.backend['cacheEquipment'][args[0]][item['item']]:
                     rarityDefaultItem = self.backend['cacheEquipment'][args[0]][item['item']]['rarity']
@@ -559,12 +558,18 @@ class SETS():
             items_list = [(html.unescape(traits[e]["name"]), self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
-
-        if ('i_'+item['item']+str(i) not in self.backend):
-            self.backend['i_'+item['item']+str(i)] = item['image']
-        canvas.itemconfig(img[0],image=self.backend['i_'+item['item']+str(i)])
-        item.pop('image')
-        self.build[key][i] = item
+        if 'item' in item and len(item['item']):
+            if item['item'] == 'X':
+                item['item'] = ''
+                self.backend['i_'+item['item']+str(i)] = self.emptyImage
+                canvas.itemconfig(img[0],image=self.emptyImage)
+                self.build[key][i] = item
+            else:
+                if ('i_'+item['item']+str(i) not in self.backend):
+                    self.backend['i_'+item['item']+str(i)] = item['image']
+                canvas.itemconfig(img[0],image=self.backend['i_'+item['item']+str(i)])
+                item.pop('image')
+                self.build[key][i] = item
 
 
     def spaceBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
@@ -598,10 +603,17 @@ class SETS():
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
-        if ('i_'+item['item']+str(i) not in self.backend):
-            self.backend['i_'+item['item']+str(i)] = item['image']
-        canvas.itemconfig(img,image=self.backend['i_'+item['item']+str(i)])
-        self.build['boffs'][key][i] = item['item']
+        if 'item' in item and len(item['item']):
+            if item['item'] == 'X':
+                item['item'] = ''
+                self.backend['i_'+item['item']+str(i)] = self.emptyImage
+                canvas.itemconfig(img,image=self.emptyImage)
+                self.build['boffs'][key][i] = item
+            else:
+                if ('i_'+item['item']+str(i) not in self.backend):
+                    self.backend['i_'+item['item']+str(i)] = item['image']
+                canvas.itemconfig(img,image=self.backend['i_'+item['item']+str(i)])
+                self.build['boffs'][key][i] = item['item']
 
     def groundBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
         """Common callback for boff labels"""
@@ -627,10 +639,17 @@ class SETS():
             items_list.append((cname,cimg))
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
-        if ('i_'+item['item']+'_'+str(i) not in self.backend):
-            self.backend['i_'+item['item']+'_'+str(i)] = item['image']
-        canvas.itemconfig(img,image=self.backend['i_'+item['item']+'_'+str(i)])
-        self.build['boffs'][key][i] = item['item']
+        if 'item' in item and len(item['item']):
+            if item['item'] == 'X':
+                item['item'] = ''
+                self.backend['i_'+item['item']+'_'+str(i)] = self.emptyImage
+                canvas.itemconfig(img,image=self.emptyImage)
+                self.build['boffs'][key][i] = item
+            else:
+                if ('i_'+item['item']+'_'+str(i) not in self.backend):
+                    self.backend['i_'+item['item']+'_'+str(i)] = item['image']
+                canvas.itemconfig(img,image=self.backend['i_'+item['item']+'_'+str(i)])
+                self.build['boffs'][key][i] = item['item']
 
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
@@ -648,9 +667,19 @@ class SETS():
         itemVar = self.getEmptyItem()
         items_list = [(name, self.emptyImage) for name in self.shipNames]
         item = self.pickerGui("Pick Starship", itemVar, items_list, [self.setupSearchFrame])
-        self.shipButton.configure(text=item['item'])
-        self.backend['ship'].set(item['item'])
-        self.setupSpaceBoffFrame(self.backend['shipHtml'])
+        if 'item' in item and len(item['item']):
+            if item['item'] == 'X':
+                item['item'] = ''
+                self.build['ship'] = item['item']
+                self.backend['shipHtml'] = None
+                self.shipLabel.configure(image=self.emptyImage)
+                self.shipButton.configure(text=item['item'])
+                self.backend['ship'].set(item['item'])
+                self.setupSpaceBuildFrames()
+            else:
+                self.shipButton.configure(text=item['item'])
+                self.backend['ship'].set(item['item'])
+                self.setupSpaceBoffFrame(self.backend['shipHtml'])
 
     def importCallback(self, event=None):
         """Callback for import button"""
@@ -1165,6 +1194,9 @@ class SETS():
         self.clearFrame(self.shipBoffFrame)
         if not 'space' in self.build['boffseats']:
             self.build['boffseats']['space'] = [None] * 6
+            
+        if ship is None or not 'boffs' in ship:
+            return
         
         idx = 0
         boffs = ship["boffs"]
@@ -1285,6 +1317,10 @@ class SETS():
         if self.backend['shipHtml'] is not None:
             self.setupShipBuildFrame(self.backend['shipHtml'])
             self.setupSpaceBoffFrame(self.backend['shipHtml'])
+        else:
+            self.clearFrame(self.shipEquipmentFrame)
+            self.clearFrame(self.shipBoffFrame)
+            self.clearFrame(self.shipTierFrame)
         self.setupDoffFrame(self.shipDoffFrame)
         self.setupSpaceTraitFrame()
         self.setupInfoboxFrame(self.shipInfoboxFrame, self.getEmptyItem(),'')
@@ -1450,7 +1486,7 @@ class SETS():
             self.logmini.set(rightnote)
 
         # Force update for assured data display
-        self.window.update()
+        #self.window.update()
         
 
     def setupMenuFrame(self):
