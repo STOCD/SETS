@@ -1,3 +1,4 @@
+from textwrap import fill
 from tkinter import *
 from tkinter import filedialog
 from tkinter import font
@@ -743,9 +744,69 @@ class SETS():
             for s in self.backend['skillNames'][rank+1]:
                 self.backend['skillLabels'][s].configure(bg="grey")
 
-
-    def exportRedditCallback(self, event=None):
-        redditString = "**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'])
+    def redditExportDisplayGround(self, textframe):
+        if self.build['eliteCaptain'] == 0:
+            elite = "No"
+        elif self.build['eliteCaptain'] == 1:
+            elite = "Yes"
+        else:
+            elite = "You should not be seeing this... PANIC!"
+        redditString = "## **<u>Ground</u>**\n\n**Basic Information** | **Data** \n:--- | :--- \n*Player Name* | {0} \n*Player Species* | {1} \n*Player Career* | {2} \n*Elite Captain* | {3} \n*Primary Specialization* | {4} \n*Secondary Specialization* | {5}\n\n\n".format(self.backend['playerName'].get(), self.build['species'], self.build['career'], elite, self.build['specPrimary'], self.build['specSecondary'], self.build['playerDesc'])
+        if self.build['playerDesc'] != '':
+            redditString = redditString + "## Build Description\n\n{0}\n\n\n".format(self.build['playerDesc'])
+        redditString = redditString +  "## Personal Equipment\n\n"
+        column0 = (self.makeRedditColumn(["**Kit:**"],1)+
+                   self.makeRedditColumn(["**Body Armor:**"],1)+
+                   self.makeRedditColumn(["**EV Suit:**"],1)+
+                   self.makeRedditColumn(["**Shields:**"],1)+
+                   self.makeRedditColumn(["**Weapons:**"],2)+
+                   self.makeRedditColumn(["**Devices:**"],5))
+        column1 =(self.makeRedditColumn(self.preformatRedditEquipment('groundKit',1),1)+
+                  self.makeRedditColumn(self.preformatRedditEquipment('groundArmor',1),1)+
+                  self.makeRedditColumn(self.preformatRedditEquipment('groundEV',1),1)+
+                  self.makeRedditColumn(self.preformatRedditEquipment('groundShield',1),1)+
+                  self.makeRedditColumn(self.preformatRedditEquipment('groundWeapons',2),2)+
+                  self.makeRedditColumn(self.preformatRedditEquipment('groundDevices',5),5))                               
+        redditString = redditString + self.makeRedditTable(['&nbsp;']+column0, ['**Component**']+column1, ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n\n## Kit Modules\n\n" 
+        column0 = self.makeRedditColumn(self.preformatRedditEquipment('groundKitModules',6),6)
+        redditString = redditString + self.makeRedditTable(['**Name**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n\n## Traits\n\n"
+        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['personalGroundTrait'] if trait is not None] +
+                                        [trait['item'] for trait in self.build['personalGroundTrait2'] if trait is not None], 11)
+        redditString = redditString + self.makeRedditTable(['**Personal Ground Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n"
+        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['groundRepTrait'] if trait is not None], 5)
+        redditString = redditString + self.makeRedditTable(['**Ground Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n"
+        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['groundActiveRepTrait'] if trait is not None], 5)
+        redditString = redditString + self.makeRedditTable(['**Active Ground Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n## Active Ground Duty Officers\n\n"
+        column0 = self.makeRedditColumn([self.build['doffs']['ground'][i-1]['spec'] for i in range(1,7) if self.build['doffs']['ground'][i-1] is not None], 6)
+        column1 = self.makeRedditColumn([self.build['doffs']['ground'][i-1]['effect'] for i in range(1,7) if self.build['doffs']['ground'][i-1] is not None], 6)
+        redditString = redditString + self.makeRedditTable(['**Specialization**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n\n## Away Team\n\n"
+        column0 = []
+        column1 = []
+        for groundboff in self.build['boffs'].keys():
+            if "groundboff" in groundboff.lower():
+                column0 = column0 + self.makeRedditColumn(["#"+str(int(groundboff[-1])+1)+": "+self.build['boffseats']['ground'][int(groundboff[-1])]+" / "+self.build['boffseats']['ground_spec'][int(groundboff[-1])]], len(self.build['boffs'][groundboff]))
+                column1 = column1 + self.makeRedditColumn(self.build['boffs'][groundboff], len(self.build['boffs'][groundboff]))
+        redditString = redditString + self.makeRedditTable(['**Profession**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
+        textframe.delete("1.0",END)
+        textframe.insert(END, redditString)
+    
+    def redditExportDisplaySpace(self, textframe):
+        if self.build['eliteCaptain'] == 0:
+            elite = "No"
+        elif self.build['eliteCaptain'] == 1:
+            elite = "Yes"
+        else:
+            elite = "You should not be seeing this... PANIC!"
+        redditString = "## **<u>SPACE</u>**\n\n**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n*Ship Tier* | {2} \n*Player Career* | {3} \n*Elite Captain* | {4} \n*Primary Specialization* | {5} \n*Secondary Specialization* | {6}\n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'], self.build['tier'], self.build['career'], elite, self.build['specPrimary'], self.build['specSecondary'])
+        if self.build['playerShipDesc'] != '':
+            redditString = redditString + "## Build Description\n\n{0}\n\n\n".format(self.build['playerShipDesc'])
+        redditString = redditString + "## Ship Equipment\n\n"
         deviceBlanks = [None] * 6
         column0 = (self.makeRedditColumn(["**Fore Weapons:**"], self.backend['shipForeWeapons']) +
                    self.makeRedditColumn(["**Aft Weapons:**"], self.backend['shipAftWeapons']) +
@@ -768,33 +829,49 @@ class SETS():
                    self.makeRedditColumn(self.preformatRedditEquipment('tacConsoles', self.backend['shipTacConsoles']), self.backend['shipTacConsoles']) +
                    self.makeRedditColumn(self.preformatRedditEquipment('uniConsoles', self.backend['shipUniConsoles']), max(self.backend['shipUniConsoles'], 1)))
         redditString = redditString + self.makeRedditTable(['**Basic Information**']+column0, ['**Component**']+column1, ['**Notes**']+[None]*len(column0))
-        redditString = redditString + "\n\n### Officers and Crew\n\n"
+        redditString = redditString + "\n\n\n## Bridge Officer Stations\n\n"
         column0 = []
         column1 = []
-        for boff in self.build['boffs'].keys():
-            column0 = column0 + self.makeRedditColumn([boff.replace("_"," ")], len(self.build['boffs'][boff]))
-            column1 = column1 + self.makeRedditColumn(self.build['boffs'][boff], len(self.build['boffs'][boff]))
-        redditString = redditString + self.makeRedditTable(['**Bridge Officer Information**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
-        redditString = redditString + "\n\n"
-        column0 = list(range(1,7))
-        column1 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['spec'] for i in column0 if self.build['doffs']['space'][i-1] is not None], 6)
-        column2 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['effect'] for i in column0 if self.build['doffs']['space'][i-1] is not None], 6)
-        redditString = redditString + self.makeRedditTable(['**Bridge Officer Information**']+column0, ['**Power**']+column1, ['**Notes**']+column2)
-        redditString = redditString + "\n\n##    Traits\n\n"
+        for spaceboff in self.build['boffs'].keys():
+            if "spaceboff" in spaceboff.lower():
+                column0 = column0 + self.makeRedditColumn([self.backend['shipHtml']['boffs'][int(spaceboff[-1])].replace("-", " / ")], len(self.build['boffs'][spaceboff]))
+                column1 = column1 + self.makeRedditColumn(self.build['boffs'][spaceboff], len(self.build['boffs'][spaceboff]))
+        redditString = redditString + self.makeRedditTable(['**Profession**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n\n## Active Space Duty Officers\n\n"
+        column0 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['spec'] for i in range(1,7) if self.build['doffs']['space'][i-1] is not None], 6)
+        column1 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['effect'] for i in range(1,7) if self.build['doffs']['space'][i-1] is not None], 6)
+        redditString = redditString + self.makeRedditTable(['**Specialization**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n\n##    Traits\n\n"
         column0 = self.makeRedditColumn([trait['item'] for trait in self.build['personalSpaceTrait'] if trait is not None] +
                                         [trait['item'] for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
         redditString = redditString + self.makeRedditTable(['**Personal Space Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
-        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['spaceRepTrait'] if trait is not None], 5)
-        redditString = redditString + self.makeRedditTable(['**Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
-        redditString = redditString + "\n\n"
         column0 = self.makeRedditColumn([trait['item'] for trait in self.build['starshipTrait'] if trait is not None], 6)
         redditString = redditString + self.makeRedditTable(['**Starship Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
+        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['spaceRepTrait'] if trait is not None], 5)
+        redditString = redditString + self.makeRedditTable(['**Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        redditString = redditString + "\n\n"
+        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['activeRepTrait'] if trait is not None], 5)
+        redditString = redditString + self.makeRedditTable(['**Active Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        textframe.delete("1.0",END)
+        textframe.insert(END, redditString)
+
+    def exportRedditCallback(self, event=None):
+        phi = font.Font(family='Helvetica', size=12, weight='bold')
         redditWindow = Toplevel(self.window)
         redditText = Text(redditWindow)
+        btfr = Frame(redditWindow)
+        btfr.pack(side="top", fill="x")
+        redditbtspace = Button(btfr,text="SPACE", font=phi,  bg="#6b6b6b",fg="white",command=lambda: self.redditExportDisplaySpace(redditText))
+        redditbtground = Button(btfr, text="GROUND", font =phi, bg="#6b6b6b", fg="white",command=lambda: self.redditExportDisplayGround(redditText))
+        redditbtspace.grid(row=0,column=0,sticky="nsew")
+        redditbtground.grid(row=0,column=1,sticky="nsew")
+        btfr.grid_columnconfigure(0,weight=1)
+        btfr.grid_columnconfigure(1,weight=1)
         redditText.pack(fill=BOTH, expand=True)
-        redditText.insert(END, redditString)
+        self.redditExportDisplaySpace(redditText)
+        redditWindow.mainloop()
 
     def cacheInvalidateCallback(self, dir):
         for filename in os.listdir(dir):
