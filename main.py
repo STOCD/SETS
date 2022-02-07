@@ -288,7 +288,7 @@ class SETS():
             return self.backend['cacheEquipment'][keyPhrase]
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         if "Kit Frame" in keyPhrase:
-            equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "fake" in item['type'] and not 'Module' in item['type']]
+            equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
         else:
             equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
         self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
