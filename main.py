@@ -1080,8 +1080,8 @@ class SETS():
 
         traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
-        self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "space"])
-        self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "space"], 1 if not traitAlien else 0)
+        self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "ground"])
+        self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "ground"], 1 if not traitAlien else 0)
         self.labelBuildBlock(self.groundTraitFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
