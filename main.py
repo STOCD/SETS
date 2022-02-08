@@ -26,6 +26,7 @@ class SETS():
     item_query = 'https://sto.fandom.com/wiki/Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&&order+by=%60_pageName%60%2C%60name%60%2C%60rarity%60%2C%60type%60%2C%60boundto%60&limit=5000&format=json'
     #query for personal and reputation trait cargo table on the wiki
     trait_query = "https://sto.fandom.com/wiki/Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&&order+by=%60_pageName%60%2C%60name%60%2C%60chartype%60%2C%60environment%60%2C%60type%60&limit=2500&format=json"
+    ship_trait_query ="https://sto.fandom.com/wiki/Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json"
     #query for DOFF types and specializations
     doff_query =    "https://sto.fandom.com/wiki/Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&order+by=Specializations.name&limit=1000&offset=0&format=json"
 
@@ -286,6 +287,7 @@ class SETS():
         """Populate in-memory cache of ship equipment lists for faster loading"""
         if keyPhrase in self.backend['cacheEquipment']:
             return self.backend['cacheEquipment'][keyPhrase]
+        self.logWrite('precacheEquipment: '+keyPhrase, 3)
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         if "Kit Frame" in keyPhrase:
             equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
@@ -331,6 +333,27 @@ class SETS():
         self.backend['cacheDoffs'][keyPhrase] = {self.deWikify(doffMatches[item]['name'])+str(doffMatches[item]['powertype']): doffMatches[item] for item in range(len(doffMatches))}
         self.backend['cacheDoffNames'][keyPhrase] = {self.deWikify(doffMatches[item]['name']): '' for item in range(len(doffMatches))}
 
+    def precacheShipTraitSingle(self, name, desc):
+        if not name in self.backend['cacheShipTraits']:
+            self.backend['cacheShipTraits'][name] = self.deWikify(desc)
+            #self.logWrite(name, 2)
+
+    def precacheShipTraits(self):
+        """Populate in-memory cache of ship traits for faster loading"""
+        if 'cacheShipTraits' in self.backend and len(self.backend['cacheShipTraits']) > 0:
+            return self.backend['cacheShipTraits']
+            
+        for item in list(self.shiptraits):
+            if 'trait' in item and len(item['trait']):
+                self.precacheShipTraitSingle(item['trait'], item['traitdesc'])
+            if 'trait2' in item and len(item['trait2']):
+                self.precacheShipTraitSingle(item['trait2'], item['traitdesc2'])
+            if 'trait3' in item and len(item['trait3']):
+                self.precacheShipTraitSingle(item['trait3'], item['traitdesc3'])
+            if 'acctrait' in item and len(item['acctrait']):
+                self.precacheShipTraitSingle(item['acctrait'], item['acctraitdesc'])
+
+        self.logWrite('Trait picker (json) item count: '+str(len(self.backend['cacheShipTraits'])), 2)
 
     def setListIndex(self, list, index, value):
         print(value)
@@ -414,7 +437,7 @@ class SETS():
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         "playerShipDesc": StringVar(self.window), "playerDesc": StringVar(self.window),
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(),
+                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(), 'cacheShipTraits': dict(),
                         "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
             }
         self.persistentToBackend()
@@ -520,7 +543,6 @@ class SETS():
                 item['item'] = ''
                 canvas.itemconfig(img[0],image=self.emptyImage)
                 canvas.itemconfig(img[1],image=self.emptyImage)
-                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(self.shipInfoboxFrame, item, args[0]))
                 self.build[key][i] = item
                 self.backend['i_'+key][i] = [self.emptyImage, self.emptyImage]
             else:
@@ -533,7 +555,10 @@ class SETS():
                 image1 = self.imageFromInfoboxName(item['rarity'])
                 canvas.itemconfig(img[0],image=item['image'])
                 canvas.itemconfig(img[1],image=image1)
-                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(self.shipInfoboxFrame, item, args[0]))
+                #environment = 'space'
+                #if len(args) >= 4:
+                #    environment = args[3]
+                #canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, args[0], environment))
                 self.build[key][i] = item
                 self.backend['i_'+key][i] = [item['image'], image1]
                 item.pop('image')
@@ -542,6 +567,7 @@ class SETS():
         """Common callback for all trait labels"""
         items_list=[]
         if args[2]:
+            self.precacheShipTraits()
             traits = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Starship_traits", "starship_traits").find('tr')[1:]
             for trait in traits:
                 tds = trait.find('td')
@@ -557,6 +583,7 @@ class SETS():
             traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and ("activereputation" in traits[e]["type"]) == args[1]]
             items_list = [(html.unescape(traits[e]["name"]), self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
         itemVar = self.getEmptyItem()
+        self.logWrite('Trait Picker (html) Item Count: '+str(len(items_list)), 2)
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
@@ -1088,7 +1115,14 @@ class SETS():
                 canvas.itemconfig(img0, state=DISABLED)
                 canvas.itemconfig(img1, state=DISABLED)
             if (args is not None and i < disabledStart):
+                environment = 'space'
+                internalKey = ''
+                if len(args) >= 4:
+                    environment = args[3]
+                if type(args[0]) is str:
+                    internalKey = args[0]
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
+                canvas.bind('<Enter>', lambda e,item=self.build[key][i],internalKey=internalKey,environment=environment:self.setupInfoboxFrame(item, internalKey, environment))
 
 
     def setupShipBuildFrame(self, ship):
@@ -1131,13 +1165,13 @@ class SETS():
     def setupCharBuildFrame(self):
         """Set up UI frame containing ship equipment"""
         self.clearFrame(self.groundEquipmentFrame)
-        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 6 if self.backend['eliteCaptain'].get() else 5, self.itemLabelCallback, ["Kit Module", "Pick Module", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["EV Suit", "Pick EV Suit", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield (G)", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", ""])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.backend['eliteCaptain'].get() else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", ""])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 6 if self.backend['eliteCaptain'].get() else 5, self.itemLabelCallback, ["Kit Module", "Pick Module", "", 'ground'])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", "", 'ground'])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", "", 'ground'])
+        self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["EV Suit", "Pick EV Suit", "", 'ground'])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield (G)", "", 'ground'])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", "", 'ground'])
+        self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.backend['eliteCaptain'].get() else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
 
     def setupSkillMainFrame(self):
         self.clearFrame(self.skillMiddleFrame)
@@ -1323,7 +1357,7 @@ class SETS():
             self.clearFrame(self.shipTierFrame)
         self.setupDoffFrame(self.shipDoffFrame)
         self.setupSpaceTraitFrame()
-        self.setupInfoboxFrame(self.shipInfoboxFrame, self.getEmptyItem(),'')
+        self.clearInfoboxFrame('space')
 
     def setupGroundBuildFrames(self):
         """Set up all relevant build frames"""
@@ -1332,12 +1366,12 @@ class SETS():
         self.setupGroundBoffFrame()
         self.setupDoffFrame(self.groundDoffFrame)
         self.setupGroundTraitFrame()
-        self.setupInfoboxFrame(self.shipInfoboxFrame, self.getEmptyItem(),'')
+        self.clearInfoboxFrame('ground')
 
     def setupSkillBuildFrames(self):
         """Set up all relevant build frames"""
         self.setupSkillMainFrame()
-        self.setupInfoboxFrame(self.skillInfoboxFrame, self.getEmptyItem(),'')
+        self.clearInfoboxFrame('skill')
 
     def setupModFrame(self, frame, rarity, itemVar):
         """Set up modifier frame in equipment picker"""
@@ -1351,13 +1385,26 @@ class SETS():
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
             OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='n')
 
-    def setupInfoboxFrame(self, frame, item, key):
+    def clearInfoboxFrame(self, environment):
+        self.setupInfoboxFrame(self.getEmptyItem(), '', environment)
+        
+    def setupInfoboxFrame(self, item, key, environment='space'):
         """Set up infobox frame with given item"""
+        
+        if environment == 'skill':
+            frame = self.skillInfoboxFrame
+        elif environment == 'ground':
+            frame = self.groundInfoboxFrame
+        else:
+            frame = self.shipInfoboxFrame
+         
+        self.logWrite('Infobox('+environment+'): '+item['item']+' -- '+key, 4)
+        self.precacheEquipment(key)
         self.clearFrame(frame)
         Label(frame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
         text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
         text.pack(fill="both", expand=True, padx=2, pady=2)
-        if item['item'] == '':
+        if not 'item' in item or item['item'] == '' or not key in self.backend['cacheEquipment'] or not item['item'] in self.backend['cacheEquipment'][key]:
             return
         html = self.backend['cacheEquipment'][key][item['item']]
         text.insert(END, item['item']+' '+item['mark']+' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers']))+'\n')
@@ -1809,6 +1856,12 @@ class SETS():
             sys.stderr.write('info: '+notice+'\n')
             
     def logWrite(self, notice, level=0):
+        # Level 0: Default, always added to short log note frame on UI
+        # Higher than 0 will not be added to short log note (but will be in the full log)
+        # Log levels uses are just suggestions
+        # Level 1: Track interactions - network interactions, configuration actions, file transactions
+        # Level 2: unconfirmed feature spam -- chatty but not intended to fully retained long term
+        # Level 3: minor detail spam -- any useful long-term diagnostics
         if level == 0:
             self.setFooterFrame(notice, '')
             self.logFullWrite(notice)
@@ -1856,7 +1909,8 @@ class SETS():
 
     def argParserSetup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
-        parser.add_argument('--config', type=int, help='Set configuration file (must be .JSON)')
+        parser.add_argument('--configfile', type=int, help='Set configuration file (must be .JSON)')
+        parser.add_argument('--configfolder', type=int, help='Set configuration folder (contains config file, state file, default library location')
         parser.add_argument('--debug', type=int, help='Set debug level (default: 0)')
         parser.add_argument('--file', type=str, help='File to import on open')
 
@@ -1866,8 +1920,11 @@ class SETS():
             self.settings['debug'] = self.args.debug
             self.logWrite('Debug set by arg: '+str(self.settings['debug']), 1)
             
-        if self.args.config is not None:
-            self.fileConfigName = self.args.config
+        if self.args.configfile is not None:
+            self.fileConfigName = self.args.configfile
+
+        if self.args.configfolder is not None:
+            self.folderConfigName = self.args.configfolder
 
     def configLocation(self):
         # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
@@ -1875,6 +1932,8 @@ class SETS():
         if os.path.exists(self.fileConfigName):
             # We already have a config file in the app home directory, use portable mode
             filePath=''
+        elif os.path.exists(self.folderConfigName):
+            filePath = os.path.join(self.folderConfigName, self.fileConfigName)
         elif system == 'win32':
             # (onedrive or documents -- Python intercepts AppData)
             filePathOnedrive = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents')
@@ -2057,6 +2116,7 @@ class SETS():
         self.resetPersistent()
 
         self.fileConfigName = '.config.json'
+        self.folderConfigName = '.config'
         self.resetSettings()
 
         self.logWrite('CWD: '+os.getcwd(), 1)
@@ -2094,6 +2154,7 @@ class SETS():
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
+        self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
         r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
