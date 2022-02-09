@@ -337,7 +337,7 @@ class SETS():
         if not name in self.backend['cacheShipTraits']:
             self.backend['cacheShipTraits'][name] = self.deWikify(desc)
             self.shipTraitsWithImages.append((name,self.imageFromInfoboxName(name)))
-            self.logWrite(name, 4)
+            self.logWrite('precacheShipTrait: '+name, 5)
 
     def precacheShipTraits(self):
         """Populate in-memory cache of ship traits for faster loading"""
@@ -356,11 +356,44 @@ class SETS():
 
         for item in list(self.traits):
             if 'type' in item and item['type'].lower() == 'starship':
-                self.precacheShipTraitSingle(item['name'], '')
+                self.precacheShipTraitSingle(item['name'], item['description'])
 
-        #unescape or dewikify?
+        self.logWrite('Trait (ship) picker (json) item count: '+str(len(self.backend['cacheShipTraits'])), 2)
+ 
+    def precacheTraitSingle(self, name, desc, environment, type):
+        if type != 'reputation' and type != 'activereputation' and type != 'recruit' and type != 'Starship':
+            type = "personal"
+            
+        if not environment in self.backend['cacheTraits']:
+            self.backend['cacheTraits'][environment] = dict()
 
-        self.logWrite('Trait picker (json) item count: '+str(len(self.backend['cacheShipTraits'])), 2)
+        if not type in self.traitsWithImages:
+            self.traitsWithImages[type] = dict()
+        if not environment in self.traitsWithImages[type]:
+            self.traitsWithImages[type][environment] = []
+            
+        if not name in self.backend['cacheTraits'][environment]:
+            self.backend['cacheTraits'][environment][name] = self.deWikify(desc)
+
+            self.traitsWithImages[type][environment].append((name,self.imageFromInfoboxName(name)))
+            if environment == 'space' and type == 'activereputation':
+                self.logWrite('precacheTrait: ['+type+']['+environment+'] -- '+name+' -- |'+str(len(desc))+'|', 4) 
+        
+    def precacheTraits(self):
+        """Populate in-memory cache of traits for faster loading"""
+
+        if 'cacheTraits' in self.backend and 'space' in self.backend['cacheTraits']:
+            return self.backend['cacheTraits']
+        
+        for item in list(self.traits):
+            if not 'chartype' in item or item['chartype'] != 'char':
+                continue
+            if 'type' in item and 'name' in item and 'description' in item and 'environment' in item:
+                self.precacheTraitSingle(item['name'], item['description'], item['environment'], item['type'])
+        
+        for type in self.traitsWithImages:
+            for environment in self.traitsWithImages[type]:
+                self.logWrite('Trait picker (json) item count ['+type+']['+environment+']: '+str(len(self.traitsWithImages[type][environment])), 2)
 
     def setListIndex(self, list, index, value):
         print(value)
@@ -439,14 +472,17 @@ class SETS():
         }
 
     def clearBackend(self):
+        self.logWrite("=== clearBackend ===", 4)
         self.backend = {
                         "career": StringVar(self.window), "species": StringVar(self.window), "playerName": StringVar(self.window),
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         "playerShipDesc": StringVar(self.window), "playerDesc": StringVar(self.window),
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(), 'cacheShipTraits': dict(),
+                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(), 'cacheShipTraits': dict(), 'cacheTraits': dict(),
                         "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
             }
+        self.traitsWithImages = dict()
+        self.shipTraitsWithImages = []
         self.persistentToBackend()
 
     def hookBackend(self):
@@ -513,7 +549,10 @@ class SETS():
         clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
 
         i = 1
-        items_list.sort()
+        try:
+            items_list.sort()
+        except:
+            self.logWrite('=== TRY_EXCEPT pickerGUI: item_list.sort() failed in '+title, 3)
         for name,image in items_list:
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
             label = Label(frame, image=image)
@@ -562,10 +601,10 @@ class SETS():
                 image1 = self.imageFromInfoboxName(item['rarity'])
                 canvas.itemconfig(img[0],image=item['image'])
                 canvas.itemconfig(img[1],image=image1)
-                #environment = 'space'
-                #if len(args) >= 4:
-                #    environment = args[3]
-                #canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, args[0], environment))
+                environment = 'space'
+                if len(args) >= 4:
+                    environment = args[3]
+                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, args[0], environment))
                 self.build[key][i] = item
                 self.backend['i_'+key][i] = [item['image'], image1]
                 item.pop('image')
@@ -576,6 +615,15 @@ class SETS():
         if args[2]:
             self.precacheShipTraits()
             items_list = self.shipTraitsWithImages
+        elif 1:
+            self.precacheTraits()
+            traitType = "personal"
+            if args[1]:
+                traitType = "activereputation"
+            elif args[0]:
+                traitType = "reputation"
+            items_list = self.traitsWithImages[traitType][args[3]]
+            self.logWrite('traitLabelCallback: ['+traitType+']['+args[3]+']: '+str(len(items_list)), 4)
         else:
             traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
             traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == args[3]]
@@ -1400,6 +1448,7 @@ class SETS():
         self.logWrite('Infobox('+environment+'): '+item['item']+' -- '+key, 3)
         self.precacheEquipment(key)
         self.precacheShipTraits()
+        self.precacheTraits()
         self.clearFrame(frame)
         Label(frame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
         text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
@@ -1420,6 +1469,9 @@ class SETS():
             
         if item['item'] in self.backend['cacheShipTraits']:
             text.insert(END, self.backend['cacheShipTraits'][item['item']])
+
+        if environment in self.backend['cacheTraits'] and item['item'] in self.backend['cacheTraits'][environment]:
+            text.insert(END, self.backend['cacheTraits'][environment][item['item']])
                 
         if key in self.backend['cacheEquipment'] and item['item'] in self.backend['cacheEquipment'][key]:
             # Show the infobox data from json
@@ -2179,7 +2231,6 @@ class SETS():
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
-        self.shipTraitsWithImages = []
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
         r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
