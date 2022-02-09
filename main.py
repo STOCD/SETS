@@ -1397,22 +1397,47 @@ class SETS():
         else:
             frame = self.shipInfoboxFrame
          
-        self.logWrite('Infobox('+environment+'): '+item['item']+' -- '+key, 4)
+        self.logWrite('Infobox('+environment+'): '+item['item']+' -- '+key, 3)
         self.precacheEquipment(key)
+        self.precacheShipTraits()
         self.clearFrame(frame)
         Label(frame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
         text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
         text.pack(fill="both", expand=True, padx=2, pady=2)
-        if not 'item' in item or item['item'] == '' or not key in self.backend['cacheEquipment'] or not item['item'] in self.backend['cacheEquipment'][key]:
+        if not 'item' in item or item['item'] == '':
             return
-        html = self.backend['cacheEquipment'][key][item['item']]
-        text.insert(END, item['item']+' '+item['mark']+' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers']))+'\n')
-        text.insert(END, item['rarity']+' '+ html["type"]+'\n')
-        for i in range(1,9):
-            for header in ["head", "subhead", "text"]:
-                t = html[header+str(i)].replace(":",'').strip()
-                if t.strip() != '':
-                    text.insert(END, t+'\n')
+        self.logWrite('item: '+item['item'], 4)
+        
+        text.insert(END, item['item'])
+        if 'mark' in item and item['mark']:
+            text.insert(END, ' '+item['mark'])
+        if 'modifiers' in item and item['modifiers']:
+            text.insert(END, ' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers'])))
+        text.insert(END, '\n')
+        
+        if 'tooltip' in item and item['tooltip']:
+            text.insert(END, html['tooltip'])
+            
+        if item['item'] in self.backend['cacheShipTraits']:
+            text.insert(END, self.backend['cacheShipTraits'][item['item']])
+                
+        if key in self.backend['cacheEquipment'] and item['item'] in self.backend['cacheEquipment'][key]:
+            # Show the infobox data from json
+            html = self.backend['cacheEquipment'][key][item['item']]
+
+            if 'rarity' in item and item['rarity']:
+                text.insert(END, item['rarity']+' ')
+            if 'type' in html and html['type']:
+                text.insert(END, html['type'])
+            if ('rarity' in item and item['rarity']) or ('type' in html and html['type']):
+                text.insert(END, '\n')
+
+            for i in range(1,9):
+                for header in ["head", "subhead", "text"]:
+                    t = html[header+str(i)].replace(":",'').strip()
+                    if t.strip() != '':
+                        text.insert(END, t+'\n')
+                        
         text.configure(state=DISABLED)
 
     def setupDoffFrame(self, frame):
