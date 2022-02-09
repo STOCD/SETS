@@ -336,7 +336,8 @@ class SETS():
     def precacheShipTraitSingle(self, name, desc):
         if not name in self.backend['cacheShipTraits']:
             self.backend['cacheShipTraits'][name] = self.deWikify(desc)
-            #self.logWrite(name, 2)
+            self.shipTraitsWithImages.append((name,self.imageFromInfoboxName(name)))
+            self.logWrite(name, 4)
 
     def precacheShipTraits(self):
         """Populate in-memory cache of ship traits for faster loading"""
@@ -352,6 +353,12 @@ class SETS():
                 self.precacheShipTraitSingle(item['trait3'], item['traitdesc3'])
             if 'acctrait' in item and len(item['acctrait']):
                 self.precacheShipTraitSingle(item['acctrait'], item['acctraitdesc'])
+
+        for item in list(self.traits):
+            if 'type' in item and item['type'].lower() == 'starship':
+                self.precacheShipTraitSingle(item['name'], '')
+
+        #unescape or dewikify?
 
         self.logWrite('Trait picker (json) item count: '+str(len(self.backend['cacheShipTraits'])), 2)
 
@@ -568,14 +575,7 @@ class SETS():
         items_list=[]
         if args[2]:
             self.precacheShipTraits()
-            traits = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Starship_traits", "starship_traits").find('tr')[1:]
-            for trait in traits:
-                tds = trait.find('td')
-                if tds is None or len(tds)<1:
-                    continue
-                cname = tds[0].text
-                cimg = self.imageFromInfoboxName(cname)
-                items_list.append((cname,cimg))
+            items_list = self.shipTraitsWithImages
         else:
             traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
             traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == args[3]]
@@ -583,7 +583,6 @@ class SETS():
             traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and ("activereputation" in traits[e]["type"]) == args[1]]
             items_list = [(html.unescape(traits[e]["name"]), self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
         itemVar = self.getEmptyItem()
-        self.logWrite('Trait Picker (html) Item Count: '+str(len(items_list)), 2)
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
@@ -2155,6 +2154,7 @@ class SETS():
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
+        self.shipTraitsWithImages = []
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
         r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
