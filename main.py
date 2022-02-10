@@ -225,6 +225,7 @@ class SETS():
         textBlock.replace('&#39;', '\'')
         textBlock.replace('&#91;', '[')
         textBlock.replace('&#93;', ']')
+        # clean up wikitext
         #self.logWrite(textBlock, 1)
         return textBlock
     
@@ -376,8 +377,7 @@ class SETS():
             self.backend['cacheTraits'][environment][name] = self.deWikify(desc)
 
             self.traitsWithImages[type][environment].append((name,self.imageFromInfoboxName(name)))
-            if environment == 'space' and type == 'activereputation':
-                self.logWrite('precacheTrait: ['+type+']['+environment+'] -- '+name+' -- |'+str(len(desc))+'|', 4) 
+            self.logWrite('precacheTrait: ['+type+']['+environment+'] -- '+name+' -- |'+str(len(desc))+'|', 4) 
         
     def precacheTraits(self):
         """Populate in-memory cache of traits for faster loading"""
@@ -478,10 +478,11 @@ class SETS():
                         "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
                         "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
                         "playerShipDesc": StringVar(self.window), "playerDesc": StringVar(self.window),
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(), 'cacheShipTraits': dict(), 'cacheTraits': dict(),
+                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(), 'cacheShipTraits': dict(), 'cacheTraits': dict(), 'cacheBoffAbilities': dict(), 'cacheBoffTooltips': dict(),
                         "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
             }
         self.traitsWithImages = dict()
+        self.boffAbilitiesWithImages = dict()
         self.shipTraitsWithImages = []
         self.persistentToBackend()
 
@@ -625,6 +626,7 @@ class SETS():
             items_list = self.traitsWithImages[traitType][args[3]]
             self.logWrite('traitLabelCallback: ['+traitType+']['+args[3]+']: '+str(len(items_list)), 4)
         else:
+            #Remove this section on stable
             traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
             traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == args[3]]
             traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and ("reputation" in traits[e]["type"]) == args[0]]
@@ -645,36 +647,93 @@ class SETS():
                 item.pop('image')
                 self.build[key][i] = item
 
+    def precacheBoffAbilitiesSingle(self, name, environment, type, category, desc):
+        # category is Tactical, Science, Engineer, Specs
+        # type is the boff ability rank
+        if not name in self.backend['cacheBoffTooltips']:
+            # Longer descriptions stored only once
+            self.backend['cacheBoffTooltips'][name] = self.deWikify(desc)
+        
+        if not environment in self.backend['cacheBoffAbilities']:
+            self.backend['cacheBoffAbilities'][environment] = dict()
+        if not type in self.backend['cacheBoffAbilities'][environment]:
+            self.backend['cacheBoffAbilities'][environment][type] = dict()
 
-    def spaceBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
+        if not environment in self.boffAbilitiesWithImages:
+            self.boffAbilitiesWithImages[environment] = dict()
+        if not category in self.boffAbilitiesWithImages[environment]:
+            self.boffAbilitiesWithImages[environment][category] = dict()
+        if not type in self.boffAbilitiesWithImages[environment][category]:
+            self.boffAbilitiesWithImages[environment][category][type] = []
+            
+        if not name in self.backend['cacheBoffAbilities'][environment][type]:
+            self.backend['cacheBoffAbilities'][environment][type][name] = 'yes'
+
+            self.boffAbilitiesWithImages[environment][category][type].append((name,self.imageFromInfoboxName(name,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')))
+            self.logWrite('precacheBoffAbilitiesSingle: ['+environment+']['+category+']['+str(type)+'] -- '+name+' -- |'+str(len(desc))+'|', 4) 
+        
+    def precacheBoffAbilities(self):
         """Common callback for boff labels"""
-        boffAbilities = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities", "boff_abilities")
-        l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
-        l1 = boffAbilities.find('h2+h3+table')
-        if 'Universal' in args[0]:
-            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#Tactical_Abilities', first=True), Element)]
-            trs = table[0].find('tr')
-            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#Engineering_Abilities', first=True), Element)]
-            trs = trs + table[0].find('tr')
-            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#Science_Abilities', first=True), Element)]
-            trs = trs + table[0].find('tr')
-        else:
-            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[0].replace(' ','_')+'_Abilities', first=True), Element)]
-            trs = table[0].find('tr')
-        if args[1] is not None:
-            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[1].replace(' ','_')+'_Abilities', first=True), Element)]
-            trs = trs + table[0].find('tr')
-        skills = []
-        for tr in trs:
-            tds = tr.find('td')
-            if len(tds)>0 and tds[args[2]+1].text.strip() != '':
-                skills.append(tr)
+        if 'cacheBoffAbilities' in self.backend and 'space' in self.backend['cacheBoffAbilities']:
+            return self.backend['cacheBoffAbilities']
+            
+        boffAbilities = self.fetchOrRequestHtml(self.r_boffAbilities_source, "boff_abilities") 
+        # Categories beyond tac/eng/sci should come from a json load when capt specs are converted
+        boffCategories = ['Tactical', 'Engineering', 'Science', 'Intelligence', 'Command', 'Pilot', 'Temporal', 'Miracle Worker']
+        boffRanks = [1, 2, 3, 4]
+        boffEnvironments = ['space', 'ground']
+        
+        for environment in boffEnvironments:
+            l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
+            if environment == 'ground':
+                l0 = [l for l in l0 if "Pilot" not in l.text]
+                l1 = boffAbilities.find('h2+h3+table+h3+table')
+            else:
+                l1 = boffAbilities.find('h2+h3+table')   
+                
+            #for rank in boffRanks:
+            for category in boffCategories:
+                table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+category.replace(' ','_')+'_Abilities', first=True), Element)]
+                if not len(table):
+                    continue
+                trs = table[0].find('tr')
+                
+                skills = []
+                for tr in trs:
+                    tds = tr.find('td')
+                    rank1 = 1
+                    for i in [0, 1, 2]:
+                        if len(tds)>0 and tds[rank1+i].text.strip() != '':
+                            cname = tds[0].text.strip()
+                            desc = tds[5].text.strip()
+                            if desc == 'III':
+                                desc = tds[6].text.strip()
+                            self.precacheBoffAbilitiesSingle(cname, environment, rank1+i, category, desc)
+                            if i == 2 and tds[rank1+i].text.strip() in ['I', 'II']:
+                                self.precacheBoffAbilitiesSingle(cname, environment, rank1+i+1, category, desc)
+                            self.logWrite('precacheBoffAbilities______: ['+environment+']['+category+']['+str(rank1+i)+']: '+tds[3].text.strip(), 4)
+        
+    def boffLabelCallback(self, e, canvas, img, i, key, args, idx, environment='space'):
+        """Common callback for boff labels"""
+        self.precacheBoffAbilities()
+
+        universalTypes = ['Tactical', 'Engineering', 'Science' ]
         items_list = []
-        for skill in skills:
-            # The colon becomes necessary to find some icons, improved sanitization elsewhere should support this removal.  Was in original commit, so could not confirm any other function.
-            cname = skill.find('td', first=True).text.replace(':',':')
-            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
-            items_list.append((cname,cimg))
+        rank = args[2] + 1
+        
+        logNote = args[0]
+        if args[1]:
+            logNote = logNote + ", "+args[1]
+        self.logWrite('spaceBoffcallback: ['+environment+']['+logNote+']['+str(args[2])+']', 3)
+
+        if args[0] == 'universal':
+            for specType in universalTypes:
+                items_list = items_list + self.boffAbilitiesWithImages[environment][specType][rank]
+        else:
+            items_list = self.boffAbilitiesWithImages[environment][args[0]][rank]
+        if args[1] is not None and args[1] != '':
+            items_list = items_list + self.boffAbilitiesWithImages[environment][args[1]][rank]
+
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
@@ -688,42 +747,8 @@ class SETS():
                     self.backend['i_'+item['item']+str(i)] = item['image']
                 canvas.itemconfig(img,image=self.backend['i_'+item['item']+str(i)])
                 self.build['boffs'][key][i] = item['item']
-
-    def groundBoffLabelCallback(self, e, canvas, img, i, key, args, idx):
-        """Common callback for boff labels"""
-        boffAbilities = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities", "boff_abilities")
-        l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
-        l0 = [l for l in l0 if "Pilot" not in l.text]
-        l1 = boffAbilities.find('h2+h3+table+h3+table')
-        table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[0].replace(' ','_')+'_Abilities', first=True), Element)]
-        trs = table[0].find('tr')
-        if args[1] != '':
-            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+args[1].replace(' ','_')+'_Abilities', first=True), Element)]
-            trs = trs + table[0].find('tr')
-        skills = []
-        for tr in trs:
-            tds = tr.find('td')
-            if len(tds)>0 and tds[args[2]+1].text.strip() != '':
-                skills.append(tr)
-        items_list = []
-        for skill in skills:
-            # text.replace nullified, future removal if stable
-            cname = skill.find('td', first=True).text.replace(':',':')
-            cimg = self.imageFromInfoboxName(cname,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
-            items_list.append((cname,cimg))
-        itemVar = self.getEmptyItem()
-        item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
-        if 'item' in item and len(item['item']):
-            if item['item'] == 'X':
-                item['item'] = ''
-                self.backend['i_'+item['item']+'_'+str(i)] = self.emptyImage
-                canvas.itemconfig(img,image=self.emptyImage)
-                self.build['boffs'][key][i] = item
-            else:
-                if ('i_'+item['item']+'_'+str(i) not in self.backend):
-                    self.backend['i_'+item['item']+'_'+str(i)] = item['image']
-                canvas.itemconfig(img,image=self.backend['i_'+item['item']+'_'+str(i)])
-                self.build['boffs'][key][i] = item['item']
+                
+        # ground used +'_'+str(i)
 
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
@@ -788,6 +813,10 @@ class SETS():
             self.shipButton.configure(text=self.build['ship'])
             self.setupSpaceBuildFrames()
             self.setupGroundBuildFrames()
+            
+            self.precacheShipTraits()
+            self.precacheTraits()
+            self.precacheBoffAbilities()
             
             if force:
                 logNote=' (FORCE LOAD)'+logNote
@@ -1273,8 +1302,9 @@ class SETS():
     def setupSpaceBoffFrame(self, ship):
         """Set up UI frame containing boff skills"""
         self.clearFrame(self.shipBoffFrame)
-        if not 'space' in self.build['boffseats']:
-            self.build['boffseats']['space'] = [None] * 6
+        environment = 'space'
+        if not environment in self.build['boffseats']:
+            self.build['boffseats'][environment] = [None] * 6
             
         if ship is None or not 'boffs' in ship:
             return
@@ -1294,30 +1324,30 @@ class SETS():
                 rank = 4
             bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
-            boffSan = 'spaceBoff_' + str(idx)
+            boffSan = environment+'Boff_' + str(idx)
             self.backend['i_'+boffSan] = [None] * rank
-            if spec != 'Universal' and spec != self.build['boffseats']['space'][idx]:
+            if spec != 'Universal' and spec != self.build['boffseats'][environment][idx]:
                 self.build['boffs'][boffSan] = [None] * rank
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
             v = StringVar(self.window, value=boff)
             if spec == 'Universal':
-                if self.build['boffseats']['space'][idx] is not None:
-                    v.set(self.build['boffseats']['space'][idx])
+                if self.build['boffseats'][environment][idx] is not None:
+                    v.set(self.build['boffseats'][environment][idx])
                 else:
                     v.set('Tactical')
-                    self.build['boffseats']['space'][idx] = 'Tactical'
+                    self.build['boffseats'][environment][idx] = 'Tactical'
                 specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
                 specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
-                v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, 'space'))
+                v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, environment))
                 if sspec is not None:
                     specLabel1 = Label(bSubFrame0, text=' / '+sspec, bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                     specLabel1.pack(side='left')
             else:
                 specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
                 specLabel0.pack(side='left')
-                self.build['boffseats']['space'][idx] = spec
+                self.build['boffseats'][environment][idx] = spec
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
             if boffSan in self.build['boffs']:
@@ -1336,60 +1366,65 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,idx=idx,v=v,callback=self.spaceBoffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i], idx))
+                internalKey = ''
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,idx=idx,environment=environment,v=v,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i], idx, environment))
+                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][i],internalKey=internalKey,environment=environment:self.setupInfoboxFrame(item, internalKey, environment))
             idx = idx + 1
 
     def setupGroundBoffFrame(self):
         """Set up UI frame containing ground boff skills"""
         self.clearFrame(self.groundBoffFrame)
-        if not 'ground' in self.build['boffseats']:
-            self.build['boffseats']['ground'] = [None] * 4
-        if not 'ground_spec' in self.build['boffseats']:
-            self.build['boffseats']['ground_spec'] = [None] * 4
+        environment = 'ground'
+        if not environment in self.build['boffseats']:
+            self.build['boffseats'][environment] = [None] * 4
+        if not environment+'_spec' in self.build['boffseats']:
+            self.build['boffseats'][environment+'_spec'] = [None] * 4
             
         idx = 0
         for i in range(4):
             bFrame = Frame(self.groundBoffFrame, width=120, height=80, bg='#3a3a3a')
             bFrame.pack(fill=BOTH, expand=True)
-            boffSan = "groundBoff"+'_'+str(idx)
+            boffSan = environment+'Boff'+'_'+str(idx)
             self.backend['i_'+boffSan] = [None] * 4
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH)
             
             v = StringVar(self.window, value='Tactical')
-            if 'ground' in self.build['boffseats'] and self.build['boffseats']['ground'][idx] is not None:
-                v.set(self.build['boffseats']['ground'][idx])
+            if environment in self.build['boffseats'] and self.build['boffseats'][environment][idx] is not None:
+                v.set(self.build['boffseats'][environment][idx])
             else:
-                self.build['boffseats']['ground'][idx] = v.get()
+                self.build['boffseats'][environment][idx] = v.get()
             specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
             specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
             specLabel0.pack(side='left')
-            v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, 'ground'))
+            v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, environment))
             
             v2 = StringVar(self.window, value='')
-            if 'ground_spec' in self.build['boffseats'] and self.build['boffseats']['ground_spec'][idx] is not None:
-                v2.set(self.build['boffseats']['ground_spec'][idx])
+            if environment+'_spec' in self.build['boffseats'] and self.build['boffseats'][environment+'_spec'][idx] is not None:
+                v2.set(self.build['boffseats'][environment+'_spec'][idx])
             else:
-                self.build['boffseats']['ground_spec'][idx] = v2.get()
+                self.build['boffseats'][environment+'_spec'][idx] = v2.get()
             specLabel1 = OptionMenu(bSubFrame0, v2, *self.boffGroundSpecNames)
             specLabel1.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
             specLabel1.pack(side='left')
-            v2.trace_add("write", lambda v2,i,m,v0=v2,idx=idx:self.boffUniversalCallback(v0, idx, 'ground_spec'))
+            v2.trace_add("write", lambda v2,i,m,v0=v2,idx=idx:self.boffUniversalCallback(v0, idx, environment+'_spec'))
             
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
 
-            for j in range(4):
-                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j])
-                    self.backend['i_'+boffSan][j] = image
+            for i in range(4):
+                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i])
+                    self.backend['i_'+boffSan][i] = image
                 else:
                     image=self.emptyImage
                     self.build['boffs'][boffSan] = [None] * 4
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
-                canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
+                canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,v=v,v2=v2,callback=self.groundBoffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx))
+                internalKey = ''
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,key=boffSan,idx=idx,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx, environment))
+                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][i],internalKey=internalKey,environment=environment:self.setupInfoboxFrame(item, internalKey, environment))
             idx = idx + 1
 
     def setupSpaceBuildFrames(self):
@@ -1444,20 +1479,26 @@ class SETS():
             frame = self.groundInfoboxFrame
         else:
             frame = self.shipInfoboxFrame
+            
+        if 'item' in item:
+            name = item['item']
+        else:
+            name = item
          
-        self.logWrite('Infobox('+environment+'): '+item['item']+' -- '+key, 3)
+        self.logWrite('Infobox('+environment+'): '+name+' -- '+key, 4)
         self.precacheEquipment(key)
-        self.precacheShipTraits()
-        self.precacheTraits()
+        #self.precacheShipTraits()
+        #self.precacheTraits()
+        #self.precacheBoffAbilities()
         self.clearFrame(frame)
         Label(frame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
         text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
         text.pack(fill="both", expand=True, padx=2, pady=2)
-        if not 'item' in item or item['item'] == '':
+        if name is None or name == '':
             return
-        self.logWrite('item: '+item['item'], 4)
+        self.logWrite('item: '+name, 4)
         
-        text.insert(END, item['item'])
+        text.insert(END, name)
         if 'mark' in item and item['mark']:
             text.insert(END, ' '+item['mark'])
         if 'modifiers' in item and item['modifiers']:
@@ -1467,15 +1508,18 @@ class SETS():
         if 'tooltip' in item and item['tooltip']:
             text.insert(END, html['tooltip'])
             
-        if item['item'] in self.backend['cacheShipTraits']:
-            text.insert(END, self.backend['cacheShipTraits'][item['item']])
+        if name in self.backend['cacheShipTraits']:
+            text.insert(END, self.backend['cacheShipTraits'][name])
 
-        if environment in self.backend['cacheTraits'] and item['item'] in self.backend['cacheTraits'][environment]:
-            text.insert(END, self.backend['cacheTraits'][environment][item['item']])
+        if environment in self.backend['cacheTraits'] and name in self.backend['cacheTraits'][environment]:
+            text.insert(END, self.backend['cacheTraits'][environment][name])
+            
+        if name in self.backend['cacheBoffTooltips']:
+                text.insert(END, self.backend['cacheBoffTooltips'][name])
                 
-        if key in self.backend['cacheEquipment'] and item['item'] in self.backend['cacheEquipment'][key]:
+        if key in self.backend['cacheEquipment'] and name in self.backend['cacheEquipment'][key]:
             # Show the infobox data from json
-            html = self.backend['cacheEquipment'][key][item['item']]
+            html = self.backend['cacheEquipment'][key][name]
 
             if 'rarity' in item and item['rarity']:
                 text.insert(END, item['rarity']+' ')
@@ -2232,6 +2276,7 @@ class SETS():
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
+        self.r_boffAbilities_source = "https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities"
         r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
         r_specs = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Captain_specializations", "specs")

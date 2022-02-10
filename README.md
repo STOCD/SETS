@@ -19,6 +19,7 @@ https://www.dropbox.com/sh/3rqhak69tr6ki2c/AADkuygAThVa9z9e_ckc4vB9a?dl=0
 * Python 3.7 or higher
 * Pillow
 * requests-html
+* numpy
 
 ### Installing
 
