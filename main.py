@@ -429,6 +429,21 @@ class SETS():
         if key in self.build:
             self.backend[key].set(self.build[key])
 
+    def resetPersistent(self):
+        # self.persistent will be auto-saved and auto-loaded for persistent state data
+        self.persistent = {
+            'markDefault': '',
+            'rarityDefault': '',
+            'forceJsonLoad': 0
+        }
+    
+    def resetSettings(self):
+        # self.settings are optionally loaded from config, but manually edited or saved
+        self.settings = {
+            'debug': self.debugDefault,
+            'template': '.template.json'
+        }
+        
     def clearBuild(self):
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
@@ -2084,11 +2099,12 @@ class SETS():
     def configLocation(self):
         # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
         system = sys.platform
-        if os.path.exists(self.fileConfigName):
+        if os.path.exists(self.folderConfigName):
+            # We already have a config folder in the app home directory, use portable mode
+            filePath = self.folderConfigName
+        elif os.path.exists(self.fileConfigName):
             # We already have a config file in the app home directory, use portable mode
             filePath=''
-        elif os.path.exists(self.folderConfigName):
-            filePath = os.path.join(self.folderConfigName, self.fileConfigName)
         elif system == 'win32':
             # (onedrive or documents -- Python intercepts AppData)
             filePathOnedrive = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents')
@@ -2243,21 +2259,6 @@ class SETS():
                     self.logWriteTransaction('Template File', 'load error', configFile, 0)
         else:
             self.logWriteTransaction('Template File', 'not found', configFile, 0)
-
-    def resetPersistent(self):
-        # self.persistent will be auto-saved and auto-loaded for persistent state data
-        self.persistent = {
-            'markDefault': '',
-            'rarityDefault': '',
-            'forceJsonLoad': 0
-        }
-    
-    def resetSettings(self):
-        # self.settings are optionally loaded from config, but manually edited or saved
-        self.settings = {
-            'debug': self.debugDefault,
-            'template': '.template.json'
-        }
     
     def initSettings(self):
         """Initialize session settings state"""
