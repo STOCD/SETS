@@ -2,6 +2,7 @@ from textwrap import fill
 from tkinter import *
 from tkinter import filedialog
 from tkinter import font
+from tkinter.ttk import Progressbar
 from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
@@ -79,9 +80,10 @@ class SETS():
 
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
-        cache_base = "cache"
+        cache_base = self.cacheFolderLocation()
         if not os.path.exists(cache_base):
-            os.makedirs(cache_base)
+            return
+            
         filename = os.path.join(*filter(None, [cache_base, designation]))+".html"
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
@@ -95,15 +97,16 @@ class SETS():
             os.makedirs(os.path.dirname(filename))
         with open(filename, 'w', encoding="utf-8") as html_file:
             html_file.write(r.text)
-            self.logWriteTransaction('Cache File (html)', 'stored', designation, 1, [str(os.path.getsize(filename))+' bytes'])
+            self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1)
             
         return r.html
 
     def fetchOrRequestJson(self, url, designation):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
-        cache_base = "cache"
+        cache_base = self.cacheFolderLocation()
         if not os.path.exists(cache_base):
-            os.makedirs(cache_base)
+            return
+            
         filename = os.path.join(*filter(None, [cache_base, designation]))+".json"
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
@@ -117,7 +120,7 @@ class SETS():
             os.makedirs(os.path.dirname(filename))
         with open(filename, 'w') as json_file:
             json.dump(r.json(),json_file)
-            self.logWriteTransaction('Cache File (json)', 'stored', designation, 1, [str(os.path.getsize(filename))+' bytes'])
+            self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
         return r.json()
 
     def filePathSanitize(self, txt, chr_set='printable'):
@@ -169,13 +172,21 @@ class SETS():
 
         return result
     
+    def titleCaseRegexpText(self, matchobj):
+        return matchobj.group(0).title()
+
+    def lowerCaseRegexpText(self, matchobj):
+        return matchobj.group(0).lower()
+        
     def fetchOrRequestImage(self, url, designation, width = None, height = None):
         """Request image from web or fetch from local cache"""
-        cache_base = "images"
+        cache_base = self.cacheImagesFolderLocation()
+        if not os.path.exists(cache_base):
+            return
+            
         designation.replace("/", "_") # Missed by the path sanitizer
         designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
-        if not os.path.exists(cache_base):
-            os.makedirs(cache_base)
+
         extension = "jpeg" if "jpeg" in url or "jpg" in url else "png"
         filename = os.path.join(*filter(None, [cache_base, designation]))+'.'+extension
         if os.path.exists(filename):
@@ -189,19 +200,35 @@ class SETS():
         # No existing image, no record of failure -- attempt to download
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
-        self.logWriteTransaction('Image File', 'fetch', url, 1)
         img_request = requests.get(url)
         img_data = img_request.content
-        self.logWriteTransaction('Image File', 'download', url, 1, [str(img_request.headers.get('Content-Length'))+' bytes', str(img_request.status_code)])
+        self.logWriteTransaction('Image File', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code)])
         if not img_request.ok:
             url2 = url.replace('Q%27s_Ornament%3A_', '')
-            if "(Federation)" in url:
+            if '(Federation)' in url:
                 url2 = re.sub('_\(Federation\)', '', url2)
-            if url2 is not url:
-                self.logWriteTransaction('Image File (try #2)', 'fetch', url2, 1)
+            url2.title()
+            url2 = re.sub('_From_', '_from_', url2)
+            url2 = re.sub('_For_', '_for_', url2)
+            url2 = re.sub('_The_', '_the_', url2)
+            url2 = re.sub('_And_', '_and_', url2)
+            url2 = re.sub('/[Ss]if', '/SIF', url2)
+            url2 = re.sub('nos_', 'noS_', url2)
+            url2 = re.sub('rihan', 'Rihan', url2)
+            url2 = re.sub('_(\w{1,2})_', self.lowerCaseRegexpText, url2)
+            url2 = re.sub('\-([a-z])', self.titleCaseRegexpText, url2)
+            #self.logWrite("r"+url2, 1)
+            if url2 != url:
                 img_request = requests.get(url2)
                 img_data = img_request.content
-                self.logWriteTransaction('Image File (try #2)', 'download', url2, 1, [str(img_request.headers.get('Content-Length'))+' bytes', str(img_request.status_code)])
+                self.logWriteTransaction('Image File2', 'download', str(img_request.headers.get('Content-Length')), url2, 1, [str(img_request.status_code)])
+        if not img_request.ok:
+            if not '(Federation)' in url:
+                url3 = re.sub('_icon', '_icon_(Federation)', url2)
+            if url3 != url and url3 != url2:
+                img_request = requests.get(url3)
+                img_data = img_request.content
+                self.logWriteTransaction('Image File3', 'download', str(img_request.headers.get('Content-Length')), url3, 1, [str(img_request.status_code)])
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
             self.imagesFail[designation] = 1
@@ -212,10 +239,11 @@ class SETS():
             logNote = str(os.path.getsize(filename))+' bytes'
         else:
             logNote = 'no file'
-        self.logWriteTransaction('Image File', 'stored', filename, 1, [logNote])
+        self.logWriteTransaction('Image File', 'stored', '', filename, 1, [logNote])
         image = Image.open(filename)
         if(width is not None):
             image = image.resize((width,height),Image.ANTIALIAS)
+        self.footerProgressBar.step()
         return ImageTk.PhotoImage(image)
 
     def deWikify(self, textBlock, leaveHtml=False):
@@ -232,7 +260,7 @@ class SETS():
     
     def loadLocalImage(self, filename, width = None, height = None):
         """Request image from web or fetch from local cache"""
-        cache_base = "local"
+        cache_base = self.folderLocalImagesName
         if not os.path.exists(cache_base):
             os.makedirs(cache_base)
         filename = os.path.join(*filter(None, [cache_base, filename]))
@@ -289,6 +317,7 @@ class SETS():
         """Populate in-memory cache of ship equipment lists for faster loading"""
         if keyPhrase in self.backend['cacheEquipment']:
             return self.backend['cacheEquipment'][keyPhrase]
+        self.footerProgressBar.start()
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         if "Kit Frame" in keyPhrase:
             equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
@@ -299,6 +328,7 @@ class SETS():
             self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
 
         self.logWriteCounter('Equipment', '(json)', len(self.backend['cacheEquipment'][keyPhrase]), [keyPhrase])
+        self.footerProgressBar.stop()
 
     def searchHtmlTable(self, html, field, phrases):
         """Return HTML table elements containing 1 or more phrases"""
@@ -345,6 +375,7 @@ class SETS():
         self.logWriteCounter('DOFF names', '(json)', len(self.backend['cacheDoffNames'][keyPhrase]), [keyPhrase])
 
     def precacheShipTraitSingle(self, name, desc):
+        name = self.deWikify(name)
         if not name in self.backend['cacheShipTraits']:
             self.backend['cacheShipTraits'][name] = self.deWikify(desc)
             self.shipTraitsWithImages.append((name,self.imageFromInfoboxName(name)))
@@ -354,6 +385,7 @@ class SETS():
         """Populate in-memory cache of ship traits for faster loading"""
         if 'cacheShipTraits' in self.backend and len(self.backend['cacheShipTraits']) > 0:
             return self.backend['cacheShipTraits']
+        self.footerProgressBar.start()
             
         for item in list(self.shiptraits):
             if 'trait' in item and len(item['trait']):
@@ -370,8 +402,10 @@ class SETS():
                 self.precacheShipTraitSingle(item['name'], item['description'])
 
         self.logWriteCounter('Ship Trait', '(json)', len(self.backend['cacheShipTraits']), ['space'])
+        self.footerProgressBar.stop()
  
     def precacheTraitSingle(self, name, desc, environment, type):
+        name = self.deWikify(name)
         if type == 'recruit':
             return
         if type != 'reputation' and type != 'activereputation' and type != 'Starship':
@@ -393,9 +427,9 @@ class SETS():
         
     def precacheTraits(self):
         """Populate in-memory cache of traits for faster loading"""
-
         if 'cacheTraits' in self.backend and 'space' in self.backend['cacheTraits']:
             return self.backend['cacheTraits']
+        self.footerProgressBar.start()
         
         for item in list(self.traits):
             if not 'chartype' in item or item['chartype'] != 'char':
@@ -406,6 +440,7 @@ class SETS():
         for type in self.traitsWithImages:
             for environment in self.traitsWithImages[type]:
                 self.logWriteCounter('Trait', '(json)', len(self.traitsWithImages[type][environment]), [environment, type])
+        self.footerProgressBar.stop()
 
     def setListIndex(self, list, index, value):
         print(value)
@@ -675,6 +710,7 @@ class SETS():
     def precacheBoffAbilitiesSingle(self, name, environment, type, category, desc):
         # category is Tactical, Science, Engineer, Specs
         # type is the boff ability rank
+        name = self.deWikify(name)
         if not environment in self.backend['cacheBoffTooltips']:
             self.backend['cacheBoffTooltips'][environment] = dict()
         if not name in self.backend['cacheBoffTooltips'][environment]:
@@ -704,7 +740,8 @@ class SETS():
         """Common callback for boff labels"""
         if 'cacheBoffAbilities' in self.backend and 'space' in self.backend['cacheBoffAbilities']:
             return self.backend['cacheBoffAbilities']
-            
+        self.footerProgressBar.start()
+        
         boffAbilities = self.fetchOrRequestHtml(self.r_boffAbilities_source, "boff_abilities") 
         # Categories beyond tac/eng/sci should come from a json load when capt specs are converted
         boffCategories = ['Tactical', 'Engineering', 'Science', 'Intelligence', 'Command', 'Pilot', 'Temporal', 'Miracle Worker']
@@ -740,6 +777,7 @@ class SETS():
 
         self.logWriteCounter('Boff ability', '(json)', len(self.backend['cacheBoffTooltips']['space']), ['space'])
         self.logWriteCounter('Boff ability', '(json)', len(self.backend['cacheBoffTooltips']['ground']), ['ground'])
+        self.footerProgressBar.stop()
         
     def boffLabelCallback(self, e, canvas, img, i, key, args, idx, environment='space'):
         """Common callback for boff labels"""
@@ -825,7 +863,7 @@ class SETS():
                 self.buildImport = json.load(inFile)
         
         if 'versionJSON' not in self.buildImport and not force:
-            self.logWriteTransaction('Template File', 'version missing', inFilename, 0)
+            self.logWriteTransaction('Template File', 'version missing', '', inFilename, 0)
             if self.persistent['forceJsonLoad']:
                 self.importByFilename(inFilename, True)
         elif self.buildImport['versionJSON'] >= self.versionJSONminimum or force:
@@ -850,9 +888,9 @@ class SETS():
             if force:
                 logNote=' (FORCE LOAD)'+logNote
 
-            self.logWriteTransaction('Template File', 'loaded', inFilename, 0, [logNote])
+            self.logWriteTransaction('Template File', 'loaded', '', inFilename, 0, [logNote])
         else:
-            self.logWriteTransaction('Template File', 'version mismatch', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
+            self.logWriteTransaction('Template File', 'version mismatch', '', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
             if self.persistent['forceJsonLoad']:
                 self.importByFilename(inFilename, True)
 
@@ -861,7 +899,7 @@ class SETS():
         try:
             with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
                 json.dump(self.build, outFile)
-                self.logWriteTransaction('Export File', 'saved', outFile.name, 0)
+                self.logWriteTransaction('Export File', 'saved', '', outFile.name, 0)
         except AttributeError:
             pass
 
@@ -880,7 +918,7 @@ class SETS():
         if not outFilename: return
         image.save(outFilename, "PNG")
         self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
-        self.logWriteTransaction('Export Image', 'saved', outFilename, 0, [str(os.path.getsize(outFilename))+' bytes', str(image.size)])
+        self.logWriteTransaction('Export Image', 'saved', str(os.path.getsize(outFilename)), outFilename, 0, [tr(image.size)])
 
     def skillLabelCallback(self, skill, rank):
         rankReqs = [0, 5, 15, 25, 35]
@@ -1386,7 +1424,7 @@ class SETS():
                     self.build['boffs'][boffSan] = self.build['boffs'][boffSan][slice(rank)]
             for i in range(rank):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i])
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
                     self.backend['i_'+boffSan][i] = image
                 else:
                     image=self.emptyImage
@@ -1441,7 +1479,7 @@ class SETS():
 
             for i in range(4):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i])
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
                     self.backend['i_'+boffSan][i] = image
                 else:
                     image=self.emptyImage
@@ -1655,12 +1693,14 @@ class SETS():
         self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
         footerLabelL = Label(self.footerFrame, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=('Helvetica', 8, 'bold'))
         footerLabelL.grid(row=0, column=0, sticky='w')
+        self.footerProgressBar = Progressbar(self.footerFrame, orient='horizontal', mode='indeterminate', length=160)
+        self.footerProgressBar.grid(row=0, column=1, sticky='ew')
         footerLabelR = Label(self.footerFrame, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=('Helvetica', 8, 'bold'))
-        footerLabelR.grid(row=0, column=1, sticky='e')
+        footerLabelR.grid(row=0, column=2, sticky='e')
         self.footerFrame.grid_columnconfigure(0, weight=5, uniform="footerlabel")
-        self.footerFrame.grid_columnconfigure(1, weight=1, uniform="footerlabel")
+        self.footerFrame.grid_columnconfigure(1, weight=2, uniform="footerlabel")
+        self.footerFrame.grid_columnconfigure(2, weight=1, uniform="footerlabel")
         self.footerFrame.pack(fill='both', side='bottom', expand=True)
-        
         
     def lineTruncate(self, content, length=500):
         return '\n'.join(content.split('\n')[-1*length:])
@@ -2004,19 +2044,19 @@ class SETS():
     def logWriteBreak(self, title, level=1):
         self.logWrite('=== {:>1} ==='.format(title.upper()), level)
     
-    def logWriteSimple(self, title, body, level, tags=[]):
+    def logWriteSimple(self, title, body, level=1, tags=[]):
         logNote = ''
         if len(tags):
             for tag in tags:
-                logNote = logNote + '{:>9}'.format('['+tag.strip()+']')
-        self.logWrite('{:>12} {:>6}: {:>6}'.format(title, body, logNote), level)
+                logNote = logNote + '{:>1}'.format('['+tag.strip()+']')
+        self.logWrite('{:>12} {:>13}: {:>6}'.format(title, body, logNote), level)
         
-    def logWriteTransaction(self, title, body, count, level, tags=[]):
+    def logWriteTransaction(self, title, body, count, path, level=1, tags=[]):
         logNote = ''
         if len(tags):
             for tag in tags:
-                logNote = logNote + '{:>9}'.format('['+tag.strip()+']')
-        self.logWrite('{:>12} {:>12}: {:>4} {:>6}'.format(title, body, str(count), logNote), level)
+                logNote = logNote + '{:>1}'.format('['+tag.strip()+']')
+        self.logWrite('{:>12} {:>12}: {:>4} {:>1} {:>6}'.format(title, body, str(count), path, logNote), level)
         
     def logWriteCounter(self, title, body, count, tags=[]):
         logNote = ''
@@ -2058,9 +2098,10 @@ class SETS():
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.setupFooterFrame()
         self.setupUIScaling(1)
-        
+
         self.setupLogoFrame()
         self.setupMenuFrame()
+        self.window.update()
         self.setupSpaceBuildFrame()
         self.setupGroundBuildFrame()
         self.setupSkillTreeFrame()
@@ -2076,6 +2117,7 @@ class SETS():
             self.templateFileLoad()
             
         self.setupSpaceBuildFrames()
+        self.window.update()
 
     def argParserSetup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
@@ -2129,9 +2171,9 @@ class SETS():
         if filePath != '' and not os.path.exists(filePath):
             try:
                 errMakeDirs = os.makedirs(filePath)
-                self.logWriteTransaction('makedirs', 'written', filePath, 1)
+                self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
             except:
-                self.logWriteTransaction('makedirs', 'failed', filePath, 1)
+                self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
         
         return filePath
 
@@ -2145,6 +2187,43 @@ class SETS():
         
         return fileName
         
+    def cacheFolderLocation(self):
+        filePath = self.configLocation()
+        
+        if os.path.exists(filePath):
+            filePath = os.path.join(filePath, self.folderCacheName)
+            if not os.path.exists(filePath):
+                try:
+                    os.MakeDirs = os.makedirs(filePath)
+                    self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
+                except:
+                    self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
+        
+        if not os.path.exists ( filePath ):
+            filePath = self.folderCacheName
+
+        return filePath
+        
+    def cacheImagesFolderLocation(self):
+        filePath = self.configLocation()
+        
+        if os.path.exists(self.folderCacheImagesName):
+            # use appdir cache if it already exists /legacy
+            filePath = self.folderCacheImagesName
+        elif os.path.exists(filePath):
+            filePath = os.path.join(filePath, self.folderCacheImagesName)
+            if not os.path.exists(filePath):
+                try:
+                    os.MakeDirs = os.makedirs(filePath)
+                    self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
+                except:
+                    self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
+        
+        if not os.path.exists ( filePath ):
+            filePath = self.folderCacheImagesName
+
+        return filePath
+            
     def stateFileLocation(self):
         filePath = self.configLocation()
         
@@ -2174,16 +2253,16 @@ class SETS():
             configFile = self.fileConfigName
             
         if os.path.exists(configFile) and os.path.getsize(configFile) > 0:
-            self.logWriteTransaction('Config File', 'found', configFile, 1)
+            self.logWriteTransaction('Config File', 'found', '', configFile, 1)
             with open(configFile, 'r') as inFile:
                 try:
                     settingsNew = json.load(inFile)
                     logNote = ' (fields:['+str(len(settingsNew))+'=>'+str(len(self.settings))+']='
                     self.settings.update(settingsNew)
                     logNote = logNote + str(len(self.settings)) + ')'
-                    self.logWriteTransaction('Config File', 'loaded', configFile, 0, [logNote])
+                    self.logWriteTransaction('Config File', 'loaded', '', configFile, 0, [logNote])
                 except:
-                    self.logWriteTransaction('Config File', 'load error', configFile, 0)
+                    self.logWriteTransaction('Config File', 'load error', '', configFile, 0)
 
                     
                 if self.args.debug:
@@ -2193,7 +2272,7 @@ class SETS():
                     
                 self.logWriteSimple('Debug', 'set in config', 1, tags=[str(self.settings['debug'])])
         else:
-            self.logWriteTransaction('Config File', 'not found or zero size', configFile, 0)
+            self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, 0)
             
     def stateFileLoad(self):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
@@ -2202,19 +2281,19 @@ class SETS():
             configFile = self.fileStateName
             
         if os.path.exists(configFile):
-            self.logWriteTransaction('State File', 'found', configFile, 1)
+            self.logWriteTransaction('State File', 'found', '', configFile, 1)
             with open(configFile, 'r') as inFile:
                 try:
                     persistentNew = json.load(inFile)
                 except:
-                    self.logWriteTransaction('State File', 'load error', configFile, 1)
+                    self.logWriteTransaction('State File', 'load error', '', configFile, 1)
                     return
                 logNote = ' (fields:['+str(len(persistentNew))+'=>'+str(len(self.persistent))+']='
                 self.persistent.update(persistentNew)
                 logNote = logNote + str(len(self.persistent)) + ')'
-                self.logWriteTransaction('State File', 'loaded', configFile, 0, [logNote])
+                self.logWriteTransaction('State File', 'loaded', '', configFile, 0, [logNote])
         else:
-            self.logWriteTransaction('State File', 'not found', configFile, 1)
+            self.logWriteTransaction('State File', 'not found', '', configFile, 1)
  
     def persistentToBackend(self):
         # Nothing yet
@@ -2240,9 +2319,9 @@ class SETS():
         try:
             with open(configFile, "w") as outFile:
                 json.dump(self.persistent, outFile)
-                self.logWriteTransaction('State File', 'saved', outFile.name, 1)
+                self.logWriteTransaction('State File', 'saved', '', outFile.name, 1)
         except AttributeError:
-            self.logWriteTransaction('State File', 'save error', outFile.name, 1)
+            self.logWriteTransaction('State File', 'save error', '', outFile.name, 1)
             pass
             
     def templateFileLoad(self):
@@ -2251,14 +2330,14 @@ class SETS():
             configFile = self.settings['template']
             
         if os.path.exists(configFile):
-            self.logWriteTransaction('Template File', 'found', configFile, 1)
+            self.logWriteTransaction('Template File', 'found', '', configFile, 1)
             with open(configFile, 'r') as inFile:
                 try:
                     self.importByFilename(configFile)
                 except:
-                    self.logWriteTransaction('Template File', 'load error', configFile, 0)
+                    self.logWriteTransaction('Template File', 'load error', '', configFile, 0)
         else:
-            self.logWriteTransaction('Template File', 'not found', configFile, 0)
+            self.logWriteTransaction('Template File', 'not found', '', configFile, 0)
     
     def initSettings(self):
         """Initialize session settings state"""
@@ -2275,6 +2354,9 @@ class SETS():
 
         self.fileConfigName = '.config.json'
         self.folderConfigName = '.config'
+        self.folderCacheName = 'cache'
+        self.folderCacheImagesName = 'images'
+        self.folderLocalImagesName = 'local'
         self.resetSettings()
 
         self.logWriteBreak("logStart")
@@ -2284,7 +2366,7 @@ class SETS():
         try:
             with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
                 json.dump(self.settings, outFile)
-                self.logWriteTransaction('Config File', 'saved', outFile.name, 0)
+                self.logWriteTransaction('Config File', 'saved', os.path.getsize(outFile.name), outFile.name, 0)
         except AttributeError:
             pass
     
