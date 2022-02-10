@@ -288,7 +288,7 @@ class SETS():
         logNote = ''
         if len(tags):
             for tag in tags:
-                logNote = logNote + '{:>7}'.format('['+tag+']')
+                logNote = logNote + '{:>9}'.format('['+tag+']')
         self.logWrite('{:>12} {:>6} item count: {:>4} {:>6}'.format(title, body, str(count), logNote), 2)
 
     def precacheEquipment(self, keyPhrase):
@@ -323,14 +323,15 @@ class SETS():
                         results.append(html[e])
         return [] if isinstance(results, int) else results
 
-    def fetchModifiers(self):
+    def precacheModifiers(self):
         """Fetch equipment modifiers"""
-        if self.backend['modifiers'] is None:
-            modPage = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Modifier", "modifiers").find("div.mw-parser-output", first=True).html
-            mods = re.findall(r"(<td.*?>(<b>)*\[.*?\](</b>)*</td>)", modPage)
-            self.backend['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
-        self.logWriteCounter('Modifiers', '(json)', len(self.backend['modifiers']))
-        return self.backend['modifiers']
+        if 'modifiers' in self.backend and self.backend['modifiers'] is not None and len(self.backend['modifiers']) > 0:
+            return
+
+        modPage = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Modifier", "modifiers").find("div.mw-parser-output", first=True).html
+        mods = re.findall(r"(<td.*?>(<b>)*\[.*?\](</b>)*</td>)", modPage)
+        self.backend['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
+        self.logWriteCounter('Modifiers', '(json)', len(self.backend['modifiers'])) 
         
     def precacheShips(self):
         self.shipNames = [e["Page"] for e in self.r_ships]
@@ -633,7 +634,7 @@ class SETS():
         if args[2]:
             self.precacheShipTraits()
             items_list = self.shipTraitsWithImages
-        elif 1:
+        else:
             self.precacheTraits()
             traitType = "personal"
             if args[1]:
@@ -642,13 +643,7 @@ class SETS():
                 traitType = "reputation"
             items_list = self.traitsWithImages[traitType][args[3]]
             self.logWrite('traitLabelCallback: ['+traitType+']['+args[3]+']: '+str(len(items_list)), 4)
-        else:
-            #Remove this section on stable
-            traits = [self.traits[e] for e in range(len(self.traits)) if "chartype" in self.traits[e] and self.traits[e]["chartype"] == "char"]
-            traits = [traits[e] for e in range(len(traits)) if "environment" in traits[e] and traits[e]["environment"] == args[3]]
-            traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and ("reputation" in traits[e]["type"]) == args[0]]
-            traits = [traits[e] for e in range(len(traits)) if "type" in traits[e] and ("activereputation" in traits[e]["type"]) == args[1]]
-            items_list = [(html.unescape(traits[e]["name"]), self.imageFromInfoboxName(traits[e]["name"],self.itemBoxX,self.itemBoxY)) for e in range(len(traits))]
+
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
@@ -1483,10 +1478,11 @@ class SETS():
     def setupModFrame(self, frame, rarity, itemVar):
         """Set up modifier frame in equipment picker"""
         self.clearFrame(frame)
+        self.precacheModifiers()
         n = self.rarities.index(rarity)
         itemVar['rarity'] = rarity
         itemVar['modifiers'] = ['']*n
-        mods = sorted(self.fetchModifiers())
+        mods = sorted(self.backend['modifiers'])
         for i in range(n):
             v = StringVar()
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
