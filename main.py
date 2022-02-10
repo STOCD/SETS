@@ -284,11 +284,17 @@ class SETS():
         name = re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip()
         return name
 
+    def logWriteCounter(self, title, body, count, tags=[]):
+        logNote = ''
+        if len(tags):
+            for tag in tags:
+                logNote = logNote + '{:>7}'.format('['+tag+']')
+        self.logWrite('{:>12} {:>6} item count: {:>4} {:>6}'.format(title, body, str(count), logNote), 2)
+
     def precacheEquipment(self, keyPhrase):
         """Populate in-memory cache of ship equipment lists for faster loading"""
         if keyPhrase in self.backend['cacheEquipment']:
             return self.backend['cacheEquipment'][keyPhrase]
-        self.logWrite('precacheEquipment: '+keyPhrase, 3)
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         if "Kit Frame" in keyPhrase:
             equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
@@ -297,6 +303,8 @@ class SETS():
         self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
         if 'Hangar' in keyPhrase:
             self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
+
+        self.logWriteCounter('Equipment', '(json)', len(self.backend['cacheEquipment'][keyPhrase]), [keyPhrase])
 
     def searchHtmlTable(self, html, field, phrases):
         """Return HTML table elements containing 1 or more phrases"""
@@ -321,8 +329,13 @@ class SETS():
             modPage = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Modifier", "modifiers").find("div.mw-parser-output", first=True).html
             mods = re.findall(r"(<td.*?>(<b>)*\[.*?\](</b>)*</td>)", modPage)
             self.backend['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
+        self.logWriteCounter('Modifiers', '(json)', len(self.backend['modifiers']))
         return self.backend['modifiers']
         
+    def precacheShips(self):
+        self.shipNames = [e["Page"] for e in self.r_ships]
+        self.logWriteCounter('Ships', '(json)', len(self.shipNames), ['space'])
+
     def precacheDoffs(self, keyPhrase):
         """Populate in-memory cache of doff lists for faster loading"""
         if keyPhrase in self.backend['cacheDoffs']:
@@ -333,6 +346,8 @@ class SETS():
 
         self.backend['cacheDoffs'][keyPhrase] = {self.deWikify(doffMatches[item]['name'])+str(doffMatches[item]['powertype']): doffMatches[item] for item in range(len(doffMatches))}
         self.backend['cacheDoffNames'][keyPhrase] = {self.deWikify(doffMatches[item]['name']): '' for item in range(len(doffMatches))}
+        self.logWriteCounter('DOFF', '(json)', len(self.backend['cacheDoffs'][keyPhrase]), [keyPhrase])
+        self.logWriteCounter('DOFF names', '(json)', len(self.backend['cacheDoffNames'][keyPhrase]), [keyPhrase])
 
     def precacheShipTraitSingle(self, name, desc):
         if not name in self.backend['cacheShipTraits']:
@@ -359,7 +374,7 @@ class SETS():
             if 'type' in item and item['type'].lower() == 'starship':
                 self.precacheShipTraitSingle(item['name'], item['description'])
 
-        self.logWrite('Trait (ship) picker (json) item count: '+str(len(self.backend['cacheShipTraits'])), 2)
+        self.logWriteCounter('Ship Trait', '(json)', len(self.backend['cacheShipTraits']), ['space'])
  
     def precacheTraitSingle(self, name, desc, environment, type):
         if type == 'recruit':
@@ -395,7 +410,7 @@ class SETS():
         
         for type in self.traitsWithImages:
             for environment in self.traitsWithImages[type]:
-                self.logWrite('Trait picker (json) item count ['+type+']['+environment+']: '+str(len(self.traitsWithImages[type][environment])), 2)
+                self.logWriteCounter('Trait', '(json)', len(self.traitsWithImages[type][environment]), [environment, type])
 
     def setListIndex(self, list, index, value):
         print(value)
@@ -646,6 +661,10 @@ class SETS():
                 if ('i_'+item['item']+str(i) not in self.backend):
                     self.backend['i_'+item['item']+str(i)] = item['image']
                 canvas.itemconfig(img[0],image=self.backend['i_'+item['item']+str(i)])
+                environment = 'space'
+                if len(args) >= 4:
+                    environment = args[3]
+                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, '', environment))
                 item.pop('image')
                 self.build[key][i] = item
 
@@ -716,8 +735,9 @@ class SETS():
                             if i == 2 and tds[rank1+i].text.strip() in ['I', 'II']:
                                 self.precacheBoffAbilitiesSingle(cname, environment, rank1+i+1, category, desc)
                             self.logWrite('precacheBoffAbilities______: ['+environment+']['+category+']['+str(rank1+i)+']: '+tds[3].text.strip(), 4)
-        self.logWrite('Boff ability (json) item count [space]: '+str(len(self.backend['cacheBoffTooltips']['space'])), 2)
-        self.logWrite('Boff ability (json) item count [ground]: '+str(len(self.backend['cacheBoffTooltips']['ground'])), 2)
+
+        self.logWriteCounter('Boff ability', '(json)', len(self.backend['cacheBoffTooltips']['space']), ['space'])
+        self.logWriteCounter('Boff ability', '(json)', len(self.backend['cacheBoffTooltips']['ground']), ['ground'])
         
     def boffLabelCallback(self, e, canvas, img, i, key, args, idx, environment='space'):
         """Common callback for boff labels"""
@@ -752,6 +772,7 @@ class SETS():
                 if ('i_'+item['item']+str(i) not in self.backend):
                     self.backend['i_'+item['item']+str(i)] = item['image']
                 canvas.itemconfig(img,image=self.backend['i_'+item['item']+str(i)])
+                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, '', environment))
                 self.build['boffs'][key][i] = item['item']
                 
         # ground used +'_'+str(i)
@@ -1372,9 +1393,8 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                internalKey = ''
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,idx=idx,environment=environment,v=v,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i], idx, environment))
-                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][i],internalKey=internalKey,environment=environment:self.setupInfoboxFrame(item, internalKey, environment))
+                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][i],environment=environment:self.setupInfoboxFrame(item, '', environment))
             idx = idx + 1
 
     def setupGroundBoffFrame(self):
@@ -1428,9 +1448,8 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                internalKey = ''
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,key=boffSan,idx=idx,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx, environment))
-                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][i],internalKey=internalKey,environment=environment:self.setupInfoboxFrame(item, internalKey, environment))
+                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][i],environment=environment:self.setupInfoboxFrame(item, '', environment))
             idx = idx + 1
 
     def setupSpaceBuildFrames(self):
@@ -1490,12 +1509,11 @@ class SETS():
             name = item['item']
         else:
             name = item
-         
+        
         self.logWrite('Infobox('+environment+'): '+name+' -- '+key, 4)
-        self.precacheEquipment(key)
-        #self.precacheShipTraits()
-        #self.precacheTraits()
-        #self.precacheBoffAbilities()
+        if key is not None and key != '':
+            self.precacheEquipment(key)
+        
         self.clearFrame(frame)
         Label(frame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
         text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
@@ -2289,7 +2307,7 @@ class SETS():
         self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
         self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
         self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
-        self.shipNames = [e["Page"] for e in self.r_ships]
+        self.precacheShips()
         
         self.setupUIFrames()
 
