@@ -709,14 +709,11 @@ class SETS():
             else:
                 l1 = boffAbilities.find('h2+h3+table')   
                 
-            #for rank in boffRanks:
             for category in boffCategories:
                 table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+category.replace(' ','_')+'_Abilities', first=True), Element)]
                 if not len(table):
                     continue
                 trs = table[0].find('tr')
-                
-                skills = []
                 for tr in trs:
                     tds = tr.find('td')
                     rank1 = 1
@@ -845,8 +842,9 @@ class SETS():
 
             self.logWrite(inFilename+' -- template loaded'+logNote)
         else:
-            self.logWrite(inFilename+' -- version mismatch: '+str(self.buildImport['versionJSON'])+' < '+str(self.versionJSON))
-            self.importByFilename(inFilename, True)
+            self.logWrite(inFilename+' -- version mismatch: '+str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum))
+            if self.persistent['forceJsonLoad']:
+                self.importByFilename(inFilename, True)
 
     def exportCallback(self, event=None):
         """Callback for export button"""
@@ -2259,6 +2257,7 @@ class SETS():
         self.folderConfigName = '.config'
         self.resetSettings()
 
+        self.logWrite("=== logStart ===", 1)
         self.logWrite('CWD: '+os.getcwd(), 1)
         
     def exportSettings(self):
