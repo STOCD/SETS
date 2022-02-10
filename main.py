@@ -197,8 +197,19 @@ class SETS():
     def progressBarUpdate(self):
         self.footerProgressBarUpdates += 1
         self.footerProgressBar.step()
-        if self.footerProgressBarUpdates % 2 == 0:
+        # optionally modulo to reduce time spent on updating, but >1 can be unresponsive on slow networks
+        if self.footerProgressBarUpdates % 1 == 0:
             self.window.update()
+            
+    def progressBarStop(self):
+        self.footerProgressBarUpdates = 0
+        self.footerProgressBar.stop()
+        self.window.update()
+        
+    def progressBarStart(self):
+        self.footerProgressBarUpdates = 0
+        self.footerProgressBar.start()
+        self.window.update()
     
     def fetchOrRequestImage(self, url, designation, width = None, height = None):
         """Request image from web or fetch from local cache"""
@@ -341,7 +352,7 @@ class SETS():
         """Populate in-memory cache of ship equipment lists for faster loading"""
         if keyPhrase in self.backend['cacheEquipment']:
             return self.backend['cacheEquipment'][keyPhrase]
-        self.footerProgressBar.start()
+        self.progressBarStart()
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
         if "Kit Frame" in keyPhrase:
             equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
@@ -352,7 +363,7 @@ class SETS():
             self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
 
         self.logWriteCounter('Equipment', '(json)', len(self.backend['cacheEquipment'][keyPhrase]), [keyPhrase])
-        self.footerProgressBar.stop()
+        self.progressBarStop()
 
     def searchHtmlTable(self, html, field, phrases):
         """Return HTML table elements containing 1 or more phrases"""
@@ -409,7 +420,7 @@ class SETS():
         """Populate in-memory cache of ship traits for faster loading"""
         if 'cacheShipTraits' in self.backend and len(self.backend['cacheShipTraits']) > 0:
             return self.backend['cacheShipTraits']
-        self.footerProgressBar.start()
+        self.progressBarStart()
             
         for item in list(self.shiptraits):
             if 'trait' in item and len(item['trait']):
@@ -426,7 +437,7 @@ class SETS():
                 self.precacheShipTraitSingle(item['name'], item['description'])
 
         self.logWriteCounter('Ship Trait', '(json)', len(self.backend['cacheShipTraits']), ['space'])
-        self.footerProgressBar.stop()
+        self.progressBarStop()
  
     def precacheTraitSingle(self, name, desc, environment, type):
         name = self.deWikify(name)
@@ -453,7 +464,7 @@ class SETS():
         """Populate in-memory cache of traits for faster loading"""
         if 'cacheTraits' in self.backend and 'space' in self.backend['cacheTraits']:
             return self.backend['cacheTraits']
-        self.footerProgressBar.start()
+        self.progressBarStart()
         
         for item in list(self.traits):
             if not 'chartype' in item or item['chartype'] != 'char':
@@ -464,7 +475,7 @@ class SETS():
         for type in self.traitsWithImages:
             for environment in self.traitsWithImages[type]:
                 self.logWriteCounter('Trait', '(json)', len(self.traitsWithImages[type][environment]), [environment, type])
-        self.footerProgressBar.stop()
+        self.progressBarStop()
 
     def setListIndex(self, list, index, value):
         print(value)
@@ -598,7 +609,7 @@ class SETS():
             else:
                 content[key][0].grid_forget()
 
-    def pickerGui(self, title, itemVar, items_list, top_bar_functions=None):
+    def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
         """Open a picker window"""
         pickWindow = Toplevel(self.window)
         pickWindow.title(title)
@@ -608,7 +619,13 @@ class SETS():
             windowheight = 400
         if windowwidth < 240:
             windowwidth = 240
-        pickWindow.geometry(str(windowwidth)+"x"+str(windowheight))
+            
+        positionWindow = "+"+str(self.window.winfo_x())+"+"+str(self.window.winfo_y())
+        if x is not None and y is not None and 0:
+            # This should position the pickerGUI under the calling object when working
+            positionWindow = "+"+str(x)+"+"+str(y)
+            self.logWrite("pickerGUI: x{},y{}".format(str(x), str(y)), 1)
+        pickWindow.geometry(str(windowwidth)+"x"+str(windowheight)+positionWindow)
         origVar = dict()
         for key in itemVar:
             origVar[key] = itemVar[key]
@@ -670,7 +687,7 @@ class SETS():
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
-        item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame])
+        item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame], e.x, e.y)
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
                 item['item'] = ''
@@ -764,7 +781,7 @@ class SETS():
         """Common callback for boff labels"""
         if 'cacheBoffAbilities' in self.backend and 'space' in self.backend['cacheBoffAbilities']:
             return self.backend['cacheBoffAbilities']
-        self.footerProgressBar.start()
+        self.progressBarStart()
         
         boffAbilities = self.fetchOrRequestHtml(self.r_boffAbilities_source, "boff_abilities") 
         # Categories beyond tac/eng/sci should come from a json load when capt specs are converted
@@ -801,7 +818,7 @@ class SETS():
 
         self.logWriteCounter('Boff ability', '(json)', len(self.backend['cacheBoffTooltips']['space']), ['space'])
         self.logWriteCounter('Boff ability', '(json)', len(self.backend['cacheBoffTooltips']['ground']), ['ground'])
-        self.footerProgressBar.stop()
+        self.progressBarStop()
         
     def boffLabelCallback(self, e, canvas, img, i, key, args, idx, environment='space'):
         """Common callback for boff labels"""
