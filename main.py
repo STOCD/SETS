@@ -178,6 +178,28 @@ class SETS():
     def lowerCaseRegexpText(self, matchobj):
         return matchobj.group(0).lower()
         
+    def imageResizeDimensions(self, imagewidth, imageheight, width, height):
+        aspectOld = round(imagewidth / imageheight, 2)
+        aspectNew = round(width / height, 2)
+        
+        if aspectOld < aspectNew:
+            # old is taller than aspect
+            width = int(imagewidth / (imageheight / height))
+        elif aspectNew > aspectOld:
+            # old is wider than aspect
+            height = int(imageheight / (imagewidth / width))
+        else:
+            # matching aspects
+            pass
+
+        return (width, height)
+        
+    def progressBarUpdate(self):
+        self.footerProgressBarUpdates += 1
+        self.footerProgressBar.step()
+        if self.footerProgressBarUpdates % 2 == 0:
+            self.window.update()
+    
     def fetchOrRequestImage(self, url, designation, width = None, height = None):
         """Request image from web or fetch from local cache"""
         cache_base = self.cacheImagesFolderLocation()
@@ -192,7 +214,9 @@ class SETS():
         if os.path.exists(filename):
             image = Image.open(filename)
             if(width is not None):
-                image = image.resize((width,height),Image.ANTIALIAS)
+                curwidth, curheight = image.size
+                resizeOptions = self.imageResizeDimensions(curwidth, curheight, width, height)
+                image = image.resize(resizeOptions,Image.ANTIALIAS)
             return ImageTk.PhotoImage(image)
         if designation in self.imagesFail and self.imagesFail[designation]:
             # Previously failed this session, do not attempt download again until next run
@@ -208,6 +232,7 @@ class SETS():
             if '(Federation)' in url:
                 url2 = re.sub('_\(Federation\)', '', url2)
             url2.title()
+            # May be reducable if wiki cleanups complete
             url2 = re.sub('_From_', '_from_', url2)
             url2 = re.sub('_For_', '_for_', url2)
             url2 = re.sub('_The_', '_the_', url2)
@@ -217,7 +242,6 @@ class SETS():
             url2 = re.sub('rihan', 'Rihan', url2)
             url2 = re.sub('_(\w{1,2})_', self.lowerCaseRegexpText, url2)
             url2 = re.sub('\-([a-z])', self.titleCaseRegexpText, url2)
-            #self.logWrite("r"+url2, 1)
             if url2 != url:
                 img_request = requests.get(url2)
                 img_data = img_request.content
@@ -243,7 +267,7 @@ class SETS():
         image = Image.open(filename)
         if(width is not None):
             image = image.resize((width,height),Image.ANTIALIAS)
-        self.footerProgressBar.step()
+        self.progressBarUpdate()
         return ImageTk.PhotoImage(image)
 
     def deWikify(self, textBlock, leaveHtml=False):
@@ -1423,7 +1447,7 @@ class SETS():
                 elif boffExistingLen > rank:
                     self.build['boffs'][boffSan] = self.build['boffs'][boffSan][slice(rank)]
             for i in range(rank):
-                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
+                if boffSan in self.build['boffs'] and len(self.build['boffs'][boffSan]) >= i and self.build['boffs'][boffSan][i] is not None:
                     image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
                     self.backend['i_'+boffSan][i] = image
                 else:
@@ -1545,10 +1569,12 @@ class SETS():
         else:
             frame = self.shipInfoboxFrame
             
-        if 'item' in item:
+        if item is not None and 'item' in item:
             name = item['item']
-        else:
+        elif isinstance(item, str):
             name = item
+        else:
+            return
         
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
         if key is not None and key != '':
@@ -1693,8 +1719,9 @@ class SETS():
         self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
         footerLabelL = Label(self.footerFrame, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=('Helvetica', 8, 'bold'))
         footerLabelL.grid(row=0, column=0, sticky='w')
-        self.footerProgressBar = Progressbar(self.footerFrame, orient='horizontal', mode='indeterminate', length=160)
-        self.footerProgressBar.grid(row=0, column=1, sticky='ew')
+        self.footerProgressBarUpdates = 0
+        self.footerProgressBar = Progressbar(self.footerFrame, orient='horizontal', mode='indeterminate', length=200)
+        self.footerProgressBar.grid(row=0, column=1, sticky='e')
         footerLabelR = Label(self.footerFrame, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=('Helvetica', 8, 'bold'))
         footerLabelR.grid(row=0, column=2, sticky='e')
         self.footerFrame.grid_columnconfigure(0, weight=5, uniform="footerlabel")
@@ -2048,7 +2075,8 @@ class SETS():
         logNote = ''
         if len(tags):
             for tag in tags:
-                logNote = logNote + '{:>1}'.format('['+tag.strip()+']')
+                currentTag = tag.strip() if tag is not None else ''
+                logNote = logNote + '{:>1}'.format('['+currentTag+']')
         self.logWrite('{:>12} {:>13}: {:>6}'.format(title, body, logNote), level)
         
     def logWriteTransaction(self, title, body, count, path, level=1, tags=[]):
@@ -2264,13 +2292,14 @@ class SETS():
                 except:
                     self.logWriteTransaction('Config File', 'load error', '', configFile, 0)
 
-                    
-                if self.args.debug:
+                if self.args.debug is not None:
                     self.settings['debug'] = self.args.debug
+                    self.logWriteSimple('Debug', 'set by arg', 1, tags=[str(self.settings['debug'])])
                 elif not 'debug' in self.settings or self.debugDefault > self.settings['debug']:
                     self.settings['debug'] = self.debugDefault
-                    
-                self.logWriteSimple('Debug', 'set in config', 1, tags=[str(self.settings['debug'])])
+                    self.logWriteSimple('Debug', 'set from default', 1, tags=[str(self.settings['debug'])])
+                else:
+                    self.logWriteSimple('Debug', 'set in config', 1, tags=[str(self.settings['debug'])])
         else:
             self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, 0)
             
