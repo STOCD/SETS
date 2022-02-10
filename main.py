@@ -362,7 +362,9 @@ class SETS():
         self.logWrite('Trait (ship) picker (json) item count: '+str(len(self.backend['cacheShipTraits'])), 2)
  
     def precacheTraitSingle(self, name, desc, environment, type):
-        if type != 'reputation' and type != 'activereputation' and type != 'recruit' and type != 'Starship':
+        if type == 'recruit':
+            return
+        if type != 'reputation' and type != 'activereputation' and type != 'Starship':
             type = "personal"
             
         if not environment in self.backend['cacheTraits']:
@@ -650,9 +652,11 @@ class SETS():
     def precacheBoffAbilitiesSingle(self, name, environment, type, category, desc):
         # category is Tactical, Science, Engineer, Specs
         # type is the boff ability rank
-        if not name in self.backend['cacheBoffTooltips']:
+        if not environment in self.backend['cacheBoffTooltips']:
+            self.backend['cacheBoffTooltips'][environment] = dict()
+        if not name in self.backend['cacheBoffTooltips'][environment]:
             # Longer descriptions stored only once
-            self.backend['cacheBoffTooltips'][name] = self.deWikify(desc)
+            self.backend['cacheBoffTooltips'][environment][name] = self.deWikify(desc)
         
         if not environment in self.backend['cacheBoffAbilities']:
             self.backend['cacheBoffAbilities'][environment] = dict()
@@ -712,6 +716,8 @@ class SETS():
                             if i == 2 and tds[rank1+i].text.strip() in ['I', 'II']:
                                 self.precacheBoffAbilitiesSingle(cname, environment, rank1+i+1, category, desc)
                             self.logWrite('precacheBoffAbilities______: ['+environment+']['+category+']['+str(rank1+i)+']: '+tds[3].text.strip(), 4)
+        self.logWrite('Boff ability (json) item count [space]: '+str(len(self.backend['cacheBoffTooltips']['space'])), 2)
+        self.logWrite('Boff ability (json) item count [ground]: '+str(len(self.backend['cacheBoffTooltips']['ground'])), 2)
         
     def boffLabelCallback(self, e, canvas, img, i, key, args, idx, environment='space'):
         """Common callback for boff labels"""
@@ -1514,8 +1520,8 @@ class SETS():
         if environment in self.backend['cacheTraits'] and name in self.backend['cacheTraits'][environment]:
             text.insert(END, self.backend['cacheTraits'][environment][name])
             
-        if name in self.backend['cacheBoffTooltips']:
-                text.insert(END, self.backend['cacheBoffTooltips'][name])
+        if environment in self.backend['cacheBoffTooltips'] and name in self.backend['cacheBoffTooltips'][environment]:
+                text.insert(END, self.backend['cacheBoffTooltips'][environment][name])
                 
         if key in self.backend['cacheEquipment'] and name in self.backend['cacheEquipment'][key]:
             # Show the infobox data from json
