@@ -35,14 +35,48 @@ Windows:
 Linux:
 > python3 main.py
 
+## Configuration locations
+The configuration directory will house all of the configuration files. [^1]
+
+Portable mode can be enabled (keeping all of the files inside the application's directory) or the application can be allowed to create an OS-based default settings directory.
+### Configuration directory
+Portable mode:
+: Create a folder named `.config/` inside the application directory (uses APPDIR/.config/ for all files)
+: Create a file named `.config.json` inside the application directory (uses APPDIR/ for all files, can be an empty file)
+
+Windows: [^2]
+: Will attempt to make `~/OneDrive/Documents/SETS/` and use it for all files
+: Will try `~/Documents/SETS/` if OneDrive not available
+
+OSX:
+: Will attempt to make `~/Library/Application Support/SETS/` and use it for all files
+
+Unix:
+: Will attempt to make `~/.config/SETS/` and use it for all files
+
+All:
+: Will use the APPDIR/ for all files if the above are note accessible
+
+### Configuration Files
+- `cache/` (automatic) is used to store downloaded wiki source data
+- `images/` (automatic) is used to store downloaded images.  [^1]
+- `.state_SETS.json` (automatic) is used to store settings
+- `.config.json` (optional) is used for manual settings
+- `.template.json` (optional) will be imported when running the app [^3]
+
 ## Authors
 
 * Producer - Mara "Sizer" Morrigan - mara.mos714@gmail.com, Discord: Sizer#3498
 * Programmer - Liraal2
 * Programmer | Linux Testing - Serious Table - Discord: Serious Table#8141
+* Programmer - Stephen Hill - Discord: sukobi#1841
 
 ## Licence
 
 SETS and its source code is licensed under GPLv3
 
 Star Trek Online and its content is copyright of Cryptic Studios.
+
+[^1]: The `images/` directory will stay in the APPDIR/ if that directory already exists, regardless of configuration directory.
+[^2]: File paths are listed with forward slashes -- `/` -- but windows uses `\` in actual paths
+[^3]: This is a standard .json file exported from SETS
