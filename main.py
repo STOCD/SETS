@@ -1504,11 +1504,16 @@ class SETS():
             if boffSan in self.build['boffs']:
                 boffExistingLen = len(self.build['boffs'][boffSan])
                 changeCount = rank - boffExistingLen
-                self.logWrite('==={} {}->{}={}'.format('boff seat change: ', boffExistingLen, rank, changeCount), 3)
                 if boffExistingLen < rank:
-                    self.build['boffs'][boffSan].append([None] * changeCount)
+                    for add in range(changeCount):
+                        self.build['boffs'][boffSan].append([None])
                 elif boffExistingLen > rank:
                     self.build['boffs'][boffSan] = self.build['boffs'][boffSan][slice(rank)]
+
+                if rank != len(self.build['boffs'][boffSan]):
+                    self.logWrite('--- {} {}{}{}->{}{}{}'.format('boff seat change error: ', boffExistingLen, '+' if changeCount > 0 else '', changeCount, rank, '!=' , str(len(self.build['boffs'][boffSan]))), 1)
+
+                    
                     
             for j in range(rank):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
