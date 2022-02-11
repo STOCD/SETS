@@ -182,7 +182,10 @@ class SETS():
         aspectOld = round(imagewidth / imageheight, 2)
         aspectNew = round(width / height, 2)
         
-        if aspectOld < aspectNew:
+        if width <= 100 or height <= 100:
+            # Don't alter small icons
+            pass
+        elif aspectOld < aspectNew:
             # old is taller than aspect
             width = int(imagewidth / (imageheight / height))
         elif aspectNew > aspectOld:
@@ -504,7 +507,8 @@ class SETS():
         self.persistent = {
             'markDefault': '',
             'rarityDefault': '',
-            'forceJsonLoad': 0
+            'forceJsonLoad': 0,
+            'uiScale': 1,
         }
     
     def resetSettings(self):
@@ -875,6 +879,7 @@ class SETS():
         items_list = [(name, self.emptyImage) for name in self.shipNames]
         item = self.pickerGui("Pick Starship", itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
+            self.resetShipSettings()
             if item['item'] == 'X':
                 item['item'] = ''
                 self.build['ship'] = item['item']
@@ -886,7 +891,7 @@ class SETS():
             else:
                 self.shipButton.configure(text=item['item'])
                 self.backend['ship'].set(item['item'])
-                self.setupSpaceBoffFrame(self.backend['shipHtml'])
+                self.setupBoffFrame('space', self.backend['shipHtml'])
 
     def importCallback(self, event=None):
         """Callback for import button"""
@@ -1406,77 +1411,121 @@ class SETS():
         self.labelBuildBlock(self.groundTraitFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
         self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
-    def setupSpaceBoffFrame(self, ship):
+    def resetShipSettings(self):
+        self.build['boffseats']['space_spec'] = [None] * 6
+
+    def setupBoffFrame(self, environment='space', ship=None):
         """Set up UI frame containing boff skills"""
-        self.clearFrame(self.shipBoffFrame)
-        environment = 'space'
+        parentFrame = self.groundBoffFrame if environment == 'ground' else self.shipBoffFrame
+        
+        self.clearFrame(parentFrame)
+
+        seats = 6 if environment == 'space' else 4
         if not environment in self.build['boffseats']:
-            self.build['boffseats'][environment] = [None] * 6
+            self.build['boffseats'][environment] = [None] * seats
+        if not environment+'_spec' in self.build['boffseats']:
+            self.build['boffseats'][environment+'_spec'] = [None] * seats
             
-        if ship is None or not 'boffs' in ship:
-            return
+        if environment == 'ground':
+            boffs = ['Tactical'] * seats
+        else:
+            if ship is None or not 'boffs' in ship:
+                return
+            else:
+                boffs = ship["boffs"]
         
         idx = 0
-        boffs = ship["boffs"]
-        for boff in boffs:
-            rank = 3 if "Lieutenant Commander" in boff else 2 if "Lieutenant" in boff else 4 if "Commander" in boff else 1
-            boff = boff.replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip()
-            spec = self.boffTitleToSpec(boff)
-            sspec = None
-            for s in self.specNames:
-                if '-'+s in boff:
-                    sspec = s
-                    break
-            if spec == 'Tactical' and rank == 3 and 'Science Destroyer' in self.build['ship']: #sci destroyers get tac mode turning lt cmdr to cmdr
-                rank = 4
-            bFrame = Frame(self.shipBoffFrame, width=120, height=80, bg='#3a3a3a')
-            bFrame.pack(fill=BOTH, expand=True)
+        for i in range(len(boffs)):
+            boff = boffs[i]
             boffSan = environment+'Boff_' + str(idx)
-            self.backend['i_'+boffSan] = [None] * rank
-            if spec != 'Universal' and spec != self.build['boffseats'][environment][idx]:
-                self.build['boffs'][boffSan] = [None] * rank
-            bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
-            bSubFrame0.pack(fill=BOTH)
-            v = StringVar(self.window, value=boff)
-            if spec == 'Universal':
-                if self.build['boffseats'][environment][idx] is not None:
-                    v.set(self.build['boffseats'][environment][idx])
-                else:
-                    v.set('Tactical')
-                    self.build['boffseats'][environment][idx] = 'Tactical'
-                specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
-                specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
-                specLabel0.pack(side='left')
-                v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, environment))
-                if sspec is not None:
-                    specLabel1 = Label(bSubFrame0, text=' / '+sspec, bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
-                    specLabel1.pack(side='left')
+            
+            if environment == 'ground':
+                rank = seats
+                spec = boff
+                sspec = None
             else:
-                specLabel0 = Label(bSubFrame0, text=(spec if sspec is None else spec+' / '+sspec), bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
-                specLabel0.pack(side='left')
+                rank = 3 if "Lieutenant Commander" in boff else 2 if "Lieutenant" in boff else 4 if "Commander" in boff else 1
+                boff = boff.replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip()
+                spec = self.boffTitleToSpec(boff)
+                sspec = None
+                for s in self.specNames:
+                    if '-'+s in boff:
+                        sspec = s
+                        break
+                if spec == 'Tactical' and rank == 3 and 'Science Destroyer' in self.build['ship']: #sci destroyers get tac mode turning lt cmdr to cmdr
+                    rank = 4
+
+            bFrame = Frame(parentFrame, width=120, height=80, bg='#3a3a3a')
+            bFrame.pack(fill=BOTH, expand=True)
+            bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
+            bSubFrame0.pack(fill=BOTH, pady=(2,0))
+            
+            self.backend['i_'+boffSan] = [None] * rank
+            
+            if spec != 'Universal' and spec != self.build['boffseats'][environment][idx]:
+                #wipe skills of the changed spec here, keep the secondary spec
+                #self.build['boffs'][boffSan] = [None] * rank
+                pass
+
+            if environment == 'space' and spec != 'Universal':
                 self.build['boffseats'][environment][idx] = spec
+                self.build['boffseats'][environment+'_spec'][idx] = sspec
+            else:
+                if self.build['boffseats'][environment][idx] is None:
+                    self.build['boffseats'][environment][idx] = 'Science'
+                if self.build['boffseats'][environment+"_spec"][idx] is None:
+                    self.build['boffseats'][environment+"_spec"][idx] = sspec
+            
+            v = StringVar(self.window, value=self.build['boffseats'][environment][idx])
+            v2 = StringVar(self.window, value=self.build['boffseats'][environment+'_spec'][idx])
+            v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, environment))
+            v2.trace_add("write", lambda v2,i,m,v0=v2,idx=idx:self.boffUniversalCallback(v0, idx, environment+'_spec'))
+            
+            if environment == 'space' and spec != 'Universal':
+                specLabel0 = Label(bSubFrame0, text=spec)
+            else:                  
+                specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
+                specLabel0.configure(pady=2)
+            specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10), highlightthickness=0)
+            specLabel0.pack(side='left')
+            
+            if environment == 'ground' or sspec is not None:
+                if environment == 'ground':                    
+                    specLabel1 = OptionMenu(bSubFrame0, v2, *self.boffGroundSpecNames)
+                    specLabel1.configure(pady=2)
+                else:
+                    specLabel1 = Label(bSubFrame0, text='/  '+sspec)
+                specLabel1.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10), highlightthickness=0)
+                specLabel1.pack(side='left')
+                
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
+            
             if boffSan in self.build['boffs']:
                 boffExistingLen = len(self.build['boffs'][boffSan])
+                changeCount = rank - boffExistingLen
+                self.logWrite('==={} {}->{}={}'.format('boff seat change: ', boffExistingLen, rank, changeCount), 3)
                 if boffExistingLen < rank:
-                    self.build['boffs'][boffSan].append([None] * (rank - boffExistingLen))
+                    self.build['boffs'][boffSan].append([None] * changeCount)
                 elif boffExistingLen > rank:
                     self.build['boffs'][boffSan] = self.build['boffs'][boffSan][slice(rank)]
-            for i in range(rank):
-                if boffSan in self.build['boffs'] and len(self.build['boffs'][boffSan]) >= i and self.build['boffs'][boffSan][i] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
-                    self.backend['i_'+boffSan][i] = image
+                    
+            for j in range(rank):
+                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
+                    self.backend['i_'+boffSan][j] = image
                 else:
                     image=self.emptyImage
                     self.build['boffs'][boffSan] = [None] * rank
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
-                canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
+                canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,spec=spec,sspec=sspec,key=boffSan,idx=idx,environment=environment,v=v,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), sspec, i], idx, environment))
-                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][i],environment=environment:self.setupInfoboxFrame(item, '', environment))
+                # boffTitleToSpec still accurate for ground?
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i], idx, environment))
+                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
             idx = idx + 1
 
+###PRUNE when stable
     def setupGroundBoffFrame(self):
         """Set up UI frame containing ground boff skills"""
         self.clearFrame(self.groundBoffFrame)
@@ -1518,18 +1567,18 @@ class SETS():
             bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame1.pack(fill=BOTH)
 
-            for i in range(4):
-                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][i] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][i], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
-                    self.backend['i_'+boffSan][i] = image
+            for j in range(4):
+                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
+                    self.backend['i_'+boffSan][j] = image
                 else:
                     image=self.emptyImage
                     self.build['boffs'][boffSan] = [None] * 4
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
-                canvas.grid(row=1, column=i, sticky='ns', padx=2, pady=2)
+                canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=i,key=boffSan,idx=idx,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx, environment))
-                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][i],environment=environment:self.setupInfoboxFrame(item, '', environment))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx, environment))
+                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
             idx = idx + 1
 
     def setupSpaceBuildFrames(self):
@@ -1537,7 +1586,7 @@ class SETS():
         self.build['tier'] = self.backend['tier'].get()
         if self.backend['shipHtml'] is not None:
             self.setupShipBuildFrame(self.backend['shipHtml'])
-            self.setupSpaceBoffFrame(self.backend['shipHtml'])
+            self.setupBoffFrame('space', self.backend['shipHtml'])
         else:
             self.clearFrame(self.shipEquipmentFrame)
             self.clearFrame(self.shipBoffFrame)
@@ -1550,7 +1599,7 @@ class SETS():
         """Set up all relevant build frames"""
         self.build['tier'] = self.backend['tier'].get()
         self.setupCharBuildFrame()
-        self.setupGroundBoffFrame()
+        self.setupBoffFrame('ground')
         self.setupDoffFrame(self.groundDoffFrame)
         self.setupGroundTraitFrame()
         self.clearInfoboxFrame('ground')
@@ -2061,16 +2110,38 @@ class SETS():
         forceLoadOption = OptionMenu(self.settingsTopRightFrame, forceLoad, *forceLoadOptions, command=self.persistentForceLoad)
         forceLoadOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         forceLoadOption.grid(row=4, column=1, sticky='nw', pady=2, padx=2)
+        
+        label = Label(self.settingsTopRightFrame, text='UI Scale', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=5, column=0, sticky="e", pady=2, padx=2)        
+        self.uiScaleSetting = DoubleVar()
+        if 'uiScale' in self.persistent:
+            self.uiScaleSetting.set(self.persistent['uiScale'])
+        else:
+            self.uiScaleSetting.set(1)
+        self.uiScaleOption = Scale(self.settingsTopRightFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=self.uiScaleSetting, command=self.uiScaleChange)
+        self.uiScaleOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        self.uiScaleOption.grid(row=5, column=1, sticky='nw', pady=2, padx=2)
 
-
-    def setupUIScaling(self, scale):
+    def setupUIScaling(self,event=None):
+        # Partially effect, some errors in the log formatting
+        scale = 1
+        if 'uiScale' in self.persistent:
+            scale = self.persistent['uiScale']
+            
          # pixel correction
         dpi = round(self.window.winfo_fpixels('1i'), 0)
         factor = ( dpi / 96 ) * scale
         self.window.call('tk', 'scaling', factor)
         
-        self.logminiWrite('{:>4}dpi (x{:>4}) '.format(dpi, (factor * scale)))
+        self.logminiWrite('{:>4}dpi (x{:>0.2}) '.format(dpi, (factor * scale)))
         
+        self.window.update()
+        
+    def uiScaleChange(self, event=None):
+        self.persistent['uiScale'] = self.uiScaleSetting.get()
+        self.stateSave()
+        self.setupUIScaling()
+
     def logDisplayUpdate(self):
         self.logDisplay.delete('0.0', END)
         self.logDisplay.insert('0.0', self.logFull.get())
@@ -2142,7 +2213,7 @@ class SETS():
         self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.setupFooterFrame()
-        self.setupUIScaling(1)
+        self.setupUIScaling()
 
         self.setupLogoFrame()
         self.setupMenuFrame()
@@ -2249,7 +2320,7 @@ class SETS():
 
         return filePath
         
-    def cacheImagesFolderLocation(self):
+    def cacheImagesFolderLocation(self, subfolder=None):
         filePath = self.configLocation()
         
         if os.path.exists(self.folderCacheImagesName):
@@ -2264,8 +2335,19 @@ class SETS():
                 except:
                     self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
         
+        if subfolder is not None:
+            filePath = os.path.join(filePath, self.folderCacheCustomImagesName)
+            if not os.path.exists(filePath):
+                try:
+                    os.MakeDirs = os.makedirs(filePath)
+                    self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
+                except:
+                    self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
+        
         if not os.path.exists ( filePath ):
             filePath = self.folderCacheImagesName
+            if subfolder is not None:
+                filePath = os.path.join(filePath, self.folderCacheCustomImagesName)
 
         return filePath
             
@@ -2402,6 +2484,7 @@ class SETS():
         self.folderConfigName = '.config'
         self.folderCacheName = 'cache'
         self.folderCacheImagesName = 'images'
+        self.folderCacheCustomImagesName = 'custom'
         self.folderLocalImagesName = 'local'
         self.resetSettings()
 
