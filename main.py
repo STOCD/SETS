@@ -399,6 +399,8 @@ class SETS():
         self.precacheShipTraits()
         self.precacheDoffs("Space")
         self.precacheDoffs("Ground")
+        self.precacheShips()
+        self.precacheModifiers()
 
     def precacheIconCleanup(self):
         #preliminary gathering for self-cleaning icon folder
@@ -984,6 +986,7 @@ class SETS():
         tier = self.backend['shipHtml']["tier"]
         self.clearFrame(self.shipTierFrame)
         self.setupTierFrame(tier)
+        self.setupShipImageFrame()
         self.backend["tier"].set(self.getTierOptions(tier)[0])
 
     def shipPickButtonCallback(self, *args):
@@ -1037,6 +1040,7 @@ class SETS():
             self.setupShipInfoFrame()
             if 'tier' in self.build and len(self.build['tier']) > 1:
                 self.setupTierFrame(int(self.build['tier'][1]))
+                self.setupShipImageFrame()
             self.shipButton.configure(text=self.build['ship'])
             self.setupSpaceBuildFrames()
             self.setupGroundBuildFrames()
@@ -1309,48 +1313,45 @@ class SETS():
     def markBoxCallback(self, itemVar, value):
         itemVar['mark'] = value
 
+    def focusFrameCallback(self, type):
+        self.groundBuildFrame.pack_forget() if type != 'ground' else None
+        self.skillTreeFrame.pack_forget() if type != 'skill' else None
+        self.glossaryFrame.pack_forget() if type != 'glossary' else None
+        self.settingsFrame.pack_forget() if type != 'settings' else None
+        self.spaceBuildFrame.pack_forget() if type != 'space' else None
+        
+        
+        if type == 'ground': self.currentFrame = self.groundBuildFrame
+        elif type == 'skill': self.currentFrame = self.skillTreeFrame
+        elif type == 'glossary': self.currentFrame = self.glossaryFrame
+        elif type == 'settings': self.currentFrame = self.settingsFrame
+        elif type == 'space': self.currentFrame = self.spaceBuildFrame
+        else: return
+
+        self.currentFrame.pack(fill=BOTH, expand=True, padx=15)
+    
     def focusSpaceBuildFrameCallback(self):
-        self.groundBuildFrame.pack_forget()
-        self.skillTreeFrame.pack_forget()
-        self.glossaryFrame.pack_forget()
-        self.settingsFrame.pack_forget()
-        self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.focusFrameCallback('space')
         self.setupShipInfoFrame() #get updates from info changes
         self.shipLabel.configure(image=self.shipImg)
         if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
-            self.setupJustTierFrame(int(self.backend['tier'].get()[1]))
+            self.setupTierFrame(int(self.backend['tier'].get()[1]))
         self.setupDoffFrame(self.shipDoffFrame)
 
     def focusGroundBuildFrameCallback(self):
-        self.spaceBuildFrame.pack_forget()
-        self.skillTreeFrame.pack_forget()
-        self.glossaryFrame.pack_forget()
-        self.settingsFrame.pack_forget()
-        self.groundBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.focusFrameCallback('ground')
         self.setupGroundInfoFrame() #get updates from info changes
         self.charLabel.configure(image=self.groundImg)
         self.setupDoffFrame(self.groundDoffFrame)
 
     def focusSkillTreeFrameCallback(self):
-        self.spaceBuildFrame.pack_forget()
-        self.groundBuildFrame.pack_forget()
-        self.glossaryFrame.pack_forget()
-        self.settingsFrame.pack_forget()
-        self.skillTreeFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.focusFrameCallback('skill')
 
     def focusGlossaryFrameCallback(self):
-        self.spaceBuildFrame.pack_forget()
-        self.groundBuildFrame.pack_forget()
-        self.skillTreeFrame.pack_forget()
-        self.settingsFrame.pack_forget()
-        self.glossaryFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.focusFrameCallback('glossary')
 
     def focusSettingsFrameCallback(self):
-        self.spaceBuildFrame.pack_forget()
-        self.groundBuildFrame.pack_forget()
-        self.skillTreeFrame.pack_forget()
-        self.glossaryFrame.pack_forget()
-        self.settingsFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.focusFrameCallback('settings')
         self.logDisplayUpdate()
 
     def speciesUpdateCallback(self):
@@ -1385,6 +1386,7 @@ class SETS():
         mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
+        self.setupModFrame(modFrame, rarity=rarity.get(), itemVar=itemVar)
 
     def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
         """Set up n-element line of ship equipment"""
@@ -1642,62 +1644,6 @@ class SETS():
                 canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
             idx = idx + 1
 
-###PRUNE when stable
-    def setupGroundBoffFrame(self):
-        """Set up UI frame containing ground boff skills"""
-        self.clearFrame(self.groundBoffFrame)
-        environment = 'ground'
-        if not environment in self.build['boffseats']:
-            self.build['boffseats'][environment] = [None] * 4
-        if not environment+'_spec' in self.build['boffseats']:
-            self.build['boffseats'][environment+'_spec'] = [None] * 4
-            
-        idx = 0
-        for i in range(4):
-            bFrame = Frame(self.groundBoffFrame, width=120, height=80, bg='#3a3a3a')
-            bFrame.pack(fill=BOTH, expand=True)
-            boffSan = environment+'Boff'+'_'+str(idx)
-            self.backend['i_'+boffSan] = [None] * 4
-            bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
-            bSubFrame0.pack(fill=BOTH)
-            
-            v = StringVar(self.window, value='Tactical')
-            if environment in self.build['boffseats'] and self.build['boffseats'][environment][idx] is not None:
-                v.set(self.build['boffseats'][environment][idx])
-            else:
-                self.build['boffseats'][environment][idx] = v.get()
-            specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
-            specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
-            specLabel0.pack(side='left')
-            v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, environment))
-            
-            v2 = StringVar(self.window, value='')
-            if environment+'_spec' in self.build['boffseats'] and self.build['boffseats'][environment+'_spec'][idx] is not None:
-                v2.set(self.build['boffseats'][environment+'_spec'][idx])
-            else:
-                self.build['boffseats'][environment+'_spec'][idx] = v2.get()
-            specLabel1 = OptionMenu(bSubFrame0, v2, *self.boffGroundSpecNames)
-            specLabel1.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10))
-            specLabel1.pack(side='left')
-            v2.trace_add("write", lambda v2,i,m,v0=v2,idx=idx:self.boffUniversalCallback(v0, idx, environment+'_spec'))
-            
-            bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
-            bSubFrame1.pack(fill=BOTH)
-
-            for j in range(4):
-                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], faction = 1)
-                    self.backend['i_'+boffSan][j] = image
-                else:
-                    image=self.emptyImage
-                    self.build['boffs'][boffSan] = [None] * 4
-                canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
-                canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
-                img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[v.get(), v2.get(), i], idx, environment))
-                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
-            idx = idx + 1
-
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
         self.build['tier'] = self.backend['tier'].get()
@@ -1728,8 +1674,8 @@ class SETS():
 
     def setupModFrame(self, frame, rarity, itemVar):
         """Set up modifier frame in equipment picker"""
-        self.clearFrame(frame)
         self.precacheModifiers()
+        self.clearFrame(frame)
         n = self.rarities.index(rarity)
         itemVar['rarity'] = rarity
         itemVar['modifiers'] = ['']*n
@@ -1944,14 +1890,13 @@ class SETS():
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
 
-    def setupJustTierFrame(self, tier):
+    def setupTierFrame(self, tier):
         Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
         m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
         m.grid(column=1, row=0, sticky='nsew', pady=5)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
-    def setupTierFrame(self, tier):
-        self.setupJustTierFrame(tier)
+    def setupShipImageFrame(self):
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
         try:
             ship_image = self.backend['shipHtml']["image"]
