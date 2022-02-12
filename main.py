@@ -1386,7 +1386,8 @@ class SETS():
         mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
-        self.setupModFrame(modFrame, rarity=rarity.get(), itemVar=itemVar)
+        if rarity.get():
+            self.setupModFrame(modFrame, rarity=rarity.get(), itemVar=itemVar)
 
     def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
         """Set up n-element line of ship equipment"""
