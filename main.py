@@ -707,7 +707,6 @@ class SETS():
 
     def captainFactionCallback(self):
         self.copyBackendToBuild('captain', 'faction')
-        self.backend['captain']['faction_code'] = self.factionNames[self.build['captain']['faction']]
         self.resetCache('boffAbilities')
         self.precacheBoffAbilities()
         self.setupSpaceBuildFrames()
