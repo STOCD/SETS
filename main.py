@@ -6,7 +6,7 @@ from tkinter.ttk import Progressbar
 from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse
+import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, time
 import numpy as np
 
 CLEANR = re.compile('<.*?>') 
@@ -197,91 +197,132 @@ class SETS():
 
         return (width, height)
         
-    def progressBarUpdate(self):
-        self.footerProgressBarUpdates += 1
-        self.footerProgressBar.step()
-        # optionally modulo to reduce time spent on updating, but >1 can be unresponsive on slow networks
-        if self.footerProgressBarUpdates % 1 == 0:
-            self.window.update()
+    def progressBarUpdate(self, weight=1):
+        # weight denotes how much progress that item is
+        try:
+            self.footerProgressBarUpdates += weight
+            self.footerProgressBar.step()
+            # modulo to reduce time / flashing UI spent on updating
+            if self.footerProgressBarUpdates % self.updateOnStep == 0 or self.footerProgressBarUpdates % self.updateOnStep + weight > self.updateOnStep:
+                self.requestWindowUpdate('footerProgressBar')
+        except:
+            # Can have no footer yet in some early states
+            pass
             
     def progressBarStop(self):
         self.footerProgressBarUpdates = 0
         self.footerProgressBar.stop()
-        self.window.update()
+        self.requestWindowUpdate('footerProgressBar')
         
     def progressBarStart(self):
         self.footerProgressBarUpdates = 0
         self.footerProgressBar.start()
-        self.window.update()
     
-    def fetchOrRequestImage(self, url, designation, width = None, height = None):
+    def iconNameCleanup(self, text):
+        text = text.replace('Q%27s_Ornament%3A_', '')
+        # Much of this can be removed if the wiki templates have their lowercase forces removed
+        text = re.sub('_From_', '_from_', text)
+        text = re.sub('_For_', '_for_', text)
+        text = re.sub('_The_', '_the_', text)
+        text = re.sub('_And_', '_and_', text)
+        text = re.sub('/[Ss]if', '/SIF', text)
+        text = re.sub('nos_', 'noS_', text)
+        text = re.sub('rihan', 'Rihan', text)
+        text = re.sub('_(\w{1,2})_', self.lowerCaseRegexpText, text)
+        text = re.sub('\-([a-z])', self.titleCaseRegexpText, text)
+        return text
+    
+    def fetchImage(self, url):
+        if url in self.cache['imagesFail'] and self.cache['imagesFail'][url]:
+            # Previously failed this session, do not attempt download again until next run
+            return None
+            
+        img_request = requests.get(url)
+        self.logWriteTransaction('fetchImage', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code)])
+        
+        if not img_request.ok:
+            # No response on icon grab, mark for no downlaad attempt till restart
+            self.cache['imagesFail'][url] = 1
+            return None
+
+        return img_request.content
+ 
+    
+    def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None):
         """Request image from web or fetch from local cache"""
         cache_base = self.cacheImagesFolderLocation()
         if not os.path.exists(cache_base):
             return
             
+        image_data = None
         designation.replace("/", "_") # Missed by the path sanitizer
         designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
-
-        extension = "jpeg" if "jpeg" in url or "jpg" in url else "png"
-        filename = os.path.join(*filter(None, [cache_base, designation]))+'.'+extension
+        factionCode = factionCodeDefault = '_(Federation)'
+        if faction is not None:
+            if 'faction' in self.build['captain'] and self.build['captain']['faction'] != '':
+                factionCode = '_('+self.build['captain']['faction']+')'
+                
+        extension = "jpeg" if url.endswith("jpeg") or url.endswith("jpg") else "png"
+        fileextension = '.'+extension
+        filename = filenameDefault = filenameNoFaction = os.path.join(*filter(None, [cache_base, designation]))+fileextension
+        filenameExisting = ''
+        
+        if faction is not None and '_icon' in url and not '_icon_(' in url:
+            url = re.sub('_icon', '_icon{}'.format(factionCode), url)
+            if factionCode != factionCodeDefault:
+                # Don't alter filename for default faction
+                filename = re.sub(fileextension, '{}{}'.format(factionCode, fileextension), filename)
+                filenameDefault = re.sub(fileextension, '{}{}'.format(factionCodeDefault, fileextension), filename)
+        
         if os.path.exists(filename):
-            image = Image.open(filename)
-            if(width is not None):
-                curwidth, curheight = image.size
-                resizeOptions = self.imageResizeDimensions(curwidth, curheight, width, height)
-                image = image.resize(resizeOptions,Image.ANTIALIAS)
-            return ImageTk.PhotoImage(image)
-        if designation in self.imagesFail and self.imagesFail[designation]:
-            # Previously failed this session, do not attempt download again until next run
-            return self.emptyImage
-        # No existing image, no record of failure -- attempt to download
-        if not os.path.exists(os.path.dirname(filename)):
-            os.makedirs(os.path.dirname(filename))
-        img_request = requests.get(url)
-        img_data = img_request.content
-        self.logWriteTransaction('Image File', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code)])
-        if not img_request.ok:
-            url2 = url.replace('Q%27s_Ornament%3A_', '')
-            if '(Federation)' in url:
-                url2 = re.sub('_\(Federation\)', '', url2)
-            url2.title()
-            # May be reducable if wiki cleanups complete
-            url2 = re.sub('_From_', '_from_', url2)
-            url2 = re.sub('_For_', '_for_', url2)
-            url2 = re.sub('_The_', '_the_', url2)
-            url2 = re.sub('_And_', '_and_', url2)
-            url2 = re.sub('/[Ss]if', '/SIF', url2)
-            url2 = re.sub('nos_', 'noS_', url2)
-            url2 = re.sub('rihan', 'Rihan', url2)
-            url2 = re.sub('_(\w{1,2})_', self.lowerCaseRegexpText, url2)
-            url2 = re.sub('\-([a-z])', self.titleCaseRegexpText, url2)
-            if url2 != url:
-                img_request = requests.get(url2)
-                img_data = img_request.content
-                self.logWriteTransaction('Image File2', 'download', str(img_request.headers.get('Content-Length')), url2, 1, [str(img_request.status_code)])
-        if not img_request.ok:
-            if not '(Federation)' in url:
-                url3 = re.sub('_icon', '_icon_(Federation)', url2)
-            if url3 != url and url3 != url2:
-                img_request = requests.get(url3)
-                img_data = img_request.content
-                self.logWriteTransaction('Image File3', 'download', str(img_request.headers.get('Content-Length')), url3, 1, [str(img_request.status_code)])
-        if not img_request.ok:
-            # No response on icon grab, mark for no downlaad attempt till restart
-            self.imagesFail[designation] = 1
-            return self.emptyImage
-        with open(filename, 'wb') as handler:
-            handler.write(img_data)
-        if os.path.exists(filename):
-            logNote = str(os.path.getsize(filename))+' bytes'
+            self.progressBarUpdate()  
         else:
-            logNote = 'no file'
-        self.logWriteTransaction('Image File', 'stored', '', filename, 1, [logNote])
+            image_data = self.fetchImage(url)
+            
+            if image_data is None:
+                url2 = self.iconNameCleanup(url)
+                image_data = self.fetchImage(url2) if url2 != url else image_data
+
+            if faction is not None and image_data is not None:
+                self.persistent['imagesFactionSucceed'][filename] = 1
+                self.stateSave()
+
+            if image_data is None:
+                if factionCode in url:
+                    url3 = re.sub(factionCode, factionCodeDefault, url)
+                    filenameExisting = filenameNoFaction
+                else:
+                    url3 = re.sub('_icon', '_icon{}'.format(factionCode), url)
+                    filenameExisting = filenameDefault
+                    
+                if not os.path.exists(filenameExisting):
+                    image_data = self.fetchImage(url3) if url3 != url and url3 != url2 else image_data
+                
+                    if image_data is None:
+                        url4 = self.iconNameCleanup(url3)
+                        image_data = self.fetchImage(url4) if url4 != url3 and url4 != url and url4 != url2 else image_data
+                    
+        if os.path.exists(filenameExisting):
+            self.progressBarUpdate(self.updateOnStep / 2)
+            with open(filenameExisting, 'rb') as handler:
+                image_data = handler.read()
+            self.logWriteTransaction('Image File', 'copy', str(os.path.getsize(filenameExisting)), filenameExisting, 3)
+            
+        if image_data is not None:
+            self.progressBarUpdate(self.updateOnStep)
+            with open(filename, 'wb') as handler:
+                handler.write(image_data)
+            self.logWriteTransaction('Image File', 'write', len(str(os.path.getsize(filename))) if os.path.exists(filename) else '----', filename, 1)
+        elif not os.path.exists(filename):
+            self.progressBarUpdate(self.updateOnStep / 4)
+            return self.emptyImage
+  
         image = Image.open(filename)
+        self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4)
         if(width is not None):
-            image = image.resize((width,height),Image.ANTIALIAS)
-        self.progressBarUpdate()
+            curwidth, curheight = image.size
+            resizeOptions = self.imageResizeDimensions(curwidth, curheight, width, height)
+            image = image.resize(resizeOptions,Image.ANTIALIAS)
         return ImageTk.PhotoImage(image)
 
     def deWikify(self, textBlock, leaveHtml=False):
@@ -351,21 +392,42 @@ class SETS():
         name = re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip()
         return name
 
+    def precachePreload(self):
+        self.logWriteBreak('precachePreload')
+        self.precacheBoffAbilities()
+        self.precacheTraits()
+        self.precacheShipTraits()
+        self.precacheDoffs("Space")
+        self.precacheDoffs("Ground")
+
+    def precacheIconCleanup(self):
+        #preliminary gathering for self-cleaning icon folder
+        #equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
+        boffIcons = self.cache['boffTooltips']['space'].keys()
+        boffIcons += self.cache['boffTooltips']['ground'].keys()
+    
     def precacheEquipment(self, keyPhrase):
         """Populate in-memory cache of ship equipment lists for faster loading"""
-        if keyPhrase in self.backend['cacheEquipment']:
-            return self.backend['cacheEquipment'][keyPhrase]
+        if not keyPhrase:
+            return None
+            
+        if keyPhrase in self.cache['equipment']:
+            return self.cache['equipment'][keyPhrase]
+            
         self.progressBarStart()
         phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
+        
         if "Kit Frame" in keyPhrase:
             equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
         else:
             equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
-        self.backend['cacheEquipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
+            
+        self.cache['equipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
+        
         if 'Hangar' in keyPhrase:
-            self.backend['cacheEquipment'][keyPhrase] = {key:self.backend['cacheEquipment'][keyPhrase][key] for key in self.backend['cacheEquipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
+            self.cache['equipment'][keyPhrase] = {key:self.cache['equipment'][keyPhrase][key] for key in self.cache['equipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
 
-        self.logWriteCounter('Equipment', '(json)', len(self.backend['cacheEquipment'][keyPhrase]), [keyPhrase])
+        self.logWriteCounter('Equipment', '(json)', len(self.cache['equipment'][keyPhrase]), [keyPhrase])
         self.progressBarStop()
 
     def searchHtmlTable(self, html, field, phrases):
@@ -401,28 +463,31 @@ class SETS():
 
     def precacheDoffs(self, keyPhrase):
         """Populate in-memory cache of doff lists for faster loading"""
-        if keyPhrase in self.backend['cacheDoffs']:
-            return self.backend['cacheDoffs'][keyPhrase]
+        if keyPhrase in self.cache['doffs']:
+            return self.cache['doffs'][keyPhrase]
             
         phrases = [keyPhrase]
         doffMatches = self.searchJsonTable(self.doffs, "shipdutytype", phrases)
 
-        self.backend['cacheDoffs'][keyPhrase] = {self.deWikify(doffMatches[item]['name'])+str(doffMatches[item]['powertype']): doffMatches[item] for item in range(len(doffMatches))}
-        self.backend['cacheDoffNames'][keyPhrase] = {self.deWikify(doffMatches[item]['name']): '' for item in range(len(doffMatches))}
-        self.logWriteCounter('DOFF', '(json)', len(self.backend['cacheDoffs'][keyPhrase]), [keyPhrase])
-        self.logWriteCounter('DOFF names', '(json)', len(self.backend['cacheDoffNames'][keyPhrase]), [keyPhrase])
+        self.cache['doffs'][keyPhrase] = {self.deWikify(doffMatches[item]['name'])+str(doffMatches[item]['powertype']): doffMatches[item] for item in range(len(doffMatches))}
+        self.cache['doffNames'][keyPhrase] = {self.deWikify(doffMatches[item]['name']): '' for item in range(len(doffMatches))}
+        self.logWriteCounter('DOFF', '(json)', len(self.cache['doffs'][keyPhrase]), [keyPhrase])
+        self.logWriteCounter('DOFF names', '(json)', len(self.cache['doffNames'][keyPhrase]), [keyPhrase])
 
     def precacheShipTraitSingle(self, name, desc):
         name = self.deWikify(name)
-        if not name in self.backend['cacheShipTraits']:
-            self.backend['cacheShipTraits'][name] = self.deWikify(desc)
-            self.shipTraitsWithImages.append((name,self.imageFromInfoboxName(name)))
+        if not 'cache' in self.cache['shipTraitsWithImages']:
+            self.cache['shipTraitsWithImages']['cache'] = []
+        
+        if not name in self.cache['shipTraits']:
+            self.cache['shipTraits'][name] = self.deWikify(desc)
+            self.cache['shipTraitsWithImages']['cache'].append((name,self.imageFromInfoboxName(name)))
             self.logWriteSimple('precacheShipTrait', '', 5, tags=[name])
 
     def precacheShipTraits(self):
         """Populate in-memory cache of ship traits for faster loading"""
-        if 'cacheShipTraits' in self.backend and len(self.backend['cacheShipTraits']) > 0:
-            return self.backend['cacheShipTraits']
+        if 'cacheShipTraits' in self.backend and len(self.cache['shipTraits']) > 0:
+            return self.cache['shipTraits']
         self.progressBarStart()
             
         for item in list(self.shiptraits):
@@ -439,7 +504,7 @@ class SETS():
             if 'type' in item and item['type'].lower() == 'starship':
                 self.precacheShipTraitSingle(item['name'], item['description'])
 
-        self.logWriteCounter('Ship Trait', '(json)', len(self.backend['cacheShipTraits']), ['space'])
+        self.logWriteCounter('Ship Trait', '(json)', len(self.cache['shipTraits']), ['space'])
         self.progressBarStop()
  
     def precacheTraitSingle(self, name, desc, environment, type):
@@ -449,24 +514,24 @@ class SETS():
         if type != 'reputation' and type != 'activereputation' and type != 'Starship':
             type = "personal"
             
-        if not environment in self.backend['cacheTraits']:
-            self.backend['cacheTraits'][environment] = dict()
+        if not environment in self.cache['traits']:
+            self.cache['traits'][environment] = dict()
 
-        if not type in self.traitsWithImages:
-            self.traitsWithImages[type] = dict()
-        if not environment in self.traitsWithImages[type]:
-            self.traitsWithImages[type][environment] = []
+        if not type in self.cache['traitsWithImages']:
+            self.cache['traitsWithImages'][type] = dict()
+        if not environment in self.cache['traitsWithImages'][type]:
+            self.cache['traitsWithImages'][type][environment] = []
             
-        if not name in self.backend['cacheTraits'][environment]:
-            self.backend['cacheTraits'][environment][name] = self.deWikify(desc)
+        if not name in self.cache['traits'][environment]:
+            self.cache['traits'][environment][name] = self.deWikify(desc)
 
-            self.traitsWithImages[type][environment].append((name,self.imageFromInfoboxName(name)))
+            self.cache['traitsWithImages'][type][environment].append((name,self.imageFromInfoboxName(name)))
             self.logWriteSimple('precacheTrait', '', 4, tags=[type, environment, name, '|'+str(len(desc))+'|'])
         
     def precacheTraits(self):
         """Populate in-memory cache of traits for faster loading"""
-        if 'cacheTraits' in self.backend and 'space' in self.backend['cacheTraits']:
-            return self.backend['cacheTraits']
+        if 'cacheTraits' in self.backend and 'space' in self.cache['traits']:
+            return self.cache['traits']
         self.progressBarStart()
         
         for item in list(self.traits):
@@ -475,32 +540,38 @@ class SETS():
             if 'type' in item and 'name' in item and 'description' in item and 'environment' in item:
                 self.precacheTraitSingle(item['name'], item['description'], item['environment'], item['type'])
         
-        for type in self.traitsWithImages:
-            for environment in self.traitsWithImages[type]:
-                self.logWriteCounter('Trait', '(json)', len(self.traitsWithImages[type][environment]), [environment, type])
+        for type in self.cache['traitsWithImages']:
+            for environment in self.cache['traitsWithImages'][type]:
+                self.logWriteCounter('Trait', '(json)', len(self.cache['traitsWithImages'][type][environment]), [environment, type])
         self.progressBarStop()
 
     def setListIndex(self, list, index, value):
         print(value)
         list[index] = value
 
-    def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon'):
+    def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon', faction=None):
         """Translate infobox name into wiki icon link"""
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
+
         try:
-            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name,width,height)
+            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
         except:
             return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",width,height)
 
-    def copyBackendToBuild(self, key):
+    def copyBackendToBuild(self, key, key2=None):
         """Helper function to copy backend value to build dict"""
-        self.build[key] = self.backend[key].get()
+        if key in self.backend and key2 == None:
+            self.build[key] = self.backend[key].get()
+        elif key2 in self.backend[key]:
+            self.build[key][key2] = self.backend[key][key2].get()
 
-    def copyBuildToBackend(self, key):
+    def copyBuildToBackend(self, key, key2=None):
         """Helper function to copy build value to backend dict"""
-        if key in self.build:
+        if key in self.build and key2 == None:
             self.backend[key].set(self.build[key])
+        elif key2 in self.build[key]:
+            self.backend[key][key2].set(self.build[key][key2])
 
     def resetPersistent(self):
         # self.persistent will be auto-saved and auto-loaded for persistent state data
@@ -509,6 +580,7 @@ class SETS():
             'rarityDefault': '',
             'forceJsonLoad': 0,
             'uiScale': 1,
+            'imagesFactionSucceed': dict(),
         }
     
     def resetSettings(self):
@@ -544,6 +616,7 @@ class SETS():
             'engines': [None],
             'warpCore': [None],
             'shield': [None],
+            'captain': {'faction' : '', 'faction_code' : ''},
             'career': 'Tactical',
             'species': 'Alien',
             'ship': '',
@@ -572,23 +645,55 @@ class SETS():
             'skills': [[], [], [], [], []]
         }
 
+    def resetCache(self, text = None):
+        if text is not None:
+            if text in self.cache:
+                self.cache[text] = dict()
+                if text+"WithImages" in self.cache:
+                    self.cache[text+"WithImages"] = dict()
+        else:
+            self.cache = {
+                'equipment': dict(),
+                'doffs': dict(),
+                'doffNames': dict(),
+                'shipTraits': dict(),
+                'shipTraitsWithImages': dict(),
+                'traits': dict(),
+                'traitsWithImages': dict(),
+                'boffAbilities': dict(),
+                'boffAbilitiesWithImages': dict(),
+                'boffTooltips': dict(),
+                'imagesFail': dict(), 
+                'windowUpdate': dict(),
+            }
+    
     def clearBackend(self):
         self.logWriteBreak('clearBackend')
         self.backend = {
-                        "career": StringVar(self.window), "species": StringVar(self.window), "playerName": StringVar(self.window),
-                        "specPrimary": StringVar(self.window), "specSecondary": StringVar(self.window),
-                        "ship": StringVar(self.window), "tier": StringVar(self.window), "playerShipName": StringVar(self.window),
-                        "playerShipDesc": StringVar(self.window), "playerDesc": StringVar(self.window),
-                        'cacheEquipment': dict(), "shipHtml": None, 'modifiers': None, "shipHtmlFull": None, "eliteCaptain": IntVar(self.window), 'cacheDoffs': dict(), 'cacheDoffNames': dict(), 'cacheShipTraits': dict(), 'cacheTraits': dict(), 'cacheBoffAbilities': dict(), 'cacheBoffTooltips': dict(),
-                        "skillLabels": dict(), 'skillNames': [[], [], [], [], []], 'skillCount': 0
+                'captain': {'faction' : StringVar(self.window)},
+                "career": StringVar(self.window),
+                "species": StringVar(self.window),
+                "playerName": StringVar(self.window),
+                "specPrimary": StringVar(self.window),
+                "specSecondary": StringVar(self.window),
+                "ship": StringVar(self.window),
+                "tier": StringVar(self.window),
+                "playerShipName": StringVar(self.window),
+                "playerShipDesc": StringVar(self.window),
+                "playerDesc": StringVar(self.window),
+                "shipHtml": None,
+                'modifiers': None,
+                "shipHtmlFull": None,
+                "eliteCaptain": IntVar(self.window),
+                "skillLabels": dict(),
+                'skillNames': [[], [], [], [], []],
+                'skillCount': 0
             }
-        self.traitsWithImages = dict()
-        self.boffAbilitiesWithImages = dict()
-        self.shipTraitsWithImages = []
         self.persistentToBackend()
 
     def hookBackend(self):
         self.backend['playerShipName'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerShipName'))
+        self.backend['captain']['faction'].trace_add('write', lambda v,i,m:self.captainFactionCallback())
         self.backend['career'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('career'))
         self.backend['species'].trace_add('write', lambda v,i,m:self.speciesUpdateCallback())
         self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
@@ -598,6 +703,14 @@ class SETS():
         self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.setupGroundBuildFrames())
         self.backend['ship'].trace_add('write', self.shipMenuCallback)
 
+    def captainFactionCallback(self):
+        self.copyBackendToBuild('captain', 'faction')
+        self.backend['captain']['faction_code'] = self.factionNames[self.build['captain']['faction']]
+        self.resetCache('boffAbilities')
+        self.precacheBoffAbilities()
+        self.setupSpaceBuildFrames()
+        self.setupGroundBuildFrames()
+    
     def boffTitleToSpec(self, title):
         return  "Tactical" if "Tactical" in title else "Science" if 'Science' in title else "Engineering" if "Engineering" in title else "Universal"
 
@@ -690,7 +803,7 @@ class SETS():
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
-        items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.backend['cacheEquipment'][args[0]].keys())]
+        items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame], e.x, e.y)
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
@@ -700,8 +813,8 @@ class SETS():
                 self.build[key][i] = item
                 self.backend['i_'+key][i] = [self.emptyImage, self.emptyImage]
             else:
-                if 'rarity' in self.backend['cacheEquipment'][args[0]][item['item']]:
-                    rarityDefaultItem = self.backend['cacheEquipment'][args[0]][item['item']]['rarity']
+                if 'rarity' in self.cache['equipment'][args[0]][item['item']]:
+                    rarityDefaultItem = self.cache['equipment'][args[0]][item['item']]['rarity']
                 else:
                     rarityDefaultItem = self.rarities[0]
                 if 'rarity' not in item or item['item']=='' or item['rarity']=='':
@@ -722,7 +835,7 @@ class SETS():
         items_list=[]
         if args[2]:
             self.precacheShipTraits()
-            items_list = self.shipTraitsWithImages
+            items_list = self.cache['shipTraitsWithImages']['cache']
         else:
             self.precacheTraits()
             traitType = "personal"
@@ -730,7 +843,7 @@ class SETS():
                 traitType = "activereputation"
             elif args[0]:
                 traitType = "reputation"
-            items_list = self.traitsWithImages[traitType][args[3]]
+            items_list = self.cache['traitsWithImages'][traitType][args[3]]
             self.logWriteSimple('traitLabelCallback', '', 4, tags=[traitType, args[3], str(len(items_list))])
 
         itemVar = self.getEmptyItem()
@@ -756,35 +869,35 @@ class SETS():
         # category is Tactical, Science, Engineer, Specs
         # type is the boff ability rank
         name = self.deWikify(name)
-        if not environment in self.backend['cacheBoffTooltips']:
-            self.backend['cacheBoffTooltips'][environment] = dict()
-        if not name in self.backend['cacheBoffTooltips'][environment]:
+        if not environment in self.cache['boffTooltips']:
+            self.cache['boffTooltips'][environment] = dict()
+        if not name in self.cache['boffTooltips'][environment]:
             # Longer descriptions stored only once
-            self.backend['cacheBoffTooltips'][environment][name] = self.deWikify(desc)
+            self.cache['boffTooltips'][environment][name] = self.deWikify(desc)
         
-        if not environment in self.backend['cacheBoffAbilities']:
-            self.backend['cacheBoffAbilities'][environment] = dict()
-        if not type in self.backend['cacheBoffAbilities'][environment]:
-            self.backend['cacheBoffAbilities'][environment][type] = dict()
+        if not environment in self.cache['boffAbilities']:
+            self.cache['boffAbilities'][environment] = dict()
+        if not type in self.cache['boffAbilities'][environment]:
+            self.cache['boffAbilities'][environment][type] = dict()
 
-        if not environment in self.boffAbilitiesWithImages:
-            self.boffAbilitiesWithImages[environment] = dict()
-        if not category in self.boffAbilitiesWithImages[environment]:
-            self.boffAbilitiesWithImages[environment][category] = dict()
-        if not type in self.boffAbilitiesWithImages[environment][category]:
-            self.boffAbilitiesWithImages[environment][category][type] = []
+        if not environment in self.cache['boffAbilitiesWithImages']:
+            self.cache['boffAbilitiesWithImages'][environment] = dict()
+        if not category in self.cache['boffAbilitiesWithImages'][environment]:
+            self.cache['boffAbilitiesWithImages'][environment][category] = dict()
+        if not type in self.cache['boffAbilitiesWithImages'][environment][category]:
+            self.cache['boffAbilitiesWithImages'][environment][category][type] = []
             
-        if not name in self.backend['cacheBoffAbilities'][environment][type]:
-            self.backend['cacheBoffAbilities'][environment][type][name] = 'yes'
+        if not name in self.cache['boffAbilities'][environment][type]:
+            self.cache['boffAbilities'][environment][type][name] = 'yes'
 
-            self.boffAbilitiesWithImages[environment][category][type].append((name,self.imageFromInfoboxName(name,self.itemBoxX,self.itemBoxY,'_icon_(Federation)')))
+            self.cache['boffAbilitiesWithImages'][environment][category][type].append((name,self.imageFromInfoboxName(name, faction = 1)))
 
             self.logWriteSimple('precacheBoffAbilities', 'Single', 4, tags=[environment, category, str(type), name, '|'+str(len(desc))+'|'])
         
     def precacheBoffAbilities(self):
         """Common callback for boff labels"""
-        if 'cacheBoffAbilities' in self.backend and 'space' in self.backend['cacheBoffAbilities']:
-            return self.backend['cacheBoffAbilities']
+        if 'cacheBoffAbilities' in self.backend and 'space' in self.cache['boffAbilities']:
+            return self.cache['boffAbilities']
         self.progressBarStart()
         
         boffAbilities = self.fetchOrRequestHtml(self.r_boffAbilities_source, "boff_abilities") 
@@ -820,8 +933,8 @@ class SETS():
                                 self.precacheBoffAbilitiesSingle(cname, environment, rank1+i+1, category, desc)
                             self.logWriteSimple('precacheBoffAbilities', '', 4, tags=[environment, category, str(rank1+i)])
 
-        self.logWriteCounter('Boff ability', '(json)', len(self.backend['cacheBoffTooltips']['space']), ['space'])
-        self.logWriteCounter('Boff ability', '(json)', len(self.backend['cacheBoffTooltips']['ground']), ['ground'])
+        self.logWriteCounter('Boff ability', '(json)', len(self.cache['boffTooltips']['space']), ['space'])
+        self.logWriteCounter('Boff ability', '(json)', len(self.cache['boffTooltips']['ground']), ['ground'])
         self.progressBarStop()
         
     def boffLabelCallback(self, e, canvas, img, i, key, args, idx, environment='space'):
@@ -839,11 +952,11 @@ class SETS():
 
         if args[0] == 'universal':
             for specType in universalTypes:
-                items_list = items_list + self.boffAbilitiesWithImages[environment][specType][rank]
+                items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][specType][rank]
         else:
-            items_list = self.boffAbilitiesWithImages[environment][args[0]][rank]
+            items_list = self.cache['boffAbilitiesWithImages'][environment][args[0]][rank]
         if args[1] is not None and args[1] != '':
-            items_list = items_list + self.boffAbilitiesWithImages[environment][args[1]][rank]
+            items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][args[1]][rank]
 
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
@@ -916,9 +1029,10 @@ class SETS():
             logNote = ' (fields:['+str(len(self.buildImport))+'=>'+str(len(self.build))+']='
             self.build.update(self.buildImport)
             logNote = logNote+str(len(self.build))+' merged)'
+            
+            self.requestWindowUpdateHold(50)
             self.clearBackend()
             self.buildToBackendSeries()
-            
             self.hookBackend()
             self.setupShipInfoFrame()
             if 'tier' in self.build and len(self.build['tier']) > 1:
@@ -926,10 +1040,7 @@ class SETS():
             self.shipButton.configure(text=self.build['ship'])
             self.setupSpaceBuildFrames()
             self.setupGroundBuildFrames()
-            
-            self.precacheShipTraits()
-            self.precacheTraits()
-            self.precacheBoffAbilities()
+            self.requestWindowUpdateHold(0)
             
             if force:
                 logNote=' (FORCE LOAD)'+logNote
@@ -1131,6 +1242,7 @@ class SETS():
         self.copyBuildToBackend('playerShipName')
         self.copyBuildToBackend('playerShipDesc')
         self.copyBuildToBackend('playerDesc')
+        self.copyBuildToBackend('captain', 'faction')
         self.copyBuildToBackend('career')
         self.copyBuildToBackend('species')
         self.copyBuildToBackend('specPrimary')
@@ -1166,14 +1278,14 @@ class SETS():
         return textBlock    
     
     def doffSpecCallback(self, om, v0, v1, row, isSpace=True):
-        if self.backend['cacheDoffs'] is None:
+        if self.cache['doffs'] is None:
             return
         self.build['doffs']['space' if isSpace else 'ground'][row] = {"name": "", "spec": v0.get(), "effect": ''}
         menu = om['menu']
         menu.delete(0, END)
         
         
-        doff_desclist_space = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Space' if isSpace else 'Ground'][item]['description'], isSpace) for item in list(self.backend['cacheDoffs']['Space' if isSpace else 'Ground'].keys()) if v0.get() in item])
+        doff_desclist_space = sorted([self.doffStripPrefix(self.cache['doffs']['Space' if isSpace else 'Ground'][item]['description'], isSpace) for item in list(self.cache['doffs']['Space' if isSpace else 'Ground'].keys()) if v0.get() in item])
         
         for desc in doff_desclist_space:
             menu.add_command(label=desc, command=lambda v1=v1,value=desc: v1.set(value))
@@ -1182,7 +1294,7 @@ class SETS():
         self.setupDoffFrame(self.groundDoffFrame)
 
     def doffEffectCallback(self, om, v0, v1, row, isSpace=True):
-        if self.backend['cacheDoffs'] is None:
+        if self.cache['doffs'] is None:
             return
         self.build['doffs']['space' if isSpace else 'ground'][row]['effect'] = v1.get()
         self.setupDoffFrame(self.shipDoffFrame)
@@ -1377,7 +1489,7 @@ class SETS():
                 rowFrame = Frame(colFrame)
                 rowFrame.pack()
                 for cell in row:
-                    image0=self.imageFromInfoboxName(cell['image'], width=25, height=35, suffix='')
+                    image0=self.imageFromInfoboxName(cell['image'], suffix='')
                     self.backend['i_'+cell['name']] = image0
                     frame = Frame(rowFrame, bg='yellow')
                     frame.pack(side='left', anchor='center', pady=1, padx=1)
@@ -1517,7 +1629,7 @@ class SETS():
                     
             for j in range(rank):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], faction = 1)
                     self.backend['i_'+boffSan][j] = image
                 else:
                     image=self.emptyImage
@@ -1574,7 +1686,7 @@ class SETS():
 
             for j in range(4):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], self.itemBoxX,self.itemBoxY,'_icon_(Federation)')
+                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], faction = 1)
                     self.backend['i_'+boffSan][j] = image
                 else:
                     image=self.emptyImage
@@ -1669,18 +1781,18 @@ class SETS():
         if 'tooltip' in item and item['tooltip']:
             text.insert(END, html['tooltip'])
             
-        if name in self.backend['cacheShipTraits']:
-            text.insert(END, self.backend['cacheShipTraits'][name])
+        if name in self.cache['shipTraits']:
+            text.insert(END, self.cache['shipTraits'][name])
 
-        if environment in self.backend['cacheTraits'] and name in self.backend['cacheTraits'][environment]:
-            text.insert(END, self.backend['cacheTraits'][environment][name])
+        if environment in self.cache['traits'] and name in self.cache['traits'][environment]:
+            text.insert(END, self.cache['traits'][environment][name])
             
-        if environment in self.backend['cacheBoffTooltips'] and name in self.backend['cacheBoffTooltips'][environment]:
-                text.insert(END, self.backend['cacheBoffTooltips'][environment][name])
+        if environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]:
+                text.insert(END, self.cache['boffTooltips'][environment][name])
                 
-        if key in self.backend['cacheEquipment'] and name in self.backend['cacheEquipment'][key]:
+        if key in self.cache['equipment'] and name in self.cache['equipment'][key]:
             # Show the infobox data from json
-            html = self.backend['cacheEquipment'][key][name]
+            html = self.cache['equipment'][key][name]
 
             if 'rarity' in item and item['rarity']:
                 text.insert(END, item['rarity']+' ')
@@ -1707,7 +1819,7 @@ class SETS():
         groundDoffFrame.pack(side='right', fill=BOTH, expand=True)
         
         self.precacheDoffs("Space")
-        doff_list_space = sorted([self.deWikify(item) for item in list(self.backend['cacheDoffNames']['Space'].keys())])
+        doff_list_space = sorted([self.deWikify(item) for item in list(self.cache['doffNames']['Space'].keys())])
         
         spaceDoffLabel = Label(spaceDoffFrame, text="SPACE DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff')
         spaceDoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
@@ -1731,7 +1843,7 @@ class SETS():
                 v1.set(self.build['doffs']['space'][i]['spec'])
                 v2.set(self.build['doffs']['space'][i]['effect'])
                 m['menu'].delete(0, END)
-                doff_desclist_space = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Space'][item]['description'], True) for item in list(self.backend['cacheDoffs']['Space'].keys()) if v1.get() in self.backend['cacheDoffs']['Space'][item]['name']])
+                doff_desclist_space = sorted([self.doffStripPrefix(self.cache['doffs']['Space'][item]['description'], True) for item in list(self.cache['doffs']['Space'].keys()) if v1.get() in self.cache['doffs']['Space'][item]['name']])
         
                 for desc in doff_desclist_space:
                     m['menu'].add_command(label=desc, command=lambda v2=v2,value=desc: v2.set(value))
@@ -1742,7 +1854,7 @@ class SETS():
         spaceDoffFrame.grid_columnconfigure(2, weight=1, uniform="spaceDoffList")
         
         self.precacheDoffs("Ground")
-        doff_list_ground = sorted([self.deWikify(item) for item in list(self.backend['cacheDoffNames']['Ground'].keys())])
+        doff_list_ground = sorted([self.deWikify(item) for item in list(self.cache['doffNames']['Ground'].keys())])
         
         Label(groundDoffFrame, text="GROUND DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff').grid(row=0, column=0,columnspan=3, sticky='nsew')
         for i in range(6):
@@ -1764,7 +1876,7 @@ class SETS():
                 v2.set(self.build['doffs']['ground'][i]['effect'])
                 m['menu'].delete(0, END)
                 
-                doff_desclist_ground = sorted([self.doffStripPrefix(self.backend['cacheDoffs']['Ground'][item]['description'], False) for item in list(self.backend['cacheDoffs']['Ground'].keys()) if v1.get() in self.backend['cacheDoffs']['Ground'][item]['name']])
+                doff_desclist_ground = sorted([self.doffStripPrefix(self.cache['doffs']['Ground'][item]['description'], False) for item in list(self.cache['doffs']['Ground'].keys()) if v1.get() in self.cache['doffs']['Ground'][item]['name']])
         
                 for desc in doff_desclist_ground:
                     m['menu'].add_command(label=desc, command=lambda v2=v2,value=desc: v2.set(value))
@@ -1790,11 +1902,10 @@ class SETS():
         self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
         footerLabelL = Label(self.footerFrame, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=('Helvetica', 8, 'bold'))
         footerLabelL.grid(row=0, column=0, sticky='w')
-        self.footerProgressBarUpdates = 0
         self.footerProgressBar = Progressbar(self.footerFrame, orient='horizontal', mode='indeterminate', length=200)
-        self.footerProgressBar.grid(row=0, column=1, sticky='e')
+        self.footerProgressBar.grid(row=0, column=2, sticky='e')
         footerLabelR = Label(self.footerFrame, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=('Helvetica', 8, 'bold'))
-        footerLabelR.grid(row=0, column=2, sticky='e')
+        footerLabelR.grid(row=0, column=1, sticky='e')
         self.footerFrame.grid_columnconfigure(0, weight=5, uniform="footerlabel")
         self.footerFrame.grid_columnconfigure(1, weight=2, uniform="footerlabel")
         self.footerFrame.grid_columnconfigure(2, weight=1, uniform="footerlabel")
@@ -1815,9 +1926,6 @@ class SETS():
             self.logmini.set(self.logmini.get())
         else:
             self.logmini.set(rightnote)
-
-        # Force update for assured data display
-        #self.window.update()
         
 
     def setupMenuFrame(self):
@@ -1885,29 +1993,41 @@ class SETS():
             v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
             Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
 
-        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='e')
+        row = 0
+        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
-        m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
+        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
         m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
 
-        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 1, sticky='e')
+        row += 1
+        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
-        m.grid(column=1, row=1, sticky='swe', pady=2, padx=2)
+        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 2, sticky='e')
+ 
+        row += 1       
+        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
-        m.grid(column=1, row=2, sticky='swe', pady=2, padx=2)
+        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 3, sticky='e')
+ 
+        row += 1
+        myFactionNames = self.factionNames.keys()
+        Label(charInfoFrame, text="Faction", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend['captain']['faction'], *myFactionNames)
+        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+
+        row += 1 
+        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
-        m.grid(column=1, row=3, sticky='swe', pady=2, padx=2)
+        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        
-        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 4, sticky='e')
+
+        row += 1
+        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
-        m.grid(column=1, row=4, sticky='swe', pady=2, padx=2)
+        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
         charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
@@ -1930,7 +2050,7 @@ class SETS():
         
         shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipLabelFrame.pack(fill=BOTH, expand=True)
-        self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#b3b3b3')
+        self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
         self.shipLabel.pack(fill=BOTH, expand=True)
         shipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
         shipNameFrame.pack(fill=BOTH, expand=True, padx=2)
@@ -1989,8 +2109,8 @@ class SETS():
         self.clearFrame(self.skillInfoFrame)
 
     def setupSpaceBuildFrame(self):
-        self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
-        self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
+        self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
         self.shipImg = self.emptyImage
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
         self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
@@ -2006,8 +2126,8 @@ class SETS():
         self.shipMiddleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
         self.shipDoffFrame = Frame(self.shipMiddleFrameLower, bg='#3a3a3a')
         self.shipDoffFrame.pack(fill=BOTH, expand=True, padx=20)
-        self.shipInfoboxFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3')
-        self.shipInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', pady=5)
+        self.shipInfoboxFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        self.shipInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
         for i in range(5):
             self.spaceBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainColSpace")
         self.shipMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secColSpace")
@@ -2016,8 +2136,8 @@ class SETS():
         self.shipMiddleFrameLower.grid_columnconfigure(0, weight=1, uniform="secColSpace2")
 
     def setupGroundBuildFrame(self):
-        self.groundInfoFrame = Frame(self.groundBuildFrame, bg='#b3b3b3')
-        self.groundInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
+        self.groundInfoFrame = Frame(self.groundBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        self.groundInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
         self.groundImg = self.emptyImage
         self.groundMiddleFrame = Frame(self.groundBuildFrame, bg='#3a3a3a')
         self.groundMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
@@ -2033,8 +2153,8 @@ class SETS():
         self.groundMiddleFrameLower.grid(row=1,column=0,columnspan=5,sticky='nsew')
         self.groundDoffFrame = Frame(self.groundMiddleFrameLower, bg='#3a3a3a')
         self.groundDoffFrame.pack(fill=BOTH, expand=True, padx=20)
-        self.groundInfoboxFrame = Frame(self.groundBuildFrame, bg='#b3b3b3')
-        self.groundInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', pady=5)
+        self.groundInfoboxFrame = Frame(self.groundBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        self.groundInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
         for i in range(5):
             self.groundBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainColGround")
         self.groundMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secColGround")
@@ -2044,12 +2164,12 @@ class SETS():
         self.setupGroundBuildFrames()
 
     def setupSkillTreeFrame(self):
-        self.skillInfoFrame = Frame(self.skillTreeFrame, bg='#b3b3b3')
-        self.skillInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, pady=5)
+        self.skillInfoFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        self.skillInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
         self.skillMiddleFrame = Frame(self.skillTreeFrame, bg='#3a3a3a')
         self.skillMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
-        self.skillInfoboxFrame = Frame(self.skillTreeFrame, bg='#b3b3b3')
-        self.skillInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', pady=5)
+        self.skillInfoboxFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        self.skillInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
         for i in range(5):
             self.skillTreeFrame.grid_columnconfigure(i, weight=1, uniform="mainColSkill")
         self.setupSkillBuildFrames()
@@ -2077,8 +2197,8 @@ class SETS():
         self.settingsTopFrame.grid_columnconfigure(2, weight=1, uniform="settingsColSpace")
         self.settingsTopFrame.grid_columnconfigure(3, weight=2, uniform="settingsColSpace")
         
-        self.logDisplay = Text(self.settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=120)
-        self.logDisplay.grid(row=0, column=0, columnspan=2, sticky="n")
+        self.logDisplay = Text(self.settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110)
+        self.logDisplay.grid(row=0, column=0, columnspan=2, sticky="n", padx=2, pady=2)
         self.logDisplay.insert('0.0', self.logFull.get())
         
         label = Label(self.settingsTopMiddleLeftFrame, text='Default settings (auto-saved)', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
@@ -2116,7 +2236,7 @@ class SETS():
         forceLoadOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         forceLoadOption.grid(row=4, column=1, sticky='nw', pady=2, padx=2)
         
-        label = Label(self.settingsTopRightFrame, text='UI Scale', fg='#3a3a3a', bg='#b3b3b3')
+        label = Label(self.settingsTopRightFrame, text='UI Scale (restart app for changes)', fg='#3a3a3a', bg='#b3b3b3')
         label.grid(row=5, column=0, sticky="e", pady=2, padx=2)        
         self.uiScaleSetting = DoubleVar()
         if 'uiScale' in self.persistent:
@@ -2134,18 +2254,15 @@ class SETS():
             scale = self.persistent['uiScale']
             
          # pixel correction
-        dpi = round(self.window.winfo_fpixels('1i'), 0)
-        factor = ( dpi / 96 ) * scale
+        factor = ( self.dpi / 96 ) * scale
         self.window.call('tk', 'scaling', factor)
-        
-        self.logminiWrite('{:>4}dpi (x{:>0.2}) '.format(dpi, (factor * scale)))
-        
-        self.window.update()
+        self.logminiWrite('{:>4}dpi (x{:>0.2}) '.format(self.dpi, (factor * scale)))
+
         
     def uiScaleChange(self, event=None):
         self.persistent['uiScale'] = self.uiScaleSetting.get()
         self.stateSave()
-        self.setupUIScaling()
+        #self.setupUIScaling()
 
     def logDisplayUpdate(self):
         self.logDisplay.delete('0.0', END)
@@ -2201,9 +2318,29 @@ class SETS():
             sys.stderr.write('\n')
             self.logFullWrite(notice)
 
+    def requestWindowUpdateHold(self, count=50):
+        self.cache['windowUpdate']['hold'] = count
+        
+    def requestWindowUpdate(self, type=''):
+        if not 'updates' in self.cache['windowUpdate']:
+            self.cache['windowUpdate'] = { 'updates': 0, 'lastupdate': 0, 'hold': 0 }
+        self.cache['windowUpdate']['updates'] += 1
+        self.cache['windowUpdate']['lastupdate'] = round(time.time() * 1000)
+        
+        if self.cache['windowUpdate']['updates'] % 1000 == 0:
+            self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.cache['windowUpdate']['updates'])), 1)
+            
+        if self.cache['windowUpdate']['hold']:
+            self.cache['windowUpdate']['hold'] -= 1
+        elif(type == "footerProgressBar"):
+            self.footerProgressBar.update()
+        else:
+            self.window.update()
+        
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family='Helvetica', size='10')
+        self.footerProgressBarUpdates = 0
 
         self.containerFrame = Frame(self.window, bg='#c59129')
         self.containerFrame.pack(fill=BOTH, expand=True)
@@ -2218,27 +2355,31 @@ class SETS():
         self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.setupFooterFrame()
+        self.dpi = round(self.window.winfo_fpixels('1i'), 0)
         self.setupUIScaling()
 
         self.setupLogoFrame()
         self.setupMenuFrame()
-        self.window.update()
-        self.setupSpaceBuildFrame()
+        self.requestWindowUpdate()
+        self.precachePreload()
+        
+
         self.setupGroundBuildFrame()
+        self.setupGroundInfoFrame()
         self.setupSkillTreeFrame()
+        self.setupSkillInfoFrame()
         self.setupLibraryFrame()
         self.setupSettingsFrame()
+        self.setupSpaceBuildFrame()
         self.setupShipInfoFrame()
-        self.setupGroundInfoFrame()
-        self.setupSkillInfoFrame()
-        
+
         if self.args.file is not None and os.path.exists(self.args.file):
             self.importByFilename(self.args.file)
         else:
             self.templateFileLoad()
             
         self.setupSpaceBuildFrames()
-        self.window.update()
+
 
     def argParserSetup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
@@ -2516,17 +2657,19 @@ class SETS():
         self.configFileLoad()
         
         # self.window.geometry('1280x650')
+        self.updateOnStep = 50
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
         self.session = HTMLSession()
         self.clearBuild()
         self.clearBackend()
+        self.resetCache()
         self.hookBackend()
         self.images = dict()
-        self.imagesFail = dict()
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.marks = ["", "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "∞", "Mk XIII", "Mk XIV", "Mk XV"]
-        self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",self.itemBoxX,self.itemBoxY)
+        self.factionNames = { 'Dominion' : 'dom', 'Federation' : 'fed', 'Klingon' : 'kdf', 'Romulan' : 'rom', 'TOS Federation' : 'tos' }
+        self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon")
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
