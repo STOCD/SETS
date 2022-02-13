@@ -1766,7 +1766,30 @@ class SETS():
         
     def setupInfoboxFrame(self, item, key, environment='space'):
         """Set up infobox frame with given item"""
-        
+        def compensate(text):
+            text = text.replace('&lt;br&gt;\n', '\n')
+            text = text.replace('&lt;br/&gt;\n', '\n')
+            text = text.replace('&lt;br /&gt;\n', '\n')
+            text = text.replace('&lt;br&gt;', '\n')
+            text = text.replace('&lt;br/&gt;', '\n')
+            text = text.replace('&lt;br /&gt;', '\n')
+            text = text.replace('&lt;', '<')
+            text = text.replace('&gt;', '>')
+            text = text.replace('&amp;', '&')
+            if "[[" and "|" in text:
+                start = text.find("[[")
+                end = text.find("|")
+                text = text[:start] + text[end+1:]
+            text = text.replace('[[', '')
+            text = text.replace(']]', '')
+            text = text.replace("'&quot;`UNIQ--nowiki-00000000-QINU`&quot;'",'*')
+            text = text.replace("'&quot;`UNIQ--nowiki-00000001-QINU`&quot;'",'*')
+            text = text.replace("'&quot;`UNIQ--nowiki-00000002-QINU`&quot;'",'*')
+            text = text.replace("'&quot;`UNIQ--nowiki-00000003-QINU`&quot;'",'*')
+            text = text.replace("'&quot;`UNIQ--nowiki-00000004-QINU`&quot;'",'*')
+            text = text.replace("&nsbp;", "")
+            return text
+
         if environment == 'skill':
             frame = self.skillInfoboxFrame
         elif environment == 'ground':
@@ -1785,23 +1808,45 @@ class SETS():
         if key is not None and key != '':
             self.precacheEquipment(key)
         
+        raritycolor = '#ffffff'
+        if 'rarity' in item:
+            if item["rarity"] == "Epic":
+                raritycolor = '#ffd700'
+            elif item["rarity"] == "Ultra rare":
+                raritycolor = "#6d65bc"
+            elif item["rarity"] == "Very rare":
+                raritycolor = "#a245b9"
+            elif item["rarity"] == "Rare":
+                raritycolor = "#0099ff"
+            elif item["rarity"] == "Uncommon":
+                raritycolor = "#00cc00"
+
+
         self.clearFrame(frame)
         Label(frame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
-        text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#3a3a3a', fg='#ffffff')
+        text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
+        text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
+        text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
+        text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
+        text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
+        text.tag_configure('who', foreground='#ff6347', font=('Helvetica', 10, 'bold' ))
+        text.tag_configure('distance', foreground='#000000', font=('Helvetica', 4))
         text.pack(fill="both", expand=True, padx=2, pady=2)
         if name is None or name == '':
             return
         self.logWriteSimple('item', '', 4, tags=[name])
         
-        text.insert(END, name)
+        
+
+        text.insert(END, name, 'name')
         if 'mark' in item and item['mark']:
-            text.insert(END, ' '+item['mark'])
+            text.insert(END, ' '+item['mark'], 'name')
         if 'modifiers' in item and item['modifiers']:
-            text.insert(END, ' '+('' if item['modifiers'][0] is None else ''.join(item['modifiers'])))
+            text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
         text.insert(END, '\n')
         
-        if 'tooltip' in item and item['tooltip']:
-            text.insert(END, html['tooltip'])
+        #if 'tooltip' in item and item['tooltip']:
+        #    text.insert(END, html['tooltip'])
             
         if name in self.cache['shipTraits']:
             text.insert(END, self.cache['shipTraits'][name])
@@ -1817,17 +1862,27 @@ class SETS():
             html = self.cache['equipment'][key][name]
 
             if 'rarity' in item and item['rarity']:
-                text.insert(END, item['rarity']+' ')
+                text.insert(END, item['rarity']+' ', 'rarity')
             if 'type' in html and html['type']:
-                text.insert(END, html['type'])
+                text.insert(END, html['type'], 'rarity')
             if ('rarity' in item and item['rarity']) or ('type' in html and html['type']):
                 text.insert(END, '\n')
+            text.insert(END, '\n\n', 'distance')
 
             for i in range(1,9):
-                for header in ["head", "subhead", "text"]:
-                    t = html[header+str(i)].replace(":",'').strip()
-                    if t.strip() != '':
-                        text.insert(END, t+'\n')
+                t = html["head"+str(i)].replace("\n:",'\n      ').replace("*","  • ").strip()
+                if t.strip() != '':
+                    text.insert(END, compensate(t)+'\n','head')
+                    text.insert(END, '\n', 'distance')
+                t = html["subhead"+str(i)].replace("\n:",'\n      ').replace("*","  • ").strip()
+                if t.strip() != '':
+                    text.insert(END, compensate(t)+'\n', 'subhead')
+                    text.insert(END, '\n', 'distance')
+                t = html["text"+str(i)].replace("\n:",'\n      ').replace("*","  • ").strip()
+                if t.strip() != '':
+                    text.insert(END, compensate(t)+'\n')
+                    text.insert(END, '\n', 'distance')
+
                         
         text.configure(state=DISABLED)
 
