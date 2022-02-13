@@ -547,7 +547,6 @@ class SETS():
         self.progressBarStop()
 
     def setListIndex(self, list, index, value):
-        print(value)
         list[index] = value
 
     def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon', faction=None):
@@ -1079,7 +1078,7 @@ class SETS():
         if not outFilename: return
         image.save(outFilename, "PNG")
         self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
-        self.logWriteTransaction('Export Image', 'saved', str(os.path.getsize(outFilename)), outFilename, 0, [tr(image.size)])
+        self.logWriteTransaction('Export Image', 'saved', str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size)])
 
     def skillLabelCallback(self, skill, rank):
         rankReqs = [0, 5, 15, 25, 35]
@@ -1404,8 +1403,10 @@ class SETS():
         mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
         topbarFrame.pack()
-        if rarity.get():
-            self.setupModFrame(modFrame, rarity=rarity.get(), itemVar=itemVar)
+        if 'rarity' in itemVar and itemVar['rarity']:
+            self.setupModFrame(modFrame, rarity=itemVar['rarity'], itemVar=itemVar)
+        elif 'rarityDefault' in self.persistent and self.persistent['rarityDefault']:
+            self.setupModFrame(modFrame, rarity=self.persistent['rarityDefault'], itemVar=itemVar)
 
     def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
         """Set up n-element line of ship equipment"""
@@ -1695,10 +1696,14 @@ class SETS():
         self.clearFrame(frame)
         n = self.rarities.index(rarity)
         itemVar['rarity'] = rarity
-        itemVar['modifiers'] = ['']*n
+        if not len(itemVar['modifiers']):
+            itemVar['modifiers'] = ['']*n
+            
         mods = sorted(self.backend['modifiers'])
         for i in range(n):
             v = StringVar()
+            if i < len(itemVar['modifiers']):
+                v.set(itemVar['modifiers'][i])
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
             OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='n')
 
@@ -2212,7 +2217,7 @@ class SETS():
         if len(tags):
             for tag in tags:
                 logNote = logNote + '{:>1}'.format('['+tag.strip()+']')
-        self.logWrite('{:>12} {:>12}: {:>4} {:>1} {:>6}'.format(title, body, str(count), path, logNote), level)
+        self.logWrite('{:>12} {:>12}: {:>6} {:>1} {:>6}'.format(title, body, str(count), path, logNote), level)
         
     def logWriteCounter(self, title, body, count, tags=[]):
         logNote = ''
