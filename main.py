@@ -1269,13 +1269,19 @@ class SETS():
         self.clearFrame(self.shipEquipmentFrame)
         self.clearFrame(self.shipBoffFrame)
         self.setupGroundBuildFrames()
-        self.shipImg = self.emptyImageFaction['federation'] if 'federation' in self.emptyImageFaction else self.emptyImage
-        self.groundImg = self.emptyImageFaction['federation'] if 'federation' in self.emptyImageFaction else self.emptyImage
+        self.shipImg = self.getEmptyFactionImage()
+        self.groundImg = self.getEmptyFactionImage()
         self.shipImageLabel.configure(image=self.shipImg)
         self.charImageLabel.configure(image=self.groundImg)
         self.clearing = 0
         self.setupSpaceBuildFrames()
 
+    def getEmptyFactionImage(self):
+        faction = self.persistent['factionDefault'].lower() if 'factionDefault' in self.persistent else 'federation'
+        
+        if faction in self.emptyImageFaction: return self.emptyImageFaction[faction]
+        else: return self.emptyImage
+    
     def boffUniversalCallback(self, v, idx, key):
         self.build['boffseats'][key][idx] = v.get()
 
@@ -1792,7 +1798,7 @@ class SETS():
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
             m = OptionMenu(DoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0,font=f, wraplength=280)
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0,font=f, wraplength=300)
             if self.build['doffs'][environment][i] is not None:
                 v0.set(self.build['doffs'][environment][i]['name'])
                 v1.set(self.build['doffs'][environment][i]['spec'])
@@ -1806,13 +1812,13 @@ class SETS():
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0, v1, row, isSpace))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0, v1, row, isSpace))
 
-        DoffFrame.grid_columnconfigure(1, weight=1, uniform=environment+'DoffList')
-        DoffFrame.grid_columnconfigure(2, weight=2, uniform=environment+'DoffList')
+        #DoffFrame.grid_columnconfigure(1, weight=1, uniform=environment+'DoffList')
+        #DoffFrame.grid_columnconfigure(2, weight=2, uniform=environment+'DoffList')
     
     def setupDoffFrame(self, frame):
         self.clearFrame(frame)
         mainFrame = Frame(frame, bg='#3a3a3a')
-        mainFrame.pack(side='left', fill=BOTH, expand=True, pady=(5,0))
+        mainFrame.pack(side='bottom', fill=Y, expand=True, pady=(5,0))
         
         self.setupDoffListFrame(mainFrame, 'space')
         DoffBreak = Frame(mainFrame, bg='#3a3a3a', width=10)
@@ -1891,10 +1897,7 @@ class SETS():
             ship_image = self.backend['shipHtml']["image"]
             self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
         except:
-            if 'federation' in self.emptyImageFaction:
-                self.shipImg = self.emptyImageFaction['federation']
-            else:
-                self.shipImg = self.emptyImage
+            self.shipImg = self.getEmptyFactionImage()
         self.shipImageLabel.configure(image=self.shipImg)
 
     def setupButtonExportImportFrame(self, frame):
@@ -1977,15 +1980,7 @@ class SETS():
     def setupInfoFrame(self, environment='space'):
         parentFrame = self.groundInfoFrame if environment == 'ground' else self.shipInfoFrame
 
-        faction = self.persistent['factionDefault'].lower() if 'factionDefault' in self.persistent else 'federation'
-        
         self.clearFrame(parentFrame)
-        NameFrame = Frame(parentFrame, bg='#b3b3b3')
-        NameFrame.pack(fill=BOTH, expand=False)
-        Label(NameFrame, text="{} NAME:".format('PLAYER' if environment == 'ground' else 'SHIP'), fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
-        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('' if environment == 'ground' else 'Ship')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
-        NameFrame.grid_columnconfigure(1, weight=1)
-        
         self.setupButtonExportImportFrame(parentFrame)
         
         LabelFrame = Frame(parentFrame, bg='#b3b3b3')
@@ -1994,7 +1989,13 @@ class SETS():
         if environment == 'ground': self.charImageLabel = imageLabel
         else: self.shipImageLabel = imageLabel
         imageLabel.pack(fill=BOTH, expand=True)
-        imageLabel.configure(image=self.emptyImageFaction[faction] if faction in self.emptyImageFaction else self.emptyImage)
+        imageLabel.configure(image=self.getEmptyFactionImage())
+        
+        NameFrame = Frame(parentFrame, bg='#b3b3b3')
+        NameFrame.pack(fill=BOTH, expand=False)
+        Label(NameFrame, text="{} Name:".format('Player' if environment == 'ground' else 'Ship'), fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
+        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('' if environment == 'ground' else 'Ship')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
+        NameFrame.grid_columnconfigure(1, weight=1)
         
         if environment != 'ground':
             shipSelectFrame = Frame(parentFrame, bg='#b3b3b3')
@@ -2030,7 +2031,7 @@ class SETS():
     def setupSpaceBuildFrame(self):
         self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
-        self.shipImg = self.emptyImage
+        self.shipImg = self.getEmptyFactionImage()
         self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
         self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         self.shipMiddleFrameUpper = Frame(self.shipMiddleFrame, bg='#3a3a3a')
@@ -2057,7 +2058,7 @@ class SETS():
     def setupGroundBuildFrame(self):
         self.groundInfoFrame = Frame(self.groundBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         self.groundInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
-        self.groundImg = self.emptyImage
+        self.groundImg = self.getEmptyFactionImage()
         self.groundMiddleFrame = Frame(self.groundBuildFrame, bg='#3a3a3a')
         self.groundMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         self.groundMiddleFrameUpper = Frame(self.groundMiddleFrame, bg='#3a3a3a')
