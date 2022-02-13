@@ -21,18 +21,24 @@ if sys.platform.startswith('win'):
 class SETS():
     """Main App Class"""
 
+    #base URI
+    wikihttp = 'https://sto.fandom.com/wiki/'
+    wikiImages = wikihttp+'Special:Filepath/'
+    
     #query for ship cargo table on the wiki
-    ship_query = "https://sto.fandom.com/wiki/Special:CargoExport?tables=Ships&&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Ctier%3Dtier%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Cexperimental%3Dexperimental%2Csecdeflector%3Dsecdeflector%2Changars%3Dhangars%2Cabilities__full%3Dabilities%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&&order+by=`_pageName`%2C`name`%2C`image`%2C`fc`%2C`faction__full`&limit=2500&format=json"
+    ship_query = wikihttp+"Special:CargoExport?tables=Ships&&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Ctier%3Dtier%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Cexperimental%3Dexperimental%2Csecdeflector%3Dsecdeflector%2Changars%3Dhangars%2Cabilities__full%3Dabilities%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&&order+by=`_pageName`%2C`name`%2C`image`%2C`fc`%2C`faction__full`&limit=2500&format=json"
     #query for ship equipment cargo table on the wiki
-    item_query = 'https://sto.fandom.com/wiki/Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&&order+by=%60_pageName%60%2C%60name%60%2C%60rarity%60%2C%60type%60%2C%60boundto%60&limit=5000&format=json'
+    item_query = wikihttp+'Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&&order+by=%60_pageName%60%2C%60name%60%2C%60rarity%60%2C%60type%60%2C%60boundto%60&limit=5000&format=json'
     #query for personal and reputation trait cargo table on the wiki
-    trait_query = "https://sto.fandom.com/wiki/Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&&order+by=%60_pageName%60%2C%60name%60%2C%60chartype%60%2C%60environment%60%2C%60type%60&limit=2500&format=json"
-    ship_trait_query ="https://sto.fandom.com/wiki/Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json"
+    trait_query = wikihttp+"Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&&order+by=%60_pageName%60%2C%60name%60%2C%60chartype%60%2C%60environment%60%2C%60type%60&limit=2500&format=json"
+    ship_trait_query = wikihttp+"Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json"
     #query for DOFF types and specializations
-    doff_query =    "https://sto.fandom.com/wiki/Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&order+by=Specializations.name&limit=1000&offset=0&format=json"
+    doff_query = wikihttp+"Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&order+by=Specializations.name&limit=1000&offset=0&format=json"
 
     itemBoxX = 25
     itemBoxY = 35
+    imageBoxX = 260
+    imageBoxY = 146
 
     def encodeBuildInImage(self, src, message, dest):
         img = Image.open(src, 'r')
@@ -453,7 +459,7 @@ class SETS():
         if 'modifiers' in self.backend and self.backend['modifiers'] is not None and len(self.backend['modifiers']) > 0:
             return
 
-        modPage = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Modifier", "modifiers").find("div.mw-parser-output", first=True).html
+        modPage = self.fetchOrRequestHtml(self.wikihttp+"Modifier", "modifiers").find("div.mw-parser-output", first=True).html
         mods = re.findall(r"(<td.*?>(<b>)*\[.*?\](</b>)*</td>)", modPage)
         self.backend['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
         self.logWriteCounter('Modifiers', '(json)', len(self.backend['modifiers'])) 
@@ -555,9 +561,9 @@ class SETS():
         height = self.itemBoxY if height is None else height
 
         try:
-            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
+            return self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
         except:
-            return self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon",width,height)
+            return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
 
     def copyBackendToBuild(self, key, key2=None):
         """Helper function to copy backend value to build dict"""
@@ -1899,7 +1905,7 @@ class SETS():
         self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
         try:
             ship_image = self.backend['shipHtml']["image"]
-            self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
+            self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image.replace(' ','_'), self.build['ship'], self.shipImageWidth, self.shipImageHeight)
         except:
             self.shipImg = self.getEmptyFactionImage()
         self.shipImageLabel.configure(image=self.shipImg)
@@ -1981,6 +1987,19 @@ class SETS():
     def updatePlayerDesc(self, event):
         self.build['playerDesc'] = self.charDescText.get("1.0", END)
         
+    def updateImageLabelSize(self, frame=None):
+        if frame is not None:
+            frame.update()
+            width = frame.winfo_width()
+            height = frame.winfo_height()
+            if width > self.imageBoxX and height > self.imageBoxY:
+                self.shipImageWidth  = width
+                self.shipImageHeight = height
+        else:
+            self.shipImageWidth  = self.imageBoxX
+            self.shipImageHeight = self.imageBoxY
+        self.logWriteSimple('ImageLabel', 'size', 2, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight)] )
+        
     def setupInfoFrame(self, environment='space'):
         parentFrame = self.groundInfoFrame if environment == 'ground' else self.shipInfoFrame
 
@@ -1994,6 +2013,8 @@ class SETS():
         else: self.shipImageLabel = imageLabel
         imageLabel.pack(fill=BOTH, expand=True)
         imageLabel.configure(image=self.getEmptyFactionImage())
+        
+        self.updateImageLabelSize(imageLabel)
         
         NameFrame = Frame(parentFrame, bg='#b3b3b3')
         NameFrame.pack(fill=BOTH, expand=False)
@@ -2224,7 +2245,7 @@ class SETS():
         if len(tags):
             for tag in tags:
                 logNote = logNote + '{:>9}'.format('['+tag.strip()+']')
-        self.logWrite('{:>12} {:>6} item count: {:>4} {:>6}'.format(title, body, str(count), logNote), 2)
+        self.logWrite('{:>12} {:>6} item count: {:>6} {:>6}'.format(title, body, str(count), logNote), 2)
         
     def logWrite(self, notice, level=0):
         # Level 0: Default, always added to short log note frame on UI
@@ -2601,8 +2622,6 @@ class SETS():
         self.requestWindowUpdateHold(0)
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
-        self.wikihttp = 'https://sto.fandom.com/wiki/'
-        self.wikiImages = self.wikihttp+'Special:Filepath/'
         self.session = HTMLSession()
         self.clearBuild()
         self.clearBackend()
@@ -2613,20 +2632,21 @@ class SETS():
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.marks = ["", "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "∞", "Mk XIII", "Mk XIV", "Mk XV"]
         self.factionNames = [ 'Dominion', 'Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
-        self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon")
-        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", 260, 146)
-        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", 260, 146)
-        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", 260, 146)
-        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", 260, 146)
-        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", 260, 146)
+        self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
+        self.updateImageLabelSize()
+        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", self.shipImageWidth, self.shipImageHeight)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
-        self.r_boffAbilities_source = "https://sto.fandom.com/wiki/Bridge_officer_and_kit_abilities"
-        r_species = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Player_races", "species")
+        self.r_boffAbilities_source = self.wikihttp+"Bridge_officer_and_kit_abilities"
+        r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
-        r_specs = self.fetchOrRequestHtml("https://sto.fandom.com/wiki/Category:Captain_specializations", "specs")
+        r_specs = self.fetchOrRequestHtml(self.wikihttp+"Category:Captain_specializations", "specs")
         self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
         self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
         self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
