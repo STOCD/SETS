@@ -203,7 +203,7 @@ class SETS():
             self.footerProgressBarUpdates += weight
             self.footerProgressBar.step()
             # modulo to reduce time / flashing UI spent on updating
-            if self.footerProgressBarUpdates % self.updateOnStep == 0 or self.footerProgressBarUpdates % self.updateOnStep + weight > self.updateOnStep:
+            if self.footerProgressBarUpdates % self.updateOnStep == 0 or self.footerProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
                 self.requestWindowUpdate('footerProgressBar')
         except:
             # Can have no footer yet in some early states
@@ -303,18 +303,18 @@ class SETS():
                         image_data = self.fetchImage(url4) if url4 != url3 and url4 != url and url4 != url2 else image_data
                     
         if os.path.exists(filenameExisting):
-            self.progressBarUpdate(self.updateOnStep / 2)
+            self.progressBarUpdate(self.updateOnHeavyStep / 2)
             with open(filenameExisting, 'rb') as handler:
                 image_data = handler.read()
             self.logWriteTransaction('Image File', 'copy', str(os.path.getsize(filenameExisting)), filenameExisting, 3)
             
         if image_data is not None:
-            self.progressBarUpdate(self.updateOnStep)
+            self.progressBarUpdate(self.updateOnHeavyStep)
             with open(filename, 'wb') as handler:
                 handler.write(image_data)
             self.logWriteTransaction('Image File', 'write', len(str(os.path.getsize(filename))) if os.path.exists(filename) else '----', filename, 1)
         elif not os.path.exists(filename):
-            self.progressBarUpdate(self.updateOnStep / 4)
+            self.progressBarUpdate(self.updateOnHeavyStep / 4)
             return self.emptyImage
   
         image = Image.open(filename)
@@ -1012,9 +1012,12 @@ class SETS():
         """Callback for import button"""
         inFilename = filedialog.askopenfilename(filetypes=[("JSON file", '*.json'),("PNG image","*.png"),("All Files","*.*")])
         self.importByFilename(inFilename)
+        self.setupSpaceBuildFrames()
 
     def importByFilename(self, inFilename, force=False):
         if not inFilename: return
+        
+        self.requestWindowUpdateHold(30) # Still requires tuning
         if inFilename.endswith('.png'):
             # image = Image.open(inFilename)
             # self.build = json.loads(image.text['build'])
@@ -1032,7 +1035,6 @@ class SETS():
             self.build.update(self.buildImport)
             logNote = logNote+str(len(self.build))+' merged)'
             
-            self.requestWindowUpdateHold(50)
             self.clearBackend()
             self.buildToBackendSeries()
             self.hookBackend()
@@ -1041,9 +1043,7 @@ class SETS():
                 self.setupTierFrame(int(self.build['tier'][1]))
                 self.setupShipImageFrame()
             self.shipButton.configure(text=self.build['ship'])
-            self.setupSpaceBuildFrames()
             self.setupGroundBuildFrames()
-            self.requestWindowUpdateHold(0)
             
             if force:
                 logNote=' (FORCE LOAD)'+logNote
@@ -1755,82 +1755,59 @@ class SETS():
                         
         text.configure(state=DISABLED)
 
-    def setupDoffFrame(self, frame):
-        self.clearFrame(frame)
-        mainFrame = Frame(frame, bg='#3a3a3a')
-        mainFrame.pack(side='left', fill=BOTH, expand=True)
-        spaceDoffFrame = Frame(mainFrame, bg='#3a3a3a', padx=10)
-        spaceDoffFrame.pack(side='left', fill=BOTH, expand=True)
-        groundDoffFrame = Frame(mainFrame, bg='#3a3a3a', padx=10)
-        groundDoffFrame.pack(side='right', fill=BOTH, expand=True)
+    def setupDoffListFrame(self, frame, environment='space'):
+        doffEnvironment = environment.title()
+        isSpace = False if environment == 'ground' else True
+        self.precacheDoffs(doffEnvironment)
+        doff_list = sorted([self.deWikify(item) for item in list(self.cache['doffNames'][doffEnvironment].keys())])
+
+        DoffFrame = Frame(frame, bg='#b3b3b3', padx=10, pady=2)
+        DoffFrame.pack(side='right' if environment == 'ground' else 'left', fill=BOTH, expand=True)
         
-        self.precacheDoffs("Space")
-        doff_list_space = sorted([self.deWikify(item) for item in list(self.cache['doffNames']['Space'].keys())])
-        
-        spaceDoffLabel = Label(spaceDoffFrame, text="SPACE DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff')
-        spaceDoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
+        DoffLabel = Label(DoffFrame, text=environment.upper()+" DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff')
+        DoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
         
         f = font.Font(family='Helvetica', size=9)
         for i in range(6):
             v0 = StringVar(self.window)
             v1 = StringVar(self.window)
             v2 = StringVar(self.window)
-            m = OptionMenu(spaceDoffFrame, v0, 'NAME', *['A','B','C'])
-            m.grid(row=i+1, column=0, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
-            m = OptionMenu(spaceDoffFrame, v1, 'SPECIALIZATION', *doff_list_space)
+            #m = OptionMenu(DoffFrame, v0, 'NAME', *['A','B','C'])
+            #m.grid(row=i+1, column=0, sticky='nsew')
+            #m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
+            m = OptionMenu(DoffFrame, v1, 'SPECIALIZATION', *doff_list)
             m.grid(row=i+1, column=1, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
-            m = OptionMenu(spaceDoffFrame, v2, 'EFFECT\nOTHER', '')
+            m = OptionMenu(DoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20,font=f, wraplength=280)
-            if self.build['doffs']['space'][i] is not None:
-                v0.set(self.build['doffs']['space'][i]['name'])
-                v1.set(self.build['doffs']['space'][i]['spec'])
-                v2.set(self.build['doffs']['space'][i]['effect'])
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0,font=f, wraplength=280)
+            if self.build['doffs'][environment][i] is not None:
+                v0.set(self.build['doffs'][environment][i]['name'])
+                v1.set(self.build['doffs'][environment][i]['spec'])
+                v2.set(self.build['doffs'][environment][i]['effect'])
                 m['menu'].delete(0, END)
-                doff_desclist_space = sorted([self.doffStripPrefix(self.cache['doffs']['Space'][item]['description'], True) for item in list(self.cache['doffs']['Space'].keys()) if v1.get() in self.cache['doffs']['Space'][item]['name']])
+                doff_desclist = sorted([self.doffStripPrefix(self.cache['doffs'][doffEnvironment][item]['description'], isSpace) for item in list(self.cache['doffs'][doffEnvironment].keys()) if v1.get() in self.cache['doffs'][doffEnvironment][item]['name']])
         
-                for desc in doff_desclist_space:
+                for desc in doff_desclist:
                     m['menu'].add_command(label=desc, command=lambda v2=v2,value=desc: v2.set(value))
                         
-            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1, row, True))
-            v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, True))
+            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0, v1, row, isSpace))
+            v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0, v1, row, isSpace))
 
-        spaceDoffFrame.grid_columnconfigure(2, weight=1, uniform="spaceDoffList")
+        DoffFrame.grid_columnconfigure(1, weight=1, uniform=environment+'DoffList')
+        DoffFrame.grid_columnconfigure(2, weight=2, uniform=environment+'DoffList')
+    
+    def setupDoffFrame(self, frame):
+        self.clearFrame(frame)
+        mainFrame = Frame(frame, bg='#3a3a3a')
+        mainFrame.pack(side='left', fill=BOTH, expand=True)
         
-        self.precacheDoffs("Ground")
-        doff_list_ground = sorted([self.deWikify(item) for item in list(self.cache['doffNames']['Ground'].keys())])
-        
-        Label(groundDoffFrame, text="GROUND DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff').grid(row=0, column=0,columnspan=3, sticky='nsew')
-        for i in range(6):
-            v0 = StringVar(self.window)
-            v1 = StringVar(self.window)
-            v2 = StringVar(self.window)
-            m = OptionMenu(groundDoffFrame, v0, 'NAME', *['A','B','C'])
-            m.grid(row=i+1, column=0, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
-            m = OptionMenu(groundDoffFrame, v1, 'SPECIALIZATION', *doff_list_ground)
-            m.grid(row=i+1, column=1, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
-            m = OptionMenu(groundDoffFrame, v2, 'EFFECT\nOTHER', '')
-            m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=20, font=f, wraplength=280)
-            if self.build['doffs']['ground'][i] is not None:
-                v0.set(self.build['doffs']['ground'][i]['name'])
-                v1.set(self.build['doffs']['ground'][i]['spec'])
-                v2.set(self.build['doffs']['ground'][i]['effect'])
-                m['menu'].delete(0, END)
-                
-                doff_desclist_ground = sorted([self.doffStripPrefix(self.cache['doffs']['Ground'][item]['description'], False) for item in list(self.cache['doffs']['Ground'].keys()) if v1.get() in self.cache['doffs']['Ground'][item]['name']])
-        
-                for desc in doff_desclist_ground:
-                    m['menu'].add_command(label=desc, command=lambda v2=v2,value=desc: v2.set(value))
-
-            v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0,v1,row, False))
-            v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0,v1, row, False))
-
-        groundDoffFrame.grid_columnconfigure(2, weight=1, uniform="groundDoffList")
+        self.setupDoffListFrame(mainFrame, 'space')
+        DoffBreak = Frame(mainFrame, bg='#3a3a3a', width=10)
+        DoffBreak.pack(side='left', fill=BOTH, expand=True)
+        DoffBreakLabel = Label(DoffBreak, text='', bg='#3a3a3a', fg='#ffffff')
+        DoffBreakLabel.grid(row=0, column=0, sticky='nsew')
+        self.setupDoffListFrame(mainFrame, 'ground')
 
     def setupLogoFrame(self):
         self.clearFrame(self.logoFrame)
@@ -2264,20 +2241,33 @@ class SETS():
             self.logFullWrite(notice)
 
     def requestWindowUpdateHold(self, count=50):
+        self.updateOnHeavyStep = 50
+        
+        if count == 0:
+            self.updateOnStep = 1
+            if 'updates' in self.cache['windowUpdate']:
+                self.logWrite('=== hold ended @ {}'.format(str(self.cache['windowUpdate']['updates'])), 2)
+        else:
+            self.updateOnStep = self.updateOnHeavyStep
         self.cache['windowUpdate']['hold'] = count
         
     def requestWindowUpdate(self, type=''):
         if not 'updates' in self.cache['windowUpdate']:
             self.cache['windowUpdate'] = { 'updates': 0, 'lastupdate': 0, 'hold': 0 }
+            
         self.cache['windowUpdate']['updates'] += 1
-        self.cache['windowUpdate']['lastupdate'] = round(time.time() * 1000)
+        #possible runaway check
+        #self.cache['windowUpdate']['lastupdate'] = round(time.time() * 1000)
         
+        # runaway check
         if self.cache['windowUpdate']['updates'] % 1000 == 0:
             self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.cache['windowUpdate']['updates'])), 1)
             
         if self.cache['windowUpdate']['hold']:
+            # a hold has been called (contains number of updates to wait)
             self.cache['windowUpdate']['hold'] -= 1
         elif(type == "footerProgressBar"):
+            # not certain this is any different from self.window.update()
             self.footerProgressBar.update()
         else:
             self.window.update()
@@ -2318,11 +2308,7 @@ class SETS():
         self.setupSpaceBuildFrame()
         self.setupShipInfoFrame()
 
-        if self.args.file is not None and os.path.exists(self.args.file):
-            self.importByFilename(self.args.file)
-        else:
-            self.templateFileLoad()
-            
+        self.templateFileLoad()
         self.setupSpaceBuildFrames()
 
 
@@ -2547,6 +2533,8 @@ class SETS():
         configFile = self.templateFileLocation()
         if not os.path.exists(configFile):
             configFile = self.settings['template']
+        if self.args.file is not None and os.path.exists(self.args.file):
+            configFile = self.args.file
             
         if os.path.exists(configFile):
             self.logWriteTransaction('Template File', 'found', '', configFile, 1)
@@ -2554,9 +2542,11 @@ class SETS():
                 try:
                     self.importByFilename(configFile)
                 except:
-                    self.logWriteTransaction('Template File', 'load error', '', configFile, 0)
+                    self.logWriteTransaction('Template File', 'load complaint', '', configFile, 0)
+                return True
         else:
             self.logWriteTransaction('Template File', 'not found', '', configFile, 0)
+        return False
     
     def initSettings(self):
         """Initialize session settings state"""
@@ -2602,7 +2592,6 @@ class SETS():
         self.configFileLoad()
         
         # self.window.geometry('1280x650')
-        self.updateOnStep = 50
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
         self.session = HTMLSession()
@@ -2627,6 +2616,7 @@ class SETS():
         self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
         self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
         self.precacheShips()
+        self.requestWindowUpdateHold(0)
         
         self.setupUIFrames()
 
