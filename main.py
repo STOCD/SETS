@@ -355,11 +355,11 @@ class SETS():
             return ImageTk.PhotoImage(image)
         return self.emptyImage
 
-    def getShipFromName(self, requestHtml, shipName):
+    def getShipFromName(self, shipJson, shipName):
         """Find cargo table entry for given ship name"""
-        for e in range(len(requestHtml)):
-            if requestHtml[e]["Page"] == shipName:
-                ship_list = requestHtml[e]
+        for e in range(len(shipJson)):
+            if shipJson[e]["Page"] == shipName:
+                ship_list = shipJson[e]
         return [] if isinstance(ship_list, int) else ship_list
 
     def getTierOptions(self, tier):
@@ -466,7 +466,7 @@ class SETS():
         self.logWriteCounter('Modifiers', '(json)', len(self.cache['modifiers'])) 
         
     def precacheShips(self):
-        self.shipNames = [e["Page"] for e in self.r_ships]
+        self.shipNames = [e["Page"] for e in self.ships]
         self.logWriteCounter('Ships', '(json)', len(self.shipNames), ['space'])
 
     def precacheDoffs(self, keyPhrase):
@@ -581,15 +581,25 @@ class SETS():
             self.backend[key][key2].set(self.build[key][key2])
 
     def resetPersistent(self):
+        # related constants not sourced externally yet
+        self.yesNo = ["Yes", "No"]
+        self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
+        self.rarities = ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra rare', 'Epic']
+        self.factionNames = [ 'Dominion', 'Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
+        self.exportOptions = ['Ask at export', 'Json', 'PNG', 'Reddit']
+        self.boffSortOptions = [ 'release', 'ranks', 'spec', 'spec2']
+        
         # self.persistent will be auto-saved and auto-loaded for persistent state data
         self.persistent = {
-            'markDefault': '',
-            'rarityDefault': '',
             'forceJsonLoad': 0,
             'uiScale': 1,
             'imagesFactionAliases': dict(),
-            'factionDefault': 'Federation',
-            'exportDefault': '',
+            'markDefault': '',
+            'rarityDefault': self.rarities[0],
+            'factionDefault': self.factionNames[1],
+            'exportDefault': self.exportOptions[0],
+            'boffSort': self.boffSortOptions[0],
+            'boffSort2': self.boffSortOptions[0],
         }
     
     def resetSettings(self):
@@ -995,7 +1005,7 @@ class SETS():
         if self.backend['ship'].get() == '':
             return
         self.build['ship'] = self.backend['ship'].get()
-        self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
+        self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
         tier = self.backend['shipHtml']["tier"]
         self.clearFrame(self.shipTierFrame)
         self.setupTierFrame(tier)
@@ -1562,7 +1572,32 @@ class SETS():
 
     def resetShipSettings(self):
         self.build['boffseats']['space_spec'] = [None] * 6
+        
+    def sortedBoffs2(self, ranks, specs, spec2s, environment, i):
+        if environment == 'space' and self.persistent['boffSort2'] == 'ranks':
+            subSort = ranks[i]
+        elif environment == 'space' and self.persistent['boffSort2'] == 'spec':
+            subSort = specs[i]
+        elif environment == 'space' and self.persistent['boffSort2'] == 'spec2':
+            subSort = spec2s[i] if spec2s else 'z' #sort empties downwards
+        else:
+            subSort = i
+    
+        return subSort
 
+    def sortedBoffs(self, ranks, specs, spec2s, environment):
+        rangeRanks = range(len(ranks))
+        if environment == 'space' and self.persistent['boffSort'] == 'ranks':
+            sortedRange = sorted(rangeRanks, reverse=True, key=lambda i,ranks=ranks,specs=specs,spec2s=spec2s: ( ranks[i], self.sortedBoffs2(ranks, specs, spec2s, environment, i)))
+        elif environment == 'space' and self.persistent['boffSort'] == 'spec':
+            sortedRange = sorted(rangeRanks, reverse=True, key=lambda i,ranks=ranks,specs=specs,spec2s=spec2s: ( specs[i], self.sortedBoffs2(ranks, specs, spec2s, environment, i)))
+        elif environment == 'space' and self.persistent['boffSort'] == 'spec2':
+            sortedRange = sorted(rangeRanks, reverse=True, key=lambda i,ranks=ranks,specs=specs,spec2s=spec2s: ( spec2s[i], self.sortedBoffs2(ranks, specs, spec2s, environment, i)))
+        else:
+            sortedRange = rangeRanks
+    
+        return sortedRange
+    
     def setupBoffFrame(self, environment='space', ship=None):
         """Set up UI frame containing boff skills"""
         parentFrame = self.groundBoffFrame if environment == 'ground' else self.shipBoffFrame
@@ -1570,37 +1605,43 @@ class SETS():
         self.clearFrame(parentFrame)
 
         seats = 6 if environment == 'space' else 4
-        if not environment in self.build['boffseats']:
-            self.build['boffseats'][environment] = [None] * seats
-        if not environment+'_spec' in self.build['boffseats']:
-            self.build['boffseats'][environment+'_spec'] = [None] * seats
-            
+        if not environment in self.build['boffseats']: self.build['boffseats'][environment] = [None] * seats
+        if not environment+'_spec' in self.build['boffseats']: self.build['boffseats'][environment+'_spec'] = [None] * seats
+
+        
         if environment == 'ground':
             boffs = ['Tactical'] * seats
+            boffranks = [4] * seats
+            boffsspecs = [''] * seats
+            boffspecs = [''] * seats
         else:
-            if ship is None or not 'boffs' in ship:
-                return
-            else:
-                boffs = ship["boffs"]
+            if ship is None or not 'boffs' in ship: return
+            else: boffs = ship["boffs"]
+            seats = len(boffs)
+            boffranks = [4] * seats
+            boffsspecs = [''] * seats
+            boffspecs = [''] * seats
+            for i in range(len(boffs)):
+                boffranks[i] = 3 if "Lieutenant Commander" in boffs[i] else 2 if "Lieutenant" in boffs[i] else 4 if "Commander" in boffs[i] else 1
+                for s in self.specNames:
+                    if '-'+s in boffs[i]:
+                        boffsspecs[i] = s
+                        break
+                boffspecs[i] = self.boffTitleToSpec(boffs[i].replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip())
         
-        idx = 0
-        for i in range(len(boffs)):
+        for i in self.sortedBoffs(boffranks, boffspecs, boffsspecs, environment):
             boff = boffs[i]
-            boffSan = environment+'Boff_' + str(idx)
+            boffSan = environment+'Boff_' + str(i)
             
             if environment == 'ground':
                 rank = seats
                 spec = boff
                 sspec = None
             else:
-                rank = 3 if "Lieutenant Commander" in boff else 2 if "Lieutenant" in boff else 4 if "Commander" in boff else 1
-                boff = boff.replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip()
-                spec = self.boffTitleToSpec(boff)
-                sspec = None
-                for s in self.specNames:
-                    if '-'+s in boff:
-                        sspec = s
-                        break
+                rank = boffranks[i]
+                spec = boffspecs[i]
+                sspec = boffsspecs[i]
+
                 if spec == 'Tactical' and rank == 3 and 'Science Destroyer' in self.build['ship']: #sci destroyers get tac mode turning lt cmdr to cmdr
                     rank = 4
 
@@ -1611,24 +1652,22 @@ class SETS():
             
             self.backend['i_'+boffSan] = [None] * rank
             
-            if spec != 'Universal' and spec != self.build['boffseats'][environment][idx]:
+            if spec != 'Universal' and spec != self.build['boffseats'][environment][i]:
                 #wipe skills of the changed spec here, keep the secondary spec
                 #self.build['boffs'][boffSan] = [None] * rank
                 pass
 
             if environment == 'space' and spec != 'Universal':
-                self.build['boffseats'][environment][idx] = spec
-                self.build['boffseats'][environment+'_spec'][idx] = sspec
+                self.build['boffseats'][environment][i] = spec
+                self.build['boffseats'][environment+'_spec'][i] = sspec
             else:
-                if self.build['boffseats'][environment][idx] is None:
-                    self.build['boffseats'][environment][idx] = 'Science'
-                if self.build['boffseats'][environment+"_spec"][idx] is None:
-                    self.build['boffseats'][environment+"_spec"][idx] = sspec
+                if self.build['boffseats'][environment][i] is None: self.build['boffseats'][environment][i] = 'Science'
+                if self.build['boffseats'][environment+"_spec"][i] is None: self.build['boffseats'][environment+"_spec"][i] = sspec
             
-            v = StringVar(self.window, value=self.build['boffseats'][environment][idx])
-            v2 = StringVar(self.window, value=self.build['boffseats'][environment+'_spec'][idx])
-            v.trace_add("write", lambda v,i,m,v0=v,idx=idx:self.boffUniversalCallback(v0, idx, environment))
-            v2.trace_add("write", lambda v2,i,m,v0=v2,idx=idx:self.boffUniversalCallback(v0, idx, environment+'_spec'))
+            v = StringVar(self.window, value=self.build['boffseats'][environment][i])
+            v2 = StringVar(self.window, value=self.build['boffseats'][environment+'_spec'][i])
+            v.trace_add("write", lambda v,i,m,v0=v,idx=i:self.boffUniversalCallback(v0, idx, environment))
+            v2.trace_add("write", lambda v2,i,m,v0=v2,idx=i:self.boffUniversalCallback(v0, idx, environment+'_spec'))
             
             if environment == 'space' and spec != 'Universal':
                 specLabel0 = Label(bSubFrame0, text=spec)
@@ -1638,7 +1677,7 @@ class SETS():
             specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10), highlightthickness=0)
             specLabel0.pack(side='left')
             
-            if environment == 'ground' or sspec is not None:
+            if environment == 'ground' or (sspec is not None and sspec != ''):
                 if environment == 'ground':                    
                     specLabel1 = OptionMenu(bSubFrame0, v2, *self.boffGroundSpecNames)
                     specLabel1.configure(pady=2)
@@ -1673,9 +1712,8 @@ class SETS():
                 canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
                 # boffTitleToSpec still accurate for ground?
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=idx,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i], idx, environment))
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=i,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i], idx, environment))
                 canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
-            idx = idx + 1
 
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
@@ -1870,7 +1908,7 @@ class SETS():
         self.footerFrame.grid_columnconfigure(0, weight=5, uniform="footerlabel")
         self.footerFrame.grid_columnconfigure(1, weight=2, uniform="footerlabel")
         self.footerFrame.grid_columnconfigure(2, weight=1, uniform="footerlabel")
-        self.footerFrame.pack(fill='both', side='bottom', expand=True)
+        self.footerFrame.pack(fill='both', side='bottom', expand=False)
         
     def lineTruncate(self, content, length=500):
         return '\n'.join(content.split('\n')[-1*length:])
@@ -1912,7 +1950,7 @@ class SETS():
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
     def setupShipImageFrame(self):
-        self.backend['shipHtml'] = self.getShipFromName(self.r_ships, self.build['ship'])
+        self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
         try:
             ship_image = self.backend['shipHtml']["image"]
             self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image.replace(' ','_'), self.build['ship'], self.shipImageWidth, self.shipImageHeight)
@@ -2172,10 +2210,24 @@ class SETS():
         label = Label(self.settingsTopMiddleLeftFrame, text='Faction', fg='#3a3a3a', bg='#b3b3b3')
         label.grid(row=3, column=0, sticky="e", pady=2, padx=2)
         faction = StringVar(value=self.persistent['factionDefault'] if 'factionDefault' in self.persistent else '')
-        factionDefault = [""]+self.factionNames
+        factionDefault = ['']+self.factionNames
         factionOption = OptionMenu(self.settingsTopMiddleLeftFrame, faction, *factionDefault, command=self.persistentFaction)
         factionOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         factionOption.grid(row=3, column=1, sticky='nw', pady=2, padx=2)
+        
+        label = Label(self.settingsTopMiddleLeftFrame, text='BOFF Sort 1st', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=4, column=0, sticky="e", pady=2, padx=2)
+        boffSort = StringVar(value=self.persistent['boffSort'] if 'boffSort' in self.persistent else '')
+        boffSortDefault = self.boffSortOptions
+        boffSortOption = OptionMenu(self.settingsTopMiddleLeftFrame, boffSort, *boffSortDefault, command=self.persistentBoffSort)
+        boffSortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        boffSortOption.grid(row=4, column=1, sticky='nw', pady=2, padx=2)
+        label = Label(self.settingsTopMiddleLeftFrame, text='BOFF Sort 2nd', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=5, column=0, sticky="e", pady=2, padx=2)
+        boff2Sort = StringVar(value=self.persistent['boffSort2'] if 'boffSort2' in self.persistent else '')
+        boff2SortOption = OptionMenu(self.settingsTopMiddleLeftFrame, boff2Sort, *boffSortDefault, command=self.persistentBoffSort2)
+        boff2SortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        boff2SortOption.grid(row=5, column=1, sticky='nw', pady=2, padx=2)
         
         label = Label(self.settingsTopRightFrame, text='Maintenance', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
         label.grid(row=0, column=0, columnspan=2, sticky="n")
@@ -2191,7 +2243,7 @@ class SETS():
         label = Label(self.settingsTopRightFrame, text='Force out of date JSON loading', fg='#3a3a3a', bg='#b3b3b3')
         label.grid(row=4, column=0, sticky="e", pady=2, padx=2)        
         forceLoad = StringVar(value='Yes' if self.persistent['forceJsonLoad'] else 'No')
-        forceLoadOptions = ["Yes", "No"]
+        forceLoadOptions = self.yesNo
         forceLoadOption = OptionMenu(self.settingsTopRightFrame, forceLoad, *forceLoadOptions, command=self.persistentForceLoad)
         forceLoadOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         forceLoadOption.grid(row=4, column=1, sticky='nw', pady=2, padx=2)
@@ -2210,7 +2262,7 @@ class SETS():
         label = Label(self.settingsTopRightFrame, text='Export default', fg='#3a3a3a', bg='#b3b3b3')
         label.grid(row=6, column=0, sticky="e", pady=2, padx=2)
         exportVar = StringVar(value=self.persistent['exportDefault'] if 'exportDefault' in self.persistent else '')
-        exportDefault = [""]+self.exportOptions
+        exportDefault = ['']+self.exportOptions
         exportOption = OptionMenu(self.settingsTopRightFrame, exportVar, *exportDefault, command=self.persistentExport)
         exportOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         exportOption.grid(row=6, column=1, sticky='nw', pady=2, padx=2)
@@ -2556,6 +2608,16 @@ class SETS():
         # Nothing yet
         return
     
+    def persistentBoffSort2(self, choice):
+        self.persistent['boffSort2'] = choice
+        self.stateSave()
+        self.setupBoffFrame('space', self.backend['shipHtml'])
+        
+    def persistentBoffSort(self, choice):
+        self.persistent['boffSort'] = choice
+        self.stateSave()
+        self.setupBoffFrame('space', self.backend['shipHtml'])
+        
     def persistentExport(self, choice):
         self.persistent['exportDefault'] = choice
         self.stateSave()
@@ -2640,6 +2702,30 @@ class SETS():
         except AttributeError:
             pass
     
+    def setupEmptyImages(self):
+        self.emptyImageFaction = dict()
+        self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
+        self.updateImageLabelSize()
+        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", self.shipImageWidth, self.shipImageHeight)
+        
+    def precacheDownloads(self):
+        self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
+        self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
+        self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
+        self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
+        self.r_boffAbilities_source = self.wikihttp+"Bridge_officer_and_kit_abilities"
+        r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
+        self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
+        r_specs = self.fetchOrRequestHtml(self.wikihttp+"Category:Captain_specializations", "specs")
+        self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
+        self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
+        self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
+        self.precacheShips()
+    
     def __init__(self) -> None:
         """Main setup function"""
 
@@ -2663,30 +2749,8 @@ class SETS():
         self.resetCache()
         self.hookBackend()
         self.images = dict()
-        self.emptyImageFaction = dict()
-        self.exportOptions = ["Json", "PNG", "Reddit"]
-        self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
-        self.marks = ["", "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "∞", "Mk XIII", "Mk XIV", "Mk XV"]
-        self.factionNames = [ 'Dominion', 'Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
-        self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
-        self.updateImageLabelSize()
-        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
-        self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
-        self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
-        self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
-        self.r_boffAbilities_source = self.wikihttp+"Bridge_officer_and_kit_abilities"
-        r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
-        self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
-        r_specs = self.fetchOrRequestHtml(self.wikihttp+"Category:Captain_specializations", "specs")
-        self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
-        self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
-        self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
-        self.precacheShips()
+        self.setupEmptyImages()
+        self.precacheDownloads()
         
         self.setupUIFrames()
 
