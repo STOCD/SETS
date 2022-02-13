@@ -274,6 +274,8 @@ class SETS():
                 filename = re.sub(fileextension, '{}{}'.format(factionCode, fileextension), filename)
                 filenameDefault = re.sub(fileextension, '{}{}'.format(factionCodeDefault, fileextension), filename)
         
+        if filename in self.persistent['imagesFactionAliases']:
+            filename = self.persistent['imagesFactionAliases'][filename]
         if os.path.exists(filename):
             self.progressBarUpdate()  
         else:
@@ -282,10 +284,6 @@ class SETS():
             if image_data is None:
                 url2 = self.iconNameCleanup(url)
                 image_data = self.fetchImage(url2) if url2 != url else image_data
-
-            if faction is not None and image_data is not None:
-                self.persistent['imagesFactionSucceed'][filename] = 1
-                self.stateSave()
 
             if image_data is None:
                 if factionCode in url:
@@ -304,9 +302,10 @@ class SETS():
                     
         if os.path.exists(filenameExisting):
             self.progressBarUpdate(self.updateOnHeavyStep / 2)
-            with open(filenameExisting, 'rb') as handler:
-                image_data = handler.read()
-            self.logWriteTransaction('Image File', 'copy', str(os.path.getsize(filenameExisting)), filenameExisting, 3)
+            self.persistent['imagesFactionAliases'][filename] = filenameExisting
+            self.logWriteTransaction('Image File', 'alias', '----', filename, 3, [filenameExisting])
+            self.stateSave(quiet=True)
+            filename = filenameExisting
             
         if image_data is not None:
             self.progressBarUpdate(self.updateOnHeavyStep)
@@ -582,8 +581,8 @@ class SETS():
             'rarityDefault': '',
             'forceJsonLoad': 0,
             'uiScale': 1,
-            'imagesFactionSucceed': dict(),
-            'faction': '',
+            'imagesFactionAliases': dict(),
+            'faction': 'Federation',
         }
     
     def resetSettings(self):
@@ -1503,7 +1502,7 @@ class SETS():
         skillTable = self.backend["skills"]["content"]
         i = 0
         for col in skillTable:
-            self.groundMiddleFrame.grid_columnconfigure(i, weight=1, uniform="skillColSpace")
+            self.skillMiddleFrame.grid_columnconfigure(i, weight=1, uniform="skillColSpace")
             i += 1
             colFrame = Frame(self.skillMiddleFrame)
             colFrame.pack(side='left', fill=BOTH, expand=True)
@@ -2028,60 +2027,51 @@ class SETS():
     def setupSkillInfoFrame(self):
         self.clearFrame(self.skillInfoFrame)
 
-    def setupSpaceBuildFrame(self):
-        self.shipInfoFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        self.shipInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
-        self.shipImg = self.getEmptyFactionImage()
-        self.shipMiddleFrame = Frame(self.spaceBuildFrame, bg='#3a3a3a')
-        self.shipMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
-        self.shipMiddleFrameUpper = Frame(self.shipMiddleFrame, bg='#3a3a3a')
-        self.shipMiddleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nsew')
-        self.shipEquipmentFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
-        self.shipEquipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
-        self.shipBoffFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
-        self.shipBoffFrame.pack(side='left', fill=BOTH, expand=True)
-        self.shipTraitFrame = Frame(self.shipMiddleFrameUpper, bg='#3a3a3a')
-        self.shipTraitFrame.pack(side='left', fill=BOTH, expand=True)
-        self.shipMiddleFrameLower = Frame(self.shipMiddleFrame, bg='#3a3a3a')
-        self.shipMiddleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
-        self.shipDoffFrame = Frame(self.shipMiddleFrameLower, bg='#3a3a3a')
-        self.shipDoffFrame.pack(fill=BOTH, expand=True, padx=20)
-        self.shipInfoboxFrame = Frame(self.spaceBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        self.shipInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
-        for i in range(5):
-            self.spaceBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainColSpace")
-        self.shipMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secColSpace")
-        self.shipMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secColSpace")
-        self.shipMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secColSpace")
-        self.shipMiddleFrameLower.grid_columnconfigure(0, weight=1, uniform="secColSpace2")
+    def setupBuildFrame(self, environment='space'):
+        parentFrame = self.groundBuildFrame if environment == 'ground' else self.spaceBuildFrame
+        infoFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
 
-    def setupGroundBuildFrame(self):
-        self.groundInfoFrame = Frame(self.groundBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        self.groundInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
-        self.groundImg = self.getEmptyFactionImage()
-        self.groundMiddleFrame = Frame(self.groundBuildFrame, bg='#3a3a3a')
-        self.groundMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
-        self.groundMiddleFrameUpper = Frame(self.groundMiddleFrame, bg='#3a3a3a')
-        self.groundMiddleFrameUpper.grid(row=0,column=1,columnspan=3,sticky='nsew')
-        self.groundEquipmentFrame = Frame(self.groundMiddleFrameUpper, bg='#3a3a3a')
-        self.groundEquipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
-        self.groundBoffFrame = Frame(self.groundMiddleFrameUpper, bg='#3a3a3a')
-        self.groundBoffFrame.pack(side='left', fill=BOTH, expand=True)
-        self.groundTraitFrame = Frame(self.groundMiddleFrameUpper, bg='#3a3a3a')
-        self.groundTraitFrame.pack(side='left', fill=BOTH, expand=True)
-        self.groundMiddleFrameLower = Frame(self.groundMiddleFrame, bg='#3a3a3a')
-        self.groundMiddleFrameLower.grid(row=1,column=0,columnspan=5,sticky='nsew')
-        self.groundDoffFrame = Frame(self.groundMiddleFrameLower, bg='#3a3a3a')
-        self.groundDoffFrame.pack(fill=BOTH, expand=True, padx=20)
-        self.groundInfoboxFrame = Frame(self.groundBuildFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        self.groundInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
+        middleFrame = Frame(parentFrame, bg='#3a3a3a')
+        middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
+        middleFrameUpper = Frame(middleFrame, bg='#3a3a3a')
+        middleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nsew')
+        equipmentFrame = Frame(middleFrameUpper, bg='#3a3a3a')
+        equipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
+        boffFrame = Frame(middleFrameUpper, bg='#3a3a3a')
+        boffFrame.pack(side='left', fill=BOTH, expand=True)
+        traitFrame = Frame(middleFrameUpper, bg='#3a3a3a')
+        traitFrame.pack(side='left', fill=BOTH, expand=True)
+        middleFrameLower = Frame(middleFrame, bg='#3a3a3a')
+        middleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
+        doffFrame = Frame(middleFrameLower, bg='#3a3a3a')
+        doffFrame.pack(fill=BOTH, expand=True, padx=20)
+        infoboxFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
         for i in range(5):
-            self.groundBuildFrame.grid_columnconfigure(i, weight=1, uniform="mainColGround")
-        self.groundMiddleFrame.grid_columnconfigure(0, weight=1, uniform="secColGround")
-        self.groundMiddleFrame.grid_columnconfigure(1, weight=1, uniform="secColGround")
-        self.groundMiddleFrame.grid_columnconfigure(2, weight=1, uniform="secColGround")
-        self.groundMiddleFrameLower.grid_columnconfigure(0, weight=1, uniform="secColGround2")
-        self.setupGroundBuildFrames()
+            parentFrame.grid_columnconfigure(i, weight=1, uniform="mainCol"+environment)
+        middleFrame.grid_columnconfigure(0, weight=1, uniform="secCol"+environment)
+        middleFrame.grid_columnconfigure(1, weight=1, uniform="secCol"+environment)
+        middleFrame.grid_columnconfigure(2, weight=1, uniform="secCol"+environment)
+        middleFrameLower.grid_columnconfigure(0, weight=1, uniform="secCol2"+environment)
+                
+        if environment == 'ground':
+            self.groundInfoFrame = infoFrame
+            self.groundEquipmentFrame = equipmentFrame
+            self.groundBoffFrame = boffFrame
+            self.groundTraitFrame = traitFrame
+            self.groundDoffFrame = doffFrame
+            self.groundInfoboxFrame = infoboxFrame
+            self.groundImg = self.getEmptyFactionImage()
+            self.setupGroundBuildFrames()
+        else:
+            self.shipInfoFrame = infoFrame
+            self.shipEquipmentFrame = equipmentFrame
+            self.shipBoffFrame = boffFrame
+            self.shipTraitFrame = traitFrame
+            self.shipDoffFrame = doffFrame
+            self.shipInfoboxFrame = infoboxFrame
+            self.shipImg = self.getEmptyFactionImage()
 
     def setupSkillTreeFrame(self):
         self.skillInfoFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
@@ -2305,13 +2295,13 @@ class SETS():
         self.precachePreload()
         
 
-        self.setupGroundBuildFrame()
+        self.setupBuildFrame('ground')
         self.setupInfoFrame('ground')
         self.setupSkillTreeFrame()
         self.setupSkillInfoFrame()
         self.setupLibraryFrame()
         self.setupSettingsFrame()
-        self.setupSpaceBuildFrame()
+        self.setupBuildFrame('space')
         self.setupInfoFrame('space')
 
         self.templateFileLoad()
@@ -2526,7 +2516,7 @@ class SETS():
         self.persistent['forceJsonLoad'] = 1 if choice=='Yes' else 0
         self.stateSave()
             
-    def stateSave(self):
+    def stateSave(self, quiet=False):
         configFile = self.stateFileLocation()
         if not os.path.exists(configFile):
             configFile = self.fileStateName
@@ -2534,7 +2524,7 @@ class SETS():
         try:
             with open(configFile, "w") as outFile:
                 json.dump(self.persistent, outFile)
-                self.logWriteTransaction('State File', 'saved', '', outFile.name, 1)
+                self.logWriteTransaction('State File', 'saved', '', outFile.name, 5 if quiet else 1)
         except AttributeError:
             self.logWriteTransaction('State File', 'save error', '', outFile.name, 1)
             pass
