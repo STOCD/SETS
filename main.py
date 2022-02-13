@@ -488,7 +488,7 @@ class SETS():
 
     def precacheShipTraits(self):
         """Populate in-memory cache of ship traits for faster loading"""
-        if 'cacheShipTraits' in self.backend and len(self.cache['shipTraits']) > 0:
+        if 'shipTraits' in self.backend and len(self.cache['shipTraits']) > 0:
             return self.cache['shipTraits']
         self.progressBarStart()
             
@@ -532,7 +532,7 @@ class SETS():
         
     def precacheTraits(self):
         """Populate in-memory cache of traits for faster loading"""
-        if 'cacheTraits' in self.backend and 'space' in self.cache['traits']:
+        if 'traits' in self.backend and 'space' in self.cache['traits']:
             return self.cache['traits']
         self.progressBarStart()
         
@@ -583,6 +583,7 @@ class SETS():
             'forceJsonLoad': 0,
             'uiScale': 1,
             'imagesFactionSucceed': dict(),
+            'faction': '',
         }
     
     def resetSettings(self):
@@ -597,6 +598,7 @@ class SETS():
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
         self.versionJSONminimum = 0
         self.versionJSON = 2022020203
+        self.clearing = False
         self.build = {
             'versionJSON': self.versionJSON,
             'boffs': dict(),
@@ -618,9 +620,9 @@ class SETS():
             'engines': [None],
             'warpCore': [None],
             'shield': [None],
-            'captain': {'faction' : '', 'faction_code' : ''},
-            'career': 'Tactical',
-            'species': 'Alien',
+            'captain': {'faction' : '' },
+            'career': '',
+            'species': '',
             'ship': '',
             'specPrimary': '',
             'playerShipName': '',
@@ -666,7 +668,6 @@ class SETS():
                 'boffAbilitiesWithImages': dict(),
                 'boffTooltips': dict(),
                 'imagesFail': dict(), 
-                'windowUpdate': dict(),
             }
     
     def clearBackend(self):
@@ -700,17 +701,17 @@ class SETS():
         self.backend['species'].trace_add('write', lambda v,i,m:self.speciesUpdateCallback())
         self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
         self.backend['specSecondary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specSecondary'))
-        self.backend['tier'].trace_add('write', lambda v,i,m:self.setupSpaceBuildFrames())
-        self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.setupSpaceBuildFrames())
-        self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.setupGroundBuildFrames())
+        self.backend['tier'].trace_add('write', lambda v,i,m:self.setupCurrentBuildFrames('space'))
+        self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.setupCurrentBuildFrames())
         self.backend['ship'].trace_add('write', self.shipMenuCallback)
 
     def captainFactionCallback(self):
         self.copyBackendToBuild('captain', 'faction')
-        self.resetCache('boffAbilities')
-        self.precacheBoffAbilities()
-        self.setupSpaceBuildFrames()
-        self.setupGroundBuildFrames()
+        if not self.clearing:
+            self.resetCache('boffAbilities')
+            self.precacheBoffAbilities()
+        self.setupCurrentBuildFrames()
+
     
     def boffTitleToSpec(self, title):
         return  "Tactical" if "Tactical" in title else "Science" if 'Science' in title else "Engineering" if "Engineering" in title else "Universal"
@@ -731,6 +732,7 @@ class SETS():
         """Open a picker window"""
         pickWindow = Toplevel(self.window)
         pickWindow.title(title)
+        #self.window.update()
         windowheight = self.window.winfo_height() - 100
         windowwidth = int(self.window.winfo_width() / 6)
         if windowheight < 400:
@@ -897,8 +899,8 @@ class SETS():
         
     def precacheBoffAbilities(self):
         """Common callback for boff labels"""
-        if 'cacheBoffAbilities' in self.backend and 'space' in self.cache['boffAbilities']:
-            return self.cache['boffAbilities']
+        if 'boffAbilities' in self.backend and 'space' in self.cache['boffAbilities'] and 'ground' in self.cache['boffAbilities']:
+            return
         self.progressBarStart()
         
         boffAbilities = self.fetchOrRequestHtml(self.r_boffAbilities_source, "boff_abilities") 
@@ -999,7 +1001,7 @@ class SETS():
                 item['item'] = ''
                 self.build['ship'] = item['item']
                 self.backend['shipHtml'] = None
-                self.shipLabel.configure(image=self.emptyImage)
+                self.shipImageLabel.configure(image=self.emptyImage)
                 self.shipButton.configure(text=item['item'])
                 self.backend['ship'].set(item['item'])
                 self.setupSpaceBuildFrames()
@@ -1038,7 +1040,7 @@ class SETS():
             self.clearBackend()
             self.buildToBackendSeries()
             self.hookBackend()
-            self.setupShipInfoFrame()
+            self.setupInfoFrame('space')
             if 'tier' in self.build and len(self.build['tier']) > 1:
                 self.setupTierFrame(int(self.build['tier'][1]))
                 self.setupShipImageFrame()
@@ -1258,18 +1260,21 @@ class SETS():
     def clearBuildCallback(self, event=None):
         """Callback for the clear build button"""
         self.clearBuild()
+        self.clearing = 1
         self.buildToBackendSeries()
 
         #self.backend['tier'].set('')
         self.backend['shipHtml'] = None
-        self.setupShipInfoFrame()
+        self.setupInfoFrame('space')
         self.clearFrame(self.shipEquipmentFrame)
         self.clearFrame(self.shipBoffFrame)
         self.setupGroundBuildFrames()
-        self.shipImg = self.emptyImage
-        self.groundImg = self.emptyImage
-        self.shipLabel.configure(image=self.shipImg)
-        self.charLabel.configure(image=self.groundImg)
+        self.shipImg = self.emptyImageFaction['federation'] if 'federation' in self.emptyImageFaction else self.emptyImage
+        self.groundImg = self.emptyImageFaction['federation'] if 'federation' in self.emptyImageFaction else self.emptyImage
+        self.shipImageLabel.configure(image=self.shipImg)
+        self.charImageLabel.configure(image=self.groundImg)
+        self.clearing = 0
+        self.setupSpaceBuildFrames()
 
     def boffUniversalCallback(self, v, idx, key):
         self.build['boffseats'][key][idx] = v.get()
@@ -1331,16 +1336,16 @@ class SETS():
     
     def focusSpaceBuildFrameCallback(self):
         self.focusFrameCallback('space')
-        self.setupShipInfoFrame() #get updates from info changes
-        self.shipLabel.configure(image=self.shipImg)
+        self.setupInfoFrame('space') #get updates from info changes
+        self.shipImageLabel.configure(image=self.shipImg)
         if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
             self.setupTierFrame(int(self.backend['tier'].get()[1]))
         self.setupDoffFrame(self.shipDoffFrame)
 
     def focusGroundBuildFrameCallback(self):
         self.focusFrameCallback('ground')
-        self.setupGroundInfoFrame() #get updates from info changes
-        self.charLabel.configure(image=self.groundImg)
+        self.setupInfoFrame('ground') #get updates from info changes
+        self.charImageLabel.configure(image=self.groundImg)
         self.setupDoffFrame(self.groundDoffFrame)
 
     def focusSkillTreeFrameCallback(self):
@@ -1353,10 +1358,19 @@ class SETS():
         self.focusFrameCallback('settings')
         self.logDisplayUpdate()
 
+    def setupCurrentBuildFrames(self, environment=None):
+        if not self.clearing:
+            if environment == 'space' or environment == None: self.setupSpaceBuildFrames()
+            if environment == 'ground' or environment == None: self.setupGroundBuildFrames()
+            
+    def setupCurrentTraitFrame(self):
+        if not self.clearing:
+            self.setupSpaceTraitFrame()
+            self.setupGroundTraitFrame()
+    
     def speciesUpdateCallback(self):
         self.copyBackendToBuild('species')
-        self.setupSpaceTraitFrame()
-        self.setupGroundTraitFrame()
+        self.setupCurrentTraitFrame()
 
     def setupSearchFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
@@ -1626,9 +1640,7 @@ class SETS():
 
                 if rank != len(self.build['boffs'][boffSan]):
                     self.logWrite('--- {} {}{}{}->{}{}{}'.format('boff seat change error: ', boffExistingLen, '+' if changeCount > 0 else '', changeCount, rank, '!=' , str(len(self.build['boffs'][boffSan]))), 1)
-
-                    
-                    
+    
             for j in range(rank):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
                     image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], faction = 1)
@@ -1800,11 +1812,11 @@ class SETS():
     def setupDoffFrame(self, frame):
         self.clearFrame(frame)
         mainFrame = Frame(frame, bg='#3a3a3a')
-        mainFrame.pack(side='left', fill=BOTH, expand=True)
+        mainFrame.pack(side='left', fill=BOTH, expand=True, pady=(5,0))
         
         self.setupDoffListFrame(mainFrame, 'space')
         DoffBreak = Frame(mainFrame, bg='#3a3a3a', width=10)
-        DoffBreak.pack(side='left', fill=BOTH, expand=True)
+        DoffBreak.pack(side='left')
         DoffBreakLabel = Label(DoffBreak, text='', bg='#3a3a3a', fg='#ffffff')
         DoffBreakLabel.grid(row=0, column=0, sticky='nsew')
         self.setupDoffListFrame(mainFrame, 'ground')
@@ -1878,10 +1890,12 @@ class SETS():
         try:
             ship_image = self.backend['shipHtml']["image"]
             self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/"+ship_image.replace(' ','_'), self.build['ship'], 260, 146)
-            self.shipLabel.configure(image=self.shipImg)
         except:
-            self.shipImg = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Federation_Emblem.png", "federation_emblem", 260, 146)
-            self.shipLabel.configure(image=self.shipImg)
+            if 'federation' in self.emptyImageFaction:
+                self.shipImg = self.emptyImageFaction['federation']
+            else:
+                self.shipImg = self.emptyImage
+        self.shipImageLabel.configure(image=self.shipImg)
 
     def setupButtonExportImportFrame(self, frame):
         exportImportFrame = Frame(frame)
@@ -1934,7 +1948,7 @@ class SETS():
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
  
         row += 1
-        myFactionNames = self.factionNames.keys()
+        myFactionNames = self.factionNames
         Label(charInfoFrame, text="Faction", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend['captain']['faction'], *myFactionNames)
         m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
@@ -1960,72 +1974,55 @@ class SETS():
     def updatePlayerDesc(self, event):
         self.build['playerDesc'] = self.charDescText.get("1.0", END)
         
-    def setupShipInfoFrame(self):
-        self.clearFrame(self.shipInfoFrame)
-        playerShipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
-        playerShipNameFrame.pack(fill=BOTH, expand=False)
-        Label(playerShipNameFrame, text="SHIP NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
-        Entry(playerShipNameFrame, textvariable=self.backend['playerShipName'], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
-        playerShipNameFrame.grid_columnconfigure(1, weight=1)
+    def setupInfoFrame(self, environment='space'):
+        parentFrame = self.groundInfoFrame if environment == 'ground' else self.shipInfoFrame
+
+        faction = self.persistent['factionDefault'].lower() if 'factionDefault' in self.persistent else 'federation'
         
-        self.setupButtonExportImportFrame(self.shipInfoFrame)
+        self.clearFrame(parentFrame)
+        NameFrame = Frame(parentFrame, bg='#b3b3b3')
+        NameFrame.pack(fill=BOTH, expand=False)
+        Label(NameFrame, text="{} NAME:".format('PLAYER' if environment == 'ground' else 'SHIP'), fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
+        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('' if environment == 'ground' else 'Ship')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
+        NameFrame.grid_columnconfigure(1, weight=1)
         
-        shipLabelFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
-        shipLabelFrame.pack(fill=BOTH, expand=True)
-        self.shipLabel = Label(shipLabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
-        self.shipLabel.pack(fill=BOTH, expand=True)
-        shipNameFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
-        shipNameFrame.pack(fill=BOTH, expand=True, padx=2)
-        Label(shipNameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='nwse')
-        self.shipButton = Button(shipNameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
-        self.shipButton.grid(column=1, row=0, sticky='nwse')
-        shipNameFrame.grid_columnconfigure(1, weight=1)
-        self.shipTierFrame = Frame(shipNameFrame, bg='#b3b3b3')
-        self.shipTierFrame.grid(column=2, row=0, sticky='e')
+        self.setupButtonExportImportFrame(parentFrame)
         
-        shipDescFrame = Frame(self.shipInfoFrame, bg='#b3b3b3')
-        shipDescFrame.pack(fill=BOTH, expand=True, padx=2)
-        Label(shipDescFrame, text="Desc:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nw')
+        LabelFrame = Frame(parentFrame, bg='#b3b3b3')
+        LabelFrame.pack(fill=BOTH, expand=True)
+        imageLabel = Label(LabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
+        if environment == 'ground': self.charImageLabel = imageLabel
+        else: self.shipImageLabel = imageLabel
+        imageLabel.pack(fill=BOTH, expand=True)
+        imageLabel.configure(image=self.emptyImageFaction[faction] if faction in self.emptyImageFaction else self.emptyImage)
+        
+        if environment != 'ground':
+            shipSelectFrame = Frame(parentFrame, bg='#b3b3b3')
+            shipSelectFrame.pack(fill=BOTH, expand=True, padx=2)
+            Label(shipSelectFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='nwse')
+            self.shipButton = Button(shipSelectFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
+            self.shipButton.grid(column=1, row=0, sticky='nwse')
+            shipSelectFrame.grid_columnconfigure(1, weight=1)
+            self.shipTierFrame = Frame(shipSelectFrame, bg='#b3b3b3')
+            self.shipTierFrame.grid(column=2, row=0, sticky='e')
+        
+        DescFrame = Frame(parentFrame, bg='#b3b3b3')
+        DescFrame.pack(fill=BOTH, expand=True, padx=2)
+        Label(DescFrame, text="Desc ({}):".format('G' if environment == 'ground' else 'S'), fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nw')
         # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
-        self.shipDescText = Text(shipDescFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
-        self.shipDescText.grid(row=0, column=1, sticky='nsw', pady=2, padx=2)
-        self.shipDescText.bind('<KeyRelease>', self.updateShipDesc)
-        if 'playerShipDesc' in self.build:
-            self.shipDescText.delete(1.0, END)
-            self.shipDescText.insert(1.0, self.build['playerShipDesc'])
+        descText = Text(DescFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
+        if environment == 'ground': self.charDescText = descText
+        else: self.shipDescText = descText
+        descText.grid(row=0, column=1, sticky='nsw', pady=2, padx=2)
+        descText.bind('<KeyRelease>', self.updatePlayerDesc if environment == 'ground' else self.updateShipDesc)
+        if 'player{}Desc'.format('' if environment == 'ground' else 'Ship') in self.build:
+            descText.delete(1.0, END)
+            descText.insert(1.0, self.build['player{}Desc'.format('' if environment == 'ground' else 'Ship')])
         
-        self.setupTagsAndCharFrame(self.shipInfoFrame)
+        self.setupTagsAndCharFrame(parentFrame)
         
-        if self.build['ship'] is not None:
+        if environment != 'ground' and self.build['ship'] is not None:
             self.shipButton.configure(text=self.build['ship'])
-
-    def setupGroundInfoFrame(self):
-        self.clearFrame(self.groundInfoFrame)
-        playerGroundNameFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
-        playerGroundNameFrame.pack(fill=BOTH, expand=False)
-        Label(playerGroundNameFrame, text="PLAYER NAME:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
-        Entry(playerGroundNameFrame, textvariable=self.backend['playerName'], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
-        playerGroundNameFrame.grid_columnconfigure(1, weight=1)
-        
-        self.setupButtonExportImportFrame(self.groundInfoFrame)
-        
-        charLabelFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
-        charLabelFrame.pack(fill=BOTH, expand=True)
-        self.charLabel = Label(charLabelFrame, fg='#3a3a3a', bg='#b3b3b3', height=5)
-        self.charLabel.pack(fill=BOTH, expand=True)
-        
-        charDescFrame = Frame(self.groundInfoFrame, bg='#b3b3b3')
-        charDescFrame.pack(fill=BOTH, expand=True, padx=2)
-        Label(charDescFrame, text="Desc (G):", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nw')
-        self.charDescText = Text(charDescFrame, height=3, width=43, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
-        self.charDescText.grid(row=0, column=1, sticky='nsw', pady=2, padx=2)
-        self.charDescText.bind('<KeyRelease>', self.updatePlayerDesc)
-        if 'playerShipDesc' in self.build:
-            self.charDescText.delete(1.0, END)
-            self.charDescText.insert(1.0, self.build['playerDesc'])
-        
-        self.setupTagsAndCharFrame(self.groundInfoFrame)
-
 
     def setupSkillInfoFrame(self):
         self.clearFrame(self.skillInfoFrame)
@@ -2138,6 +2135,14 @@ class SETS():
         rarityOption = OptionMenu(self.settingsTopMiddleLeftFrame, rarity, *raritiesDefault, command=self.persistentRarity)
         rarityOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         rarityOption.grid(row=2, column=1, sticky='nw', pady=2, padx=2)
+
+        label = Label(self.settingsTopMiddleLeftFrame, text='Faction', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=3, column=0, sticky="e", pady=2, padx=2)
+        faction = StringVar(value=self.persistent['factionDefault'] if 'factionDefault' in self.persistent else '')
+        factionDefault = [""]+self.factionNames
+        factionOption = OptionMenu(self.settingsTopMiddleLeftFrame, faction, *factionDefault, command=self.persistentFaction)
+        factionOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        factionOption.grid(row=3, column=1, sticky='nw', pady=2, padx=2)
         
         label = Label(self.settingsTopRightFrame, text='Maintenance', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
         label.grid(row=0, column=0, columnspan=2, sticky="n")
@@ -2245,31 +2250,31 @@ class SETS():
         
         if count == 0:
             self.updateOnStep = 1
-            if 'updates' in self.cache['windowUpdate']:
-                self.logWrite('=== hold ended @ {}'.format(str(self.cache['windowUpdate']['updates'])), 2)
+            if 'updates' in self.windowUpdate:
+                self.logWrite('=== hold ended @ {}'.format(str(self.windowUpdate['updates'])), 2)
         else:
             self.updateOnStep = self.updateOnHeavyStep
-        self.cache['windowUpdate']['hold'] = count
+        self.windowUpdate['hold'] = count
         
     def requestWindowUpdate(self, type=''):
-        if not 'updates' in self.cache['windowUpdate']:
-            self.cache['windowUpdate'] = { 'updates': 0, 'lastupdate': 0, 'hold': 0 }
+        if not 'updates' in self.windowUpdate:
+            self.windowUpdate = { 'updates': 0, 'lastupdate': 0, 'hold': 0 }
             
-        self.cache['windowUpdate']['updates'] += 1
+        self.windowUpdate['updates'] += 1
         #possible runaway check
         #self.cache['windowUpdate']['lastupdate'] = round(time.time() * 1000)
         
         # runaway check
-        if self.cache['windowUpdate']['updates'] % 1000 == 0:
-            self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.cache['windowUpdate']['updates'])), 1)
+        if self.windowUpdate['updates'] % 1000 == 0:
+            self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 1)
             
-        if self.cache['windowUpdate']['hold']:
+        if self.windowUpdate['hold']:
             # a hold has been called (contains number of updates to wait)
-            self.cache['windowUpdate']['hold'] -= 1
+            self.windowUpdate['hold'] -= 1
         elif(type == "footerProgressBar"):
             # not certain this is any different from self.window.update()
             self.footerProgressBar.update()
-        else:
+        elif not type:
             self.window.update()
         
     def setupUIFrames(self):
@@ -2300,13 +2305,13 @@ class SETS():
         
 
         self.setupGroundBuildFrame()
-        self.setupGroundInfoFrame()
+        self.setupInfoFrame('ground')
         self.setupSkillTreeFrame()
         self.setupSkillInfoFrame()
         self.setupLibraryFrame()
         self.setupSettingsFrame()
         self.setupSpaceBuildFrame()
-        self.setupShipInfoFrame()
+        self.setupInfoFrame('space')
 
         self.templateFileLoad()
         self.setupSpaceBuildFrames()
@@ -2504,6 +2509,10 @@ class SETS():
         # Nothing yet
         return
     
+    def persistentFaction(self, choice):
+        self.persistent['factionDefault'] = choice
+        self.stateSave()
+        
     def persistentMark(self, choice):
         self.persistent['markDefault'] = choice
         self.stateSave()
@@ -2592,18 +2601,28 @@ class SETS():
         self.configFileLoad()
         
         # self.window.geometry('1280x650')
+        self.windowUpdate = dict()
+        self.requestWindowUpdateHold(0)
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
+        self.wikihttp = 'https://sto.fandom.com/wiki/'
+        self.wikiImages = self.wikihttp+'Special:Filepath/'
         self.session = HTMLSession()
         self.clearBuild()
         self.clearBackend()
         self.resetCache()
         self.hookBackend()
         self.images = dict()
+        self.emptyImageFaction = dict()
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.marks = ["", "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "∞", "Mk XIII", "Mk XIV", "Mk XV"]
-        self.factionNames = { 'Dominion' : 'dom', 'Federation' : 'fed', 'Klingon' : 'kdf', 'Romulan' : 'rom', 'TOS Federation' : 'tos' }
+        self.factionNames = [ 'Dominion', 'Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
         self.emptyImage = self.fetchOrRequestImage("https://sto.fandom.com/wiki/Special:Filepath/Common_icon.png", "no_icon")
+        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", 260, 146)
+        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", 260, 146)
+        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", 260, 146)
+        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", 260, 146)
+        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", 260, 146)
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
@@ -2616,7 +2635,6 @@ class SETS():
         self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
         self.r_ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
         self.precacheShips()
-        self.requestWindowUpdateHold(0)
         
         self.setupUIFrames()
 
