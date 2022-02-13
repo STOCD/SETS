@@ -398,7 +398,7 @@ class SETS():
         return name
 
     def precachePreload(self):
-        self.logWriteBreak('precachePreload')
+        self.logWriteBreak('precachePreload START')
         self.precacheBoffAbilities()
         self.precacheTraits()
         self.precacheShipTraits()
@@ -406,6 +406,7 @@ class SETS():
         self.precacheDoffs("Ground")
         self.precacheShips()
         self.precacheModifiers()
+        self.logWriteBreak('precachePreload END')
 
     def precacheIconCleanup(self):
         #preliminary gathering for self-cleaning icon folder
@@ -456,13 +457,13 @@ class SETS():
 
     def precacheModifiers(self):
         """Fetch equipment modifiers"""
-        if 'modifiers' in self.backend and self.backend['modifiers'] is not None and len(self.backend['modifiers']) > 0:
+        if 'modifiers' in self.cache and self.cache['modifiers'] is not None and len(self.cache['modifiers']) > 0:
             return
 
         modPage = self.fetchOrRequestHtml(self.wikihttp+"Modifier", "modifiers").find("div.mw-parser-output", first=True).html
         mods = re.findall(r"(<td.*?>(<b>)*\[.*?\](</b>)*</td>)", modPage)
-        self.backend['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
-        self.logWriteCounter('Modifiers', '(json)', len(self.backend['modifiers'])) 
+        self.cache['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
+        self.logWriteCounter('Modifiers', '(json)', len(self.cache['modifiers'])) 
         
     def precacheShips(self):
         self.shipNames = [e["Page"] for e in self.r_ships]
@@ -587,7 +588,8 @@ class SETS():
             'forceJsonLoad': 0,
             'uiScale': 1,
             'imagesFactionAliases': dict(),
-            'faction': 'Federation',
+            'factionDefault': 'Federation',
+            'exportDefault': '',
         }
     
     def resetSettings(self):
@@ -655,7 +657,7 @@ class SETS():
 
     def resetCache(self, text = None):
         if text is not None:
-            if text in self.cache:
+            if text in self.cache and text != 'modifiers':
                 self.cache[text] = dict()
                 if text+"WithImages" in self.cache:
                     self.cache[text+"WithImages"] = dict()
@@ -672,6 +674,7 @@ class SETS():
                 'boffAbilitiesWithImages': dict(),
                 'boffTooltips': dict(),
                 'imagesFail': dict(), 
+                'modifiers': None,
             }
     
     def clearBackend(self):
@@ -689,7 +692,6 @@ class SETS():
                 "playerShipDesc": StringVar(self.window),
                 "playerDesc": StringVar(self.window),
                 "shipHtml": None,
-                'modifiers': None,
                 "shipHtmlFull": None,
                 "eliteCaptain": IntVar(self.window),
                 "skillLabels": dict(),
@@ -737,19 +739,23 @@ class SETS():
         pickWindow = Toplevel(self.window)
         pickWindow.title(title)
         #self.window.update()
-        windowheight = self.window.winfo_height() - 100
-        windowwidth = int(self.window.winfo_width() / 6)
-        if windowheight < 400:
-            windowheight = 400
-        if windowwidth < 240:
-            windowwidth = 240
-            
-        positionWindow = "+"+str(self.window.winfo_x())+"+"+str(self.window.winfo_y())
+        windowheight = self.windowHeightCache
+        if windowheight < 400: windowheight = 400
+        
+        windowwidth = int(self.windowWidthCache / 6)
+        if windowwidth < 240: windowwidth = 240
+        
+        sizeWindow = '{}x{}'.format(windowwidth, windowheight)
+        positionWindow = '+{}+{}'.format(self.windowXCache, self.windowYCache)
+        self.logWrite('{}x{}'.format(self.windowWidthCache, self.windowHeightCache), 2)
+        self.logWrite('{}{}'.format(sizeWindow, positionWindow), 2)
+
         if x is not None and y is not None and 0:
-            # This should position the pickerGUI under the calling object when working
             positionWindow = "+"+str(x)+"+"+str(y)
-            self.logWrite("pickerGUI: x{},y{}".format(str(x), str(y)), 1)
-        pickWindow.geometry(str(windowwidth)+"x"+str(windowheight)+positionWindow)
+            self.logWrite("pickerGUI: x{},y{}".format(str(x), str(y)), 2)
+            # This should position the pickerGUI under the calling object when working
+        pickWindow.geometry(sizeWindow+positionWindow)
+        
         origVar = dict()
         for key in itemVar:
             origVar[key] = itemVar[key]
@@ -776,11 +782,12 @@ class SETS():
         clearSlotButton.grid(row=0, column=0, sticky='nsew')
         clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
 
-        i = 1
         try:
             items_list.sort()
         except:
             self.logWriteSimple('pickerGUI', 'TRY_EXCEPT', 1, tags=['item_list.sort() failed in '+title])
+
+        i = 1 
         for name,image in items_list:
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
             label = Label(frame, image=image)
@@ -796,6 +803,7 @@ class SETS():
             frame.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
             content[name] = (frame, i, 0)
             i = i + 1
+            
         pickWindow.wait_visibility()    #Implemented for Linux
         pickWindow.grab_set()
         pickWindow.wait_window()
@@ -997,7 +1005,7 @@ class SETS():
     def shipPickButtonCallback(self, *args):
         """Callback for ship picker button"""
         itemVar = self.getEmptyItem()
-        items_list = [(name, self.emptyImage) for name in self.shipNames]
+        items_list = [(name, '') for name in self.shipNames]
         item = self.pickerGui("Pick Starship", itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
             self.resetShipSettings()
@@ -1072,7 +1080,7 @@ class SETS():
     def exportPngCallback(self, event=None):
         """Callback for export as png button"""
         # pixel correction
-        self.window.update()
+        self.requestWindowUpdate('force')
 
         screenTopLeftX = self.window.winfo_rootx()
         screenTopLeftY = self.window.winfo_rooty()
@@ -1280,8 +1288,9 @@ class SETS():
         self.clearing = 0
         self.setupSpaceBuildFrames()
 
-    def getEmptyFactionImage(self):
-        faction = self.persistent['factionDefault'].lower() if 'factionDefault' in self.persistent else 'federation'
+    def getEmptyFactionImage(self, faction=None):
+        if faction is None:
+            faction = self.persistent['factionDefault'].lower() if 'factionDefault' in self.persistent else 'federation'
         
         if faction in self.emptyImageFaction: return self.emptyImageFaction[faction]
         else: return self.emptyImage
@@ -1681,6 +1690,7 @@ class SETS():
         self.setupDoffFrame(self.shipDoffFrame)
         self.setupSpaceTraitFrame()
         self.clearInfoboxFrame('space')
+        self.requestWindowUpdate('force')
 
     def setupGroundBuildFrames(self):
         """Set up all relevant build frames"""
@@ -1705,7 +1715,7 @@ class SETS():
         if not len(itemVar['modifiers']):
             itemVar['modifiers'] = ['']*n
             
-        mods = sorted(self.backend['modifiers'])
+        mods = sorted(self.cache['modifiers'])
         for i in range(n):
             v = StringVar()
             if i < len(itemVar['modifiers']):
@@ -1987,6 +1997,12 @@ class SETS():
     def updatePlayerDesc(self, event):
         self.build['playerDesc'] = self.charDescText.get("1.0", END)
         
+    def updateWindowSize(self):
+        self.windowWidthCache = self.window.winfo_width()
+        self.windowHeightCache = self.window.winfo_height()
+        self.windowXCache = self.window.winfo_x()
+        self.windowYCache = self.window.winfo_y()
+    
     def updateImageLabelSize(self, frame=None):
         if frame is not None:
             frame.update()
@@ -2190,6 +2206,15 @@ class SETS():
         self.uiScaleOption = Scale(self.settingsTopRightFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=self.uiScaleSetting, command=self.uiScaleChange)
         self.uiScaleOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         self.uiScaleOption.grid(row=5, column=1, sticky='nw', pady=2, padx=2)
+        
+        label = Label(self.settingsTopRightFrame, text='Export default', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=6, column=0, sticky="e", pady=2, padx=2)
+        exportVar = StringVar(value=self.persistent['exportDefault'] if 'exportDefault' in self.persistent else '')
+        exportDefault = [""]+self.exportOptions
+        exportOption = OptionMenu(self.settingsTopRightFrame, exportVar, *exportDefault, command=self.persistentExport)
+        exportOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        exportOption.grid(row=6, column=1, sticky='nw', pady=2, padx=2)
+    
 
     def setupUIScaling(self,event=None):
         # Partially effect, some errors in the log formatting
@@ -2278,21 +2303,26 @@ class SETS():
             self.windowUpdate = { 'updates': 0, 'lastupdate': 0, 'hold': 0 }
             
         self.windowUpdate['updates'] += 1
-        #possible runaway check
-        #self.cache['windowUpdate']['lastupdate'] = round(time.time() * 1000)
         
         # runaway check
         if self.windowUpdate['updates'] % 1000 == 0:
             self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 1)
             
-        if self.windowUpdate['hold']:
+        if type == 'force':
+            self.window.update()
+        elif self.windowUpdate['hold']:
             # a hold has been called (contains number of updates to wait)
             self.windowUpdate['hold'] -= 1
+            return
         elif(type == "footerProgressBar"):
             # not certain this is any different from self.window.update()
             self.footerProgressBar.update()
         elif not type:
             self.window.update()
+        else:
+            return
+            
+        self.updateWindowSize()
         
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
@@ -2317,7 +2347,7 @@ class SETS():
 
         self.setupLogoFrame()
         self.setupMenuFrame()
-        self.requestWindowUpdate()
+        self.requestWindowUpdate() #cannot force
         self.precachePreload()
         
 
@@ -2526,6 +2556,10 @@ class SETS():
         # Nothing yet
         return
     
+    def persistentExport(self, choice):
+        self.persistent['exportDefault'] = choice
+        self.stateSave()
+    
     def persistentFaction(self, choice):
         self.persistent['factionDefault'] = choice
         self.stateSave()
@@ -2620,6 +2654,7 @@ class SETS():
         # self.window.geometry('1280x650')
         self.windowUpdate = dict()
         self.requestWindowUpdateHold(0)
+        self.updateWindowSize()
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
         self.session = HTMLSession()
@@ -2629,6 +2664,7 @@ class SETS():
         self.hookBackend()
         self.images = dict()
         self.emptyImageFaction = dict()
+        self.exportOptions = ["Json", "PNG", "Reddit"]
         self.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Ultra rare", "Epic"]
         self.marks = ["", "Mk I", "Mk II", "Mk III", "Mk IIII", "Mk V", "Mk VI", "Mk VII", "Mk VIII", "Mk IX", "Mk X", "Mk XI", "Mk XII", "∞", "Mk XIII", "Mk XIV", "Mk XV"]
         self.factionNames = [ 'Dominion', 'Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
