@@ -1371,22 +1371,30 @@ class SETS():
     def markBoxCallback(self, itemVar, value):
         itemVar['mark'] = value
 
+    def currentFrameUpdate(self, frame=None, first=False):
+        if not first: self.framePriorheight = self.currentFrame.winfo_height()
+        self.currentFrame = frame
+        if first: self.framePriorheight = self.currentFrame.winfo_height()
+        
+        self.logWrite('Frame Prior Height: {}'.format(self.framePriorheight), 5)
+        
     def focusFrameCallback(self, type):
+        if type == 'ground': self.currentFrameUpdate(self.groundBuildFrame)
+        elif type == 'skill': self.currentFrameUpdate(self.skillTreeFrame)
+        elif type == 'glossary': self.currentFrameUpdate(self.glossaryFrame)
+        elif type == 'settings': self.currentFrameUpdate(self.settingsFrame)
+        elif type == 'space': self.currentFrameUpdate(self.spaceBuildFrame)
+        else: return
+        
         self.groundBuildFrame.pack_forget() if type != 'ground' else None
         self.skillTreeFrame.pack_forget() if type != 'skill' else None
         self.glossaryFrame.pack_forget() if type != 'glossary' else None
         self.settingsFrame.pack_forget() if type != 'settings' else None
         self.spaceBuildFrame.pack_forget() if type != 'space' else None
-        
-        
-        if type == 'ground': self.currentFrame = self.groundBuildFrame
-        elif type == 'skill': self.currentFrame = self.skillTreeFrame
-        elif type == 'glossary': self.currentFrame = self.glossaryFrame
-        elif type == 'settings': self.currentFrame = self.settingsFrame
-        elif type == 'space': self.currentFrame = self.spaceBuildFrame
-        else: return
 
         self.currentFrame.pack(fill=BOTH, expand=True, padx=15)
+        #self.currentFrame.place(height = self.framePriorheight) # Supposed to maintain frame height, may need grid
+
     
     def focusSpaceBuildFrameCallback(self):
         self.focusFrameCallback('space')
@@ -1970,11 +1978,12 @@ class SETS():
 
     def setupFooterFrame(self):
         self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
-        footerLabelL = Label(self.footerFrame, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=('Helvetica', 8, 'bold'))
+        f = font=('Helvetica', 10, 'bold')
+        footerLabelL = Label(self.footerFrame, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=f)
         footerLabelL.grid(row=0, column=0, sticky='w')
         self.footerProgressBar = Progressbar(self.footerFrame, orient='horizontal', mode='indeterminate', length=200)
         self.footerProgressBar.grid(row=0, column=2, sticky='e')
-        footerLabelR = Label(self.footerFrame, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=('Helvetica', 8, 'bold'))
+        footerLabelR = Label(self.footerFrame, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=f)
         footerLabelR.grid(row=0, column=1, sticky='e')
         self.footerFrame.grid_columnconfigure(0, weight=5, uniform="footerlabel")
         self.footerFrame.grid_columnconfigure(1, weight=2, uniform="footerlabel")
@@ -2451,6 +2460,8 @@ class SETS():
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family='Helvetica', size='10')
         self.footerProgressBarUpdates = 0
+        self.dpi = round(self.window.winfo_fpixels('1i'), 0)
+        self.setupUIScaling()
 
         self.containerFrame = Frame(self.window, bg='#c59129')
         self.containerFrame.pack(fill=BOTH, expand=True)
@@ -2458,19 +2469,18 @@ class SETS():
         self.logoFrame.pack(fill=X)
         self.menuFrame = Frame(self.containerFrame, bg='#c59129')
         self.menuFrame.pack(fill=X, padx=15)
-        self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.skillTreeFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.glossaryFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
-        self.setupFooterFrame()
-        self.dpi = round(self.window.winfo_fpixels('1i'), 0)
-        self.setupUIScaling()
 
+        self.setupFooterFrame()
         self.setupLogoFrame()
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
+        self.currentFrameUpdate(self.spaceBuildFrame, first=True)
         self.precachePreload()
         
 
