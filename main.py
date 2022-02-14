@@ -330,15 +330,33 @@ class SETS():
             image = image.resize(resizeOptions,Image.ANTIALIAS)
         return ImageTk.PhotoImage(image)
 
-    def deWikify(self, textBlock, leaveHtml=False):
+    def deWikify(self, textBlock, leaveHTML=False):
         textBlock = html.unescape(html.unescape(textBlock))
-        if not leaveHtml:
+        if not leaveHTML:
             textBlock = re.sub(CLEANR, '', textBlock)
-        textBlock.replace('&#34;', '"')
-        textBlock.replace('&#39;', '\'')
-        textBlock.replace('&#91;', '[')
-        textBlock.replace('&#93;', ']')
+        textBlock = textBlock.replace('&#34;', '"')
+        textBlock = textBlock.replace('&#39;', '\'')
+        textBlock = textBlock.replace('&#91;', '[')
+        textBlock = textBlock.replace('&#93;', ']')
+
         # clean up wikitext
+        textBlock = textBlock.replace('\x7f', '')
+        # \u007f'&quot;`UNIQ--nowiki-00000000-QINU`&quot;'\u007f
+        #textBlock = textBlock.replace("'\"`UNIQ--nowiki-00000000-QINU`\"'",'*')
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', '*', textBlock)
+        
+        # Needs to be adjusted to look for the closest "[[" to work with multi-stage
+        # Adapt for "{{" as well?
+        if "[[" and "|" in textBlock:
+            start = textBlock.find("[[")
+            end = textBlock.find("|")
+            textBlock = textBlock[:start] + textBlock[end+1:]
+        textBlock = textBlock.replace('[[', '')
+        textBlock = textBlock.replace(']]', '')
+
+
+        #textBlock = textBlock.replace('\n:', '\n        ')
+
         #self.logWrite(textBlock, 1)
         return textBlock
     
@@ -600,6 +618,7 @@ class SETS():
             'exportDefault': self.exportOptions[0],
             'boffSort': self.boffSortOptions[0],
             'boffSort2': self.boffSortOptions[0],
+            'libraryFolder': '',
         }
     
     def resetSettings(self):
@@ -1081,7 +1100,7 @@ class SETS():
     def exportCallback(self, event=None):
         """Callback for export button"""
         try:
-            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
+            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")], title=self.build['playerShipName'], initialdir=self.persistent['libraryFolder']) as outFile:
                 json.dump(self.build, outFile)
                 self.logWriteTransaction('Export File', 'saved', '', outFile.name, 0)
         except AttributeError:
@@ -1767,27 +1786,17 @@ class SETS():
     def setupInfoboxFrame(self, item, key, environment='space'):
         """Set up infobox frame with given item"""
         def compensate(text):
-            text = text.replace('&lt;br&gt;\n', '\n')
-            text = text.replace('&lt;br/&gt;\n', '\n')
-            text = text.replace('&lt;br /&gt;\n', '\n')
-            text = text.replace('&lt;br&gt;', '\n')
-            text = text.replace('&lt;br/&gt;', '\n')
-            text = text.replace('&lt;br /&gt;', '\n')
-            text = text.replace('&lt;', '<')
-            text = text.replace('&gt;', '>')
-            text = text.replace('&amp;', '&')
-            if "[[" and "|" in text:
-                start = text.find("[[")
-                end = text.find("|")
-                text = text[:start] + text[end+1:]
-            text = text.replace('[[', '')
-            text = text.replace(']]', '')
-            text = text.replace("'&quot;`UNIQ--nowiki-00000000-QINU`&quot;'",'*')
-            text = text.replace("'&quot;`UNIQ--nowiki-00000001-QINU`&quot;'",'*')
-            text = text.replace("'&quot;`UNIQ--nowiki-00000002-QINU`&quot;'",'*')
-            text = text.replace("'&quot;`UNIQ--nowiki-00000003-QINU`&quot;'",'*')
-            text = text.replace("'&quot;`UNIQ--nowiki-00000004-QINU`&quot;'",'*')
-            text = text.replace("&nsbp;", "")
+            text = self.deWikify(text, leaveHTML=True)
+            # Wiki elements moved into self.deWikify
+            # HTML elements left here
+            text = text.replace('<br>\n', '\n')
+            text = text.replace('<br/>\n', '\n')
+            text = text.replace('<br />\n', '\n')
+            text = text.replace('<br>', '\n')
+            text = text.replace('<br/>', '\n')
+            text = text.replace('<br />', '\n')
+
+            #text = text.replace("&nsbp;", "") # Should be handled by deWikify, need to test
             return text
 
         if environment == 'skill':
