@@ -1839,7 +1839,7 @@ class SETS():
 
 
         self.clearFrame(frame)
-        Label(frame, text="STATS & OTHER INFO").pack(fill="both", expand=True)
+        Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False)
         text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
