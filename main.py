@@ -330,10 +330,16 @@ class SETS():
             image = image.resize(resizeOptions,Image.ANTIALIAS)
         return ImageTk.PhotoImage(image)
 
+    def deHTML(self, textBlock, leaveHTML=False):
+        textBlock = html.unescape(html.unescape(textBlock)) # Twice because the wiki overlaps some
+        
+        if not leaveHTML: textBlock = re.sub(CLEANR, '', textBlock)
+        
+        return textBlock
+        
     def deWikify(self, textBlock, leaveHTML=False):
-        textBlock = html.unescape(html.unescape(textBlock))
-        if not leaveHTML:
-            textBlock = re.sub(CLEANR, '', textBlock)
+        textBlock = self.deHTML(textBlock, leaveHTML)
+
         textBlock = textBlock.replace('&#34;', '"')
         textBlock = textBlock.replace('&#39;', '\'')
         textBlock = textBlock.replace('&#91;', '[')
@@ -342,8 +348,7 @@ class SETS():
         # clean up wikitext
         textBlock = textBlock.replace('\x7f', '')
         # \u007f'&quot;`UNIQ--nowiki-00000000-QINU`&quot;'\u007f
-        #textBlock = textBlock.replace("'\"`UNIQ--nowiki-00000000-QINU`\"'",'*')
-        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', '*', textBlock)
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', ' • ', textBlock)
         
         # Needs to be adjusted to look for the closest "[[" to work with multi-stage
         # Adapt for "{{" as well?
@@ -354,8 +359,9 @@ class SETS():
         textBlock = textBlock.replace('[[', '')
         textBlock = textBlock.replace(']]', '')
 
-
-        #textBlock = textBlock.replace('\n:', '\n        ')
+        # Better done in framing with a grid
+        textBlock = re.sub('\n:', '\n        ', textBlock)
+        textBlock = re.sub('^:', '        ', textBlock)
 
         #self.logWrite(textBlock, 1)
         return textBlock
@@ -1797,6 +1803,7 @@ class SETS():
             text = text.replace('<br />', '\n')
 
             #text = text.replace("&nsbp;", "") # Should be handled by deWikify, need to test
+            text = self.deHTML(text)    # Remove any remaining html tags
             return text
 
         if environment == 'skill':
@@ -1879,15 +1886,15 @@ class SETS():
             text.insert(END, '\n\n', 'distance')
 
             for i in range(1,9):
-                t = html["head"+str(i)].replace("\n:",'\n      ').replace("*","  • ").strip()
+                t = html["head"+str(i)].replace("*","  • ").strip()
                 if t.strip() != '':
                     text.insert(END, compensate(t)+'\n','head')
                     text.insert(END, '\n', 'distance')
-                t = html["subhead"+str(i)].replace("\n:",'\n      ').replace("*","  • ").strip()
+                t = html["subhead"+str(i)].replace("*","  • ").strip()
                 if t.strip() != '':
                     text.insert(END, compensate(t)+'\n', 'subhead')
                     text.insert(END, '\n', 'distance')
-                t = html["text"+str(i)].replace("\n:",'\n      ').replace("*","  • ").strip()
+                t = html["text"+str(i)].replace("*","  • ").strip()
                 if t.strip() != '':
                     text.insert(END, compensate(t)+'\n')
                     text.insert(END, '\n', 'distance')
