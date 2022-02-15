@@ -648,7 +648,6 @@ class SETS():
                 'library' : "library",
             }
         }
-        sys.stderr.write("==={}".format(self.persistent['folder']['override'])+'\n')
     
     def resetSettings(self):
         # self.settings are optionally loaded from config, but manually edited or saved
@@ -1307,18 +1306,34 @@ class SETS():
         self.redditExportDisplaySpace(redditText)
         redditWindow.mainloop()
 
-    def cacheInvalidateCallback(self, dir):
-        for filename in os.listdir(dir):
-            if not filename.endswith('.bak'):
+    def cacheInvalidateCallback(self, type):
+        if type == 'cache':
+            dir = self.getFolderLocation(type)
+            for filename in os.listdir(dir):
+                if not filename.endswith('.bak'):
+                    file_path = os.path.join(dir, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            if os.path.isfile(file_path+'.bak') or os.path.islink(file_path+'.bak'):
+                                os.unlink(file_path+'.bak')
+                            os.rename(file_path, file_path+'.bak')
+                    except Exception as e:
+                        log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
+        elif type == 'images':
+            dir = self.getFolderLocation(type)
+            for filename in os.listdir(dir):
                 file_path = os.path.join(dir, filename)
                 try:
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        if os.path.isfile(file_path+'.bak') or os.path.islink(file_path+'.bak'):
-                            os.unlink(file_path+'.bak')
-                        os.rename(file_path, file_path+'.bak')
+                    os.unlink(file_path)
                 except Exception as e:
                     log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
-
+        elif type == 'factionImages':
+            self.persistent['imagesFactionAliases'] = dict()
+            self.stateSave()
+            
+        self.logWriteBreak("Cache cleared: {}".format(type))
+            
+                        
     def buildToBackendSeries(self):
         self.copyBuildToBackend('playerShipName')
         self.copyBuildToBackend('playerShipDesc')
@@ -2356,104 +2371,138 @@ class SETS():
         pass #placeholder
 
     def setupSettingsFrame(self):
-        self.settingsTopFrame = Frame(self.settingsFrame, bg='#b3b3b3')
-        self.settingsTopFrame.pack(side='top', fill=BOTH, expand=True)
-        self.settingsBottomFrame = Frame(self.settingsFrame, bg='#b3b3b3')
-        self.settingsBottomFrame.pack(side='bottom', fill=BOTH, expand=True)
+        settingsTopFrame = Frame(self.settingsFrame, bg='#b3b3b3')
+        settingsTopFrame.pack(side='top', fill=BOTH, expand=True)
+        settingsBottomFrame = Frame(self.settingsFrame, bg='#b3b3b3')
+        settingsBottomFrame.pack(side='bottom', fill=BOTH, expand=True)
         
-        self.settingsTopLeftFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
-        self.settingsTopLeftFrame.grid(row=0,column=0,sticky='nsew', pady=5)
-        self.settingsTopMiddleLeftFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
-        self.settingsTopMiddleLeftFrame.grid(row=0,column=1,sticky='nsew', pady=5)
-        self.settingsTopMiddleRightFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
-        self.settingsTopMiddleRightFrame.grid(row=0,column=2,sticky='nsew', pady=5)
-        self.settingsTopRightFrame = Frame(self.settingsTopFrame, bg='#b3b3b3')
-        self.settingsTopRightFrame.grid(row=0,column=3,sticky='nsew', pady=5)
+        settingsTopLeftFrame = Frame(settingsTopFrame, bg='#b3b3b3')
+        settingsTopLeftFrame.grid(row=0,column=0,sticky='nsew', pady=5)
+        settingsTopMiddleLeftFrame = Frame(settingsTopFrame, bg='#b3b3b3')
+        settingsTopMiddleLeftFrame.grid(row=0,column=1,sticky='nsew', pady=5)
+        settingsTopMiddleRightFrame = Frame(settingsTopFrame, bg='#b3b3b3')
+        settingsTopMiddleRightFrame.grid(row=0,column=2,sticky='nsew', pady=5)
+        settingsTopRightFrame = Frame(settingsTopFrame, bg='#b3b3b3')
+        settingsTopRightFrame.grid(row=0,column=3,sticky='nsew', pady=5)
         
-        self.settingsTopFrame.grid_columnconfigure(0, weight=6, uniform="settingsColSpace")
-        self.settingsTopFrame.grid_columnconfigure(1, weight=2, uniform="settingsColSpace")
-        self.settingsTopFrame.grid_columnconfigure(2, weight=1, uniform="settingsColSpace")
-        self.settingsTopFrame.grid_columnconfigure(3, weight=2, uniform="settingsColSpace")
+        settingsTopFrame.grid_columnconfigure(0, weight=5, uniform="settingsColSpace")
+        settingsTopFrame.grid_columnconfigure(1, weight=2, uniform="settingsColSpace")
+        settingsTopFrame.grid_columnconfigure(2, weight=1, uniform="settingsColSpace")
+        settingsTopFrame.grid_columnconfigure(3, weight=2, uniform="settingsColSpace")
         
-        self.logDisplay = Text(self.settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110)
-        self.logDisplay.grid(row=0, column=0, columnspan=2, sticky="n", padx=2, pady=2)
+        label = Label(settingsTopLeftFrame, text="Log (mousewheel to scroll):", fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=0, column=0, sticky='nw')
+        self.logDisplay = Text(settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
+        self.logDisplay.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
         self.logDisplay.insert('0.0', self.logFull.get())
         
-        label = Label(self.settingsTopMiddleLeftFrame, text='Default settings (auto-saved)', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
-        label.grid(row=0, column=0, columnspan=2, sticky="n")
-        label = Label(self.settingsTopMiddleLeftFrame, text='Mark', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=1, column=0, sticky="e", pady=2, padx=2)
+        self.settingsDefaultsList(settingsTopMiddleLeftFrame)
+        self.settingsMaintenanceList(settingsTopRightFrame)
+        
+    def settingsDefaultsList(self, parentFrame):
+        row = 0
+        label = Label(parentFrame, text='Settings on this page are auto-saved', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
+        label.grid(row=row, column=0, columnspan=2, sticky="n")
+        row += 1
+        label = Label(parentFrame, text='Defaults:', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text='Mark', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
         mark = StringVar(value=self.persistent['markDefault'])
-        markOption = OptionMenu(self.settingsTopMiddleLeftFrame, mark, *self.marks, command=self.persistentMark)
+        markOption = OptionMenu(parentFrame, mark, *self.marks, command=self.persistentMark)
         markOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        markOption.grid(row=1, column=1, sticky='nw', pady=2, padx=2)
-        label = Label(self.settingsTopMiddleLeftFrame, text='Rarity', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=2, column=0, sticky="e", pady=2, padx=2)
+        markOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text='Rarity', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
         rarity = StringVar(value=self.persistent['rarityDefault'])
         raritiesDefault = [""]+self.rarities
-        rarityOption = OptionMenu(self.settingsTopMiddleLeftFrame, rarity, *raritiesDefault, command=self.persistentRarity)
+        rarityOption = OptionMenu(parentFrame, rarity, *raritiesDefault, command=self.persistentRarity)
         rarityOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        rarityOption.grid(row=2, column=1, sticky='nw', pady=2, padx=2)
-
-        label = Label(self.settingsTopMiddleLeftFrame, text='Faction', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=3, column=0, sticky="e", pady=2, padx=2)
+        rarityOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text='Faction', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
         faction = StringVar(value=self.persistent['factionDefault'] if 'factionDefault' in self.persistent else '')
         factionDefault = ['']+self.factionNames
-        factionOption = OptionMenu(self.settingsTopMiddleLeftFrame, faction, *factionDefault, command=self.persistentFaction)
+        factionOption = OptionMenu(parentFrame, faction, *factionDefault, command=self.persistentFaction)
         factionOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        factionOption.grid(row=3, column=1, sticky='nw', pady=2, padx=2)
-        
-        label = Label(self.settingsTopMiddleLeftFrame, text='BOFF Sort 1st', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=4, column=0, sticky="e", pady=2, padx=2)
+        factionOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text='Sort Options:', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text='BOFF Sort 1st', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
         boffSort = StringVar(value=self.persistent['boffSort'] if 'boffSort' in self.persistent else '')
         boffSortDefault = self.boffSortOptions
-        boffSortOption = OptionMenu(self.settingsTopMiddleLeftFrame, boffSort, *boffSortDefault, command=self.persistentBoffSort)
+        boffSortOption = OptionMenu(parentFrame, boffSort, *boffSortDefault, command=self.persistentBoffSort)
         boffSortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        boffSortOption.grid(row=4, column=1, sticky='nw', pady=2, padx=2)
-        label = Label(self.settingsTopMiddleLeftFrame, text='BOFF Sort 2nd', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=5, column=0, sticky="e", pady=2, padx=2)
+        boffSortOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text='BOFF Sort 2nd', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
         boff2Sort = StringVar(value=self.persistent['boffSort2'] if 'boffSort2' in self.persistent else '')
-        boff2SortOption = OptionMenu(self.settingsTopMiddleLeftFrame, boff2Sort, *boffSortDefault, command=self.persistentBoffSort2)
+        boff2SortOption = OptionMenu(parentFrame, boff2Sort, *boffSortDefault, command=self.persistentBoffSort2)
         boff2SortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        boff2SortOption.grid(row=5, column=1, sticky='nw', pady=2, padx=2)
+        boff2SortOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
         
-        label = Label(self.settingsTopRightFrame, text='Maintenance', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
-        label.grid(row=0, column=0, columnspan=2, sticky="n")
-        buttonInvalidateCache = Button(self.settingsTopRightFrame, text='Clear data cache (automatic download)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateCache.grid(row=1, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-        buttonInvalidateCache.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="cache"))
-        buttonInvalidateImages = Button(self.settingsTopRightFrame, text='VERY SLOW! Clear image cache (automatic download)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonInvalidateImages.grid(row=2, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-        buttonInvalidateImages.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(dir="images"))
-        buttonExportSettings = Button(self.settingsTopRightFrame, text='Export SETS manual settings', bg='#3a3a3a',fg='#b3b3b3', command=self.exportSettings)
-        buttonExportSettings.grid(row=3, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-
-        label = Label(self.settingsTopRightFrame, text='Force out of date JSON loading', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=4, column=0, sticky="e", pady=2, padx=2)        
-        forceLoad = StringVar(value='Yes' if self.persistent['forceJsonLoad'] else 'No')
-        forceLoadOptions = self.yesNo
-        forceLoadOption = OptionMenu(self.settingsTopRightFrame, forceLoad, *forceLoadOptions, command=self.persistentForceLoad)
-        forceLoadOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        forceLoadOption.grid(row=4, column=1, sticky='nw', pady=2, padx=2)
-        
-        label = Label(self.settingsTopRightFrame, text='UI Scale (restart app for changes)', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=5, column=0, sticky="e", pady=2, padx=2)        
+    def settingsMaintenanceList(self, parentFrame):
+        row = 0
+   
+        label = Label(parentFrame, text='Maintenance', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
+        label.grid(row=row, column=0, columnspan=2, sticky="n")
+        row += 1
+        label = Label(parentFrame, text='UI Scale (restart app for changes)', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)        
         self.uiScaleSetting = DoubleVar()
         if 'uiScale' in self.persistent:
             self.uiScaleSetting.set(self.persistent['uiScale'])
         else:
             self.uiScaleSetting.set(1)
-        self.uiScaleOption = Scale(self.settingsTopRightFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=self.uiScaleSetting, command=self.uiScaleChange)
+        self.uiScaleOption = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=self.uiScaleSetting, command=self.uiScaleChange)
         self.uiScaleOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        self.uiScaleOption.grid(row=5, column=1, sticky='nw', pady=2, padx=2)
-        
-        label = Label(self.settingsTopRightFrame, text='Export default', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=6, column=0, sticky="e", pady=2, padx=2)
+        self.uiScaleOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text=' ', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text='Export default', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
         exportVar = StringVar(value=self.persistent['exportDefault'] if 'exportDefault' in self.persistent else '')
         exportDefault = ['']+self.exportOptions
-        exportOption = OptionMenu(self.settingsTopRightFrame, exportVar, *exportDefault, command=self.persistentExport)
+        exportOption = OptionMenu(parentFrame, exportVar, *exportDefault, command=self.persistentExport)
         exportOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        exportOption.grid(row=6, column=1, sticky='nw', pady=2, padx=2)
+        exportOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text=' ', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
+        row += 1
+        label = Label(parentFrame, text='Force out of date JSON loading', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)        
+        forceLoad = StringVar(value='Yes' if self.persistent['forceJsonLoad'] else 'No')
+        forceLoadOptions = self.yesNo
+        forceLoadOption = OptionMenu(parentFrame, forceLoad, *forceLoadOptions, command=self.persistentForceLoad)
+        forceLoadOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        forceLoadOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
+        buttonElement = Button(parentFrame, text='Check for new faction icons (Slow)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
+        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="factionImages"))
+        row += 1
+        buttonElement = Button(parentFrame, text='Clear data cache (Fast)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
+        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="cache"))
+        row += 1
+        buttonElement = Button(parentFrame, text='Clear image cache (VERY SLOW!)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
+        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="images"))
+        row += 1
+        #buttonExportSettings = Button(parentFrame, text='Export SETS manual settings', bg='#3a3a3a',fg='#b3b3b3', command=self.exportSettings)
+        #buttonExportSettings.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
+        #row += 1
     
 
     def setupUIScaling(self,event=None):
@@ -2510,7 +2559,7 @@ class SETS():
         if len(tags):
             for tag in tags:
                 logNote = logNote + '{:>9}'.format('['+tag.strip()+']')
-        self.logWrite('{:>12} {:>6} item count: {:>6} {:>6}'.format(title, body, str(count), logNote), 2)
+        self.logWrite('{:>12} {:>6} count: {:>6} {:>6}'.format(title, body, str(count), logNote), 2)
         
     def logWrite(self, notice, level=0):
         # Level 0: Default, always added to short log note frame on UI
