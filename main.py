@@ -87,10 +87,15 @@ class SETS():
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
         cache_base = self.cacheFolderLocation()
+        override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
             
         filename = os.path.join(*filter(None, [cache_base, designation]))+".html"
+        filenameOverride = os.path.join(*filter(None, [override_base, designation]))+".html"
+        if os.path.exists(filenameOverride):
+            filename = filenameOverride
+            
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
@@ -99,8 +104,7 @@ class SETS():
                     s = html_file.read()
                     return HTML(html=s, url = 'https://sto.fandom.com/')
         r = self.session.get(url)
-        if not os.path.exists(os.path.dirname(filename)):
-            os.makedirs(os.path.dirname(filename))
+        self.makeFilenamePath(os.path.dirname(filename))
         with open(filename, 'w', encoding="utf-8") as html_file:
             html_file.write(r.text)
             self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1)
@@ -110,10 +114,15 @@ class SETS():
     def fetchOrRequestJson(self, url, designation):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
         cache_base = self.cacheFolderLocation()
+        override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
             
         filename = os.path.join(*filter(None, [cache_base, designation]))+".json"
+        filenameOverride = os.path.join(*filter(None, [override_base, designation]))+".json"
+        if os.path.exists(filenameOverride):
+            filename = filenameOverride
+            
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
@@ -122,8 +131,7 @@ class SETS():
                     json_data = json.load(json_file)
                     return json_data
         r = requests.get(url)
-        if not os.path.exists(os.path.dirname(filename)):
-            os.makedirs(os.path.dirname(filename))
+        self.makeFilenamePath(os.path.dirname(filename))
         with open(filename, 'w') as json_file:
             json.dump(r.json(),json_file)
             self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
@@ -257,6 +265,7 @@ class SETS():
     def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None):
         """Request image from web or fetch from local cache"""
         cache_base = self.cacheImagesFolderLocation()
+        override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
             
@@ -271,6 +280,7 @@ class SETS():
         extension = "jpeg" if url.endswith("jpeg") or url.endswith("jpg") else "png"
         fileextension = '.'+extension
         filename = filenameDefault = filenameNoFaction = os.path.join(*filter(None, [cache_base, designation]))+fileextension
+        filenameOverride = os.path.join(*filter(None, [override_base, designation]))+fileextension
         filenameExisting = ''
         
         if faction is not None and '_icon' in url and not '_icon_(' in url:
@@ -282,9 +292,13 @@ class SETS():
         
         if filename in self.persistent['imagesFactionAliases']:
             filename = self.persistent['imagesFactionAliases'][filename]
+            
+        if os.path.exists(filenameOverride):
+            filename = filenameOverride
+            
         if os.path.exists(filename):
             self.progressBarUpdate()  
-        else:
+        elif not self.args.nofetch:
             image_data = self.fetchImage(url)
             
             if image_data is None:
@@ -368,9 +382,8 @@ class SETS():
     
     def loadLocalImage(self, filename, width = None, height = None):
         """Request image from web or fetch from local cache"""
-        cache_base = self.folderLocalImagesName
-        if not os.path.exists(cache_base):
-            os.makedirs(cache_base)
+        cache_base = self.persistent['folder']['local']
+        self.makeFilenamePath(cache_base)
         filename = os.path.join(*filter(None, [cache_base, filename]))
         if os.path.exists(filename):
             image = Image.open(filename)
@@ -606,6 +619,9 @@ class SETS():
 
     def resetPersistent(self):
         # related constants not sourced externally yet
+        self.fileStateName = '.state_SETS.json'
+        self.fileConfigName = '.config.json'
+        
         self.yesNo = ["Yes", "No"]
         self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
         self.rarities = ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra rare', 'Epic']
@@ -625,7 +641,16 @@ class SETS():
             'boffSort': self.boffSortOptions[0],
             'boffSort2': self.boffSortOptions[0],
             'libraryFolder': '',
+            'folder': {
+                'config' : '.config',
+                'cache' : 'cache',
+                'images' : 'images',
+                'custom' : 'images_custom',
+                'override' : 'override',
+                'local' : 'local',
+            }
         }
+        sys.stderr.write("==={}".format(self.persistent['folder']['override'])+'\n')
     
     def resetSettings(self):
         # self.settings are optionally loaded from config, but manually edited or saved
@@ -2503,6 +2528,7 @@ class SETS():
         parser.add_argument('--configfolder', type=int, help='Set configuration folder (contains config file, state file, default library location')
         parser.add_argument('--debug', type=int, help='Set debug level (default: 0)')
         parser.add_argument('--file', type=str, help='File to import on open')
+        parser.add_argument('--nofetch', type=str, help='Do not fetch new images')
 
         self.args = parser.parse_args()
         
@@ -2514,14 +2540,14 @@ class SETS():
             self.fileConfigName = self.args.configfile
 
         if self.args.configfolder is not None:
-            self.folderConfigName = self.args.configfolder
+            self.persistent['folder']['config'] = self.args.configfolder
 
     def configLocation(self):
         # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
         system = sys.platform
-        if os.path.exists(self.folderConfigName):
+        if os.path.exists(self.persistent['folder']['config']):
             # We already have a config folder in the app home directory, use portable mode
-            filePath = self.folderConfigName
+            filePath = self.persistent['folder']['config']
         elif os.path.exists(self.fileConfigName):
             # We already have a config file in the app home directory, use portable mode
             filePath=''
@@ -2545,13 +2571,8 @@ class SETS():
         else:
             # Unix
             filePath = os.path.join(os.path.expanduser('~'), '.config', 'SETS')
-            
-        if filePath != '' and not os.path.exists(filePath):
-            try:
-                errMakeDirs = os.makedirs(filePath)
-                self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
-            except:
-                self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
+           
+        self.makeFilenamePath(filePath)           
         
         return filePath
 
@@ -2569,47 +2590,56 @@ class SETS():
         filePath = self.configLocation()
         
         if os.path.exists(filePath):
-            filePath = os.path.join(filePath, self.folderCacheName)
-            if not os.path.exists(filePath):
-                try:
-                    os.MakeDirs = os.makedirs(filePath)
-                    self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
-                except:
-                    self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
+            filePath = os.path.join(filePath, self.persistent['folder']['cache'])
+            self.makeFilenamePath(filePath)
         
         if not os.path.exists ( filePath ):
-            filePath = self.folderCacheName
+            filePath = self.persistent['folder']['cache']
+
+        return filePath
+        
+    def makeFilenamePath(self, filePath):
+        if not os.path.exists(filePath):
+            try:
+                os.MakeDirs = os.makedirs(filePath)
+                self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
+            except:
+                self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
+    
+    def getFolderLocation(self, subfolder=None):
+        filePath = self.configLocation()
+        
+        if subfolder == "images" and os.path.exists(self.persistent['folder']['images']):
+            # use appdir cache if it already exists /legacy
+            filePath = self.persistent['folder']['images']
+        else:
+            if subfolder is not None and subfolder in self.persistent['folder']:
+                filePath = os.path.join(filePath, self.persistent['folder'][subfolder])
+            self.makeFilenamePath(filePath)
+
+        if not os.path.exists ( filePath ):
+            filePath = ''
+            if subfolder in self.persistent['folder']:
+                filePath = self.persistent['folder'][subfolder]
 
         return filePath
         
     def cacheImagesFolderLocation(self, subfolder=None):
         filePath = self.configLocation()
-        
-        if os.path.exists(self.folderCacheImagesName):
+        if subfolder is not None and subfolder in self.persistent['folder']:
+            filePath = os.path.join(filePath, self.persistent['folder'][subfolder])
+            self.makeFilenamePath(filePath)
+        elif os.path.exists(self.persistent['folder']['images']):
             # use appdir cache if it already exists /legacy
-            filePath = self.folderCacheImagesName
+            filePath = self.persistent['folder']['images']
         elif os.path.exists(filePath):
-            filePath = os.path.join(filePath, self.folderCacheImagesName)
-            if not os.path.exists(filePath):
-                try:
-                    os.MakeDirs = os.makedirs(filePath)
-                    self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
-                except:
-                    self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
-        
-        if subfolder is not None:
-            filePath = os.path.join(filePath, self.folderCacheCustomImagesName)
-            if not os.path.exists(filePath):
-                try:
-                    os.MakeDirs = os.makedirs(filePath)
-                    self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
-                except:
-                    self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
-        
+            filePath = os.path.join(filePath, self.persistent['folder']['images'])
+            self.makeFilenamePath(filePath)
+
         if not os.path.exists ( filePath ):
-            filePath = self.folderCacheImagesName
-            if subfolder is not None:
-                filePath = os.path.join(filePath, self.folderCacheCustomImagesName)
+            filePath = self.persistent['folder']['images']
+            if subfolder in self.persistent['folder']:
+                filePath = os.path.join(filePath, self.persistent['folder'][subfolder])
 
         return filePath
             
@@ -2761,15 +2791,7 @@ class SETS():
         self.logmini = StringVar()
         self.logFull = StringVar()
         
-        self.fileStateName = '.state_SETS.json'
         self.resetPersistent()
-
-        self.fileConfigName = '.config.json'
-        self.folderConfigName = '.config'
-        self.folderCacheName = 'cache'
-        self.folderCacheImagesName = 'images'
-        self.folderCacheCustomImagesName = 'custom'
-        self.folderLocalImagesName = 'local'
         self.resetSettings()
 
         self.logWriteBreak("logStart")
