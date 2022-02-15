@@ -2075,7 +2075,64 @@ class SETS():
         buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
     
-    def setupTagsAndCharFrame(self, frame):
+    def setupTagsFrame(self, buildTagFrame, environment='space'):
+        if environment != 'ground':
+            self.shipTierFrame = Frame(buildTagFrame, bg='#b3b3b3')
+            self.shipTierFrame.pack(fill=X, expand=False)
+            
+        #Label(buildTagFrame, text="BUILD TAGS", fg='#3a3a3a', bg='#b3b3b3').pack(fill=X, expand=False)
+        for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
+            tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
+            tagFrame.pack(fill=X, expand=False)
+            v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
+            Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
+            v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
+            Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
+        
+    def setupCaptainFrame(self, charInfoFrame, environment='space'):
+        row = 0
+        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
+        m.grid(column=1, row=row, sticky='w', pady=2, padx=2)
+        m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        if environment != 'ground':
+            self.shipTierFrame = Frame(charInfoFrame, bg='#b3b3b3')
+            self.shipTierFrame.grid(column=3, row=row, columnspan=1, sticky='swe')
+
+        row += 1
+        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
+        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+ 
+        row += 1       
+        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
+        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+ 
+        row += 1
+        myFactionNames = self.factionNames
+        Label(charInfoFrame, text="Faction", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend['captain']['faction'], *myFactionNames)
+        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+
+        row += 1 
+        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
+        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+
+        row += 1
+        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
+        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        
+        charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
+        
+    def setupTagsAndCharFrame(self, frame, environment='space'):
         tagsAndCharFrame = Frame(frame, bg='#b3b3b3')
         tagsAndCharFrame.pack(fill=X, expand=True, padx=2, side=BOTTOM)
         tagsAndCharFrame.grid_columnconfigure(0, weight=1)
@@ -2084,53 +2141,10 @@ class SETS():
         buildTagFrame.grid(row=0, column=0, sticky='sew')
         charInfoFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
         charInfoFrame.grid(row=0, column=1, sticky='sew')
-        Label(buildTagFrame, text="BUILD TAGS", fg='#3a3a3a', bg='#b3b3b3').pack(fill=X, expand=False)
-        for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
-            tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
-            tagFrame.pack(fill=X, expand=False)
-            v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
-            Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
-            v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
-            Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
-
-        row = 0
-        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
-        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
-        m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
-
-        row += 1
-        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
-        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
- 
-        row += 1       
-        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
-        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
- 
-        row += 1
-        myFactionNames = self.factionNames
-        Label(charInfoFrame, text="Faction", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend['captain']['faction'], *myFactionNames)
-        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-
-        row += 1 
-        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
-        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
-
-        row += 1
-        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
-        m.grid(column=1, row=row, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
-        charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
+        self.setupTagsFrame(buildTagFrame, environment)
+        self.setupCaptainFrame(charInfoFrame, environment)
+
         
     def updateShipDesc(self, event):
         self.build['playerShipDesc'] = self.shipDescText.get("1.0", END)
@@ -2221,39 +2235,43 @@ class SETS():
                 self.shipImage0 = img0
                 self.shipImage1 = img1
         
+            
         NameFrame = Frame(parentFrame, bg='#b3b3b3')
-        NameFrame.pack(fill=BOTH, expand=False)
-        Label(NameFrame, text="{} Name:".format('Player' if environment == 'ground' else 'Ship'), fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
-        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('' if environment == 'ground' else 'Ship')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=0, column=1, sticky='nsew', ipady=5, pady=10)
-        NameFrame.grid_columnconfigure(1, weight=1)
+        NameFrame.pack(fill=BOTH, expand=False, padx=(0,5), pady=(5,0))
         
+        row = 0
         if environment != 'ground':
-            shipSelectFrame = Frame(parentFrame, bg='#b3b3b3')
-            shipSelectFrame.pack(fill=BOTH, expand=True, padx=2)
-            Label(shipSelectFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = 0, sticky='nwse')
-            self.shipButton = Button(shipSelectFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
-            self.shipButton.grid(column=1, row=0, sticky='nwse')
-            shipSelectFrame.grid_columnconfigure(1, weight=1)
-            self.shipTierFrame = Frame(shipSelectFrame, bg='#b3b3b3')
-            self.shipTierFrame.grid(column=2, row=0, sticky='e')
+            Label(NameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='w')
+            self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
+            self.shipButton.grid(column=1, row=row, sticky='nwse')
+            NameFrame.grid_columnconfigure(1, weight=1)
+            #self.shipTierFrame = Frame(NameFrame, bg='#b3b3b3')
+            #self.shipTierFrame.grid(column=2, row=row, sticky='e')
+            row += 1
         
-        DescFrame = Frame(parentFrame, bg='#b3b3b3')
-        DescFrame.pack(fill=BOTH, expand=True, padx=2)
-        Label(DescFrame, text="Desc ({}):".format('G' if environment == 'ground' else 'S'), fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nw')
+        Label(NameFrame, text="{} Name:".format('Player' if environment == 'ground' else 'Ship'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='nsew')
+        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('' if environment == 'ground' else 'Ship')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=10)
+        NameFrame.grid_columnconfigure(1, weight=1)
+        row += 1
+        
+        label = Label(NameFrame, text="Desc ({}):".format('G' if environment == 'ground' else 'S'), fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky='nw')
         # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
-        descText = Text(DescFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
+        descText = Text(NameFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
         if environment == 'ground': self.charDescText = descText
         else: self.shipDescText = descText
-        descText.grid(row=0, column=1, sticky='nsw', pady=2, padx=2)
+        descText.grid(row=row, column=1, sticky='nsew')
         descText.bind('<KeyRelease>', self.updatePlayerDesc if environment == 'ground' else self.updateShipDesc)
         if 'player{}Desc'.format('' if environment == 'ground' else 'Ship') in self.build:
             descText.delete(1.0, END)
             descText.insert(1.0, self.build['player{}Desc'.format('' if environment == 'ground' else 'Ship')])
-        
-        self.setupTagsAndCharFrame(parentFrame)
+        row += 1
+            
+        self.setupTagsAndCharFrame(parentFrame, environment)
         
         if environment != 'ground' and self.build['ship'] is not None:
             self.shipButton.configure(text=self.build['ship'])
+            
         self.updateImageLabelSize(LabelFrame)
 
     def setupSkillInfoFrame(self):
