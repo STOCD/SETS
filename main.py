@@ -1073,7 +1073,7 @@ class SETS():
                 item['item'] = ''
                 self.build['ship'] = item['item']
                 self.backend['shipHtml'] = None
-                self.shipImageLabel.configure(image=self.emptyImage)
+                self.setShipImage()
                 self.shipButton.configure(text=item['item'])
                 self.backend['ship'].set(item['item'])
                 self.setupSpaceBuildFrames()
@@ -1343,8 +1343,8 @@ class SETS():
         self.setupGroundBuildFrames()
         self.shipImg = self.getEmptyFactionImage()
         self.groundImg = self.getEmptyFactionImage()
-        self.shipImageLabel.configure(image=self.shipImg)
-        self.charImageLabel.configure(image=self.groundImg)
+        self.setShipImageimage=(self.shipImg)
+        self.setCharImage(self.groundImg)
         self.clearing = 0
         self.setupSpaceBuildFrames()
 
@@ -1424,7 +1424,7 @@ class SETS():
     def focusSpaceBuildFrameCallback(self):
         self.focusFrameCallback('space')
         self.setupInfoFrame('space') #get updates from info changes
-        self.shipImageLabel.configure(image=self.shipImg)
+        self.setShipImage(self.shipImg)
         if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
             self.setupTierFrame(int(self.backend['tier'].get()[1]))
         self.setupDoffFrame(self.shipDoffFrame)
@@ -1432,7 +1432,7 @@ class SETS():
     def focusGroundBuildFrameCallback(self):
         self.focusFrameCallback('ground')
         self.setupInfoFrame('ground') #get updates from info changes
-        self.charImageLabel.configure(image=self.groundImg)
+        self.setCharImage(self.groundImg)
         self.setupDoffFrame(self.groundDoffFrame)
 
     def focusSkillTreeFrameCallback(self):
@@ -2061,7 +2061,7 @@ class SETS():
             self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image.replace(' ','_'), self.build['ship'], self.shipImageWidth, self.shipImageHeight)
         except:
             self.shipImg = self.getEmptyFactionImage()
-        self.shipImageLabel.configure(image=self.shipImg)
+        self.setShipImage(self.shipImg)
 
     def setupButtonExportImportFrame(self, frame):
         exportImportFrame = Frame(frame)
@@ -2159,21 +2159,71 @@ class SETS():
             self.shipImageHeight = self.imageBoxY
         self.logWriteSimple('ImageLabel', 'size', 2, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight)] )
         
+    def setShipImage(self, suppliedImage=None):
+        image1 = self.emptyImage
+        if 'tier' in self.build and self.build['tier'] == "T6-X":
+            image1 = self.imageFromInfoboxName('Epic')
+        
+        if suppliedImage is None:
+            if 1:
+                self.shipImageLabel.configure(image=self.emptyImage)
+            else:
+                self.shipImagecanvas.itemconfig(self.shipImage0,image=getEmptyFactionImage())
+                self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
+        else:
+            if 1:
+                self.shipImageLabel.configure(image=suppliedImage)
+            else:
+                self.shipImagecanvas.itemconfig(self.shipImage0,image=suppliedImage)
+                self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
+            
+    def setCharImage(self, suppliedImage=None):
+        image1 = self.emptyImage
+        if 'eliteCaptain' in self.build and self.build['eliteCaptain']:
+            image1 = self.imageFromInfoboxName('Epic')
+        if suppliedImage is None:
+            if 1:
+                self.charImageLabel.configure(image=self.emptyImage)
+            else:
+                self.charImagecanvas.itemconfig(self.charImage0,image=getEmptyFactionImage())
+                self.charImagecanvas.itemconfig(self.charImage1,image=image1)   
+        else:
+            if 1:
+                self.charImageLabel.configure(image=suppliedImage)
+            else:
+                self.charImagecanvas.itemconfig(self.charImage0,image=suppliedImage)
+                self.charImagecanvas.itemconfig(self.charImage1,image=image1)   
+            
     def setupInfoFrame(self, environment='space'):
         parentFrame = self.groundInfoFrame if environment == 'ground' else self.shipInfoFrame
 
         self.clearFrame(parentFrame)
         self.setupButtonExportImportFrame(parentFrame)
         
-        LabelFrame = Frame(parentFrame, bg='#b3b3b3')
+        LabelFrame = Frame(parentFrame, bg='#3a3a3a')
         LabelFrame.pack(fill=BOTH, expand=True)
-        imageLabel = Label(LabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
-        if environment == 'ground': self.charImageLabel = imageLabel
-        else: self.shipImageLabel = imageLabel
-        imageLabel.pack(fill=BOTH, expand=True)
-        imageLabel.configure(image=self.getEmptyFactionImage())
-        
-        self.updateImageLabelSize(imageLabel)
+        if 1:
+            imageLabel = Label(LabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
+            if environment == 'ground': self.charImageLabel = imageLabel
+            else: self.shipImageLabel = imageLabel
+            imageLabel.pack(fill=BOTH, expand=True)
+            imageLabel.configure(image=self.getEmptyFactionImage())
+        else:
+            imageCanvas = Canvas(LabelFrame, highlightthickness=1, borderwidth=0, bg='#3a3a3a', highlightbackground="black")
+            imageCanvas.grid(row=0, column=0, sticky='nse')
+            LabelFrame.grid_columnconfigure(0, weight=1)
+            img0 = imageCanvas.create_image(imageCanvas.winfo_width() / 2,imageCanvas.winfo_height() / 2, anchor="nw",image=self.getEmptyFactionImage())
+            img1 = imageCanvas.create_image(0,0, anchor="nw",image=self.emptyImage)
+            if environment == 'ground':
+                self.charImagecanvas = imageCanvas
+                self.charImage0 = img0
+                self.charImage1 = img1
+            else:
+                self.shipImagecanvas = imageCanvas
+                self.shipImage0 = img0
+                self.shipImage1 = img1
+                
+        self.updateImageLabelSize(LabelFrame)
         
         NameFrame = Frame(parentFrame, bg='#b3b3b3')
         NameFrame.pack(fill=BOTH, expand=False)
