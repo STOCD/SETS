@@ -441,6 +441,7 @@ class SETS():
         self.precacheDoffs("Ground")
         self.precacheShips()
         self.precacheModifiers()
+        self.precacheDownloads()
         self.logWriteBreak('precachePreload END')
 
     def precacheIconCleanup(self):
@@ -450,15 +451,16 @@ class SETS():
         boffIcons += self.cache['boffTooltips']['ground'].keys()
     
     def precacheEquipment(self, keyPhrase):
-        """Populate in-memory cache of ship equipment lists for faster loading"""
-        if not keyPhrase:
-            return None
-            
-        if keyPhrase in self.cache['equipment']:
-            return self.cache['equipment'][keyPhrase]
-            
+        """Populate in-memory cache of ship equipment lists for faster loading"""  
+        if not keyPhrase or keyPhrase in self.cache['equipment']:
+            return
         self.progressBarStart()
-        phrases = [keyPhrase] + (["Ship Weapon"] if "Weapon" in keyPhrase and "Ship" in keyPhrase else ["Universal Console"] if "Console" in keyPhrase else [])
+        
+        additionalPhrases = []
+        if 'Weapon' in keyPhrase and 'Ship' in keyPhrase: additionalPhrases = ['Ship Weapon']
+        elif 'Console' in keyPhrase: additionalPhrases = ['Universal Console']            
+
+        phrases = [keyPhrase] + additionalPhrases
         
         if "Kit Frame" in keyPhrase:
             equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
@@ -793,23 +795,17 @@ class SETS():
             else:
                 content[key][0].grid_forget()
 
-    def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
-        """Open a picker window"""
-        pickWindow = Toplevel(self.window)
-        pickWindow.resizable(True,False)
-        pickWindow.transient(self.window)
-        #pickWindow.overrideredirect(1) #no window elements, must implement close window in window first
-        pickWindow.title(title)
+    def pickerDimensions(self):
         #self.window.update()
         windowheight = self.windowHeightCache
-        if windowheight < 400: windowheight = 400
-        
         windowwidth = int(self.windowWidthCache / 6)
+        if windowheight < 400: windowheight = 400
         if windowwidth < 240: windowwidth = 240
         
-        sizeWindow = '{}x{}'.format(windowwidth, windowheight)
+        return (windowwidth,windowheight)
+
+    def pickerLocation(self, x, y):
         positionWindow = '+{}+{}'.format(self.windowXCache, self.windowYCache)
-        self.logWrite('pickerGui configs: {}{} on {}x{} window'.format(sizeWindow, positionWindow, self.windowWidthCache, self.windowHeightCache), 2)
 
         if x is None or y is None:
             x = self.window.winfo_pointerx()
@@ -819,18 +815,32 @@ class SETS():
             abs_coord_y = y - self.window.winfo_rooty()
             positionWindow = "+"+str(x)+"+"+str(y)
             self.logWrite("pickerGUI position update: x{},y{}".format(str(x), str(y)), 2)
-            # This should position the pickerGUI under the calling object when working
-        pickWindow.geometry(sizeWindow+positionWindow)
+            # This should position the pickerGUI under the pointer when working
+        return positionWindow
+    
+    def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
+        """Open a picker window"""
+        pickWindow = Toplevel(self.window)
+        pickWindow.resizable(False,True) #vertical resize only
+        pickWindow.transient(self.window)
+        #pickWindow.overrideredirect(1) #no window elements, must implement close window in window first
+        pickWindow.title(title)
+        
+        (windowwidth,windowheight) = self.pickerDimensions()
+        sizeWindow = '{}x{}'.format(windowwidth, windowheight)
+        pickWindow.geometry(sizeWindow+self.pickerLocation(x, y))
         
         origVar = dict()
         for key in itemVar:
             origVar[key] = itemVar[key]
         pickWindow.protocol('WM_DELETE_WINDOW', lambda:self.pickerCloseCallback(pickWindow,origVar,itemVar))
+        
         container = Frame(pickWindow)
         content = dict()
         if top_bar_functions is not None:
             for func in top_bar_functions:
                 func(container, itemVar, content)
+                
         canvas = Canvas(container)
         scrollbar = Scrollbar(container, orient=VERTICAL, command=canvas.yview)
         scrollable_frame = Frame(canvas)
@@ -844,31 +854,35 @@ class SETS():
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side=RIGHT,fill=Y)
 
-        clearSlotButton = Button(scrollable_frame, text='Clear Slot', padx=5, bg='#3a3a3a',fg='#b3b3b3')
-        clearSlotButton.grid(row=0, column=0, sticky='nsew')
-        clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
-
         try:
             items_list.sort()
         except:
             self.logWriteSimple('pickerGUI', 'TRY_EXCEPT', 1, tags=['item_list.sort() failed in '+title])
 
-        i = 1 
+        i = 0
+        clearSlotButton = Button(scrollable_frame, text='Clear Slot', padx=5, bg='#3a3a3a',fg='#b3b3b3')
+        clearSlotButton.grid(row=0, column=0, sticky='nsew')
+        clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
+        i += 1
         for name,image in items_list:
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
-            label = Label(frame, image=image)
-            label.grid(row=0, column=0, sticky='nsew')
-            label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
-            label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-            label = Label(frame, text=name, wraplength=windowwidth-40, justify=LEFT)
-            label.grid(row=0, column=1, sticky='nsew')
-            label.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
-            label.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-            frame.grid(row=i, column=0, sticky='nsew')
-            frame.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
-            frame.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+            for col in range(3):
+                if col == 0: label = Label(frame, image=image)
+                elif col == 1: label = Label(frame, text=name, wraplength=windowwidth-40, justify=LEFT)
+                subFrame = frame
+                    
+                if col < 2: 
+                    subFrame = label
+                    subFrame.grid(row=0, column=col, sticky='nsew')
+                else:
+                    subFrame = frame
+                    subFrame.grid(row=i, column=0, sticky='nsew')
+                    
+                subFrame.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
+                subFrame.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+
             content[name] = (frame, i, 0)
-            i = i + 1
+            i += 1
             
         pickWindow.title('{} ({} options)'.format(title, i-1))
         pickWindow.wait_visibility()    #Implemented for Linux
@@ -1313,9 +1327,11 @@ class SETS():
         self.redditExportDisplaySpace(redditText)
         redditWindow.mainloop()
 
-    def cacheInvalidateCallback(self, type):
-        if type == 'cache':
-            dir = self.getFolderLocation(type)
+    def settingsButtonCallback(self, type):
+        self.logWriteSimple("settingsButtonCallback", '', 2, [type])
+        
+        if type == 'clearcache':
+            dir = self.getFolderLocation('cache')
             for filename in os.listdir(dir):
                 if not filename.endswith('.bak'):
                     file_path = os.path.join(dir, filename)
@@ -1326,24 +1342,28 @@ class SETS():
                             os.rename(file_path, file_path+'.bak')
                     except Exception as e:
                         log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
-        elif type == 'images':
-            dir = self.getFolderLocation(type)
+            self.precachePreload()
+        elif type == 'clearimages':
+            dir = self.getFolderLocation('images')
             for filename in os.listdir(dir):
                 file_path = os.path.join(dir, filename)
                 try:
                     os.unlink(file_path)
                 except Exception as e:
                     log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
-        elif type == 'factionImages':
+        elif type == 'clearfactionImages':
             self.persistent['imagesFactionAliases'] = dict()
             self.stateSave()
-        elif type == 'memcache':
+        elif type == 'clearmemcache':
             self.resetCache()
             self.requestWindowUpdateHold(0)
             self.precachePreload()
-            
-        self.logWriteBreak("Cache cleared: {}".format(type))
-            
+        elif type == 'backupCache':
+            # Backup state file
+            # Backup caches (no unlink phase)
+            # make a duplicate/compressed image archive folder?
+            # make a duplicate/compressed library archive folder?  Just template?
+            pass
                         
     def buildToBackendSeries(self):
         self.copyBuildToBackend('playerShipName')
@@ -2425,130 +2445,106 @@ class SETS():
         self.logDisplay = Text(settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
         self.logDisplay.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
         self.logDisplay.insert('0.0', self.logFull.get())
-        
-        self.settingsDefaultsList(settingsTopMiddleLeftFrame)
-        self.settingsMaintenanceList(settingsTopRightFrame)
-        
-    def settingsDefaultsList(self, parentFrame):
-        row = 0
-        label = Label(parentFrame, text='Settings on this page are auto-saved', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
-        label.grid(row=row, column=0, columnspan=2, sticky="n")
-        row += 1
-        label = Label(parentFrame, text='Defaults:', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='Mark', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
-        mark = StringVar(value=self.persistent['markDefault'])
-        markOption = OptionMenu(parentFrame, mark, *self.marks, command=self.persistentMark)
-        markOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        markOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='Rarity', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
-        rarity = StringVar(value=self.persistent['rarityDefault'])
-        raritiesDefault = [""]+self.rarities
-        rarityOption = OptionMenu(parentFrame, rarity, *raritiesDefault, command=self.persistentRarity)
-        rarityOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        rarityOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='Faction', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
-        faction = StringVar(value=self.persistent['factionDefault'] if 'factionDefault' in self.persistent else '')
-        factionDefault = ['']+self.factionNames
-        factionOption = OptionMenu(parentFrame, faction, *factionDefault, command=self.persistentFaction)
-        factionOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        factionOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='Sort Options:', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='BOFF Sort 1st', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
-        boffSort = StringVar(value=self.persistent['boffSort'] if 'boffSort' in self.persistent else '')
-        boffSortDefault = self.boffSortOptions
-        boffSortOption = OptionMenu(parentFrame, boffSort, *boffSortDefault, command=self.persistentBoffSort)
-        boffSortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        boffSortOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='BOFF Sort 2nd', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
-        boff2Sort = StringVar(value=self.persistent['boffSort2'] if 'boffSort2' in self.persistent else '')
-        boff2SortOption = OptionMenu(parentFrame, boff2Sort, *boffSortDefault, command=self.persistentBoffSort2)
-        boff2SortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        boff2SortOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='Console Sort', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
-        varBackend = StringVar(value=self.persistent['consoleSort'] if 'consoleSort' in self.persistent else '')
-        varOptions = self.consoleSortOptions
-        boffSortOption = OptionMenu(parentFrame, varBackend, *varOptions, command=self.persistentConsoleSort)
-        boffSortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        boffSortOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
 
-    def settingsMaintenanceList(self, parentFrame):
-        row = 0
-   
-        label = Label(parentFrame, text='Maintenance', fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica',14))
-        label.grid(row=row, column=0, columnspan=2, sticky="n")
-        row += 1
-        label = Label(parentFrame, text='UI Scale (restart app for changes)', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)        
-        self.uiScaleSetting = DoubleVar()
-        if 'uiScale' in self.persistent:
-            self.uiScaleSetting.set(self.persistent['uiScale'])
-        else:
-            self.uiScaleSetting.set(1)
-        self.uiScaleOption = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=self.uiScaleSetting, command=self.uiScaleChange)
-        self.uiScaleOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        self.uiScaleOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text=' ', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='Export default', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
-        exportVar = StringVar(value=self.persistent['exportDefault'] if 'exportDefault' in self.persistent else '')
-        exportDefault = ['']+self.exportOptions
-        exportOption = OptionMenu(parentFrame, exportVar, *exportDefault, command=self.persistentExport)
-        exportOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        exportOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text=' ', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
-        row += 1
-        label = Label(parentFrame, text='Force out of date JSON loading', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)        
-        forceLoad = StringVar(value='Yes' if self.persistent['forceJsonLoad'] else 'No')
-        forceLoadOptions = self.yesNo
-        forceLoadOption = OptionMenu(parentFrame, forceLoad, *forceLoadOptions, command=self.persistentForceLoad)
-        forceLoadOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-        forceLoadOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
-        row += 1
-        buttonElement = Button(parentFrame, text='Clear data cache folder (Fast)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="cache"))
-        row += 1
-        label = Label(parentFrame, text=' ', fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
-        row += 1
-        buttonElement = Button(parentFrame, text='Reset memory cache (Slow)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="memcache"))
-        row += 1
-        buttonElement = Button(parentFrame, text='Check for new faction icons (Slow)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="factionImages"))
-        row += 1
-        buttonElement = Button(parentFrame, text='Clear image cache (VERY SLOW!)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="images"))
-        row += 1
-        #buttonExportSettings = Button(parentFrame, text='Export SETS manual settings', bg='#3a3a3a',fg='#b3b3b3', command=self.exportSettings)
-        #buttonExportSettings.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-        #row += 1
-    
+        settingsDefaults = {
+            'Settings on this page are auto-saved' : { 'col' : 1, 'type' : 'title' },
+            'Defaults:'     : { 'col' : 1 },
+            'Mark'          : { 'col' : 2, 'type' : 'menu', 'varName' : 'markDefault' },
+            'Rarity'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'rarityDefault' },
+            'Faction'       : { 'col' : 2, 'type' : 'menu', 'varName' : 'factionDefault' },
+            'Sort Options:' : { 'col' : 1 },
+            'BOFF Sort 1st' : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort' },
+            'BOFF Sort 2nd' : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort2' },
+            'Console Sort'  : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort' },
+        }
+        self.configureColumn(settingsTopMiddleLeftFrame, theme=settingsDefaults)
+
+        settingsMaintenance = {
+            'blank0'                                : { 'col' : 1, 'type' : 'blank' },
+            'Maintenance:'                          : { 'col' : 1 },
+            'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'varName' : 'uiScale' },
+            'blank1'                                : { 'col' : 1, 'type' : 'blank' },
+            'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault' },
+            'blank2'                                : { 'col' : 1, 'type' : 'blank' },
+            'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'forceJsonLoad', 'boolean' : True},
+            'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
+            'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'varName' : 'backupCache' },
+#            'Export SETS manual settings'           : { 'col' : 2, 'type' : 'button', 'varName' : 'exportConfigFile' },
+            'blank3'                                : { 'col' : 1, 'type' : 'blank' },
+            'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'varName' : 'clearmemcache' },
+            'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'varName' : 'clearfactionImages' },
+            'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearimages' },
+        }
+        self.configureColumn(settingsTopRightFrame, theme=settingsMaintenance)
+
+    def persistentSet(self, choice, varName):
+        if varName is None or varName == '':
+            return
+            
+        if varName == 'forceJsonLoad': self.persistent[varName] = 1 if choice=='Yes' else 0
+        else: self.persistent[varName] = choice
+        
+        self.logWriteSimple("self.persistent", varName, 2, [choice])
+        self.stateSave()
+        
+        if varName == 'consoleSort':
+            # Need to hook the ship frame to take sub-frame updates
+            pass
+        elif varName == 'boffSort' or varName == 'boffSort2': self.setupBoffFrame('space', self.backend['shipHtml'])
+        elif varName == 'uiScale':
+            # Need to hook rescaling
+            pass
+        
+    def configureColumn(self, parentFrame, theme=None, row=0, columnTotal=2):
+        if theme is None or not len(theme): return
+        
+        for title in theme.keys():
+            type = theme[title]['type'] if 'type' in theme[title] else ''
+            
+            varName = theme[title]['varName'] if 'varName' in theme[title] else ''
+            isBoolean = True if 'boolean' in theme[title] and theme[title]['boolean'] else False
+
+            columns = theme[title]['col'] if 'col' in theme[title] else 1
+            colOption = 0 if type == 'button' else 1
+            spanLabel = 1 + (columnTotal - columns)
+            spanOption = 2 if type == 'button' else 1
+            stickyLabel = 'ew' if spanLabel > 1 else 'e'
+            if type == 'title': stickylabel = 'n'
+            stickyOption = 'nwe' if type == 'button' else 'nw'
+            f = font.Font(family='Helvetica', size=10) if type else font.Font(family='Helvetica', size=12)
+            if type == 'title': f = font.Font(family='Helvetica', size=14, weight='bold')
+            if columns > 1 and varName == '': continue
+            self.logWrite("==={}: {}/{}".format(title, varName, type), 2)
+            
+            if type != 'button':
+                label = Label(parentFrame, text='' if type == 'blank' else title, fg='#3a3a3a', bg='#b3b3b3', font=f)
+                label.grid(row=row, column=0, columnspan=spanLabel, sticky=stickyLabel, pady=2, padx=2)
+            if columns > 1:
+                if type == 'menu':
+                    if isBoolean:  settingVar = StringVar(value='Yes' if self.persistent[varName] else 'No')
+                    else: settingVar = StringVar(value=self.persistent[varName] if varName in self.persistent else '')
+                    # Integrate these into the theme, or *assignment in if phase
+                    if varName == 'markDefault': settingOptions = self.marks
+                    elif varName == 'rarityDefault': settingOptions = ['']+self.rarities
+                    elif varName == 'factionDefault': settingOptions = ['']+self.factionNames
+                    elif varName == 'boffSort': settingOptions = self.boffSortOptions
+                    elif varName == 'boffSort2': settingOptions = self.boffSortOptions
+                    elif varName == 'consoleSort': settingOptions = self.consoleSortOptions
+                    elif varName == 'exportDefault': settingOptions = ['']+self.exportOptions
+                    elif isBoolean: settingOptions = ['']+self.yesNo
+                    
+                    optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName:self.persistentSet(choice, varName=varName))
+                elif type == 'scale':
+                    settingVar = DoubleVar(value=self.persistent[varName] if varName in self.persistent else 1)
+                    if varName == 'uiScale': self.uiScaleSetting = settingVar
+                    # range/resolution from theme in future
+                    optionFrame = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=settingVar, command=lambda choice,varName=varName:self.persistentSet(choice, varName=varName))
+                elif type == 'button':
+                    optionFrame = Button(parentFrame, text=title, bg='#3a3a3a',fg='#b3b3b3', command=lambda varName=varName:self.settingsButtonCallback(type=varName))
+
+                optionFrame.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+                optionFrame.grid(row=row, column=colOption, columnspan=spanOption, sticky=stickyOption, pady=2, padx=2)
+            row += 1
 
     def setupUIScaling(self,event=None):
         # Partially effect, some errors in the log formatting
@@ -2560,12 +2556,6 @@ class SETS():
         factor = ( self.dpi / 96 ) * scale
         self.window.call('tk', 'scaling', factor)
         self.logminiWrite('{:>4}dpi (x{:>0.2}) '.format(self.dpi, (factor * scale)))
-
-        
-    def uiScaleChange(self, event=None):
-        self.persistent['uiScale'] = self.uiScaleSetting.get()
-        self.stateSave()
-        #self.setupUIScaling()
 
     def logDisplayUpdate(self):
         self.logDisplay.delete('0.0', END)
@@ -2865,42 +2855,6 @@ class SETS():
     def persistentToBackend(self):
         # Nothing yet
         return
-    
-        
-    def persistentConsoleSort(self, choice):
-        self.persistent['consoleSort'] = choice
-        self.stateSave()
-        # Need to hook the ship frame to take sub-frame updates
-        
-    def persistentBoffSort2(self, choice):
-        self.persistent['boffSort2'] = choice
-        self.stateSave()
-        self.setupBoffFrame('space', self.backend['shipHtml'])
-        
-    def persistentBoffSort(self, choice):
-        self.persistent['boffSort'] = choice
-        self.stateSave()
-        self.setupBoffFrame('space', self.backend['shipHtml'])
-        
-    def persistentExport(self, choice):
-        self.persistent['exportDefault'] = choice
-        self.stateSave()
-    
-    def persistentFaction(self, choice):
-        self.persistent['factionDefault'] = choice
-        self.stateSave()
-        
-    def persistentMark(self, choice):
-        self.persistent['markDefault'] = choice
-        self.stateSave()
-        
-    def persistentRarity(self, choice):
-        self.persistent['rarityDefault'] = choice
-        self.stateSave()
-        
-    def persistentForceLoad(self, choice):
-        self.persistent['forceJsonLoad'] = 1 if choice=='Yes' else 0
-        self.stateSave()
             
     def stateSave(self, quiet=False):
         configFile = self.stateFileLocation()
