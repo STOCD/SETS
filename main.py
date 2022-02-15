@@ -86,7 +86,7 @@ class SETS():
 
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
-        cache_base = self.cacheFolderLocation()
+        cache_base = self.getFolderLocation('cache')
         override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
@@ -113,7 +113,7 @@ class SETS():
 
     def fetchOrRequestJson(self, url, designation):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
-        cache_base = self.cacheFolderLocation()
+        cache_base = self.getFolderLocation('cache')
         override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
@@ -264,7 +264,7 @@ class SETS():
     
     def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None):
         """Request image from web or fetch from local cache"""
-        cache_base = self.cacheImagesFolderLocation()
+        cache_base = self.getFolderLocation('images')
         override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
@@ -2542,7 +2542,7 @@ class SETS():
         if self.args.configfolder is not None:
             self.persistent['folder']['config'] = self.args.configfolder
 
-    def configLocation(self):
+    def configFolderLocation(self):
         # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
         system = sys.platform
         if os.path.exists(self.persistent['folder']['config']):
@@ -2577,7 +2577,7 @@ class SETS():
         return filePath
 
     def configFileLocation(self):
-        filePath = self.configLocation()
+        filePath = self.configFolderLocation()
         
         if os.path.exists(filePath):
             fileName = os.path.join(filePath, self.fileConfigName)
@@ -2585,18 +2585,6 @@ class SETS():
             fileName = self.fileConfigName
         
         return fileName
-        
-    def cacheFolderLocation(self):
-        filePath = self.configLocation()
-        
-        if os.path.exists(filePath):
-            filePath = os.path.join(filePath, self.persistent['folder']['cache'])
-            self.makeFilenamePath(filePath)
-        
-        if not os.path.exists ( filePath ):
-            filePath = self.persistent['folder']['cache']
-
-        return filePath
         
     def makeFilenamePath(self, filePath):
         if not os.path.exists(filePath):
@@ -2607,7 +2595,7 @@ class SETS():
                 self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
     
     def getFolderLocation(self, subfolder=None):
-        filePath = self.configLocation()
+        filePath = self.configFolderLocation()
         
         if subfolder == "images" and os.path.exists(self.persistent['folder']['images']):
             # use appdir cache if it already exists /legacy
@@ -2623,28 +2611,9 @@ class SETS():
                 filePath = self.persistent['folder'][subfolder]
 
         return filePath
-        
-    def cacheImagesFolderLocation(self, subfolder=None):
-        filePath = self.configLocation()
-        if subfolder is not None and subfolder in self.persistent['folder']:
-            filePath = os.path.join(filePath, self.persistent['folder'][subfolder])
-            self.makeFilenamePath(filePath)
-        elif os.path.exists(self.persistent['folder']['images']):
-            # use appdir cache if it already exists /legacy
-            filePath = self.persistent['folder']['images']
-        elif os.path.exists(filePath):
-            filePath = os.path.join(filePath, self.persistent['folder']['images'])
-            self.makeFilenamePath(filePath)
-
-        if not os.path.exists ( filePath ):
-            filePath = self.persistent['folder']['images']
-            if subfolder in self.persistent['folder']:
-                filePath = os.path.join(filePath, self.persistent['folder'][subfolder])
-
-        return filePath
             
     def stateFileLocation(self):
-        filePath = self.configLocation()
+        filePath = self.configFolderLocation()
         
         if os.path.exists(filePath):
             fileName = os.path.join(filePath, self.fileStateName)
@@ -2656,7 +2625,7 @@ class SETS():
         return fileName
         
     def templateFileLocation(self):
-        filePath = self.configLocation()
+        filePath = self.configFolderLocation()
         
         if os.path.exists(filePath):
             fileName = os.path.join(filePath, self.settings['template'])
