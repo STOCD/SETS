@@ -805,12 +805,16 @@ class SETS():
         
         sizeWindow = '{}x{}'.format(windowwidth, windowheight)
         positionWindow = '+{}+{}'.format(self.windowXCache, self.windowYCache)
-        self.logWrite('{}x{}'.format(self.windowWidthCache, self.windowHeightCache), 2)
-        self.logWrite('{}{}'.format(sizeWindow, positionWindow), 2)
+        self.logWrite('pickerGui configs: {}{} on {}x{} window'.format(sizeWindow, positionWindow, self.windowWidthCache, self.windowHeightCache), 2)
 
-        if x is not None and y is not None and 0:
+        if x is None or y is None:
+            x = self.window.winfo_pointerx()
+            y = self.window.winfo_pointery()
+        if x is not None and y is not None:
+            abs_coord_x = x - self.window.winfo_rootx()
+            abs_coord_y = y - self.window.winfo_rooty()
             positionWindow = "+"+str(x)+"+"+str(y)
-            self.logWrite("pickerGUI: x{},y{}".format(str(x), str(y)), 2)
+            self.logWrite("pickerGUI position update: x{},y{}".format(str(x), str(y)), 2)
             # This should position the pickerGUI under the calling object when working
         pickWindow.geometry(sizeWindow+positionWindow)
         
@@ -877,7 +881,7 @@ class SETS():
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
-        item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame], e.x, e.y)
+        item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame], self.window.winfo_pointerx(), self.window.winfo_pointery())
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
                 item['item'] = ''
@@ -2169,7 +2173,7 @@ class SETS():
         else:
             self.shipImageWidth  = self.imageBoxX
             self.shipImageHeight = self.imageBoxY
-        self.logWriteSimple('ImageLabel', 'size', 2, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight)] )
+        self.logWriteSimple('ImageLabel', 'size', 4, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight)] )
         
     def setShipImage(self, suppliedImage=None):
         image1 = self.emptyImage
