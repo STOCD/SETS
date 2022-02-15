@@ -206,7 +206,7 @@ class SETS():
             # matching aspects
             pass
 
-        #if width >= 100: self.logWrite("==={:4}->{:4} x {:4}->{:4} [{:4}->{:4}=={:4}]".format(imagewidth, width, imageheight, height, aspectOld, aspectNew, round(width / height, 2)), 2)
+        if width >= 100: self.logWrite("==={:4}->{:4} x {:4}->{:4} [{:4}->{:4}=={:4}]".format(imagewidth, width, imageheight, height, aspectOld, aspectNew, round(width / height, 2)), 2)
         return (width, height)
         
     def progressBarUpdate(self, weight=1):
@@ -1086,7 +1086,8 @@ class SETS():
 
     def importCallback(self, event=None):
         """Callback for import button"""
-        inFilename = filedialog.askopenfilename(filetypes=[("JSON file", '*.json'),("PNG image","*.png"),("All Files","*.*")])
+        initialDir = self.getFolderLocation('library')
+        inFilename = filedialog.askopenfilename(filetypes=[('SETS files', '*.json *.png'),('JSON files', '*.json'),('PNG image','*.png'),('All Files','*.*')], initialdir=initialDir)
         self.importByFilename(inFilename)
         self.setupSpaceBuildFrames()
 
@@ -1132,8 +1133,9 @@ class SETS():
 
     def exportCallback(self, event=None):
         """Callback for export button"""
+        initialDir = self.getFolderLocation('library')
         try:
-            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")], title=self.build['playerShipName'], initialdir=self.persistent['libraryFolder']) as outFile:
+            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")], initialfile=self.build['playerShipName'], initialdir=initialDir) as outFile:
                 json.dump(self.build, outFile)
                 self.logWriteTransaction('Export File', 'saved', '', outFile.name, 0)
         except AttributeError:
@@ -1426,7 +1428,8 @@ class SETS():
     def focusSpaceBuildFrameCallback(self):
         self.focusFrameCallback('space')
         self.setupInfoFrame('space') #get updates from info changes
-        self.setShipImage(self.shipImg)
+        self.setupShipImageFrame()
+        #self.setShipImage(self.shipImg)
         if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
             self.setupTierFrame(int(self.backend['tier'].get()[1]))
         self.setupDoffFrame(self.shipDoffFrame)
@@ -2006,12 +2009,16 @@ class SETS():
     def setupFooterFrame(self):
         self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
         f = font=('Helvetica', 10, 'bold')
+        
         footerLabelL = Label(self.footerFrame, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=f)
         footerLabelL.grid(row=0, column=0, sticky='w')
+        
         self.footerProgressBar = Progressbar(self.footerFrame, orient='horizontal', mode='indeterminate', length=200)
         self.footerProgressBar.grid(row=0, column=2, sticky='e')
+        
         footerLabelR = Label(self.footerFrame, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=f)
         footerLabelR.grid(row=0, column=1, sticky='e')
+        
         self.footerFrame.grid_columnconfigure(0, weight=5, uniform="footerlabel")
         self.footerFrame.grid_columnconfigure(1, weight=2, uniform="footerlabel")
         self.footerFrame.grid_columnconfigure(2, weight=1, uniform="footerlabel")
@@ -2068,16 +2075,18 @@ class SETS():
     def setupButtonExportImportFrame(self, frame):
         exportImportFrame = Frame(frame)
         exportImportFrame.pack(fill=BOTH, expand=True)
-        buttonExport = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
+        buttonExportPng = Button(exportImportFrame, text='Export png+json', bg='#3a3a3a',fg='#b3b3b3', command=self.exportPngCallback)
+        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
+        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
+        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
+        buttonExport = Button(exportImportFrame, text='Export json', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
         buttonExport.pack(side='left', fill=BOTH, expand=True)
         buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
         buttonImport.pack(side='left', fill=BOTH, expand=True)
         buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
         buttonClear.pack(side='left', fill=BOTH, expand=True)
-        buttonExportPng = Button(exportImportFrame, text='Export .png', bg='#3a3a3a',fg='#b3b3b3', command=self.exportPngCallback)
-        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
-        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
+
+
     
     def setupTagsFrame(self, buildTagFrame, environment='space'):
         if environment != 'ground':
@@ -2163,6 +2172,11 @@ class SETS():
         self.windowYCache = self.window.winfo_y()
     
     def updateImageLabelSize(self, frame=None):
+        if frame is None:
+            try:
+                frame = shipImageLabel
+            except:
+                pass
         if frame is not None:
             frame.update()
             width = frame.winfo_width()
@@ -2173,7 +2187,7 @@ class SETS():
         else:
             self.shipImageWidth  = self.imageBoxX
             self.shipImageHeight = self.imageBoxY
-        self.logWriteSimple('ImageLabel', 'size', 4, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight)] )
+        self.logWriteSimple('ImageLabel', 'size', 3, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight)] )
         
     def setShipImage(self, suppliedImage=None):
         image1 = self.emptyImage
@@ -2224,7 +2238,7 @@ class SETS():
             else: self.shipImageLabel = imageLabel
             imageLabel.pack(fill=BOTH, expand=True)
             imageLabel.configure(image=self.getEmptyFactionImage())
-        else:
+        else:  #canvas conversion tests
             imageCanvas = Canvas(LabelFrame, highlightthickness=1, borderwidth=0, bg='#3a3a3a', highlightbackground="black")
             imageCanvas.grid(row=0, column=0, sticky='nse')
             LabelFrame.grid_columnconfigure(0, weight=1)
@@ -2586,6 +2600,7 @@ class SETS():
         self.setupSettingsFrame()
         self.setupBuildFrame('space')
         self.setupInfoFrame('space')
+        self.updateImageLabelSize(self.shipImageLabel)
 
         self.templateFileLoad()
         self.setupSpaceBuildFrames()
