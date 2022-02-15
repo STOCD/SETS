@@ -199,16 +199,14 @@ class SETS():
         if width <= 100 or height <= 100:
             # Don't alter small icons
             pass
-        elif aspectOld < aspectNew:
+        elif aspectOld != aspectNew:
             # old is taller than aspect
             width = int(imagewidth / (imageheight / height))
-        elif aspectNew > aspectOld:
-            # old is wider than aspect
-            height = int(imageheight / (imagewidth / width))
         else:
             # matching aspects
             pass
 
+        #if width >= 100: self.logWrite("==={:4}->{:4} x {:4}->{:4} [{:4}->{:4}=={:4}]".format(imagewidth, width, imageheight, height, aspectOld, aspectNew, round(width / height, 2)), 2)
         return (width, height)
         
     def progressBarUpdate(self, weight=1):
@@ -640,7 +638,6 @@ class SETS():
             'exportDefault': self.exportOptions[0],
             'boffSort': self.boffSortOptions[0],
             'boffSort2': self.boffSortOptions[0],
-            'libraryFolder': '',
             'folder': {
                 'config' : '.config',
                 'cache' : 'cache',
@@ -648,6 +645,7 @@ class SETS():
                 'custom' : 'images_custom',
                 'override' : 'override',
                 'local' : 'local',
+                'library' : "library",
             }
         }
         sys.stderr.write("==={}".format(self.persistent['folder']['override'])+'\n')
@@ -2222,8 +2220,6 @@ class SETS():
                 self.shipImagecanvas = imageCanvas
                 self.shipImage0 = img0
                 self.shipImage1 = img1
-                
-        self.updateImageLabelSize(LabelFrame)
         
         NameFrame = Frame(parentFrame, bg='#b3b3b3')
         NameFrame.pack(fill=BOTH, expand=False)
@@ -2258,6 +2254,7 @@ class SETS():
         
         if environment != 'ground' and self.build['ship'] is not None:
             self.shipButton.configure(text=self.build['ship'])
+        self.updateImageLabelSize(LabelFrame)
 
     def setupSkillInfoFrame(self):
         self.clearFrame(self.skillInfoFrame)
