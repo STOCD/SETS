@@ -1156,8 +1156,9 @@ class SETS():
         screenBottomRightX = screenTopLeftX + self.window.winfo_width()
         screenBottomRightY = screenTopLeftY + self.window.winfo_height()
         image = ImageGrab.grab(bbox=(screenTopLeftX, screenTopLeftY, screenBottomRightX, screenBottomRightY))
-
-        outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")])
+        
+        initialDir = self.getFolderLocation('library')
+        outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")], initialfile=self.build['playerShipName'], initialdir=initialDir)
         if not outFilename: return
         image.save(outFilename, "PNG")
         self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
@@ -1612,13 +1613,6 @@ class SETS():
             if optCount:
                 self.labelBuildBlock(parentFrame, optTitle+' Consoles', row, 2, 1, consoleOptions[i]+'Consoles', self.backend[optBackend], self.itemLabelCallback, [optFull, 'Pick '+optTitle+' Console', ''])
                 row += 1
-        
-        
-#        if self.backend['shipUniConsoles'] > 0:
-#            self.labelBuildBlock(parentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.itemLabelCallback, ["Console", "Pick Uni Console", ""])
-#        self.labelBuildBlock(parentFrame, "Sci Consoles", 2, 2, 1, 'sciConsoles', self.backend['shipSciConsoles'], self.itemLabelCallback, ["Ship Science Console", "Pick Sci Console", ""])
-#        self.labelBuildBlock(parentFrame, "Eng Consoles", 1, 2, 1, 'engConsoles', self.backend['shipEngConsoles'], self.itemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", ""])
-#        self.labelBuildBlock(parentFrame, "Tac Consoles", 0, 2, 1, 'tacConsoles', self.backend['shipTacConsoles'], self.itemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", ""])
         
         if self.backend['shipHangars'] > 0:
             self.labelBuildBlock(parentFrame, "Hangars", 4, 0, 1, 'hangars', self.backend['shipHangars'], self.itemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", ""])
