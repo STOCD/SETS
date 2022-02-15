@@ -626,6 +626,7 @@ class SETS():
         self.factionNames = [ 'Dominion', 'Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
         self.exportOptions = ['Ask at export', 'Json', 'PNG', 'Reddit']
         self.boffSortOptions = [ 'release', 'ranks', 'spec', 'spec2']
+        self.consoleSortOptions = [ 'tesu', 'uets', 'utse', 'uest' ]
         
         # self.persistent will be auto-saved and auto-loaded for persistent state data
         self.persistent = {
@@ -638,6 +639,7 @@ class SETS():
             'exportDefault': self.exportOptions[0],
             'boffSort': self.boffSortOptions[0],
             'boffSort2': self.boffSortOptions[0],
+            'consoleSort': self.consoleSortOptions[0],
             'folder': {
                 'config' : '.config',
                 'cache' : 'cache',
@@ -794,6 +796,9 @@ class SETS():
     def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
         """Open a picker window"""
         pickWindow = Toplevel(self.window)
+        pickWindow.resizable(True,False)
+        pickWindow.transient(self.window)
+        #pickWindow.overrideredirect(1) #no window elements, must implement close window in window first
         pickWindow.title(title)
         #self.window.update()
         windowheight = self.windowHeightCache
@@ -865,6 +870,7 @@ class SETS():
             content[name] = (frame, i, 0)
             i = i + 1
             
+        pickWindow.title('{} ({} options)'.format(title, i-1))
         pickWindow.wait_visibility()    #Implemented for Linux
         pickWindow.grab_set()
         pickWindow.wait_window()
@@ -1330,6 +1336,10 @@ class SETS():
         elif type == 'factionImages':
             self.persistent['imagesFactionAliases'] = dict()
             self.stateSave()
+        elif type == 'memcache':
+            self.resetCache()
+            self.requestWindowUpdateHold(0)
+            self.precachePreload()
             
         self.logWriteBreak("Cache cleared: {}".format(type))
             
@@ -1549,10 +1559,11 @@ class SETS():
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
                 canvas.bind('<Enter>', lambda e,item=self.build[key][i],internalKey=internalKey,environment=environment:self.setupInfoboxFrame(item, internalKey, environment))
 
-
     def setupShipBuildFrame(self, ship):
         """Set up UI frame containing ship equipment"""
-        self.clearFrame(self.shipEquipmentFrame)
+        parentFrame = self.shipEquipmentFrame
+        self.clearFrame(parentFrame)
+        
         self.backend['shipForeWeapons'] = int(ship["fore"])
         self.backend['shipAftWeapons'] = int(ship["aft"])
         self.backend['shipDevices'] = int(ship["devices"])
@@ -1568,24 +1579,49 @@ class SETS():
             t5console = ship["t5uconsole"]
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
-        self.labelBuildBlock(self.shipEquipmentFrame, "Fore Weapons", 0, 0, 1, 'foreWeapons', self.backend['shipForeWeapons'], self.itemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
+            
+        self.labelBuildBlock(parentFrame, "Fore Weapons", 0, 0, 1, 'foreWeapons', self.backend['shipForeWeapons'], self.itemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
         if ship["secdeflector"] == 1:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.itemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.itemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Engines", 2, 1, 1, 'engines', 1, self.itemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.itemLabelCallback, ["Singularity Engine" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp ", "Pick Core", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.itemLabelCallback, ["Ship Shields", "Pick Shield", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.itemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
+            self.labelBuildBlock(parentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.itemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
+        self.labelBuildBlock(parentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.itemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
+        self.labelBuildBlock(parentFrame, "Engines", 2, 1, 1, 'engines', 1, self.itemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
+        self.labelBuildBlock(parentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.itemLabelCallback, ["Singularity Engine" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp ", "Pick Core", ""])
+        self.labelBuildBlock(parentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.itemLabelCallback, ["Ship Shields", "Pick Shield", ""])
+        self.labelBuildBlock(parentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.itemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         if ship["experimental"] == 1:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.itemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.itemLabelCallback, ["Ship Device", "Pick Device (S)", ""])
-        if self.backend['shipUniConsoles'] > 0:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.itemLabelCallback, ["Console", "Pick Uni Console", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Sci Consoles", 2, 2, 1, 'sciConsoles', self.backend['shipSciConsoles'], self.itemLabelCallback, ["Ship Science Console", "Pick Sci Console", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Eng Consoles", 1, 2, 1, 'engConsoles', self.backend['shipEngConsoles'], self.itemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", ""])
-        self.labelBuildBlock(self.shipEquipmentFrame, "Tac Consoles", 0, 2, 1, 'tacConsoles', self.backend['shipTacConsoles'], self.itemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", ""])
+            self.labelBuildBlock(parentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.itemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
+        self.labelBuildBlock(parentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.itemLabelCallback, ["Ship Device", "Pick Device (S)", ""])
+        
+        consoleOptions = ['tac', 'eng', 'sci', 'uni']
+        consoleTypes = ['Ship Tactical Console', 'Ship Engineering Console', 'Ship Science Console', 'Console']
+        if self.persistent['consoleSort'] == 'uets':
+            consoleOrder = [3,1,0,2]
+        elif self.persistent['consoleSort'] == 'utse':
+            consoleOrder = [3,0,2,1]
+        elif self.persistent['consoleSort'] == 'uest':
+            consoleOrder = [3,1,2,0]
+        else:
+            consoleOrder = [0,1,2,3]
+        
+        row = 0
+        for i in consoleOrder:
+            optTitle = consoleOptions[i].title()
+            optFull = consoleTypes[i]
+            optBackend = 'ship{}Consoles'.format(optTitle)
+            optCount = self.backend[optBackend] if optBackend in self.backend else 0
+            if optCount:
+                self.labelBuildBlock(parentFrame, optTitle+' Consoles', row, 2, 1, consoleOptions[i]+'Consoles', self.backend[optBackend], self.itemLabelCallback, [optFull, 'Pick '+optTitle+' Console', ''])
+                row += 1
+        
+        
+#        if self.backend['shipUniConsoles'] > 0:
+#            self.labelBuildBlock(parentFrame, "Uni Consoles", 3, 2, 1, 'uniConsoles', self.backend['shipUniConsoles'], self.itemLabelCallback, ["Console", "Pick Uni Console", ""])
+#        self.labelBuildBlock(parentFrame, "Sci Consoles", 2, 2, 1, 'sciConsoles', self.backend['shipSciConsoles'], self.itemLabelCallback, ["Ship Science Console", "Pick Sci Console", ""])
+#        self.labelBuildBlock(parentFrame, "Eng Consoles", 1, 2, 1, 'engConsoles', self.backend['shipEngConsoles'], self.itemLabelCallback, ["Ship Engineering Console", "Pick Eng Console", ""])
+#        self.labelBuildBlock(parentFrame, "Tac Consoles", 0, 2, 1, 'tacConsoles', self.backend['shipTacConsoles'], self.itemLabelCallback, ["Ship Tactical Console", "Pick Tac Console", ""])
+        
         if self.backend['shipHangars'] > 0:
-            self.labelBuildBlock(self.shipEquipmentFrame, "Hangars", 4, 0, 1, 'hangars', self.backend['shipHangars'], self.itemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", ""])
+            self.labelBuildBlock(parentFrame, "Hangars", 4, 0, 1, 'hangars', self.backend['shipHangars'], self.itemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", ""])
 
     def setupCharBuildFrame(self):
         """Set up UI frame containing ship equipment"""
@@ -2448,7 +2484,15 @@ class SETS():
         boff2SortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         boff2SortOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
         row += 1
-        
+        label = Label(parentFrame, text='Console Sort', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, sticky="e", pady=2, padx=2)
+        varBackend = StringVar(value=self.persistent['consoleSort'] if 'consoleSort' in self.persistent else '')
+        varOptions = self.consoleSortOptions
+        boffSortOption = OptionMenu(parentFrame, varBackend, *varOptions, command=self.persistentConsoleSort)
+        boffSortOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+        boffSortOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
+        row += 1
+
     def settingsMaintenanceList(self, parentFrame):
         row = 0
    
@@ -2488,13 +2532,20 @@ class SETS():
         forceLoadOption.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
         forceLoadOption.grid(row=row, column=1, sticky='nw', pady=2, padx=2)
         row += 1
+        buttonElement = Button(parentFrame, text='Clear data cache folder (Fast)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
+        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="cache"))
+        row += 1
+        label = Label(parentFrame, text=' ', fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=row, column=0, columnspan=2, sticky="ew", pady=2, padx=2)
+        row += 1
+        buttonElement = Button(parentFrame, text='Reset memory cache (Slow)', bg='#3a3a3a',fg='#b3b3b3')
+        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
+        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="memcache"))
+        row += 1
         buttonElement = Button(parentFrame, text='Check for new faction icons (Slow)', bg='#3a3a3a',fg='#b3b3b3')
         buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
         buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="factionImages"))
-        row += 1
-        buttonElement = Button(parentFrame, text='Clear data cache (Fast)', bg='#3a3a3a',fg='#b3b3b3')
-        buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
-        buttonElement.bind('<Button-1>', lambda e:self.cacheInvalidateCallback(type="cache"))
         row += 1
         buttonElement = Button(parentFrame, text='Clear image cache (VERY SLOW!)', bg='#3a3a3a',fg='#b3b3b3')
         buttonElement.grid(row=row, column=0, columnspan=2, sticky='nwe', pady=2, padx=2)
@@ -2821,6 +2872,12 @@ class SETS():
         # Nothing yet
         return
     
+        
+    def persistentConsoleSort(self, choice):
+        self.persistent['consoleSort'] = choice
+        self.stateSave()
+        # Need to hook the ship frame to take sub-frame updates
+        
     def persistentBoffSort2(self, choice):
         self.persistent['boffSort2'] = choice
         self.stateSave()
