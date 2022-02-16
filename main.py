@@ -1235,7 +1235,11 @@ class SETS():
         
         self.logWriteTransaction('Export build', chosenExtension, str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size) if chosenExtension.lower() == '.png' else None])
 
-    def skillLabelCallback(self, skill, rank):
+    def skillLabelCallback(self, e, canvas, img, i, key, args):
+        rank, row, col = args
+        name = self.skillGetName(rank, row, col, type='name')
+        
+        return
         rankReqs = [0, 5, 15, 25, 35]
         if(skill in self.build['skills'][rank]):
             if (rank < 4 and len(self.build['skills'][rank+1])>0):
@@ -1618,34 +1622,51 @@ class SETS():
         
         disabledStart = n - disabledCount
         for i in range(n):
-            image1=None
-            
-            if key in self.build and self.build[key][i] is not None and i < disabledStart:
-                image0=self.imageFromInfoboxName(self.build[key][i]['item'])
-                if 'rarity' in self.build[key][i]:
-                    image1=self.imageFromInfoboxName(self.build[key][i]['rarity'])
-                self.backend['images'][key][i] = [image0, image1]
-            else:
-                image0=image1=self.emptyImage
+            environment = args[3] if args is not None and len(args) >= 4 else 'space'
+            internalKey = args[0] if args is not None and type(args[0]) is str else ''
+            disabled = i >= disabledStart
+            bg ='gray' if not disabled else 'black'
+            padx = (25 + 3 * 2) if disabled else 2
+
+            self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, environment=environment, internalKey=internalKey, args=args)
                 
-            canvas = Canvas(iFrame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray' if i < disabledStart else 'black')
-            canvas.grid(row=row, column=i+1, sticky='nse', padx=(25 + 3 * 2) if i >= disabledStart else 2, pady=2)
-            img0 = canvas.create_image(0,0, anchor="nw",image=image0)
-            img1 = None if image1 is None else canvas.create_image(0,0, anchor="nw",image=image1)
-            
-            if i >= disabledStart:
-                canvas.itemconfig(img0, state=DISABLED)
-                canvas.itemconfig(img1, state=DISABLED)
                 
-            if (args is not None and i < disabledStart):
-                environment = 'space'
-                internalKey = ''
-                if len(args) >= 4:
-                    environment = args[3]
-                if type(args[0]) is str:
-                    internalKey = args[0]
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
-                canvas.bind('<Enter>', lambda e,item=self.build[key][i],internalKey=internalKey,environment=environment:self.setupInfoboxFrame(item, internalKey, environment))
+    def createButton(self, parentFrame, key, i=0, callback=None, name=None, internalKey='', environment='space', row=0, column=0, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None):
+        """ Button building (including click and tooltip binds) """
+        # self.build[key][i] is the build code for callback updating and image identification
+        # args [array] contains variable infomation used for callback updating
+        # internalKey is the cache sub-group (for equipment cache sub-groups)
+
+        #self.logWriteSimple('createButton', '', 2, [key, i, internalKey, environment, row, column])
+        
+        if key in self.build and self.build[key][i] is not None:
+            if image0Name is None and 'item' in self.build[key][i]: image0Name = self.build[key][i]['item']
+            if image1Name is None and 'rarity' in self.build[key][i]: image1Name = self.build[key][i]['rarity']
+            
+        if not disabled:
+            if image0 is None: image0=self.imageFromInfoboxName(image0Name, suffix='') if image0Name is not None else self.emptyImage
+            if image1 is None: image1=self.imageFromInfoboxName(image1Name, suffix='') if image1Name is not None else self.emptyImage
+            if not key in self.backend['images']: self.backend['images'][key] = [None, None]
+            self.backend['images'][key][i] = [image0, image1]
+        else:
+            image0 = image0 if image0 is not None else self.emptyImage
+            image1 = image1 if image1 is not None else self.emptyImage
+        
+        canvas = Canvas(parentFrame, highlightthickness=highlightthickness, borderwidth=borderwidth, width=width, height=height, bg=bg, relief=relief)
+        canvas.grid(row=row, column=column, sticky=sticky, padx=padx, pady=pady)
+        
+        img0 = canvas.create_image(0,0, anchor="nw",image=image0)
+        img1 = None if image1 is None else canvas.create_image(0,0, anchor="nw",image=image1)
+        
+        if disabled:
+            canvas.itemconfig(img0, state=DISABLED)
+            canvas.itemconfig(img1, state=DISABLED)
+        else:
+            item = name if name is not None else self.build[key][i]
+            if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
+            canvas.bind('<Enter>', lambda e,item=name,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrame(item, internalKey, environment, tooltip))
+        
+        return canvas, img0, img1
 
     def setupShipBuildFrame(self, ship):
         """Set up UI frame containing ship equipment"""
@@ -1753,21 +1774,23 @@ class SETS():
                     elif col == 2: padxCanvas = (3,25)
 
                     if name and col != 3:
-                        canvas = Canvas(frame, highlightthickness=0, borderwidth=3, relief='groove', width=25, height=35, bg= 'yellow' if name in self.build['skills'] else 'grey')
-                        image = self.skillGetName(rank, row, col, type='image')
-                        image0=self.imageFromInfoboxName(image, suffix='')
-                        #image0=self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
-                        self.backend['images'][name] = image0
-                        img0 = canvas.create_image(0,0, anchor="nw",image=image0)
-                        #canvas.itemconfig(img0,image=image0)
+                        imagename = self.skillGetName(rank, row, col, type='image')
+                        desc = self.skillGetName(rank, row, col, type='desc')
+                        args = [rank, row, col]
+                        image0=self.imageFromInfoboxName(imagename, suffix='')
+                        bg = 'yellow' if name in self.build['skills'] else 'grey'
+                        self.createButton(frame, 'skills', callback=self.skillLabelCallback, environment='skill', row=row, column=colActual, borderwidth=3, bg=bg, image0Name=imagename, image1Name='Epic_icon', sticky='n', relief='groove', padx=padxCanvas, args=args, name=name, tooltip=desc)
+                        
+
+                        #self.backend['images'][name] = image0
+
                         #self.backend['skillLabels'][name] = canvas
                         #self.backend['skillNames'][i-1].append(name)
                         #canvas.bind('<Button-1>', lambda e,skill=name,img=imagerank=i-1:self.skillLabelCallback(skill, rank, img))
-                        #canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
                     else:
                         canvas = Canvas(frame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='#3a3a3a')
                         img0 = canvas.create_image(0,0, anchor="nw",image=self.emptyImage)
-                    canvas.grid(row=row, column=colActual, sticky='n', padx=padxCanvas, pady=1)
+                        canvas.grid(row=row, column=colActual, sticky='n', padx=padxCanvas, pady=1)
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -1987,7 +2010,7 @@ class SETS():
     def clearInfoboxFrame(self, environment):
         self.setupInfoboxFrame(self.getEmptyItem(), '', environment)
         
-    def setupInfoboxFrame(self, item, key, environment='space'):
+    def setupInfoboxFrame(self, item, key, environment='space', tooltip=None):
         """Set up infobox frame with given item"""
         def compensate(text):
             text = self.deWikify(text, leaveHTML=True)
@@ -2064,6 +2087,8 @@ class SETS():
             
         if name in self.cache['shipTraits']:
             text.insert(END, self.cache['shipTraits'][name])
+            
+        if tooltip is not None: text.insert(END, tooltip)
 
         if environment in self.cache['traits'] and name in self.cache['traits'][environment]:
             text.insert(END, self.cache['traits'][environment][name])
@@ -2669,12 +2694,15 @@ class SETS():
     def logWriteBreak(self, title, level=1):
         self.logWrite('=== {:>1} ==='.format(title.upper()), level)
     
+    def logTagClean(self, tag):
+        return '{}'.format(tag).strip()
+        
     def logWriteSimple(self, title, body, level=1, tags=[]):
         logNote = ''
         if len(tags):
             for tag in tags:
                 if tag is not None:
-                    currentTag = tag.strip() if tag is not None else ''
+                    currentTag = self.logTagClean(tag) if tag is not None else ''
                     logNote = logNote + '{:>1}'.format('['+currentTag+']')
         self.logWrite('{:>12} {:>13}: {:>6}'.format(title, body, logNote), level)
         
@@ -2683,7 +2711,7 @@ class SETS():
         if len(tags):
             for tag in tags:
                 if tag is not None:
-                    logNote = logNote + '{:>1}'.format('['+tag.strip()+']')
+                    logNote = logNote + '[{:>1}]'.format(self.logTagClean(tag))
         self.logWrite('{:>12} {:>12}: {:>6} {:>1} {:>6}'.format(title, body, str(count), path, logNote), level)
         
     def logWriteCounter(self, title, body, count, tags=[]):
@@ -2691,7 +2719,7 @@ class SETS():
         if len(tags):
             for tag in tags:
                 if tag is not None:
-                    logNote = logNote + '{:>9}'.format('['+tag.strip()+']')
+                    logNote = logNote + '[{:>9}]'.format(self.logTagClean(tag))
         self.logWrite('{:>12} {:>6} count: {:>6} {:>6}'.format(title, body, str(count), logNote), 2)
         
     def logWrite(self, notice, level=0):
