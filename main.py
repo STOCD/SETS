@@ -763,7 +763,8 @@ class SETS():
             'eliteCaptain': 0,
             'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
             'tags': dict(),
-            'skills': [[], [], [], [], []]
+            'skills': [[], [], [], [], []],
+            'skilltree': dict(),
         }
 
     def resetCache(self, text = None):
@@ -1239,8 +1240,23 @@ class SETS():
         self.logWriteTransaction('Export build', chosenExtension, str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size) if chosenExtension.lower() == '.png' else None])
 
     def skillLabelCallback(self, e, canvas, img, i, key, args):
-        rank, row, col = args
+        rank, row, col, environment = args
         name = self.skillGetName(rank, row, col, type='name')
+        
+        ### Check for requirements before enable
+        
+        if name in self.build['skilltree']: self.build['skilltree'][name] = not self.build['skilltree'][name]
+        else: self.build['skilltree'][name] = True
+        self.logWrite("==={} {}".format(name, self.build['skilltree'][name]))
+        
+        if self.build['skilltree'][name]:
+            canvas.itemconfig(img[1],image=self.epicImage)
+            canvas.configure(bg='yellow')
+        else:
+            canvas.itemconfig(img[1],image=self.emptyImage)
+            canvas.configure(bg='grey')
+            
+        ### Check for requiredby to enable
         
         return
         rankReqs = [0, 5, 15, 25, 35]
@@ -1554,6 +1570,7 @@ class SETS():
 
     def focusSkillTreeFrameCallback(self):
         self.focusFrameCallback('skill')
+        self.setupSkillMainFrame()
         self.setupInfoFrame('skill') #get updates from info changes
 
     def focusGlossaryFrameCallback(self):
@@ -1625,32 +1642,35 @@ class SETS():
         
         disabledStart = n - disabledCount
         for i in range(n):
-            environment = args[3] if args is not None and len(args) >= 4 else 'space'
-            internalKey = args[0] if args is not None and type(args[0]) is str else ''
             disabled = i >= disabledStart
             bg ='gray' if not disabled else 'black'
             padx = (25 + 3 * 2) if disabled else 2
 
-            self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, environment=environment, internalKey=internalKey, args=args)
+            self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args)
                 
                 
-    def createButton(self, parentFrame, key, i=0, callback=None, name=None, internalKey='', environment='space', row=0, column=0, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None):
+    def createButton(self, parentFrame, key, i=0, callback=None, name=None, row=0, column=0, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None):
         """ Button building (including click and tooltip binds) """
-        # self.build[key][i] is the build code for callback updating and image identification
+        # self.build[key][buildSubKey] is the build code for callback updating and image identification
+        # self.backend['images'][backendKey][#] is the location for (img,img)
         # args [array] contains variable infomation used for callback updating
         # internalKey is the cache sub-group (for equipment cache sub-groups)
 
-        self.logWriteSimple('createButton', '', 4, [name, key, i, internalKey, environment, row, column])
+        buildSubKey = name if name is not None else i
+        backendKey = name if name is not None else key
         
-        if key in self.build and self.build[key][i] is not None:
-            if image0Name is None and 'item' in self.build[key][i]: image0Name = self.build[key][i]['item']
-            if image1Name is None and 'rarity' in self.build[key][i]: image1Name = self.build[key][i]['rarity']
+        self.logWriteSimple('createButton', '', 4, [name, key, buildSubKey, backendKey, i, row, column])
+        
+        if key in self.build and type(self.build[key][buildSubKey]) is dict and self.build[key][buildSubKey] is not None:
+            if image0Name is None and 'item' in self.build[key][buildSubKey]: image0Name = self.build[key][buildSubKey]['item']
+            if image1Name is None and 'rarity' in self.build[key][buildSubKey]: image1Name = self.build[key][buildSubKey]['rarity']
             
         if not disabled:
             if image0 is None: image0=self.imageFromInfoboxName(image0Name, suffix='') if image0Name is not None else self.emptyImage
             if image1 is None: image1=self.imageFromInfoboxName(image1Name, suffix='') if image1Name is not None else self.emptyImage
-            if not key in self.backend['images']: self.backend['images'][key] = [None, None]
-            self.backend['images'][key][i] = [image0, image1]
+            if not backendKey in self.backend['images']: self.backend['images'][backendKey] = [None, None]
+            if name: self.backend['images'][name] = [image0, image1]
+            else: self.backend['images'][backendKey][i] = [image0, image1]
         else:
             image0 = image0 if image0 is not None else self.emptyImage
             image1 = image1 if image1 is not None else self.emptyImage
@@ -1664,8 +1684,10 @@ class SETS():
             canvas.itemconfig(img0, state=DISABLED)
             canvas.itemconfig(img1, state=DISABLED)
         else:
-            item = name if name is not None else self.build[key][i]
-            if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
+            item = name if name is not None else self.build[key][buildSubKey]
+            environment = args[3] if args is not None and len(args) >= 4 else 'space'
+            internalKey = args[0] if args is not None and type(args[0]) is str else ''
+            if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
             canvas.bind('<Enter>', lambda e,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrame(item, internalKey, environment, tooltip))
         
         return canvas, img0, img1
@@ -1748,9 +1770,7 @@ class SETS():
                 return ''
             
         return ''
-        
 
-    
     def setupSkillMainFrame(self):
         parentFrame = self.skillMiddleFrame
         self.clearFrame(parentFrame)
@@ -1778,16 +1798,16 @@ class SETS():
                     if name and col != 3:
                         imagename = self.skillGetName(rank, row, col, type='image')
                         desc = self.skillGetName(rank, row, col, type='desc')
-                        args = [rank, row, col]
-                        bg = 'yellow' if name in self.build['skills'] else 'grey'
-                        self.createButton(frame, 'skills', callback=self.skillLabelCallback, environment='skill', row=row, column=colActual, borderwidth=3, bg=bg, image0Name=imagename, image1Name='Epic', sticky='n', relief='groove', padx=padxCanvas, args=args, name=name, tooltip=desc)
-                        
+                        args = [rank, row, col, 'skill']
+                        if not name in self.build['skilltree']: self.build['skilltree'][name] = False
+                        if not name in self.backend['images']: self.backend['images'][name] = [ ]
+                        bg = 'yellow' if name in self.build['skilltree'] and self.build['skilltree'][name] else 'grey'
+                        image1Name = 'epic.png' if self.build['skilltree'][name] else None
+                        self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=3, bg=bg, image0Name=imagename, sticky='n', relief='groove', padx=padxCanvas, args=args, name=name, tooltip=desc)
 
                         #self.backend['images'][name] = image0
-
                         #self.backend['skillLabels'][name] = canvas
                         #self.backend['skillNames'][i-1].append(name)
-                        #canvas.bind('<Button-1>', lambda e,skill=name,img=imagerank=i-1:self.skillLabelCallback(skill, rank, img))
                     else:
                         canvas = Canvas(frame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='#3a3a3a')
                         img0 = canvas.create_image(0,0, anchor="nw",image=self.emptyImage)
@@ -3084,6 +3104,7 @@ class SETS():
     def setupEmptyImages(self):
         self.emptyImageFaction = dict()
         self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
+        self.epicImage = self.fetchOrRequestImage(self.wikiImages+"Epic.png", "Epic")
         self.updateImageLabelSize()
         self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", self.shipImageWidth, self.shipImageHeight)
         self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", self.shipImageWidth, self.shipImageHeight)
