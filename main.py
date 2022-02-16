@@ -436,6 +436,7 @@ class SETS():
 
     def precachePreload(self):
         self.logWriteBreak('precachePreload START')
+        self.precacheDownloads()
         self.precacheBoffAbilities()
         self.precacheTraits()
         self.precacheShipTraits()
@@ -443,7 +444,7 @@ class SETS():
         self.precacheDoffs("Ground")
         self.precacheShips()
         self.precacheModifiers()
-        self.precacheDownloads()
+        self.precacheReputations()
         self.logWriteBreak('precachePreload END')
 
     def precacheIconCleanup(self):
@@ -521,6 +522,34 @@ class SETS():
         self.logWriteCounter('DOFF', '(json)', len(self.cache['doffs'][keyPhrase]), [keyPhrase])
         self.logWriteCounter('DOFF names', '(json)', len(self.cache['doffNames'][keyPhrase]), [keyPhrase])
 
+    def precacheReputations(self):
+        if 'specsPrimary' in self.cache and len(self.cache['specsPrimary']) > 0:
+            return
+        self.progressBarStart()
+        
+        for item in list(self.reputations):
+            name = self.deWikify(item['name']) if 'name' in item and item['name'] else ''
+            name = re.sub(' Operative', '', name)
+            name = re.sub(' Officer', '', name)
+            # keep Miracle Worker currently
+            environment = item['environment'] if 'environment' in item else ''
+            description = self.deWikify(item['description']) if 'description' in item else ''
+            if not name:
+                # other reps
+                pass
+            elif len(environment) and not name in self.cache['specsSecondary'] and not name in self.cache['specsGroundBoff']:
+                if environment == 'space' or environment == 'both':
+                    self.cache['specsSecondary'][name] = description
+                    if not 'secondary' in item or item['secondary'] != 'yes':
+                        self.cache['specsPrimary'][name] = description
+                if 'boff' in item and item['boff'] == 'yes' and (environment == "ground" or environment == "both"):
+                    self.cache['specsGroundBoff'][self.deWikify(name)] = description
+
+        self.logWriteCounter('Specs', '(json)', len(self.cache['specsPrimary']))
+        self.logWriteCounter('Specs2', '(json)', len(self.cache['specsSecondary']))
+        self.logWriteCounter('Specs-Ground', '(json)', len(self.cache['specsGroundBoff']))
+        self.progressBarStop()
+
     def precacheShipTraitSingle(self, name, desc):
         name = self.deWikify(name)
         if not 'cache' in self.cache['shipTraitsWithImages']:
@@ -533,7 +562,7 @@ class SETS():
 
     def precacheShipTraits(self):
         """Populate in-memory cache of ship traits for faster loading"""
-        if 'shipTraits' in self.backend and len(self.cache['shipTraits']) > 0:
+        if 'shipTraits' in self.cache and len(self.cache['shipTraits']) > 0:
             return self.cache['shipTraits']
         self.progressBarStart()
             
@@ -577,7 +606,7 @@ class SETS():
         
     def precacheTraits(self):
         """Populate in-memory cache of traits for faster loading"""
-        if 'traits' in self.backend and 'space' in self.cache['traits']:
+        if 'traits' in self.cache and 'space' in self.cache['traits']:
             return self.cache['traits']
         self.progressBarStart()
         
@@ -625,6 +654,7 @@ class SETS():
         self.fileConfigName = '.config.json'
         
         self.yesNo = ["Yes", "No"]
+        self.universalTypes = ['Tactical', 'Engineering', 'Science' ]
         self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
         self.rarities = ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra rare', 'Epic']
         self.factionNames = [ 'Federation', 'Dominion', 'Klingon', 'Romulan', 'TOS Federation' ]
@@ -736,6 +766,9 @@ class SETS():
                 'boffAbilities': dict(),
                 'boffAbilitiesWithImages': dict(),
                 'boffTooltips': dict(),
+                'specsPrimary': dict(),
+                'specsSecondary': dict(),
+                'specsGroundBoff': dict(),
                 'imagesFail': dict(), 
                 'modifiers': None,
             }
@@ -994,7 +1027,7 @@ class SETS():
         
     def precacheBoffAbilities(self):
         """Common callback for boff labels"""
-        if 'boffAbilities' in self.backend and 'space' in self.cache['boffAbilities'] and 'ground' in self.cache['boffAbilities']:
+        if 'boffAbilities' in self.cache and 'space' in self.cache['boffAbilities'] and 'ground' in self.cache['boffAbilities']:
             return
         self.progressBarStart()
         
@@ -1039,7 +1072,6 @@ class SETS():
         """Common callback for boff labels"""
         self.precacheBoffAbilities()
 
-        universalTypes = ['Tactical', 'Engineering', 'Science' ]
         items_list = []
         rank = args[2] + 1
         
@@ -1049,7 +1081,7 @@ class SETS():
         self.logWriteSimple('spaceBoffLabel', 'Callback', 3, tags=[environment, logNote, str(args[2])])
 
         if args[0] == 'universal':
-            for specType in universalTypes:
+            for specType in self.universalTypes:
                 items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][specType][rank]
         else:
             items_list = self.cache['boffAbilitiesWithImages'][environment][args[0]][rank]
@@ -1737,6 +1769,7 @@ class SETS():
     def setupBoffFrame(self, environment='space', ship=None):
         """Set up UI frame containing boff skills"""
         parentFrame = self.groundBoffFrame if environment == 'ground' else self.shipBoffFrame
+        self.precacheReputations()
         
         self.clearFrame(parentFrame)
 
@@ -1759,7 +1792,7 @@ class SETS():
             boffspecs = [''] * seats
             for i in range(len(boffs)):
                 boffranks[i] = 3 if "Lieutenant Commander" in boffs[i] else 2 if "Lieutenant" in boffs[i] else 4 if "Commander" in boffs[i] else 1
-                for s in self.specNames:
+                for s in self.cache['specsPrimary']:
                     if '-'+s in boffs[i]:
                         boffsspecs[i] = s
                         break
@@ -1815,7 +1848,7 @@ class SETS():
             
             if environment == 'ground' or (sspec is not None and sspec != ''):
                 if environment == 'ground':                    
-                    specLabel1 = OptionMenu(bSubFrame0, v2, *self.boffGroundSpecNames)
+                    specLabel1 = OptionMenu(bSubFrame0, v2, *sorted(self.cache['specsGroundBoff']))
                     specLabel1.configure(pady=2)
                 else:
                     specLabel1 = Label(bSubFrame0, text='/  '+sspec)
@@ -2172,6 +2205,7 @@ class SETS():
             Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
         
     def setupCaptainFrame(self, charInfoFrame, environment='space'):
+        self.precacheReputations()
         row = 0
         Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
@@ -2202,13 +2236,13 @@ class SETS():
 
         row += 1 
         Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *self.specNames)
+        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *sorted(self.cache['specsPrimary']))
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
 
         row += 1
         Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *self.specNames)
+        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *sorted(self.cache['specsSecondary']))
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
@@ -2934,15 +2968,13 @@ class SETS():
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
+        self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
+        self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations")
+        
         self.r_boffAbilities_source = self.wikihttp+"Bridge_officer_and_kit_abilities"
         r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
-        self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations")
-        r_specs = self.fetchOrRequestHtml(self.wikihttp+"Category:Captain_specializations", "specs")
-        self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
-        self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
-        self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
-        self.precacheShips()
+
     
     def __init__(self) -> None:
         """Main setup function"""
