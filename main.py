@@ -792,21 +792,22 @@ class SETS():
     def clearBackend(self):
         self.logWriteBreak('clearBackend')
         self.backend = {
+                'images': dict(),
                 'captain': {'faction' : StringVar(self.window)},
-                "career": StringVar(self.window),
-                "species": StringVar(self.window),
-                "playerName": StringVar(self.window),
-                "specPrimary": StringVar(self.window),
-                "specSecondary": StringVar(self.window),
-                "ship": StringVar(self.window),
-                "tier": StringVar(self.window),
-                "playerShipName": StringVar(self.window),
-                "playerShipDesc": StringVar(self.window),
-                "playerDesc": StringVar(self.window),
-                "shipHtml": None,
-                "shipHtmlFull": None,
-                "eliteCaptain": IntVar(self.window),
-                "skillLabels": dict(),
+                'career': StringVar(self.window),
+                'species': StringVar(self.window),
+                'playerName': StringVar(self.window),
+                'specPrimary': StringVar(self.window),
+                'specSecondary': StringVar(self.window),
+                'ship': StringVar(self.window),
+                'tier': StringVar(self.window),
+                'playerShipName': StringVar(self.window),
+                'playerShipDesc': StringVar(self.window),
+                'playerDesc': StringVar(self.window),
+                'shipHtml': None,
+                'shipHtmlFull': None,
+                'eliteCaptain': IntVar(self.window),
+                'skillLabels': dict(),
                 'skillNames': [[], [], [], [], []],
                 'skillCount': 0
             }
@@ -958,7 +959,7 @@ class SETS():
                 canvas.itemconfig(img[0],image=self.emptyImage)
                 canvas.itemconfig(img[1],image=self.emptyImage)
                 self.build[key][i] = item
-                self.backend['i_'+key][i] = [self.emptyImage, self.emptyImage]
+                self.backend['images'][key][i] = [self.emptyImage, self.emptyImage]
             else:
                 if 'rarity' in self.cache['equipment'][args[0]][item['item']]:
                     rarityDefaultItem = self.cache['equipment'][args[0]][item['item']]['rarity']
@@ -974,7 +975,7 @@ class SETS():
                     environment = args[3]
                 canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, args[0], environment))
                 self.build[key][i] = item
-                self.backend['i_'+key][i] = [item['image'], image1]
+                self.backend['images'][key][i] = [item['image'], image1]
                 item.pop('image')
 
     def traitLabelCallback(self, e, canvas, img, i, key, args):
@@ -998,13 +999,13 @@ class SETS():
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
                 item['item'] = ''
-                self.backend['i_'+item['item']+str(i)] = self.emptyImage
+                self.backend['images'][item['item']+str(i)] = self.emptyImage
                 canvas.itemconfig(img[0],image=self.emptyImage)
                 self.build[key][i] = item
             else:
-                if ('i_'+item['item']+str(i) not in self.backend):
-                    self.backend['i_'+item['item']+str(i)] = item['image']
-                canvas.itemconfig(img[0],image=self.backend['i_'+item['item']+str(i)])
+                if item['item']+str(i) not in self.backend['images']:
+                    self.backend['images'][item['item']+str(i)] = item['image']
+                canvas.itemconfig(img[0],image=self.backend['images'][item['item']+str(i)])
                 environment = 'space'
                 if len(args) >= 4:
                     environment = args[3]
@@ -1093,7 +1094,7 @@ class SETS():
         
         logNote = args[0]
         if args[1]:
-            logNote = logNote + ", "+args[1]
+            logNote = logNote + ', '+args[1]
         self.logWriteSimple('spaceBoffLabel', 'Callback', 3, tags=[environment, logNote, str(args[2])])
 
         if args[0] == 'universal':
@@ -1105,17 +1106,17 @@ class SETS():
             items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][args[1]][rank]
 
         itemVar = self.getEmptyItem()
-        item = self.pickerGui("Pick Ability", itemVar, items_list, [self.setupSearchFrame])
+        item = self.pickerGui('Pick Ability', itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
                 item['item'] = ''
-                self.backend['i_'+item['item']+str(i)] = self.emptyImage
+                self.backend['images'][item['item']+str(i)] = self.emptyImage
                 canvas.itemconfig(img,image=self.emptyImage)
                 self.build['boffs'][key][i] = item
             else:
-                if ('i_'+item['item']+str(i) not in self.backend):
-                    self.backend['i_'+item['item']+str(i)] = item['image']
-                canvas.itemconfig(img,image=self.backend['i_'+item['item']+str(i)])
+                if item['item']+str(i) not in self.backend['images']:
+                    self.backend['images'][item['item']+str(i)] = item['image']
+                canvas.itemconfig(img,image=self.backend['images'][item['item']+str(i)])
                 canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, '', environment))
                 self.build['boffs'][key][i] = item['item']
                 
@@ -1127,17 +1128,17 @@ class SETS():
             return
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
-        tier = self.backend['shipHtml']["tier"]
+        tier = self.backend['shipHtml']['tier']
         self.clearFrame(self.shipTierFrame)
         self.setupTierFrame(tier)
         self.setupShipImageFrame()
-        self.backend["tier"].set(self.getTierOptions(tier)[0])
+        self.backend['tier'].set(self.getTierOptions(tier)[0])
 
     def shipPickButtonCallback(self, *args):
         """Callback for ship picker button"""
         itemVar = self.getEmptyItem()
         items_list = [(name, '') for name in self.shipNames]
-        item = self.pickerGui("Pick Starship", itemVar, items_list, [self.setupSearchFrame])
+        item = self.pickerGui('Pick Starship', itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
             self.resetShipSettings()
             if item['item'] == 'X':
@@ -1224,7 +1225,7 @@ class SETS():
         justFile, chosenExtension = os.path.splitext(outFilename)
         if chosenExtension.lower() == '.json':
             try:
-                outFile = open(outFilename, "w")
+                outFile = open(outFilename, 'w')
                 json.dump(self.build, outFile)
             except AttributeError:
                 pass
@@ -1240,27 +1241,27 @@ class SETS():
             if (rank < 4 and len(self.build['skills'][rank+1])>0):
                 if self.backend['skillCount'] > rankReqs[rank+1]:
                     self.build['skills'][rank].remove(skill)
-                    self.backend['skillLabels'][skill].configure(bg="gray")
+                    self.backend['skillLabels'][skill].configure(bg='gray')
                     self.backend['skillCount'] -= 1
                     if self.backend['skillCount'] < rankReqs[rank]:
                         for s in self.backend['skillNames'][rank]:
-                            self.backend['skillLabels'][s].configure(bg="black")
+                            self.backend['skillLabels'][s].configure(bg='black')
             return
         if self.backend['skillCount'] < rankReqs[rank] or self.backend['skillCount'] == 46: return
         self.build['skills'][rank].append(skill)
-        self.backend['skillLabels'][skill].configure(bg="yellow")
+        self.backend['skillLabels'][skill].configure(bg='yellow')
         self.backend['skillCount'] += 1
         if rank < 4 and self.backend['skillCount'] == rankReqs[rank+1]:
             for s in self.backend['skillNames'][rank+1]:
-                self.backend['skillLabels'][s].configure(bg="grey")
+                self.backend['skillLabels'][s].configure(bg='grey')
 
     def redditExportDisplayGround(self, textframe):
         if self.build['eliteCaptain'] == 0:
-            elite = "No"
+            elite = 'No'
         elif self.build['eliteCaptain'] == 1:
-            elite = "Yes"
+            elite = 'Yes'
         else:
-            elite = "You should not be seeing this... PANIC!"
+            elite = 'You should not be seeing this... PANIC!'
         redditString = "## **<u>Ground</u>**\n\n**Basic Information** | **Data** \n:--- | :--- \n*Player Name* | {0} \n*Player Species* | {1} \n*Player Career* | {2} \n*Elite Captain* | {3} \n*Primary Specialization* | {4} \n*Secondary Specialization* | {5}\n\n\n".format(self.backend['playerName'].get(), self.build['species'], self.build['career'], elite, self.build['specPrimary'], self.build['specSecondary'], self.build['playerDesc'])
         if self.build['playerDesc'] != '':
             redditString = redditString + "## Build Description\n\n{0}\n\n\n".format(self.build['playerDesc'])
@@ -1308,11 +1309,11 @@ class SETS():
     
     def redditExportDisplaySpace(self, textframe):
         if self.build['eliteCaptain'] == 0:
-            elite = "No"
+            elite = 'No'
         elif self.build['eliteCaptain'] == 1:
-            elite = "Yes"
+            elite = 'Yes'
         else:
-            elite = "You should not be seeing this... PANIC!"
+            elite = 'You should not be seeing this... PANIC!'
         redditString = "## **<u>SPACE</u>**\n\n**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n*Ship Tier* | {2} \n*Player Career* | {3} \n*Elite Captain* | {4} \n*Primary Specialization* | {5} \n*Secondary Specialization* | {6}\n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'], self.build['tier'], self.build['career'], elite, self.build['specPrimary'], self.build['specSecondary'])
         if self.build['playerShipDesc'] != '':
             redditString = redditString + "## Build Description\n\n{0}\n\n\n".format(self.build['playerShipDesc'])
@@ -1364,7 +1365,7 @@ class SETS():
         redditString = redditString + "\n\n"
         column0 = self.makeRedditColumn([trait['item'] for trait in self.build['activeRepTrait'] if trait is not None], 5)
         redditString = redditString + self.makeRedditTable(['**Active Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
-        textframe.delete("1.0",END)
+        textframe.delete('1.0',END)
         textframe.insert(END, redditString)
 
     def exportRedditCallback(self, event=None):
@@ -1372,7 +1373,7 @@ class SETS():
         redditWindow = Toplevel(self.window)
         redditText = Text(redditWindow)
         btfr = Frame(redditWindow)
-        btfr.pack(side="top", fill="x")
+        btfr.pack(side='top', fill='x')
         redditbtspace = Button(btfr,text="SPACE", font=phi,  bg="#6b6b6b",fg="white",command=lambda: self.redditExportDisplaySpace(redditText))
         redditbtground = Button(btfr, text="GROUND", font =phi, bg="#6b6b6b", fg="white",command=lambda: self.redditExportDisplayGround(redditText))
         redditbtspace.grid(row=0,column=0,sticky="nsew")
@@ -1603,32 +1604,39 @@ class SETS():
 
     def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
         """Set up n-element line of ship equipment"""
-        self.backend['i_'+key] = [None] * n
+        self.backend['images'][key] = [None] * n
+        
         cFrame = Frame(frame, bg='#3a3a3a')
         cFrame.grid(row=row, column=col, columnspan=cspan, sticky='nsew', padx=10)
+        
         lFrame = Frame(cFrame, bg='#3a3a3a')
         lFrame.pack(fill=BOTH, expand=True)
         label =  Label(lFrame, text=name, bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 8))
         label.pack(side='left')
         iFrame = Frame(cFrame, bg='#3a3a3a')
         iFrame.pack(fill=BOTH, expand=True)
+        
         disabledStart = n - disabledCount
         for i in range(n):
             image1=None
+            
             if key in self.build and self.build[key][i] is not None and i < disabledStart:
                 image0=self.imageFromInfoboxName(self.build[key][i]['item'])
                 if 'rarity' in self.build[key][i]:
                     image1=self.imageFromInfoboxName(self.build[key][i]['rarity'])
-                self.backend['i_'+key][i] = [image0, image1]
+                self.backend['images'][key][i] = [image0, image1]
             else:
                 image0=image1=self.emptyImage
+                
             canvas = Canvas(iFrame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray' if i < disabledStart else 'black')
             canvas.grid(row=row, column=i+1, sticky='nse', padx=(25 + 3 * 2) if i >= disabledStart else 2, pady=2)
             img0 = canvas.create_image(0,0, anchor="nw",image=image0)
             img1 = None if image1 is None else canvas.create_image(0,0, anchor="nw",image=image1)
+            
             if i >= disabledStart:
                 canvas.itemconfig(img0, state=DISABLED)
                 canvas.itemconfig(img1, state=DISABLED)
+                
             if (args is not None and i < disabledStart):
                 environment = 'space'
                 internalKey = ''
@@ -1749,7 +1757,7 @@ class SETS():
                         image = self.skillGetName(rank, row, col, type='image')
                         image0=self.imageFromInfoboxName(image, suffix='')
                         #image0=self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
-                        self.backend['i_'+name] = image0
+                        self.backend['images'][name] = image0
                         img0 = canvas.create_image(0,0, anchor="nw",image=image0)
                         #canvas.itemconfig(img0,image=image0)
                         #self.backend['skillLabels'][name] = canvas
@@ -1865,7 +1873,7 @@ class SETS():
             bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
             bSubFrame0.pack(fill=BOTH, pady=(2,0))
             
-            self.backend['i_'+boffSan] = [None] * rank
+            self.backend['images'][boffSan] = [None] * rank
             
             if spec != 'Universal' and spec != self.build['boffseats'][environment][i]:
                 #wipe skills of the changed spec here, keep the secondary spec
@@ -1919,7 +1927,7 @@ class SETS():
             for j in range(rank):
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
                     image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], faction = 1)
-                    self.backend['i_'+boffSan][j] = image
+                    self.backend['images'][boffSan][j] = image
                 else:
                     image=self.emptyImage
                     self.build['boffs'][boffSan] = [None] * rank
@@ -2856,7 +2864,7 @@ class SETS():
     def getFolderLocation(self, subfolder=None):
         filePath = self.configFolderLocation()
         
-        if subfolder == "images" and os.path.exists(self.persistent['folder']['images']):
+        if subfolder == 'images' and os.path.exists(self.persistent['folder']['images']):
             # use appdir cache if it already exists /legacy
             filePath = self.persistent['folder']['images']
         else:
