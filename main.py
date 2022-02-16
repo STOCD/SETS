@@ -342,11 +342,11 @@ class SETS():
             return self.emptyImage
   
         image = Image.open(filename)
-        self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4)
         if(width is not None):
             curwidth, curheight = image.size
             resizeOptions = self.imageResizeDimensions(curwidth, curheight, width, height)
             image = image.resize(resizeOptions,Image.ANTIALIAS)
+        self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4)
         return ImageTk.PhotoImage(image)
 
     def deHTML(self, textBlock, leaveHTML=False):
@@ -642,10 +642,11 @@ class SETS():
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
 
-        try:
-            return self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
-        except:
-            return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
+        #try:
+        image = self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
+        return image
+        #except:
+        #    return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
 
     def copyBackendToBuild(self, key, key2=None):
         """Helper function to copy backend value to build dict"""
@@ -1726,34 +1727,39 @@ class SETS():
         if not 'content' in self.cache['skills']: return
         skillTable = self.cache['skills']['content']
         
-        frame = Frame(parentFrame, bg="#3a3a3a")
+        frame = Frame(parentFrame, bg='#3a3a3a')
         frame.grid(row=0, column=0, sticky='nsew', padx=1, pady=1)
-        parentFrame.grid_rowconfigure(0, weight=1, uniform="skillFrameRowSpace")
-        parentFrame.grid_columnconfigure(0, weight=1, uniform="skillFrameColSpace")
+        parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRowSpace')
+        parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullColSpace')
         
         for row in range(12):
+            frame.grid_rowconfigure(row, weight=1, uniform='skillFrameRowSpace')
             for rank in range(5):
-                for col in range(3):
+                for col in range(4):
+                    colActual = ((rank*3)+col)
+                    frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameColSpace'+str(rank))
                     name = self.skillGetName(rank, row, col, type='name')
 
-                    padxCanvas = (5,5)
-                    if col == 0: padxCanvas = (25,5)
-                    elif col == 2: padxCanvas = (5,25)
+                    padxCanvas = (3,3)
+                    if col == 0: padxCanvas = (25,3)
+                    elif col == 2: padxCanvas = (3,25)
 
-                    if name:
-                        canvas = Canvas(frame, highlightthickness=0, borderwidth=3, relief='groove', width=25, height=35, bg= 'yellow' if name in self.build['skills'] else ('black' if 0 != 1 else 'grey'))
+                    if name and col != 3:
+                        canvas = Canvas(frame, highlightthickness=0, borderwidth=3, relief='groove', width=25, height=35, bg= 'yellow' if name in self.build['skills'] else 'grey')
                         image = self.skillGetName(rank, row, col, type='image')
                         image0=self.imageFromInfoboxName(image, suffix='')
-                        #self.backend['i_'+name] = image0
+                        #image0=self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
+                        self.backend['i_'+name] = image0
                         img0 = canvas.create_image(0,0, anchor="nw",image=image0)
-                        canvas.itemconfig(img0,image=image0)
+                        #canvas.itemconfig(img0,image=image0)
                         #self.backend['skillLabels'][name] = canvas
                         #self.backend['skillNames'][i-1].append(name)
                         #canvas.bind('<Button-1>', lambda e,skill=name,img=imagerank=i-1:self.skillLabelCallback(skill, rank, img))
                         #canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
                     else:
                         canvas = Canvas(frame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='#3a3a3a')
-                    canvas.grid(row=row, column=((rank*3)+col), sticky='nsew', padx=padxCanvas, pady=1)
+                        img0 = canvas.create_image(0,0, anchor="nw",image=self.emptyImage)
+                    canvas.grid(row=row, column=colActual, sticky='n', padx=padxCanvas, pady=1)
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
