@@ -113,9 +113,10 @@ class SETS():
             
         return r.html
 
-    def fetchOrRequestJson(self, url, designation):
+    def fetchOrRequestJson(self, url, designation, local=False):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
-        cache_base = self.getFolderLocation('cache')
+        if local: cache_base = self.persistent['folder']['local']
+        else: cache_base = self.getFolderLocation('cache')
         override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
@@ -128,10 +129,13 @@ class SETS():
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
-            if interval.days < 7:
+            if interval.days < 7 or local:
                 with open(filename, 'r', encoding='utf-8') as json_file:
                     json_data = json.load(json_file)
                     return json_data
+        elif local:
+            return
+        
         r = requests.get(url)
         self.makeFilenamePath(os.path.dirname(filename))
         with open(filename, 'w') as json_file:
@@ -269,6 +273,7 @@ class SETS():
         if not os.path.exists(cache_base):
             return
             
+        self.logWriteTransaction('Image File', 'try', '----', url, 5, [designation])
         image_data = None
         designation.replace("/", "_") # Missed by the path sanitizer
         designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
@@ -445,6 +450,7 @@ class SETS():
         self.precacheShips()
         self.precacheModifiers()
         self.precacheReputations()
+        self.precacheSkills()
         self.logWriteBreak('precachePreload END')
 
     def precacheIconCleanup(self):
@@ -508,6 +514,13 @@ class SETS():
     def precacheShips(self):
         self.shipNames = [e["Page"] for e in self.ships]
         self.logWriteCounter('Ships', '(json)', len(self.shipNames), ['space'])
+        
+    def precacheSkills(self):
+        if 'skills' in self.cache and len(self.cache['skills']) > 0:
+            return
+            
+        self.cache['skills'] = self.fetchOrRequestJson('', 'skills', local=True)
+        self.logWriteCounter('Skills', '(json)', len(self.cache['skills']['content']))
 
     def precacheDoffs(self, keyPhrase):
         """Populate in-memory cache of doff lists for faster loading"""
@@ -689,7 +702,8 @@ class SETS():
         # self.settings are optionally loaded from config, but manually edited or saved
         self.settings = {
             'debug': self.debugDefault,
-            'template': '.template.json'
+            'template': '.template.json',
+            'skills':   'skills.json',
         }
         
     def clearBuild(self):
@@ -770,6 +784,7 @@ class SETS():
                 'specsSecondary': dict(),
                 'specsGroundBoff': dict(),
                 'imagesFail': dict(), 
+                'skills': dict(),
                 'modifiers': None,
             }
     
@@ -1398,6 +1413,8 @@ class SETS():
             self.resetCache()
             self.requestWindowUpdateHold(0)
             self.precachePreload()
+        elif type == 'cacheSave':
+            self.cacheSave()
         elif type == 'backupCache':
             # Backup state file
             # Backup caches (no unlink phase)
@@ -1528,6 +1545,7 @@ class SETS():
 
     def focusSkillTreeFrameCallback(self):
         self.focusFrameCallback('skill')
+        self.setupInfoFrame('skill') #get updates from info changes
 
     def focusGlossaryFrameCallback(self):
         self.focusFrameCallback('glossary')
@@ -1687,33 +1705,55 @@ class SETS():
         self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield (G)", "", 'ground'])
         self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", "", 'ground'])
         self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.backend['eliteCaptain'].get() else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
+                
+    def skillGetName(self, rank, row, col, type='name'):
+        if 'content' in self.cache['skills']:
+            # needs to be smarter than 'try'
+            try:
+                if type in self.cache['skills']['content'][rank][row][col]:
+                    return self.cache['skills']['content'][rank][row][col][type]
+            except:
+                return ''
+            
+        return ''
+        
 
+    
     def setupSkillMainFrame(self):
-        self.clearFrame(self.skillMiddleFrame)
-        if "skills" not in self.backend:
-            with open("local/skills.json", "r") as f:
-                self.backend["skills"] = json.load(f)
-        skillTable = self.backend["skills"]["content"]
-        i = 0
-        for col in skillTable:
-            self.skillMiddleFrame.grid_columnconfigure(i, weight=1, uniform="skillColSpace")
-            i += 1
-            colFrame = Frame(self.skillMiddleFrame)
-            colFrame.pack(side='left', fill=BOTH, expand=True)
-            for row in col:
-                rowFrame = Frame(colFrame)
-                rowFrame.pack()
-                for cell in row:
-                    image0=self.imageFromInfoboxName(cell['image'], suffix='')
-                    self.backend['i_'+cell['name']] = image0
-                    frame = Frame(rowFrame, bg='yellow')
-                    frame.pack(side='left', anchor='center', pady=1, padx=1)
-                    canvas = Canvas(frame, highlightthickness=0, borderwidth=3, relief='groove', width=25, height=35, bg= 'yellow' if cell['name'] in self.build['skills'][i-1] else ('black' if i != 1 else 'grey'))
-                    canvas.pack()
-                    canvas.create_image(0,0, anchor="nw",image=image0)
-                    self.backend['skillLabels'][cell['name']] = canvas
-                    self.backend['skillNames'][i-1].append(cell['name'])
-                    canvas.bind('<Button-1>', lambda e,skill=cell['name'],rank=i-1:self.skillLabelCallback(skill, rank))
+        parentFrame = self.skillMiddleFrame
+        self.clearFrame(parentFrame)
+        self.precacheSkills()
+        if not 'content' in self.cache['skills']: return
+        skillTable = self.cache['skills']['content']
+        
+        frame = Frame(parentFrame, bg="#3a3a3a")
+        frame.grid(row=0, column=0, sticky='nsew', padx=1, pady=1)
+        parentFrame.grid_rowconfigure(0, weight=1, uniform="skillFrameRowSpace")
+        parentFrame.grid_columnconfigure(0, weight=1, uniform="skillFrameColSpace")
+        
+        for row in range(12):
+            for rank in range(5):
+                for col in range(3):
+                    name = self.skillGetName(rank, row, col, type='name')
+
+                    padxCanvas = (5,5)
+                    if col == 0: padxCanvas = (25,5)
+                    elif col == 2: padxCanvas = (5,25)
+
+                    if name:
+                        canvas = Canvas(frame, highlightthickness=0, borderwidth=3, relief='groove', width=25, height=35, bg= 'yellow' if name in self.build['skills'] else ('black' if 0 != 1 else 'grey'))
+                        image = self.skillGetName(rank, row, col, type='image')
+                        image0=self.imageFromInfoboxName(image, suffix='')
+                        #self.backend['i_'+name] = image0
+                        img0 = canvas.create_image(0,0, anchor="nw",image=image0)
+                        canvas.itemconfig(img0,image=image0)
+                        #self.backend['skillLabels'][name] = canvas
+                        #self.backend['skillNames'][i-1].append(name)
+                        #canvas.bind('<Button-1>', lambda e,skill=name,img=imagerank=i-1:self.skillLabelCallback(skill, rank, img))
+                        #canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
+                    else:
+                        canvas = Canvas(frame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='#3a3a3a')
+                    canvas.grid(row=row, column=((rank*3)+col), sticky='nsew', padx=padxCanvas, pady=1)
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -2328,7 +2368,9 @@ class SETS():
                 self.charImagecanvas.itemconfig(self.charImage1,image=image1)   
             
     def setupInfoFrame(self, environment='space'):
-        parentFrame = self.groundInfoFrame if environment == 'ground' else self.shipInfoFrame
+        if environment == 'ground': parentFrame = self.groundInfoFrame
+        elif environment == 'skill': parentFrame = self.skillInfoFrame
+        else: parentFrame = self.shipInfoFrame
 
         self.clearFrame(parentFrame)
         self.setupButtonExportImportFrame(parentFrame)
@@ -2338,6 +2380,7 @@ class SETS():
         if 1:
             imageLabel = Label(LabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
             if environment == 'ground': self.charImageLabel = imageLabel
+            elif environment == 'skill': self.skillImageLabel = imageLabel
             else: self.shipImageLabel = imageLabel
             imageLabel.pack(fill=BOTH, expand=True)
             imageLabel.configure(image=self.getEmptyFactionImage())
@@ -2361,7 +2404,7 @@ class SETS():
         NameFrame.pack(fill=BOTH, expand=False, padx=(0,5), pady=(5,0))
         
         row = 0
-        if environment != 'ground':
+        if environment == 'space':
             Label(NameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='w')
             self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
             self.shipButton.grid(column=1, row=row, sticky='nwse')
@@ -2370,33 +2413,30 @@ class SETS():
             #self.shipTierFrame.grid(column=2, row=row, sticky='e')
             row += 1
         
-        Label(NameFrame, text="{} Name:".format('Player' if environment == 'ground' else 'Ship'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='nsew')
-        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('' if environment == 'ground' else 'Ship')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=10)
+        Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Player'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='nsew')
+        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=10)
         NameFrame.grid_columnconfigure(1, weight=1)
         row += 1
         
-        label = Label(NameFrame, text="Desc ({}):".format('G' if environment == 'ground' else 'S'), fg='#3a3a3a', bg='#b3b3b3')
+        label = Label(NameFrame, text="Desc ({}):".format('S' if environment == 'space' else 'G'), fg='#3a3a3a', bg='#b3b3b3')
         label.grid(row=row, column=0, sticky='nw')
         # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
         descText = Text(NameFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
-        if environment == 'ground': self.charDescText = descText
+        if environment != 'space': self.charDescText = descText
         else: self.shipDescText = descText
         descText.grid(row=row, column=1, sticky='nsew')
-        descText.bind('<KeyRelease>', self.updatePlayerDesc if environment == 'ground' else self.updateShipDesc)
-        if 'player{}Desc'.format('' if environment == 'ground' else 'Ship') in self.build:
+        descText.bind('<KeyRelease>', self.updateShipDesc if environment == 'space' else self.updatePlayerDesc)
+        if 'player{}Desc'.format('Ship' if environment == 'space' else '') in self.build:
             descText.delete(1.0, END)
-            descText.insert(1.0, self.build['player{}Desc'.format('' if environment == 'ground' else 'Ship')])
+            descText.insert(1.0, self.build['player{}Desc'.format('Ship' if environment == 'space' else '')])
         row += 1
             
         self.setupTagsAndCharFrame(parentFrame, environment)
         
-        if environment != 'ground' and self.build['ship'] is not None:
+        if environment == 'space' and self.build['ship'] is not None:
             self.shipButton.configure(text=self.build['ship'])
             
         self.updateImageLabelSize(LabelFrame)
-
-    def setupSkillInfoFrame(self):
-        self.clearFrame(self.skillInfoFrame)
 
     def setupBuildFrame(self, environment='space'):
         parentFrame = self.groundBuildFrame if environment == 'ground' else self.spaceBuildFrame
@@ -2511,7 +2551,10 @@ class SETS():
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'varName' : 'clearmemcache' },
             'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'varName' : 'clearfactionImages' },
+            'blank4'                                : { 'col' : 1, 'type' : 'blank' },
             'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearimages' },
+#            'Save cache binaries (TEST)'            : { 'col' : 2, 'type' : 'button', 'varName' : 'cacheSave' },
+
         }
         self.configureColumn(settingsTopRightFrame, theme=settingsMaintenance)
 
@@ -2720,11 +2763,12 @@ class SETS():
         self.setupBuildFrame('ground')
         self.setupInfoFrame('ground')
         self.setupSkillTreeFrame()
-        self.setupSkillInfoFrame()
+        self.setupInfoFrame('skill')
         self.setupLibraryFrame()
         self.setupSettingsFrame()
         self.setupBuildFrame('space')
         self.setupInfoFrame('space')
+
         self.updateImageLabelSize(self.shipImageLabel)
 
         self.templateFileLoad()
@@ -2833,6 +2877,18 @@ class SETS():
         
         return fileName
         
+    def cacheFileLocation(self):
+        filePath = self.configFolderLocation()
+        
+        if os.path.exists(filePath):
+            fileName = os.path.join(filePath, '.cache_SETS.json')
+            if not os.path.exists(fileName):
+                open(fileName, 'w').close()
+        else:
+            fileName = '.cache_SETS.json'
+        
+        return fileName
+        
     def templateFileLocation(self):
         filePath = self.configFolderLocation()
         
@@ -2892,6 +2948,27 @@ class SETS():
                 self.logWriteTransaction('State File', 'loaded', '', configFile, 0, [logNote])
         else:
             self.logWriteTransaction('State File', 'not found', '', configFile, 1)
+            
+    def skillFileLoad(self):
+        # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
+        configFile = self.stateFileLocation()
+        if not os.path.exists(configFile):
+            configFile = self.fileStateName
+            
+        if os.path.exists(configFile):
+            self.logWriteTransaction('State File', 'found', '', configFile, 1)
+            with open(configFile, 'r') as inFile:
+                try:
+                    persistentNew = json.load(inFile)
+                except:
+                    self.logWriteTransaction('State File', 'load error', '', configFile, 1)
+                    return
+                logNote = ' (fields:['+str(len(persistentNew))+'=>'+str(len(self.persistent))+']='
+                self.persistent.update(persistentNew)
+                logNote = logNote + str(len(self.persistent)) + ')'
+                self.logWriteTransaction('State File', 'loaded', '', configFile, 0, [logNote])
+        else:
+            self.logWriteTransaction('State File', 'not found', '', configFile, 1)
  
     def persistentToBackend(self):
         # Nothing yet
@@ -2908,6 +2985,19 @@ class SETS():
                 self.logWriteTransaction('State File', 'saved', '', outFile.name, 5 if quiet else 1)
         except AttributeError:
             self.logWriteTransaction('State File', 'save error', '', outFile.name, 1)
+            pass
+            
+    def cacheSave(self, quiet=False):
+        configFile = self.cacheFileLocation()
+        if not os.path.exists(configFile):
+            configFile = self.fileStateName
+            
+        try:
+            with open(configFile, "w") as outFile:
+                json.dump(self.cache, outFile)
+                self.logWriteTransaction('Cache File', 'saved', '', outFile.name, 5 if quiet else 1)
+        except AttributeError:
+            self.logWriteTransaction('Cache File', 'save error', '', outFile.name, 1)
             pass
             
     def templateFileLoad(self):
