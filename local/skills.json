@@ -21,6 +21,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Projectile Weapon Training 1",
@@ -62,6 +63,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Shield Capacity 1",
@@ -103,6 +105,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Hull Capacity 1",
@@ -146,6 +149,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Defensive Maneuvering 1",
@@ -169,41 +173,20 @@
 			[],
 			[
 				{
-					"name" : "Control Expertise 1",
-					"image" : "Science_Skill_3_R1",
-					"link" : "",
-					"desc" : ""
-				}
-			],
-			[
-				{
-					"name" : "Control Expertise 2",
-					"image" : "Science_Skill_3_R2",
-					"link" : "",
-					"desc" : ""
-				},
-				{
-					"name" : "Control Amplification",
-					"image" : "Science_Skill_2_R2",
-					"link" : "",
-					"desc" : ""
-				}
-			],
-			[
-				{
 					"name" : "Drain Expertise 1",
 					"image" : "Science_Skill_3_R1",
 					"link" : "",
 					"desc" : ""
-				}
-			],
-			[
+				},
 				{
 					"name" : "Drain Expertise 2",
 					"image" : "Science_Skill_3_R2",
 					"link" : "",
 					"desc" : ""
-				},
+				}
+			],
+			[
+				"",
 				{
 					"name" : "Drain Infection",
 					"image" : "Science_Skill_4",
@@ -213,22 +196,23 @@
 			],
 			[
 				{
-					"name" : "Electro-Plasma System Flow 1",
-					"image" : "Engineering_Skill_3_R1",
+					"name" : "Control Expertise 1",
+					"image" : "Science_Skill_3_R1",
+					"link" : "",
+					"desc" : ""
+				},
+				{
+					"name" : "Control Expertise 2",
+					"image" : "Science_Skill_3_R2",
 					"link" : "",
 					"desc" : ""
 				}
 			],
 			[
+				"",
 				{
-					"name" : "Electro-Plasma System Flow 2",
-					"image" : "Engineering_Skill_3_R2",
-					"link" : "",
-					"desc" : ""
-				},
-				{
-					"name" : "Full Impulse Energy Shunt",
-					"image" : "Engineering_Skill_4",
+					"name" : "Control Amplification",
+					"image" : "Science_Skill_2_R2",
 					"link" : "",
 					"desc" : ""
 				}
@@ -249,6 +233,30 @@
 				{
 					"name" : "Impulse Expertise 3",
 					"image" : "Engineering_Skill_4_R2",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			"",
+			[
+				{
+					"name" : "Electro-Plasma System Flow 1",
+					"image" : "Engineering_Skill_3_R1",
+					"link" : "",
+					"desc" : ""
+				},
+				{
+					"name" : "Electro-Plasma System Flow 2",
+					"image" : "Engineering_Skill_3_R2",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			[
+				"",
+				{
+					"name" : "Full Impulse Energy Shunt",
+					"image" : "Engineering_Skill_4",
 					"link" : "",
 					"desc" : ""
 				}
@@ -275,6 +283,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Weapon Specialization 1",
@@ -295,6 +304,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Shield Regeneration 1",
@@ -315,6 +325,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Shield Hardness 1",
@@ -335,28 +346,7 @@
 					"desc" : ""
 				}
 			],
-			[
-				{
-					"name" : "Hull Plating",
-					"image" : "Engineering_Skill_2_R1",
-					"link" : "",
-					"desc" : ""
-				}
-			],
-			[
-				{
-					"name" : "Energized Hull Plating",
-					"image" : "Engineering_Skill_2_R2",
-					"link" : "",
-					"desc" : ""
-				},
-				{
-					"name" : "Ablative Hull Plating",
-					"image" : "Engineering_Skill_2_R2",
-					"link" : "",
-					"desc" : ""
-				}
-			],
+			"",
 			[
 				{
 					"name" : "Damage Control 1",
@@ -373,6 +363,30 @@
 				{
 					"name" : "Damage Control 3",
 					"image" : "Engineering_Skill_1_R3",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			"",
+			[
+				{
+					"name" : "Hull Plating",
+					"image" : "Engineering_Skill_2_R1",
+					"link" : "",
+					"desc" : ""
+				},
+				{
+					"name" : "Energized Hull Plating",
+					"image" : "Engineering_Skill_2_R2",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			[
+				"",
+				{
+					"name" : "Ablative Hull Plating",
+					"image" : "Engineering_Skill_2_R2",
 					"link" : "",
 					"desc" : ""
 				}
@@ -399,6 +413,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Shield Weakening 1",
@@ -419,6 +434,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Exotic Particle Generator 1",
@@ -439,6 +455,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Long-Range Targeting Sensors 1",
@@ -459,21 +476,23 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Defensive Subsystem Tuning",
 					"image" : "Engineering_Skill_3_R1",
 					"link" : "",
 					"desc" : ""
-				}
-			],
-			[
+				},
 				{
 					"name" : "Defensive Subsystem Tuning (Shields)",
 					"image" : "Engineering_Skill_3_R2",
 					"link" : "",
 					"desc" : ""
-				},
+				}
+			],
+			[
+				"",
 				{
 					"name" : "Defensive Subsystem Tuning (Aux)",
 					"image" : "Engineering_Skill_3_R2",
@@ -487,15 +506,16 @@
 					"image" : "Engineering_Skill_3_R1",
 					"link" : "",
 					"desc" : ""
-				}
-			],
-			[
+				},
 				{
 					"name" : "Offensive Subsystem Tuning (Weapons)",
 					"image" : "Engineering_Skill_3_R2",
 					"link" : "",
 					"desc" : ""
-				},
+				}
+			],
+			[
+				"",
 				{
 					"name" : "Offensive Subsystem Tuning (Engines)",
 					"image" : "Engineering_Skill_3_R2",
@@ -505,28 +525,6 @@
 			]
 		],
 		[
-			[
-				{
-					"name" : "Coordination Protocols",
-					"image" : "Tactical_Skill_2_R1",
-					"link" : "",
-					"desc" : ""
-				}
-			],
-			[
-				{
-					"name" : "Defensive Coordination",
-					"image" : "Tactical_Skill_2_R2",
-					"link" : "",
-					"desc" : ""
-				},
-				{
-					"name" : "Offensive Coordination",
-					"image" : "Tactical_Skill_2_R2",
-					"link" : "",
-					"desc" : ""
-				}
-			],
 			[
 				{
 					"name" : "Tactical Readiness 1",
@@ -547,21 +545,46 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
-					"name" : "Shield Mastery",
-					"image" : "Science_Skill_6_R1",
+					"name" : "Coordination Protocols",
+					"image" : "Tactical_Skill_2_R1",
+					"link" : "",
+					"desc" : ""
+				},
+				{
+					"name" : "Defensive Coordination",
+					"image" : "Tactical_Skill_2_R2",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			[
+				"",
+				{
+					"name" : "Offensive Coordination",
+					"image" : "Tactical_Skill_2_R2",
 					"link" : "",
 					"desc" : ""
 				}
 			],
 			[
 				{
+					"name" : "Shield Mastery",
+					"image" : "Science_Skill_6_R1",
+					"link" : "",
+					"desc" : ""
+				},
+				{
 					"name" : "Shield Absorption",
 					"image" : "Science_Skill_6_R2",
 					"link" : "",
 					"desc" : ""
-				},
+				}
+			],
+			[
+				"",
 				{
 					"name" : "Shield Reflection",
 					"image" : "Science_Skill_6_R3",
@@ -589,28 +612,7 @@
 					"desc" : ""
 				}
 			],
-			[
-				{
-					"name" : "Warp Core Potential 1",
-					"image" : "Engineering_Skill_3_R1",
-					"link" : "",
-					"desc" : ""
-				}
-			],
-			[
-				{
-					"name" : "Warp Core Potential 2",
-					"image" : "Engineering_Skill_3_R2",
-					"link" : "",
-					"desc" : ""
-				},
-				{
-					"name" : "Warp Core Efficiency",
-					"image" : "Engineering_Skill_3_R2",
-					"link" : "",
-					"desc" : ""
-				}
-			],
+			"",
 			[
 				{
 					"name" : "Engineering Readiness 1",
@@ -627,6 +629,30 @@
 				{
 					"name" : "Engineering Readiness 3",
 					"image" : "Engineering_Skill_4_R3",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			"",
+			[
+				{
+					"name" : "Warp Core Potential 1",
+					"image" : "Engineering_Skill_3_R1",
+					"link" : "",
+					"desc" : ""
+				},
+				{
+					"name" : "Warp Core Potential 2",
+					"image" : "Engineering_Skill_3_R2",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			[
+				"",
+				{
+					"name" : "Warp Core Efficiency",
+					"image" : "Engineering_Skill_3_R2",
 					"link" : "",
 					"desc" : ""
 				}
