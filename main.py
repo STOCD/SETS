@@ -34,6 +34,8 @@ class SETS():
     ship_trait_query = wikihttp+"Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json"
     #query for DOFF types and specializations
     doff_query = wikihttp+"Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&order+by=Specializations.name&limit=1000&offset=0&format=json"
+    #query for Specializations and Reps
+    reputation_query = wikihttp+'Special:CargoExport?tables=Reputation&fields=Reputation.name,Reputation.environment,Reputation.boff,Reputation.color1,Reputation.color2,Reputation.description,Reputation.icon,Reputation.link,Reputation.released&order+by=Reputation.boff&limit=1000&offset=0&format=json'
 
     itemBoxX = 25
     itemBoxY = 35
@@ -625,9 +627,9 @@ class SETS():
         self.yesNo = ["Yes", "No"]
         self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
         self.rarities = ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra rare', 'Epic']
-        self.factionNames = [ 'Dominion', 'Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
-        self.exportOptions = ['Ask at export', 'Json', 'PNG', 'Reddit']
-        self.boffSortOptions = [ 'release', 'ranks', 'spec', 'spec2']
+        self.factionNames = [ 'Federation', 'Dominion', 'Klingon', 'Romulan', 'TOS Federation' ]
+        self.exportOptions = [ 'PNG', 'Json' ]
+        self.boffSortOptions = [ 'release', 'ranks', 'spec', 'spec2' ]
         self.consoleSortOptions = [ 'tesu', 'uets', 'utse', 'uest' ]
         
         # self.persistent will be auto-saved and auto-loaded for persistent state data
@@ -637,7 +639,7 @@ class SETS():
             'imagesFactionAliases': dict(),
             'markDefault': '',
             'rarityDefault': self.rarities[0],
-            'factionDefault': self.factionNames[1],
+            'factionDefault': self.factionNames[0],
             'exportDefault': self.exportOptions[0],
             'boffSort': self.boffSortOptions[0],
             'boffSort2': self.boffSortOptions[0],
@@ -1151,16 +1153,6 @@ class SETS():
                 self.importByFilename(inFilename, True)
 
     def exportCallback(self, event=None):
-        """Callback for export button"""
-        initialDir = self.getFolderLocation('library')
-        try:
-            with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")], initialfile=self.build['playerShipName'], initialdir=initialDir) as outFile:
-                json.dump(self.build, outFile)
-                self.logWriteTransaction('Export File', 'saved', '', outFile.name, 0)
-        except AttributeError:
-            pass
-
-    def exportPngCallback(self, event=None):
         """Callback for export as png button"""
         # pixel correction
         self.requestWindowUpdate('force')
@@ -1172,11 +1164,27 @@ class SETS():
         image = ImageGrab.grab(bbox=(screenTopLeftX, screenTopLeftY, screenBottomRightX, screenBottomRightY))
         
         initialDir = self.getFolderLocation('library')
-        outFilename = filedialog.asksaveasfilename(defaultextension=".png",filetypes=[("PNG image","*.png"),("All Files","*.*")], initialfile=self.build['playerShipName'], initialdir=initialDir)
+        filetypesOptions = [('PNG image','*.png'),('JSON file', '*.json'),('All Files','*.*')]
+        defaultExtensionOption = 'png'
+        if self.persistent['exportDefault'].lower() == 'json':
+            filetypesOptions = [('JSON file', '*.json'),('PNG image','*.png'),('All Files','*.*')]
+            defaultExtensionOption = 'json'
+            self.logWrite('==={}'.format(self.persistent['exportDefault'].lower()), 2)
+            
+        outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.build['playerShipName'], initialdir=initialDir)
         if not outFilename: return
-        image.save(outFilename, "PNG")
-        self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
-        self.logWriteTransaction('Export Image', 'saved', str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size)])
+        justFile, chosenExtension = os.path.splitext(outFilename)
+        if chosenExtension.lower() == '.json':
+            try:
+                outFile = open(outFilename, "w")
+                json.dump(self.build, outFile)
+            except AttributeError:
+                pass
+        else:
+            image.save(outFilename, chosenExtension.strip('.'))
+            self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
+        
+        self.logWriteTransaction('Export build', chosenExtension, str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size) if chosenExtension.lower() == '.png' else None])
 
     def skillLabelCallback(self, skill, rank):
         rankReqs = [0, 5, 15, 25, 35]
@@ -2140,19 +2148,15 @@ class SETS():
     def setupButtonExportImportFrame(self, frame):
         exportImportFrame = Frame(frame)
         exportImportFrame.pack(fill=BOTH, expand=True)
-        buttonExportPng = Button(exportImportFrame, text='Export png+json', bg='#3a3a3a',fg='#b3b3b3', command=self.exportPngCallback)
+        buttonExportPng = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
         buttonExportPng.pack(side='left', fill=BOTH, expand=True)
         buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
-        buttonExport = Button(exportImportFrame, text='Export json', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
-        buttonExport.pack(side='left', fill=BOTH, expand=True)
         buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
         buttonImport.pack(side='left', fill=BOTH, expand=True)
         buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
         buttonClear.pack(side='left', fill=BOTH, expand=True)
 
-
-    
     def setupTagsFrame(self, buildTagFrame, environment='space'):
         if environment != 'ground':
             self.shipTierFrame = Frame(buildTagFrame, bg='#b3b3b3')
@@ -2514,7 +2518,7 @@ class SETS():
             f = font.Font(family='Helvetica', size=10) if type else font.Font(family='Helvetica', size=12)
             if type == 'title': f = font.Font(family='Helvetica', size=14, weight='bold')
             if columns > 1 and varName == '': continue
-            self.logWrite("==={}: {}/{}".format(title, varName, type), 2)
+            #self.logWrite("==={}: {}/{}".format(title, varName, type), 2)
             
             if type != 'button':
                 label = Label(parentFrame, text='' if type == 'blank' else title, fg='#3a3a3a', bg='#b3b3b3', font=f)
@@ -2526,11 +2530,11 @@ class SETS():
                     # Integrate these into the theme, or *assignment in if phase
                     if varName == 'markDefault': settingOptions = self.marks
                     elif varName == 'rarityDefault': settingOptions = ['']+self.rarities
-                    elif varName == 'factionDefault': settingOptions = ['']+self.factionNames
+                    elif varName == 'factionDefault': settingOptions = self.factionNames
                     elif varName == 'boffSort': settingOptions = self.boffSortOptions
                     elif varName == 'boffSort2': settingOptions = self.boffSortOptions
                     elif varName == 'consoleSort': settingOptions = self.consoleSortOptions
-                    elif varName == 'exportDefault': settingOptions = ['']+self.exportOptions
+                    elif varName == 'exportDefault': settingOptions = self.exportOptions
                     elif isBoolean: settingOptions = ['']+self.yesNo
                     
                     optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName:self.persistentSet(choice, varName=varName))
@@ -2578,22 +2582,25 @@ class SETS():
         logNote = ''
         if len(tags):
             for tag in tags:
-                currentTag = tag.strip() if tag is not None else ''
-                logNote = logNote + '{:>1}'.format('['+currentTag+']')
+                if tag is not None:
+                    currentTag = tag.strip() if tag is not None else ''
+                    logNote = logNote + '{:>1}'.format('['+currentTag+']')
         self.logWrite('{:>12} {:>13}: {:>6}'.format(title, body, logNote), level)
         
     def logWriteTransaction(self, title, body, count, path, level=1, tags=[]):
         logNote = ''
         if len(tags):
             for tag in tags:
-                logNote = logNote + '{:>1}'.format('['+tag.strip()+']')
+                if tag is not None:
+                    logNote = logNote + '{:>1}'.format('['+tag.strip()+']')
         self.logWrite('{:>12} {:>12}: {:>6} {:>1} {:>6}'.format(title, body, str(count), path, logNote), level)
         
     def logWriteCounter(self, title, body, count, tags=[]):
         logNote = ''
         if len(tags):
             for tag in tags:
-                logNote = logNote + '{:>9}'.format('['+tag.strip()+']')
+                if tag is not None:
+                    logNote = logNote + '{:>9}'.format('['+tag.strip()+']')
         self.logWrite('{:>12} {:>6} count: {:>6} {:>6}'.format(title, body, str(count), logNote), 2)
         
     def logWrite(self, notice, level=0):
@@ -2930,6 +2937,7 @@ class SETS():
         self.r_boffAbilities_source = self.wikihttp+"Bridge_officer_and_kit_abilities"
         r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
+        self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations")
         r_specs = self.fetchOrRequestHtml(self.wikihttp+"Category:Captain_specializations", "specs")
         self.specNames = [e.text.replace(' (specialization)', '').replace(' Officer', '').replace(' Operative', '') for e in r_specs.find('#mw-pages .mw-category-group .to_hasTooltip') if '(specialization)' in e.text]
         self.boffGroundSpecNames = [ele for ele in self.specNames if ele not in {"Commando", "Constable", "Strategist", "Pilot"}]
