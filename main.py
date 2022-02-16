@@ -644,6 +644,9 @@ class SETS():
 
         #try:
         image = self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
+        if image is None: self.logWrite("==={} NONE".format(name), 4)
+        elif image == self.emptyImage: self.logWrite("==={} EMPTY".format(name), 4)
+        else: self.logWrite("==={} {}x{}".format(name, image.width(), image.height()), 4)
         return image
         #except:
         #    return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
@@ -1637,7 +1640,7 @@ class SETS():
         # args [array] contains variable infomation used for callback updating
         # internalKey is the cache sub-group (for equipment cache sub-groups)
 
-        #self.logWriteSimple('createButton', '', 2, [key, i, internalKey, environment, row, column])
+        self.logWriteSimple('createButton', '', 4, [name, key, i, internalKey, environment, row, column])
         
         if key in self.build and self.build[key][i] is not None:
             if image0Name is None and 'item' in self.build[key][i]: image0Name = self.build[key][i]['item']
@@ -1654,7 +1657,6 @@ class SETS():
         
         canvas = Canvas(parentFrame, highlightthickness=highlightthickness, borderwidth=borderwidth, width=width, height=height, bg=bg, relief=relief)
         canvas.grid(row=row, column=column, sticky=sticky, padx=padx, pady=pady)
-        
         img0 = canvas.create_image(0,0, anchor="nw",image=image0)
         img1 = None if image1 is None else canvas.create_image(0,0, anchor="nw",image=image1)
         
@@ -1664,7 +1666,7 @@ class SETS():
         else:
             item = name if name is not None else self.build[key][i]
             if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=i,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
-            canvas.bind('<Enter>', lambda e,item=name,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrame(item, internalKey, environment, tooltip))
+            canvas.bind('<Enter>', lambda e,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrame(item, internalKey, environment, tooltip))
         
         return canvas, img0, img1
 
@@ -1777,9 +1779,8 @@ class SETS():
                         imagename = self.skillGetName(rank, row, col, type='image')
                         desc = self.skillGetName(rank, row, col, type='desc')
                         args = [rank, row, col]
-                        image0=self.imageFromInfoboxName(imagename, suffix='')
                         bg = 'yellow' if name in self.build['skills'] else 'grey'
-                        self.createButton(frame, 'skills', callback=self.skillLabelCallback, environment='skill', row=row, column=colActual, borderwidth=3, bg=bg, image0Name=imagename, image1Name='Epic_icon', sticky='n', relief='groove', padx=padxCanvas, args=args, name=name, tooltip=desc)
+                        self.createButton(frame, 'skills', callback=self.skillLabelCallback, environment='skill', row=row, column=colActual, borderwidth=3, bg=bg, image0Name=imagename, image1Name='Epic', sticky='n', relief='groove', padx=padxCanvas, args=args, name=name, tooltip=desc)
                         
 
                         #self.backend['images'][name] = image0
@@ -1957,7 +1958,6 @@ class SETS():
                 canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
                 canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                # boffTitleToSpec still accurate for ground?
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=i,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i], idx, environment))
                 canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
 
@@ -2033,15 +2033,16 @@ class SETS():
             frame = self.groundInfoboxFrame
         else:
             frame = self.shipInfoboxFrame
-            
+
         if item is not None and 'item' in item:
             name = item['item']
         elif isinstance(item, str):
             name = item
         else:
+            self.logWriteSimple('InfoboxFail', environment, 4, tags=["NO NAME", key])
             return
-        
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
+        
         if key is not None and key != '':
             self.precacheEquipment(key)
         
@@ -2071,7 +2072,6 @@ class SETS():
         text.pack(fill="both", expand=True, padx=2, pady=2)
         if name is None or name == '':
             return
-        self.logWriteSimple('item', '', 4, tags=[name])
         
         
 
@@ -2701,25 +2701,21 @@ class SETS():
         logNote = ''
         if len(tags):
             for tag in tags:
-                if tag is not None:
-                    currentTag = self.logTagClean(tag) if tag is not None else ''
-                    logNote = logNote + '{:>1}'.format('['+currentTag+']')
+                logNote = logNote + '[{:>1}]'.format(self.logTagClean(tag))
         self.logWrite('{:>12} {:>13}: {:>6}'.format(title, body, logNote), level)
         
     def logWriteTransaction(self, title, body, count, path, level=1, tags=[]):
         logNote = ''
         if len(tags):
             for tag in tags:
-                if tag is not None:
-                    logNote = logNote + '[{:>1}]'.format(self.logTagClean(tag))
+                logNote = logNote + '[{:>1}]'.format(self.logTagClean(tag))
         self.logWrite('{:>12} {:>12}: {:>6} {:>1} {:>6}'.format(title, body, str(count), path, logNote), level)
         
     def logWriteCounter(self, title, body, count, tags=[]):
         logNote = ''
         if len(tags):
             for tag in tags:
-                if tag is not None:
-                    logNote = logNote + '[{:>9}]'.format(self.logTagClean(tag))
+                logNote = logNote + '[{:>9}]'.format(self.logTagClean(tag))
         self.logWrite('{:>12} {:>6} count: {:>6} {:>6}'.format(title, body, str(count), logNote), 2)
         
     def logWrite(self, notice, level=0):
