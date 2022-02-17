@@ -1480,11 +1480,11 @@ class SETS():
         self.setupGroundBuildFrames()
         self.shipImg = self.getEmptyFactionImage()
         self.groundImg = self.getEmptyFactionImage()
-        self.setShipImageimage=(self.shipImg)
+        self.setShipImage(self.shipImg)
         self.setCharImage(self.groundImg)
         self.setupCurrentTraitFrame()
-        self.setupInfoFrame('ground')
-        self.setupInfoFrame('skill')
+        self.clearInfoboxFrame('ground')
+        self.clearInfoboxFrame('skill')
         self.clearing = 0
         self.setupSpaceBuildFrames()
 
@@ -2094,7 +2094,6 @@ class SETS():
 
         self.clearFrame(frame)
         
-        self.setupButtonExportImportFrame(frame)
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
         text = Text(frame, height=33, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
@@ -2287,8 +2286,8 @@ class SETS():
         
         
     def setupShipImageFrame(self):
-        self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
         try:
+            self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
             ship_image = self.backend['shipHtml']['image']
             self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image.replace(' ','_'), self.build['ship'], self.shipImageWidth, self.shipImageHeight)
         except:
@@ -2416,41 +2415,32 @@ class SETS():
             #self.logWriteSimple('ImageLabel-ground', 'size', 3, ['{}x{}'.format(self.charImageLabel.winfo_width(),self.charImageLabel.winfo_height())])
         
     def setShipImage(self, suppliedImage=None):
-        image1 = self.emptyImage
-        if 'tier' in self.build and self.build['tier'] == "T6-X":
-            image1 = self.imageFromInfoboxName('Epic')
+        if suppliedImage is None: suppliedImage = self.getEmptyFactionImage()
+        if suppliedImage == self.getEmptyFactionImage(): bgColor = '#3a3a3a'
+        else: bgColor = '#000000'
         
-        if suppliedImage is None:
-            if 1:
-                self.shipImageLabel.configure(image=self.emptyImage, bg='#3a3a3a')
-            else:
-                self.shipImagecanvas.itemconfig(self.shipImage0,image=getEmptyFactionImage())
-                self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
-                self.shipImagecanvas.configure(bg='#3a3a3a', highlightthickness=0)
+        if 1:
+            self.shipImageLabel.configure(image=suppliedImage, bg=bgColor)
         else:
-            if 1:
-                self.shipImageLabel.configure(image=suppliedImage, bg='#000000')
-            else:
-                self.shipImagecanvas.itemconfig(self.shipImage0,image=suppliedImage)
-                self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
-                self.shipImagecanvas.configure(bg='#000000', highlightthickness=0)
-            
+            # future canvas conversion
+            image1 = self.imageFromInfoboxName('Epic') if 'tier' in self.build and self.build['tier'] == "T6-X" else self.emptyImage
+            self.shipImagecanvas.itemconfig(self.shipImage0,image=suppliedImage)
+            self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
+            self.shipImagecanvas.configure(bg=bgColor, highlightthickness=0)
+
     def setCharImage(self, suppliedImage=None):
-        image1 = self.emptyImage
-        if 'eliteCaptain' in self.build and self.build['eliteCaptain']:
-            image1 = self.imageFromInfoboxName('Epic')
-        if suppliedImage is None:
-            if 1:
-                self.charImageLabel.configure(image=self.emptyImage, bg='#3a3a3a')
-            else:
-                self.charImagecanvas.itemconfig(self.charImage0,image=getEmptyFactionImage())
-                self.charImagecanvas.itemconfig(self.charImage1,image=image1)   
+        if suppliedImage is None: suppliedImage = self.getEmptyFactionImage()
+        if suppliedImage == self.getEmptyFactionImage(): bgColor = '#3a3a3a'
+        else: bgColor = '#000000'
+        
+        if 1:
+            self.charImageLabel.configure(image=suppliedImage, bg=bgColor)
         else:
-            if 1:
-                self.charImageLabel.configure(image=suppliedImage, bg='#3a3a3a')
-            else:
-                self.charImagecanvas.itemconfig(self.charImage0,image=suppliedImage)
-                self.charImagecanvas.itemconfig(self.charImage1,image=image1)   
+            # future canvas conversion
+            image1 = self.imageFromInfoboxName('Epic') if 'eliteCaptain' in self.build and self.build['eliteCaptain'] else self.emptyImage
+            self.charImagecanvas.itemconfig(self.charImage0,image=suppliedImage)
+            self.charImagecanvas.itemconfig(self.charImage0,image=image1)   
+            self.charImagecanvas.configure(bg=bgColor, highlightthickness=0)
             
     def setupInfoFrame(self, environment='space'):
         if environment == 'ground': parentFrame = self.groundInfoFrame
@@ -2495,7 +2485,7 @@ class SETS():
             self.shipButton.grid(column=1, row=row, sticky='nwse')
             row += 1
    
-        Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='nsew')
+        Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='w')
         Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
         row += 1
         
@@ -2547,8 +2537,12 @@ class SETS():
         doffFrame = Frame(middleFrameLower, bg='#3a3a3a')
         doffFrame.pack(fill=BOTH, expand=True, padx=15, side=BOTTOM)
         
-        infoboxFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        infoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
+        infoBoxOuterFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
+        self.setupButtonExportImportFrame(infoBoxOuterFrame)
+        
+        infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
         for i in range(5):
             parentFrame.grid_columnconfigure(i, weight=1, uniform="mainCol"+environment)
         middleFrame.grid_columnconfigure(0, weight=1, uniform="secCol"+environment)
@@ -2579,9 +2573,13 @@ class SETS():
         self.skillInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
         self.skillMiddleFrame = Frame(self.skillTreeFrame, bg='#3a3a3a')
         self.skillMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
-        #self.setupButtonExportImportFrame(frame) # skill, ship, ground, add this then wrap the infobox frame below it
-        self.skillInfoboxFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        self.skillInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
+
+        self.skillInfoBoxOuterFrame = self.skillInfoboxFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        self.skillInfoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
+        self.setupButtonExportImportFrame(self.skillInfoBoxOuterFrame)
+        
+        self.skillInfoboxFrame = Frame(self.skillInfoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        self.skillInfoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
         for i in range(5):
             self.skillTreeFrame.grid_columnconfigure(i, weight=1, uniform="mainColSkill")
         
