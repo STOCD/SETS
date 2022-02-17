@@ -38,7 +38,7 @@ class SETS():
     reputation_query = wikihttp+'Special:CargoExport?tables=Reputation&fields=Reputation.name,Reputation.environment,Reputation.boff,Reputation.color1,Reputation.color2,Reputation.description,Reputation.icon,Reputation.link,Reputation.released&order+by=Reputation.boff&limit=1000&offset=0&format=json'
 
     itemBoxX = 25
-    itemBoxY = 35
+    itemBoxY = 33
     imageBoxX = 260
     imageBoxY = 146
 
@@ -199,6 +199,7 @@ class SETS():
         return matchobj.group(0).lower()
         
     def imageResizeDimensions(self, imagewidth, imageheight, width, height):
+        #deprecated
         aspectOld = round(imagewidth / imageheight, 2)
         aspectNew = round(width / height, 2)
         
@@ -206,8 +207,7 @@ class SETS():
             # Don't alter small icons
             pass
         elif aspectOld != aspectNew:
-            # old is taller than aspect
-            width = int(imagewidth / (imageheight / height))
+            newWidth = int(imagewidth / (imageheight / height))
         else:
             # matching aspects
             pass
@@ -343,10 +343,11 @@ class SETS():
   
         image = Image.open(filename)
         if(width is not None):
-            curwidth, curheight = image.size
-            resizeOptions = self.imageResizeDimensions(curwidth, curheight, width, height)
-            image = image.resize(resizeOptions,Image.ANTIALIAS)
-        self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4)
+            #curwidth, curheight = image.size
+            #resizeOptions = self.imageResizeDimensions(curwidth, curheight, width, height)
+            #image = image.resize(resizeOptions,Image.ANTIALIAS)
+            image.thumbnail((width, height), resample=Image.LANCZOS)
+        self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
         return ImageTk.PhotoImage(image)
 
     def deHTML(self, textBlock, leaveHTML=False):
@@ -642,14 +643,15 @@ class SETS():
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
 
-        #try:
-        image = self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
-        if image is None: self.logWrite("==={} NONE".format(name), 4)
-        elif image == self.emptyImage: self.logWrite("==={} EMPTY".format(name), 4)
-        else: self.logWrite("==={} {}x{}".format(name, image.width(), image.height()), 4)
-        return image
-        #except:
-        #    return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
+        #Aeon timeships provide list to name var -- try/except until time to fix
+        try:
+            image = self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
+            if image is None: self.logWrite("==={} NONE".format(name), 4)
+            elif image == self.emptyImage: self.logWrite("==={} EMPTY".format(name), 4)
+            else: self.logWrite("==={} {}x{}".format(name, image.width(), image.height()), 4)
+            return image
+        except:
+            return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
 
     def copyBackendToBuild(self, key, key2=None):
         """Helper function to copy backend value to build dict"""
@@ -795,6 +797,7 @@ class SETS():
     
     def clearBackend(self):
         self.logWriteBreak('clearBackend')
+        self.updateImageLabelSize(source='clearBackend')
         self.backend = {
                 'images': dict(),
                 'captain': {'faction' : StringVar(self.window)},
@@ -1163,7 +1166,6 @@ class SETS():
         initialDir = self.getFolderLocation('library')
         inFilename = filedialog.askopenfilename(filetypes=[('SETS files', '*.json *.png'),('JSON files', '*.json'),('PNG image','*.png'),('All Files','*.*')], initialdir=initialDir)
         self.importByFilename(inFilename)
-        self.setupSpaceBuildFrames()
 
     def importByFilename(self, inFilename, force=False):
         if not inFilename: return
@@ -1180,7 +1182,7 @@ class SETS():
         if 'versionJSON' not in self.buildImport and not force:
             self.logWriteTransaction('Template File', 'version missing', '', inFilename, 0)
             if self.persistent['forceJsonLoad']:
-                self.importByFilename(inFilename, True)
+                return self.importByFilename(inFilename, True)
         elif self.buildImport['versionJSON'] >= self.versionJSONminimum or force:
             logNote = ' (fields:['+str(len(self.buildImport))+'=>'+str(len(self.build))+']='
             self.build.update(self.buildImport)
@@ -1190,20 +1192,22 @@ class SETS():
             self.buildToBackendSeries()
             self.hookBackend()
             self.setupInfoFrame('space')
-            if 'tier' in self.build and len(self.build['tier']) > 1:
-                self.setupTierFrame(int(self.build['tier'][1]))
-                self.setupShipImageFrame()
-            self.shipButton.configure(text=self.build['ship'])
+            self.setupInfoFrame('ground')
+            self.setupInfoFrame('skill')
             self.setupGroundBuildFrames()
+            self.setupSpaceBuildFrames()
             
             if force:
                 logNote=' (FORCE LOAD)'+logNote
 
             self.logWriteTransaction('Template File', 'loaded', '', inFilename, 0, [logNote])
+            return True
         else:
             self.logWriteTransaction('Template File', 'version mismatch', '', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
             if self.persistent['forceJsonLoad']:
-                self.importByFilename(inFilename, True)
+                return self.importByFilename(inFilename, True)
+            else:
+                return False
 
     def exportCallback(self, event=None):
         """Callback for export as png button"""
@@ -1251,10 +1255,10 @@ class SETS():
         
         if self.build['skilltree'][name]:
             canvas.itemconfig(img[1],image=self.epicImage)
-            canvas.configure(bg='yellow')
+            canvas.configure(bg='yellow', relief='groove')
         else:
             canvas.itemconfig(img[1],image=self.emptyImage)
-            canvas.configure(bg='grey')
+            canvas.configure(bg='grey', relief='raised')
             
         ### Check for requiredby to enable
         
@@ -1528,7 +1532,10 @@ class SETS():
     def markBoxCallback(self, itemVar, value):
         itemVar['mark'] = value
 
-    def currentFrameUpdate(self, frame=None, first=False):
+    def currentFrameRefresh(self):
+        pass
+    
+    def currentFrameUpdateTo(self, frame=None, first=False):
         if not first: self.framePriorheight = self.currentFrame.winfo_height()
         self.currentFrame = frame
         if first: self.framePriorheight = self.currentFrame.winfo_height()
@@ -1536,11 +1543,11 @@ class SETS():
         self.logWrite('Frame Prior Height: {}'.format(self.framePriorheight), 5)
         
     def focusFrameCallback(self, type):
-        if type == 'ground': self.currentFrameUpdate(self.groundBuildFrame)
-        elif type == 'skill': self.currentFrameUpdate(self.skillTreeFrame)
-        elif type == 'glossary': self.currentFrameUpdate(self.glossaryFrame)
-        elif type == 'settings': self.currentFrameUpdate(self.settingsFrame)
-        elif type == 'space': self.currentFrameUpdate(self.spaceBuildFrame)
+        if type == 'ground': self.currentFrameUpdateTo(self.groundBuildFrame)
+        elif type == 'skill': self.currentFrameUpdateTo(self.skillTreeFrame)
+        elif type == 'glossary': self.currentFrameUpdateTo(self.glossaryFrame)
+        elif type == 'settings': self.currentFrameUpdateTo(self.settingsFrame)
+        elif type == 'space': self.currentFrameUpdateTo(self.spaceBuildFrame)
         else: return
         
         self.groundBuildFrame.pack_forget() if type != 'ground' else None
@@ -1554,24 +1561,18 @@ class SETS():
 
     
     def focusSpaceBuildFrameCallback(self):
+        self.updateImageLabelSize(source='focusSpaceBuildFrameCallback')
         self.focusFrameCallback('space')
-        self.setupInfoFrame('space') #get updates from info changes
-        self.setupShipImageFrame()
-        #self.setShipImage(self.shipImg)
-        if 'tier' in self.backend and len(self.backend['tier'].get()) > 0:
-            self.setupTierFrame(int(self.backend['tier'].get()[1]))
-        self.setupDoffFrame(self.shipDoffFrame)
+        #self.setupInfoFrame('space') #get updates from info changes
+
 
     def focusGroundBuildFrameCallback(self):
+        self.updateImageLabelSize(source='focusGroundBuildFrameCallback')
         self.focusFrameCallback('ground')
-        self.setupInfoFrame('ground') #get updates from info changes
-        self.setCharImage(self.groundImg)
-        self.setupDoffFrame(self.groundDoffFrame)
 
     def focusSkillTreeFrameCallback(self):
         self.focusFrameCallback('skill')
         self.setupSkillMainFrame()
-        self.setupInfoFrame('skill') #get updates from info changes
 
     def focusGlossaryFrameCallback(self):
         self.focusFrameCallback('glossary')
@@ -1649,7 +1650,7 @@ class SETS():
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args)
                 
                 
-    def createButton(self, parentFrame, key, i=0, callback=None, name=None, row=0, column=0, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None):
+    def createButton(self, parentFrame, key, i=0, callback=None, name=None, row=0, column=0, highlightthickness=0, borderwidth=0, width=itemBoxX, height=itemBoxY, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='nw'):
         """ Button building (including click and tooltip binds) """
         # self.build[key][buildSubKey] is the build code for callback updating and image identification
         # self.backend['images'][backendKey][#] is the location for (img,img)
@@ -1677,8 +1678,10 @@ class SETS():
         
         canvas = Canvas(parentFrame, highlightthickness=highlightthickness, borderwidth=borderwidth, width=width, height=height, bg=bg, relief=relief)
         canvas.grid(row=row, column=column, sticky=sticky, padx=padx, pady=pady)
-        img0 = canvas.create_image(0,0, anchor="nw",image=image0)
-        img1 = None if image1 is None else canvas.create_image(0,0, anchor="nw",image=image1)
+        anchorWidth = width / 2 if anchor == 'center' else 0
+        anchorHeight = height / 2 if anchor == 'center' else 0
+        img0 = canvas.create_image(anchorWidth, anchorHeight, anchor=anchor, image=image0)
+        img1 = None if image1 is None else canvas.create_image(anchorWidth, anchorHeight, anchor=anchor, image=image1)
         
         if disabled:
             canvas.itemconfig(img0, state=DISABLED)
@@ -1802,14 +1805,15 @@ class SETS():
                         if not name in self.build['skilltree']: self.build['skilltree'][name] = False
                         if not name in self.backend['images']: self.backend['images'][name] = [ ]
                         bg = 'yellow' if name in self.build['skilltree'] and self.build['skilltree'][name] else 'grey'
-                        image1Name = 'epic.png' if self.build['skilltree'][name] else None
-                        self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=3, bg=bg, image0Name=imagename, sticky='n', relief='groove', padx=padxCanvas, args=args, name=name, tooltip=desc)
-
-                        #self.backend['images'][name] = image0
-                        #self.backend['skillLabels'][name] = canvas
-                        #self.backend['skillNames'][i-1].append(name)
+                        if self.build['skilltree']:
+                            relief = 'raised'
+                            image1Name = 'epic.png'
+                        else:
+                            relief = 'groove'
+                            image1Name = None
+                        self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, sticky='n', relief=relief, padx=padxCanvas, args=args, name=name, tooltip=desc, anchor='center')
                     else:
-                        canvas = Canvas(frame, highlightthickness=0, borderwidth=0, width=25, height=35, bg='#3a3a3a')
+                        canvas = Canvas(frame, highlightthickness=0, borderwidth=0, width=self.itemBoxX, height=self.itemBoxY, bg='#3a3a3a')
                         img0 = canvas.create_image(0,0, anchor="nw",image=self.emptyImage)
                         canvas.grid(row=row, column=colActual, sticky='n', padx=padxCanvas, pady=1)
 
@@ -1975,7 +1979,7 @@ class SETS():
                 else:
                     image=self.emptyImage
                     self.build['boffs'][boffSan] = [None] * rank
-                canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=25, height=35, bg='gray')
+                canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=self.itemBoxX, height=self.itemBoxY, bg='gray')
                 canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                 img0 = canvas.create_image(0,0, anchor="nw",image=image)
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=i,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i], idx, environment))
@@ -2081,6 +2085,8 @@ class SETS():
 
 
         self.clearFrame(frame)
+        
+        if environment != 'skill': self.setupButtonExportImportFrame(frame)
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False)
         text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
@@ -2271,7 +2277,7 @@ class SETS():
     def setupShipImageFrame(self):
         self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
         try:
-            ship_image = self.backend['shipHtml']["image"]
+            ship_image = self.backend['shipHtml']['image']
             self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image.replace(' ','_'), self.build['ship'], self.shipImageWidth, self.shipImageHeight)
         except:
             self.shipImg = self.getEmptyFactionImage()
@@ -2349,7 +2355,7 @@ class SETS():
         
     def setupTagsAndCharFrame(self, frame, environment='space'):
         tagsAndCharFrame = Frame(frame, bg='#b3b3b3')
-        tagsAndCharFrame.pack(fill=X, expand=True, padx=2, side=BOTTOM)
+        tagsAndCharFrame.pack(fill=X, expand=False, padx=2, side=BOTTOM)
         tagsAndCharFrame.grid_columnconfigure(0, weight=1)
         tagsAndCharFrame.grid_columnconfigure(1, weight=1)
         buildTagFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
@@ -2373,10 +2379,10 @@ class SETS():
         self.windowXCache = self.window.winfo_x()
         self.windowYCache = self.window.winfo_y()
     
-    def updateImageLabelSize(self, frame=None):
+    def updateImageLabelSize(self, frame=None, source=''):
         if frame is None:
             try:
-                frame = shipImageLabel
+                frame = self.shipImageLabel
             except:
                 pass
         if frame is not None:
@@ -2384,12 +2390,16 @@ class SETS():
             width = frame.winfo_width()
             height = frame.winfo_height()
             if width > self.imageBoxX and height > self.imageBoxY:
+                resizeShip = True if width > (self.shipImageWidth + 20) or height > self.shipImageHeight + 20 else False
+
                 self.shipImageWidth  = width
                 self.shipImageHeight = height
+                if resizeShip: 
+                    self.setupShipImageFrame()
         else:
             self.shipImageWidth  = self.imageBoxX
             self.shipImageHeight = self.imageBoxY
-        self.logWriteSimple('ImageLabel', 'size', 3, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight)] )
+        self.logWriteSimple('ImageLabel', 'size', 3, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight), source] )
         
     def setShipImage(self, suppliedImage=None):
         image1 = self.emptyImage
@@ -2398,16 +2408,18 @@ class SETS():
         
         if suppliedImage is None:
             if 1:
-                self.shipImageLabel.configure(image=self.emptyImage)
+                self.shipImageLabel.configure(image=self.emptyImage, bg='#3a3a3a', highlightthickness=0)
             else:
                 self.shipImagecanvas.itemconfig(self.shipImage0,image=getEmptyFactionImage())
                 self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
+                self.shipImagecanvas.configure(bg='#3a3a3a', highlightthickness=0)
         else:
             if 1:
-                self.shipImageLabel.configure(image=suppliedImage)
+                self.shipImageLabel.configure(image=suppliedImage, bg='#000000', highlightthickness=0)
             else:
                 self.shipImagecanvas.itemconfig(self.shipImage0,image=suppliedImage)
                 self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
+                self.shipImagecanvas.configure(bg='#000000', highlightthickness=0)
             
     def setCharImage(self, suppliedImage=None):
         image1 = self.emptyImage
@@ -2432,10 +2444,10 @@ class SETS():
         else: parentFrame = self.shipInfoFrame
 
         self.clearFrame(parentFrame)
-        self.setupButtonExportImportFrame(parentFrame)
+        #self.setupButtonExportImportFrame(parentFrame)
         
-        LabelFrame = Frame(parentFrame, bg='#3a3a3a')
-        LabelFrame.pack(fill=BOTH, expand=True)
+        LabelFrame = Frame(parentFrame, bg='#3a3a3a', height=200)
+        LabelFrame.pack(fill=BOTH, expand=True, side=TOP)
         if 1:
             imageLabel = Label(LabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
             if environment == 'ground': self.charImageLabel = imageLabel
@@ -2457,11 +2469,9 @@ class SETS():
                 self.shipImagecanvas = imageCanvas
                 self.shipImage0 = img0
                 self.shipImage1 = img1
-        
-            
+   
         NameFrame = Frame(parentFrame, bg='#b3b3b3')
-        NameFrame.pack(fill=BOTH, expand=False, padx=(0,5), pady=(5,0))
-        
+
         row = 0
         if environment == 'space':
             Label(NameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='w')
@@ -2491,11 +2501,15 @@ class SETS():
         row += 1
             
         self.setupTagsAndCharFrame(parentFrame, environment)
+        NameFrame.pack(fill=X, expand=False, padx=(0,5), pady=(5,0), side=BOTTOM)
         
-        if environment == 'space' and self.build['ship'] is not None:
-            self.shipButton.configure(text=self.build['ship'])
+        if environment == 'space':
+            if self.build['ship'] is not None: self.shipButton.configure(text=self.build['ship'])
+            if 'tier' in self.build and len(self.build['tier']) > 1:
+                self.setupTierFrame(int(self.build['tier'][1]))
+                self.setupShipImageFrame()
             
-        self.updateImageLabelSize(LabelFrame)
+        #self.updateImageLabelSize(LabelFrame, 'setupInfoFrame')
 
     def setupBuildFrame(self, environment='space'):
         parentFrame = self.groundBuildFrame if environment == 'ground' else self.spaceBuildFrame
@@ -2814,7 +2828,7 @@ class SETS():
         self.setupLogoFrame()
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
-        self.currentFrameUpdate(self.spaceBuildFrame, first=True)
+        self.currentFrameUpdateTo(self.spaceBuildFrame, first=True)
         self.precachePreload()
         
 
@@ -2827,11 +2841,8 @@ class SETS():
         self.setupBuildFrame('space')
         self.setupInfoFrame('space')
 
-        self.updateImageLabelSize(self.shipImageLabel)
-
-        self.templateFileLoad()
-        self.setupSpaceBuildFrames()
-
+        if not self.templateFileLoad(): self.setupSpaceBuildFrames()
+        self.updateImageLabelSize(source='setupUIFrames')
 
     def argParserSetup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
@@ -3069,10 +3080,10 @@ class SETS():
             self.logWriteTransaction('Template File', 'found', '', configFile, 1)
             with open(configFile, 'r') as inFile:
                 try:
-                    self.importByFilename(configFile)
+                    return self.importByFilename(configFile)
                 except:
                     self.logWriteTransaction('Template File', 'load complaint', '', configFile, 0)
-                return True
+                    return True
         else:
             self.logWriteTransaction('Template File', 'not found', '', configFile, 0)
         return False
@@ -3105,7 +3116,6 @@ class SETS():
         self.emptyImageFaction = dict()
         self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
         self.epicImage = self.fetchOrRequestImage(self.wikiImages+"Epic.png", "Epic")
-        self.updateImageLabelSize()
         self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", self.shipImageWidth, self.shipImageHeight)
         self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", self.shipImageWidth, self.shipImageHeight)
         self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", self.shipImageWidth, self.shipImageHeight)
