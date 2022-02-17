@@ -1483,8 +1483,8 @@ class SETS():
         self.setShipImageimage=(self.shipImg)
         self.setCharImage(self.groundImg)
         self.setupCurrentTraitFrame()
-        self.setupInfoboxFrame('ground')
-        self.setupInfoboxFrame('skill')
+        self.setupInfoFrame('ground')
+        self.setupInfoFrame('skill')
         self.clearing = 0
         self.setupSpaceBuildFrames()
 
