@@ -1650,12 +1650,15 @@ class SETS():
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args)
                 
                 
-    def createButton(self, parentFrame, key, i=0, callback=None, name=None, row=0, column=0, highlightthickness=0, borderwidth=0, width=itemBoxX, height=itemBoxY, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='nw'):
+    def createButton(self, parentFrame, key, i=0, callback=None, name=None, row=0, column=0, highlightthickness=0, borderwidth=0, width=None, height=None, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='nw'):
         """ Button building (including click and tooltip binds) """
         # self.build[key][buildSubKey] is the build code for callback updating and image identification
         # self.backend['images'][backendKey][#] is the location for (img,img)
         # args [array] contains variable infomation used for callback updating
         # internalKey is the cache sub-group (for equipment cache sub-groups)
+        
+        if width is None: width = self.itemBoxX
+        if height is None: height = self.itemBoxY
 
         buildSubKey = name if name is not None else i
         backendKey = name if name is not None else key
@@ -2636,6 +2639,7 @@ class SETS():
             return
             
         if varName == 'forceJsonLoad': self.persistent[varName] = 1 if choice=='Yes' else 0
+        elif varName == 'uiScale': self.persistent[varName] = float(choice)
         else: self.persistent[varName] = choice
         
         self.logWriteSimple("self.persistent", varName, 2, [choice])
@@ -2702,14 +2706,17 @@ class SETS():
 
     def setupUIScaling(self,event=None):
         # Partially effect, some errors in the log formatting
-        scale = 1
+        scale = 1.0
         if 'uiScale' in self.persistent:
-            scale = self.persistent['uiScale']
+            scale = float(self.persistent['uiScale'])
             
          # pixel correction
         factor = ( self.dpi / 96 ) * scale
         self.window.call('tk', 'scaling', factor)
+        self.itemBoxX = self.itemBoxX * scale
+        self.itemBoxY = self.itemBoxY * scale
         self.logminiWrite('{:>4}dpi (x{:>0.2}) '.format(self.dpi, (factor * scale)))
+
 
     def logDisplayUpdate(self):
         self.logDisplay.delete('0.0', END)
