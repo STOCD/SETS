@@ -400,10 +400,11 @@ class SETS():
 
     def getShipFromName(self, shipJson, shipName):
         """Find cargo table entry for given ship name"""
+        ship_list = []
         for e in range(len(shipJson)):
             if shipJson[e]["Page"] == shipName:
                 ship_list = shipJson[e]
-        return [] if isinstance(ship_list, int) else ship_list
+        return ship_list
 
     def getTierOptions(self, tier):
         """Get possible tier options from ship tier string"""
