@@ -2403,8 +2403,8 @@ class SETS():
             if width > self.imageBoxX and height > self.imageBoxY:
                 resizeShip = True if width > (self.shipImageWidth + 20) or height > self.shipImageHeight + 20 else False
 
-                self.shipImageWidth  = width
-                self.shipImageHeight = height
+                self.shipImageWidth  = width-1
+                self.shipImageHeight = height-7
                 if resizeShip: 
                     self.setupShipImageFrame()
         else:
