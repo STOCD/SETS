@@ -1673,7 +1673,8 @@ class SETS():
             if image0 is None: image0=self.imageFromInfoboxName(image0Name, suffix='') if image0Name is not None else self.emptyImage
             if image1 is None: image1=self.imageFromInfoboxName(image1Name, suffix='') if image1Name is not None else self.emptyImage
             if not backendKey in self.backend['images']: self.backend['images'][backendKey] = [None, None]
-            if name: self.backend['images'][name] = [image0, image1]
+            if name == 'blank': pass #no backend/image
+            elif name: self.backend['images'][name] = [image0, image1]
             else: self.backend['images'][backendKey][i] = [image0, image1]
         else:
             image0 = image0 if image0 is not None else self.emptyImage
@@ -1694,7 +1695,8 @@ class SETS():
             environment = args[3] if args is not None and len(args) >= 4 else 'space'
             internalKey = args[0] if args is not None and type(args[0]) is str else ''
             if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
-            canvas.bind('<Enter>', lambda e,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrame(item, internalKey, environment, tooltip))
+            if name != 'blank':
+                canvas.bind('<Enter>', lambda e,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrame(item, internalKey, environment, tooltip))
         
         return canvas, img0, img1
 
@@ -1785,26 +1787,27 @@ class SETS():
         skillTable = self.cache['skills']['content']
         
         frame = Frame(parentFrame, bg='#3a3a3a')
-        frame.grid(row=0, column=0, sticky='nsew', padx=1, pady=1)
+        frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRowSpace')
         parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullColSpace')
         
-        for row in range(12):
+        padxCanvas = (2,2)
+        padyCanvas = (1,1)
+        for row in range(11):
             frame.grid_rowconfigure(row, weight=1, uniform='skillFrameRowSpace')
             for rank in range(5):
                 for col in range(4):
-                    colActual = ((rank*3)+col)
+                    colActual = ((rank*4)+col)
                     frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameColSpace'+str(rank))
                     name = self.skillGetName(rank, row, col, type='name')
-
-                    padxCanvas = (3,3)
-                    if col == 0: padxCanvas = (25,3)
-                    elif col == 2: padxCanvas = (3,25)
+                    args = [rank, row, col, 'skill']
+                    #if col == 0: padxCanvas = (25,2)
+                    #if col == 2: padxCanvas = (2,25)
 
                     if name and col != 3:
                         imagename = self.skillGetName(rank, row, col, type='image')
                         desc = self.skillGetName(rank, row, col, type='desc')
-                        args = [rank, row, col, 'skill']
+
                         if not name in self.build['skilltree']: self.build['skilltree'][name] = False
                         if not name in self.backend['images']: self.backend['images'][name] = [ ]
                         bg = 'yellow' if name in self.build['skilltree'] and self.build['skilltree'][name] else 'grey'
@@ -1814,11 +1817,9 @@ class SETS():
                         else:
                             relief = 'groove'
                             image1Name = None
-                        self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, sticky='n', relief=relief, padx=padxCanvas, args=args, name=name, tooltip=desc, anchor='center')
+                        self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, sticky='n', relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
                     else:
-                        canvas = Canvas(frame, highlightthickness=0, borderwidth=0, width=self.itemBoxX, height=self.itemBoxY, bg='#3a3a3a')
-                        img0 = canvas.create_image(0,0, anchor="nw",image=self.emptyImage)
-                        canvas.grid(row=row, column=colActual, sticky='n', padx=padxCanvas, pady=1)
+                        self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
