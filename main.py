@@ -20,6 +20,13 @@ if sys.platform.startswith('win'):
     
 class SETS():
     """Main App Class"""
+    
+    itemBoxX = 25
+    itemBoxY = 33
+    imageBoxX = 260
+    imageBoxY = 146
+    windowHeight = 634
+    windowWidth = 1920
 
     #base URI
     wikihttp = 'https://sto.fandom.com/wiki/'
@@ -36,11 +43,6 @@ class SETS():
     doff_query = wikihttp+"Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&order+by=Specializations.name&limit=1000&offset=0&format=json"
     #query for Specializations and Reps
     reputation_query = wikihttp+'Special:CargoExport?tables=Reputation&fields=Reputation.name,Reputation.environment,Reputation.boff,Reputation.color1,Reputation.color2,Reputation.description,Reputation.icon,Reputation.link,Reputation.released&order+by=Reputation.boff&limit=1000&offset=0&format=json'
-
-    itemBoxX = 25
-    itemBoxY = 33
-    imageBoxX = 260
-    imageBoxY = 146
 
     def encodeBuildInImage(self, src, message, dest):
         img = Image.open(src, 'r')
@@ -2215,12 +2217,12 @@ class SETS():
     def setupLogoFrame(self):
         self.clearFrame(self.logoFrame)
         
-        logoWidth = 1920
+        logoWidth = self.windowWidth
         logoHeight = 134
         maxWidth = self.window.winfo_screenwidth()
-        if maxWidth > logoWidth:
-            maxWidth = logoWidth
-        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", maxWidth, int(maxWidth/logoWidth * logoHeight))
+        if maxWidth > self.windowWidth:
+            maxWidth = self.windowWidth
+        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", maxWidth, int(maxWidth/self.windowWidth * logoHeight))
         
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
 
@@ -2838,7 +2840,7 @@ class SETS():
         self.logoFrame.pack(fill=X)
         self.menuFrame = Frame(self.containerFrame, bg='#c59129')
         self.menuFrame.pack(fill=X, padx=15)
-        self.verticalFrame = Frame(self.containerFrame, bg='#c59129', height=633)
+        self.verticalFrame = Frame(self.containerFrame, bg='#c59129', height=self.windowHeight)
         self.verticalFrame.pack(fill='none', side='left')
         self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
