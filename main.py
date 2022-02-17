@@ -2411,6 +2411,8 @@ class SETS():
             self.shipImageWidth  = self.imageBoxX
             self.shipImageHeight = self.imageBoxY
         self.logWriteSimple('ImageLabel', 'size', 3, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight), source] )
+        #if source == 'focusSpaceBuildFrameCallback':
+            #self.logWriteSimple('ImageLabel-ground', 'size', 3, ['{}x{}'.format(self.charImageLabel.winfo_width(),self.charImageLabel.winfo_height())])
         
     def setShipImage(self, suppliedImage=None):
         image1 = self.emptyImage
@@ -2456,8 +2458,9 @@ class SETS():
 
         self.clearFrame(parentFrame)
         #self.setupButtonExportImportFrame(parentFrame)
+        height = 311 if environment == 'space' else 349
         
-        LabelFrame = Frame(parentFrame, bg='#3a3a3a', height=200)
+        LabelFrame = Frame(parentFrame, bg='#3a3a3a', height=311)
         LabelFrame.pack(fill=BOTH, expand=True, side=TOP)
         if 1:
             imageLabel = Label(LabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
@@ -2836,11 +2839,13 @@ class SETS():
         self.logoFrame.pack(fill=X)
         self.menuFrame = Frame(self.containerFrame, bg='#c59129')
         self.menuFrame.pack(fill=X, padx=15)
-        self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
-        self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
-        self.skillTreeFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
-        self.glossaryFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
-        self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a', height=600)
+        self.verticalFrame = Frame(self.containerFrame, bg='#c59129', height=633)
+        self.verticalFrame.pack(fill='none', side='left')
+        self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.skillTreeFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.glossaryFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
 
         self.setupFooterFrame()
