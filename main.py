@@ -2080,15 +2080,15 @@ class SETS():
         
         raritycolor = '#ffffff'
         if 'rarity' in item:
-            if item["rarity"] == "Epic":
+            if item["rarity"].lower() == "epic":
                 raritycolor = '#ffd700'
-            elif item["rarity"] == "Ultra rare":
+            elif item["rarity"].lower() == "ultra rare":
                 raritycolor = "#6d65bc"
-            elif item["rarity"] == "Very rare":
+            elif item["rarity"].lower() == "very rare":
                 raritycolor = "#a245b9"
-            elif item["rarity"] == "Rare":
+            elif item["rarity"].lower() == "rare":
                 raritycolor = "#0099ff"
-            elif item["rarity"] == "Uncommon":
+            elif item["rarity"].lower() == "uncommon":
                 raritycolor = "#00cc00"
 
 
