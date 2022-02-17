@@ -1481,6 +1481,9 @@ class SETS():
         self.groundImg = self.getEmptyFactionImage()
         self.setShipImageimage=(self.shipImg)
         self.setCharImage(self.groundImg)
+        self.setupCurrentTraitFrame()
+        self.setupInfoboxFrame('ground')
+        self.setupInfoboxFrame('skill')
         self.clearing = 0
         self.setupSpaceBuildFrames()
 
@@ -2090,16 +2093,16 @@ class SETS():
 
         self.clearFrame(frame)
         
-        if environment != 'skill': self.setupButtonExportImportFrame(frame)
-        Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False)
-        text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
+        self.setupButtonExportImportFrame(frame)
+        Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
+        text = Text(frame, height=33, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
         text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
         text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
         text.tag_configure('who', foreground='#ff6347', font=('Helvetica', 10, 'bold' ))
         text.tag_configure('distance', foreground='#000000', font=('Helvetica', 4))
-        text.pack(fill="both", expand=True, padx=2, pady=2)
+        text.pack(fill="both", expand=True, padx=2, pady=2, side=BOTTOM)
         if name is None or name == '':
             return
         
@@ -2200,7 +2203,7 @@ class SETS():
     def setupDoffFrame(self, frame):
         self.clearFrame(frame)
         mainFrame = Frame(frame, bg='#3a3a3a')
-        mainFrame.pack(side='bottom', fill=Y, expand=True, pady=(5,0))
+        mainFrame.pack(side='bottom', fill=BOTH, expand=True, pady=(5,0))
         
         self.setupDoffListFrame(mainFrame, 'space')
         DoffBreak = Frame(mainFrame, bg='#3a3a3a', width=10)
@@ -2273,10 +2276,14 @@ class SETS():
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
 
     def setupTierFrame(self, tier):
-        Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3').grid(row=0, column=0, sticky='nsew')
+        f = font.Font(family='Helvetica', size=9)
+        l = Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3', font=f)
+        l.grid(row=0, column=0, sticky='nsew')
+        l.configure(borderwidth=0, highlightthickness=0)
         m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
-        m.grid(column=1, row=0, sticky='nsew', pady=5)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, font=f)
+        
         
     def setupShipImageFrame(self):
         self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
@@ -2288,11 +2295,11 @@ class SETS():
         self.setShipImage(self.shipImg)
 
     def setupButtonExportImportFrame(self, frame):
-        exportImportFrame = Frame(frame)
-        exportImportFrame.pack(fill=BOTH, expand=True)
+        exportImportFrame = Frame(frame, bg='#3a3a3a')
+        exportImportFrame.pack(fill=X, expand=True)
         buttonExportPng = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
         buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit = Button(exportImportFrame, text='Export reddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
+        buttonExportReddit = Button(exportImportFrame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
         buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
         buttonImport.pack(side='left', fill=BOTH, expand=True)
@@ -2412,14 +2419,14 @@ class SETS():
         
         if suppliedImage is None:
             if 1:
-                self.shipImageLabel.configure(image=self.emptyImage, bg='#3a3a3a', highlightthickness=0)
+                self.shipImageLabel.configure(image=self.emptyImage, bg='#3a3a3a')
             else:
                 self.shipImagecanvas.itemconfig(self.shipImage0,image=getEmptyFactionImage())
                 self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
                 self.shipImagecanvas.configure(bg='#3a3a3a', highlightthickness=0)
         else:
             if 1:
-                self.shipImageLabel.configure(image=suppliedImage, bg='#000000', highlightthickness=0)
+                self.shipImageLabel.configure(image=suppliedImage, bg='#000000')
             else:
                 self.shipImagecanvas.itemconfig(self.shipImage0,image=suppliedImage)
                 self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)   
@@ -2431,13 +2438,13 @@ class SETS():
             image1 = self.imageFromInfoboxName('Epic')
         if suppliedImage is None:
             if 1:
-                self.charImageLabel.configure(image=self.emptyImage)
+                self.charImageLabel.configure(image=self.emptyImage, bg='#3a3a3a')
             else:
                 self.charImagecanvas.itemconfig(self.charImage0,image=getEmptyFactionImage())
                 self.charImagecanvas.itemconfig(self.charImage1,image=image1)   
         else:
             if 1:
-                self.charImageLabel.configure(image=suppliedImage)
+                self.charImageLabel.configure(image=suppliedImage, bg='#3a3a3a')
             else:
                 self.charImagecanvas.itemconfig(self.charImage0,image=suppliedImage)
                 self.charImagecanvas.itemconfig(self.charImage1,image=image1)   
@@ -2463,7 +2470,7 @@ class SETS():
             imageCanvas = Canvas(LabelFrame, highlightthickness=1, borderwidth=0, bg='#3a3a3a', highlightbackground="black")
             imageCanvas.grid(row=0, column=0, sticky='nse')
             LabelFrame.grid_columnconfigure(0, weight=1)
-            img0 = imageCanvas.create_image(imageCanvas.winfo_width() / 2,imageCanvas.winfo_height() / 2, anchor="nw",image=self.getEmptyFactionImage())
+            img0 = imageCanvas.create_image(imageCanvas.winfo_width() / 2,imageCanvas.winfo_height() / 2, anchor="center",image=self.getEmptyFactionImage())
             img1 = imageCanvas.create_image(0,0, anchor="nw",image=self.emptyImage)
             if environment == 'ground':
                 self.charImagecanvas = imageCanvas
@@ -2475,20 +2482,17 @@ class SETS():
                 self.shipImage1 = img1
    
         NameFrame = Frame(parentFrame, bg='#b3b3b3')
-
+        NameFrame.grid_columnconfigure(1, weight=1)
+        
         row = 0
         if environment == 'space':
             Label(NameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='w')
             self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
             self.shipButton.grid(column=1, row=row, sticky='nwse')
-            NameFrame.grid_columnconfigure(1, weight=1)
-            #self.shipTierFrame = Frame(NameFrame, bg='#b3b3b3')
-            #self.shipTierFrame.grid(column=2, row=row, sticky='e')
             row += 1
-        
-        Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Player'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='nsew')
-        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=10)
-        NameFrame.grid_columnconfigure(1, weight=1)
+   
+        Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='nsew')
+        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
         row += 1
         
         label = Label(NameFrame, text="Desc ({}):".format('S' if environment == 'space' else 'G'), fg='#3a3a3a', bg='#b3b3b3')
@@ -2512,28 +2516,33 @@ class SETS():
             if 'tier' in self.build and len(self.build['tier']) > 1:
                 self.setupTierFrame(int(self.build['tier'][1]))
                 self.setupShipImageFrame()
-            
-        #self.updateImageLabelSize(LabelFrame, 'setupInfoFrame')
+                pass
 
     def setupBuildFrame(self, environment='space'):
         parentFrame = self.groundBuildFrame if environment == 'ground' else self.spaceBuildFrame
+        
         infoFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
 
         middleFrame = Frame(parentFrame, bg='#3a3a3a')
         middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
+        middleFrame.grid_rowconfigure(0, weight=3, uniform="middleRow"+environment)
+        middleFrame.grid_rowconfigure(1, weight=2, uniform="middleRow"+environment)
         middleFrameUpper = Frame(middleFrame, bg='#3a3a3a')
         middleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nsew')
+        
         equipmentFrame = Frame(middleFrameUpper, bg='#3a3a3a')
         equipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
         boffFrame = Frame(middleFrameUpper, bg='#3a3a3a')
         boffFrame.pack(side='left', fill=BOTH, expand=True)
         traitFrame = Frame(middleFrameUpper, bg='#3a3a3a')
         traitFrame.pack(side='left', fill=BOTH, expand=True)
+        
         middleFrameLower = Frame(middleFrame, bg='#3a3a3a')
         middleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
         doffFrame = Frame(middleFrameLower, bg='#3a3a3a')
-        doffFrame.pack(fill=BOTH, expand=True, padx=20)
+        doffFrame.pack(fill=BOTH, expand=True, padx=15, side=BOTTOM)
+        
         infoboxFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
         for i in range(5):
@@ -2566,10 +2575,12 @@ class SETS():
         self.skillInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
         self.skillMiddleFrame = Frame(self.skillTreeFrame, bg='#3a3a3a')
         self.skillMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
+        #self.setupButtonExportImportFrame(frame) # skill, ship, ground, add this then wrap the infobox frame below it
         self.skillInfoboxFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         self.skillInfoboxFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
         for i in range(5):
             self.skillTreeFrame.grid_columnconfigure(i, weight=1, uniform="mainColSkill")
+        
         self.setupSkillBuildFrames()
 
     def setupLibraryFrame(self):
