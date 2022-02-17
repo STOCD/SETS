@@ -1790,7 +1790,7 @@ class SETS():
         skillTable = self.cache['skills']['content']
         
         frame = Frame(parentFrame, bg='#3a3a3a')
-        frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
+        frame.grid(row=0, column=0, sticky='s', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRowSpace')
         parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullColSpace')
         
