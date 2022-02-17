@@ -21,7 +21,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Projectile Weapon Training 1",
@@ -43,6 +42,7 @@
 				}
 			],
 			[],
+			"",
 			[
 				{
 					"name" : "Shield Restoration 1",
@@ -63,7 +63,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Shield Capacity 1",
@@ -85,6 +84,7 @@
 				}
 			],
 			"",
+			"",
 			[
 				{
 					"name" : "Hull Restoration 1",
@@ -105,7 +105,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Hull Capacity 1",
@@ -149,7 +148,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Defensive Maneuvering 1",
@@ -172,6 +170,15 @@
 			],
 			[],
 			[
+				"",
+				{
+					"name" : "Drain Infection",
+					"image" : "Science_Skill_4",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			[
 				{
 					"name" : "Drain Expertise 1",
 					"image" : "Science_Skill_3_R1",
@@ -181,15 +188,6 @@
 				{
 					"name" : "Drain Expertise 2",
 					"image" : "Science_Skill_3_R2",
-					"link" : "",
-					"desc" : ""
-				}
-			],
-			[
-				"",
-				{
-					"name" : "Drain Infection",
-					"image" : "Science_Skill_4",
 					"link" : "",
 					"desc" : ""
 				}
@@ -217,6 +215,7 @@
 					"desc" : ""
 				}
 			],
+			"",
 			[
 				{
 					"name" : "Impulse Expertise 1",
@@ -237,7 +236,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Electro-Plasma System Flow 1",
@@ -283,7 +281,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Weapon Specialization 1",
@@ -305,6 +302,7 @@
 				}
 			],
 			"",
+			"",
 			[
 				{
 					"name" : "Shield Regeneration 1",
@@ -325,7 +323,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Shield Hardness 1",
@@ -347,6 +344,7 @@
 				}
 			],
 			"",
+			"",
 			[
 				{
 					"name" : "Damage Control 1",
@@ -367,7 +365,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Hull Plating",
@@ -413,7 +410,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Shield Weakening 1",
@@ -435,6 +431,7 @@
 				}
 			],
 			"",
+			"",
 			[
 				{
 					"name" : "Exotic Particle Generator 1",
@@ -455,7 +452,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Long-Range Targeting Sensors 1",
@@ -478,6 +474,15 @@
 			],
 			"",
 			[
+				"",
+				{
+					"name" : "Defensive Subsystem Tuning (Aux)",
+					"image" : "Engineering_Skill_3_R2",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			[
 				{
 					"name" : "Defensive Subsystem Tuning",
 					"image" : "Engineering_Skill_3_R1",
@@ -486,15 +491,6 @@
 				},
 				{
 					"name" : "Defensive Subsystem Tuning (Shields)",
-					"image" : "Engineering_Skill_3_R2",
-					"link" : "",
-					"desc" : ""
-				}
-			],
-			[
-				"",
-				{
-					"name" : "Defensive Subsystem Tuning (Aux)",
 					"image" : "Engineering_Skill_3_R2",
 					"link" : "",
 					"desc" : ""
@@ -545,7 +541,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Coordination Protocols",
@@ -570,6 +565,15 @@
 				}
 			],
 			[
+				"",
+				{
+					"name" : "Shield Reflection",
+					"image" : "Science_Skill_6_R3",
+					"link" : "",
+					"desc" : ""
+				}
+			],
+			[
 				{
 					"name" : "Shield Mastery",
 					"image" : "Science_Skill_6_R1",
@@ -579,15 +583,6 @@
 				{
 					"name" : "Shield Absorption",
 					"image" : "Science_Skill_6_R2",
-					"link" : "",
-					"desc" : ""
-				}
-			],
-			[
-				"",
-				{
-					"name" : "Shield Reflection",
-					"image" : "Science_Skill_6_R3",
 					"link" : "",
 					"desc" : ""
 				}
@@ -613,6 +608,7 @@
 				}
 			],
 			"",
+			"",
 			[
 				{
 					"name" : "Engineering Readiness 1",
@@ -633,7 +629,6 @@
 					"desc" : ""
 				}
 			],
-			"",
 			[
 				{
 					"name" : "Warp Core Potential 1",
