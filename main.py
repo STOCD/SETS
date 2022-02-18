@@ -280,7 +280,7 @@ class SETS():
         designation.replace("/", "_") # Missed by the path sanitizer
         designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
         factionCode = factionCodeDefault = '_(Federation)'
-        if faction is not None:
+        if faction is not None and self.persistent['useFactionSpecificIcons']:
             if 'faction' in self.build['captain'] and self.build['captain']['faction'] != '':
                 factionCode = '_('+self.build['captain']['faction']+')'
                 
@@ -719,6 +719,7 @@ class SETS():
             'keepTemplateOnShipClear': 0,
             'keepTemplateOnShipChange': 0,
             'pickerSpawnUnderMouse': 1,
+            'useFactionSpecificIcons': 0,
             'folder': {
                 'config' : '.config',
                 'cache' : 'cache',
@@ -2696,6 +2697,7 @@ class SETS():
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'varName' : 'clearmemcache' },
             'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'varName' : 'clearfactionImages' },
+            'Use faction-specific icons (experimental)' : { 'col' : 2, 'type' : 'menu', 'varName' : 'useFactionSpecificIcons', 'boolean' : True },
             'blank4'                                : { 'col' : 1, 'type' : 'blank' },
             'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearimages' },
 #            'Save cache binaries (TEST)'            : { 'col' : 2, 'type' : 'button', 'varName' : 'cacheSave' },
