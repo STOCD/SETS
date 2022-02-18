@@ -453,19 +453,20 @@ class SETS():
         name = re.sub(r"(∞.*)|(Mk X.*)|(\[.*\].*)|(MK X.*)|(-S$)", '', name).strip()
         return name
 
-    def precachePreload(self):
+    def precachePreload(self, limited=False):
         self.logWriteBreak('precachePreload START')
         self.precacheDownloads()
-        self.precacheBoffAbilities()
-        self.precacheTraits()
-        self.precacheShipTraits()
-        self.precacheDoffs("Space")
-        self.precacheDoffs("Ground")
         self.precacheShips()
-        self.precacheModifiers()
-        self.precacheReputations()
-        self.precacheSkills()
         self.precacheTemplates()
+        if not limited or self.persistent['noPreCache']:
+            self.precacheBoffAbilities()
+            self.precacheTraits()
+            self.precacheShipTraits()
+            self.precacheDoffs("Space")
+            self.precacheDoffs("Ground")
+            self.precacheModifiers()
+            self.precacheReputations()
+            self.precacheSkills()
         self.logWriteBreak('precachePreload END')
 
     def precacheIconCleanup(self):
@@ -717,6 +718,7 @@ class SETS():
         # self.persistent will be auto-saved and auto-loaded for persistent state data
         self.persistent = {
             'forceJsonLoad': 0,
+            'noPreCache': 0,
             'uiScale': 1,
             'imagesFactionAliases': dict(),
             'imagesFail': dict(),
@@ -1211,12 +1213,13 @@ class SETS():
         self.logWriteCounter('Boff ability', '(json)', len(self.cache['boffTooltips']['ground']), ['ground'])
         self.progressBarStop()
         
-    def boffLabelCallback(self, e, canvas, img, i, key, args, idx, environment='space'):
+    def boffLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for boff labels"""
         self.precacheBoffAbilities()
+        environment = args[3] if args is not None and len(args) >= 4 else 'space'
 
         items_list = []
-        rank = args[2] + 1
+        rank = i + 1
         
         logNote = args[0]
         if args[1]:
@@ -1233,15 +1236,17 @@ class SETS():
 
         itemVar = self.getEmptyItem()
         item = self.pickerGui('Pick Ability', itemVar, items_list, [self.setupSearchFrame])
+        backendKey = item['item']+str(i)
+        if not backendKey in self.backend['images']: self.backend['images'][backendKey] = None
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
                 item['item'] = ''
-                self.backend['images'][item['item']+str(i)] = self.emptyImage
+                self.backend['images'][backendKey] = self.emptyImage
                 canvas.itemconfig(img,image=self.emptyImage)
                 self.build['boffs'][key][i] = item
             else:
-                if item['item']+str(i) not in self.backend['images']:
-                    self.backend['images'][item['item']+str(i)] = item['image']
+                #if item['item']+str(i) not in self.backend['images']:
+                self.backend['images'][backendKey] = item['image']
                 canvas.itemconfig(img,image=self.backend['images'][item['item']+str(i)])
                 canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, '', environment))
                 self.build['boffs'][key][i] = item['item']
@@ -1777,7 +1782,7 @@ class SETS():
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args)
                 
                 
-    def createButton(self, parentFrame, key, i=0, callback=None, name=None, row=0, column=0, highlightthickness=0, borderwidth=0, width=None, height=None, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center'):
+    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None, row=0, column=0, highlightthickness=0, borderwidth=0, width=None, height=None, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center', faction=False, suffix=''):
         """ Button building (including click and tooltip binds) """
         # self.build[key][buildSubKey] is the build code for callback updating and image identification
         # self.backend['images'][backendKey][#] is the location for (img,img)
@@ -1789,16 +1794,21 @@ class SETS():
 
         buildSubKey = name if name is not None else i
         backendKey = name if name is not None else key
+
+        if name is not None: item = name
+        elif groupKey is not None: name = item = self.build[groupKey][key][buildSubKey]
+        else: item = self.build[key][buildSubKey]
         
         self.logWriteSimple('createButton', '', 4, [name, key, buildSubKey, backendKey, i, row, column])
         
-        if key in self.build and type(self.build[key][buildSubKey]) is dict and self.build[key][buildSubKey] is not None:
-            if image0Name is None and 'item' in self.build[key][buildSubKey]: image0Name = self.build[key][buildSubKey]['item']
-            if image1Name is None and 'rarity' in self.build[key][buildSubKey]: image1Name = self.build[key][buildSubKey]['rarity']
+        if type(item) is dict and item is not None:
+            if image0Name is None and 'item' in item: image0Name = item['item']
+            else: image0Name = item
+            if image1Name is None and 'rarity' in item: image1Name = item['rarity']
             
         if not disabled:
-            if image0 is None: image0=self.imageFromInfoboxName(image0Name, suffix='') if image0Name is not None else self.emptyImage
-            if image1 is None: image1=self.imageFromInfoboxName(image1Name, suffix='') if image1Name is not None else self.emptyImage
+            if image0 is None: image0=self.imageFromInfoboxName(image0Name, suffix=suffix, faction=faction) if image0Name is not None else self.emptyImage
+            if image1 is None: image1=self.imageFromInfoboxName(image1Name, suffix=suffix, faction=faction) if image1Name is not None else self.emptyImage
             if not backendKey in self.backend['images']: self.backend['images'][backendKey] = [None, None]
             if name == 'blank': pass #no backend/image
             elif name: self.backend['images'][name] = [image0, image1]
@@ -1818,7 +1828,6 @@ class SETS():
             canvas.itemconfig(img0, state=DISABLED)
             canvas.itemconfig(img1, state=DISABLED)
         else:
-            item = name if name is not None else self.build[key][buildSubKey]
             environment = args[3] if args is not None and len(args) >= 4 else 'space'
             internalKey = args[0] if args is not None and type(args[0]) is str else ''
             if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
@@ -2122,11 +2131,21 @@ class SETS():
                 else:
                     image=self.emptyImage
                     self.build['boffs'][boffSan] = [None] * rank
-                canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=self.itemBoxX, height=self.itemBoxY, bg='gray')
-                canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
-                img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,idx=i,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i], idx, environment))
-                canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
+
+                if 0: # migration to createButton
+                    row=1
+                    #anchor="nw"
+                    args = [ self.boffTitleToSpec(v.get()), v2.get(), i, environment ]
+                    key = boffSan
+
+                    canvas, img0, img1 = self.createButton(bSubFrame1, row=row, column=j, groupKey='boffs', key=key, i=j, callback=self.boffLabelCallback, args=args, faction = 1, suffix=False)
+                else: # prune once above stable
+                    canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=self.itemBoxX, height=self.itemBoxY, bg='gray')
+                    canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
+                    img0 = canvas.create_image(0,0, anchor="nw",image=image)
+                    canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i, environment]))
+                    canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
+
 
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
@@ -2785,9 +2804,10 @@ class SETS():
 
         settingsMaintenance = {
             'Maintenance (auto-saved):'                          : { 'col' : 1, 'type': 'title'},
-            'Open Log'                               : { 'col' : 2, 'type' : 'button', 'varName' : 'openLog' },
+            'Open Log'                              : { 'col' : 2, 'type' : 'button', 'varName' : 'openLog' },
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'forceJsonLoad', 'boolean' : True},
+            'Disabled precache at startup'          : { 'col' : 2, 'type' : 'menu', 'varName' : 'noPreCache', 'boolean' : True},
             'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
             'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'varName' : 'backupCache' },
 #            'Export SETS manual settings'           : { 'col' : 2, 'type' : 'button', 'varName' : 'exportConfigFile' },
@@ -3007,7 +3027,7 @@ class SETS():
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
         self.currentFrameUpdateTo(self.spaceBuildFrame, first=True)
-        self.precachePreload()
+        self.precachePreload(limited=self.args.nocache)
         
 
         self.setupBuildFrame('ground')
@@ -3029,6 +3049,7 @@ class SETS():
         parser.add_argument('--debug', type=int, help='Set debug level (default: 0)')
         parser.add_argument('--file', type=str, help='File to import on open')
         parser.add_argument('--nofetch', type=str, help='Do not fetch new images')
+        parser.add_argument('--nocache', type=str, help='Do not precache at start')
 
         self.args = parser.parse_args()
         
