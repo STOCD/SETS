@@ -25,8 +25,11 @@ class SETS():
     itemBoxY = 33
     imageBoxX = 260
     imageBoxY = 146
-    windowHeight = 634
-    windowWidth = 1920
+    windowHeightDefault = 634
+    windowWidthDefault = 1920
+    windowHeight = windowHeightDefault
+    windowWidth = windowWidthDefault
+    logoHeight = 134
     daysDelayBeforeReattempt = 7
 
     #base URI
@@ -393,15 +396,17 @@ class SETS():
         #self.logWrite(textBlock, 1)
         return textBlock
     
-    def loadLocalImage(self, filename, width = None, height = None):
+    def loadLocalImage(self, filename, width = None, height = None, forceAspect=False):
         """Request image from web or fetch from local cache"""
         cache_base = self.persistent['folder']['local']
         self.makeFilenamePath(cache_base)
         filename = os.path.join(*filter(None, [cache_base, filename]))
         if os.path.exists(filename):
             image = Image.open(filename)
+            self.logWrite('==={}x{} [{}]'.format(width, height, filename))
             if(width is not None):
-                image = image.resize((width,height),Image.ANTIALIAS)
+                if forceAspect: image = image.resize((width,height),Image.ANTIALIAS)
+                else: image.thumbnail((width, height), resample=Image.LANCZOS)
             return ImageTk.PhotoImage(image)
         return self.emptyImage
 
@@ -888,8 +893,8 @@ class SETS():
 
     def pickerDimensions(self):
         #self.window.update()
-        windowheight = self.windowHeightCache
-        windowwidth = int(self.windowWidthCache / 6)
+        windowheight = self.windowHeight
+        windowwidth = int(self.windowWidth / 6)
         if windowheight < 400: windowheight = 400
         if windowwidth < 240: windowwidth = 240
         
@@ -909,6 +914,21 @@ class SETS():
             # This should position the pickerGUI under the pointer when working
         return positionWindow
     
+    def windowAddScrollbar(self, parentFrame, canvas):
+        scrollbar = Scrollbar(parentFrame, orient=VERTICAL, command=canvas.yview)
+        scrollable_frame = Frame(canvas)
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+        startY = canvas.yview()[0]
+        parentFrame.bind("<<ResetScroll>>", lambda event: canvas.yview_moveto(startY))
+        parentFrame.pack(fill=BOTH, expand=True)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side=RIGHT,fill=Y)
+        
+        return scrollable_frame
+        
     def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
         """Open a picker window"""
         pickWindow = Toplevel(self.window)
@@ -933,18 +953,8 @@ class SETS():
                 func(container, itemVar, content)
                 
         canvas = Canvas(container)
-        scrollbar = Scrollbar(container, orient=VERTICAL, command=canvas.yview)
-        scrollable_frame = Frame(canvas)
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-        startY = canvas.yview()[0]
-        container.bind("<<ResetScroll>>", lambda event: canvas.yview_moveto(startY))
-        container.pack(fill=BOTH, expand=True)
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side=RIGHT,fill=Y)
-
+        scrollable_frame = self.windowAddScrollbar(container, canvas)
+        
         try:
             items_list.sort()
         except:
@@ -984,7 +994,84 @@ class SETS():
     def pickerCloseCallback(self, window, origVar, currentVar):
         for key in origVar:
             currentVar[key] = origVar[key]
-        window.destroy()
+            
+        self.windowCloseCallback(window)
+        
+    def windowCloseCallback(self, window):
+        try:
+            window.destroy()
+            pass
+        except:
+            pass
+        
+    def logWindowCreate(self):
+        self.makeSubWindow(title='Log Viewer', type='log')
+        
+    def windowDimensions(self):
+        #self.window.update()
+        windowheight = self.windowHeight - self.logoHeight - 45
+        windowwidth = self.windowWidth
+        
+        return (windowwidth,windowheight)
+
+    def windowLocationCentered(self, x, y):
+        #positionWindow = '+{}+{}'.format(self.windowXCache, self.windowYCache)
+
+        if x is not None and y is not None:
+            positionWindow = '+{}+{}'.format(x, y)
+        else: 
+            positionWindow = '+{}+{}'.format(self.windowXCache, self.windowYCache + self.logoHeight + 35 )
+            self.logWrite("subWindow position update: x{},y{}".format(str(x), str(y)), 2)
+
+        return positionWindow
+        
+    def makeSubWindow(self, title, type, x=None, y=None, windowWidth=None, noclose=False):
+        """Open a new window"""
+        self.requestWindowUpdate()
+        if windowWidth is None: windowWidth = self.windowWidth
+        subWindow = Toplevel(self.window)
+        if noclose:
+            subWindow.overrideredirect(1) #no window elements, must implement close window in window first
+        else:
+            subWindow.resizable(False,False)
+            subWindow.transient(self.window)
+
+        subWindow.title(title)
+        
+        (windowwidth,windowheight) = self.windowDimensions()
+        sizeWindow = '{}x{}'.format(windowwidth, windowheight)
+        subWindow.geometry(sizeWindow+self.windowLocationCentered(x, y))
+       
+        subWindow.protocol('WM_DELETE_WINDOW', lambda:self.windowCloseCallback(subWindow))
+        
+        container = Frame(subWindow)
+        container.configure(bg='#b3b3b3')
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+        topFrame = Frame(subWindow, width=windowWidth)
+        topFrame.grid(row=0, column=0, sticky='nsew', padx=1, pady=1)
+        mainFrame = Frame(subWindow)
+        mainFrame.grid(row=1, column=0, sticky='nsew', padx=1, pady=1)
+        
+        if noclose:
+            optionFrame = Button(topFrame, text='Close', command=lambda:self.windowCloseCallback(subWindow))
+            optionFrame.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+            optionFrame.grid(row=0, column=0, sticky='e')
+            
+        if type == 'log':
+            scrollbar = Scrollbar(mainFrame)
+            scrollbar.pack(side=RIGHT, fill=Y)
+            self.logDisplay = Text(mainFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
+            self.logDisplay.pack(side=LEFT, fill=BOTH, expand=True)
+            self.logDisplay.insert('0.0', self.logFull.get())
+            scrollbar.config(command=self.logDisplay.yview)
+            self.logDisplay.config(yscrollcommand=scrollbar.set)
+            self.logDisplayUpdate()
+            
+        subWindow.title('{}'.format(title))
+        subWindow.wait_visibility()    #Implemented for Linux
+        subWindow.grab_set()
+        subWindow.wait_window()
 
     def itemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
@@ -1480,6 +1567,8 @@ class SETS():
             self.precachePreload()
         elif type == 'cacheSave':
             self.cacheSave()
+        elif type == 'openLog':
+            self.logWindowCreate()
         elif type == 'backupCache':
             # Backup state file
             # Backup caches (no unlink phase)
@@ -1618,7 +1707,6 @@ class SETS():
 
     def focusSettingsFrameCallback(self):
         self.focusFrameCallback('settings')
-        self.logDisplayUpdate()
 
     def setupCurrentBuildFrames(self, environment=None):
         if not self.clearing:
@@ -2265,12 +2353,10 @@ class SETS():
     def setupLogoFrame(self):
         self.clearFrame(self.logoFrame)
         
-        logoWidth = self.windowWidth
-        logoHeight = 134
-        maxWidth = self.window.winfo_screenwidth()
-        if maxWidth > self.windowWidth:
-            maxWidth = self.windowWidth
-        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", maxWidth, int(maxWidth/self.windowWidth * logoHeight))
+        #maxWidth = self.window.winfo_screenwidth()
+        #if maxWidth > self.windowWidth:
+            #maxWidth = self.windowWidth
+        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", width=self.windowWidthDefault, height=self.logoHeight)
         
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
 
@@ -2443,8 +2529,8 @@ class SETS():
         self.build['playerDesc'] = self.charDescText.get("1.0", END)
         
     def updateWindowSize(self):
-        self.windowWidthCache = self.window.winfo_width()
-        self.windowHeightCache = self.window.winfo_height()
+        self.windowWidth = self.window.winfo_width()
+        self.windowHeight = self.window.winfo_height()
         self.windowXCache = self.window.winfo_x()
         self.windowYCache = self.window.winfo_y()
     
@@ -2661,40 +2747,46 @@ class SETS():
         settingsTopRightFrame = Frame(settingsTopFrame, bg='#b3b3b3')
         settingsTopRightFrame.grid(row=0,column=3,sticky='nsew', pady=5)
         
-        settingsTopFrame.grid_columnconfigure(0, weight=5, uniform="settingsColSpace")
+        settingsTopFrame.grid_columnconfigure(0, weight=2, uniform="settingsColSpace")
         settingsTopFrame.grid_columnconfigure(1, weight=2, uniform="settingsColSpace")
-        settingsTopFrame.grid_columnconfigure(2, weight=1, uniform="settingsColSpace")
+        settingsTopFrame.grid_columnconfigure(2, weight=2, uniform="settingsColSpace")
         settingsTopFrame.grid_columnconfigure(3, weight=2, uniform="settingsColSpace")
         
-        label = Label(settingsTopLeftFrame, text="Log (mousewheel to scroll):", fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=0, column=0, sticky='nw')
-        self.logDisplay = Text(settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
-        self.logDisplay.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
-        self.logDisplay.insert('0.0', self.logFull.get())
+        #label = Label(settingsTopLeftFrame, text="Log (mousewheel to scroll):", fg='#3a3a3a', bg='#b3b3b3')
+        #label.grid(row=0, column=0, sticky='nw')
+        #self.logDisplay = Text(settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
+        #self.logDisplay.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
+        #self.logDisplay.insert('0.0', self.logFull.get())
 
         settingsDefaults = {
-            'Settings on this page are auto-saved' : { 'col' : 1, 'type' : 'title' },
-            'Defaults:'     : { 'col' : 1 },
-            'Mark'          : { 'col' : 2, 'type' : 'menu', 'varName' : 'markDefault' },
-            'Rarity'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'rarityDefault' },
-            'Faction'       : { 'col' : 2, 'type' : 'menu', 'varName' : 'factionDefault' },
-            'Sort Options:' : { 'col' : 1 },
-            'BOFF Sort 1st' : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort' },
-            'BOFF Sort 2nd' : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort2' },
-            'Console Sort'  : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort' },
-        }
-        self.configureColumn(settingsTopMiddleLeftFrame, theme=settingsDefaults)
+            'Defaults (auto-saved):'     : { 'col' : 1, 'type': 'title'},
+            'Mark'                       : { 'col' : 2, 'type' : 'menu', 'varName' : 'markDefault' },
+            'Rarity'                     : { 'col' : 2, 'type' : 'menu', 'varName' : 'rarityDefault' },
+            'Faction'                    : { 'col' : 2, 'type' : 'menu', 'varName' : 'factionDefault' },
 
-        settingsMaintenance = {
-            'blank0'                                : { 'col' : 1, 'type' : 'blank' },
-            'Maintenance:'                          : { 'col' : 1 },
+        }
+        self.configureColumn(settingsTopLeftFrame, theme=settingsDefaults)
+
+        settingsTheme = {
+            'Theme Settings (auto-saved):'          : { 'col' : 1, 'type': 'title'},
             'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'varName' : 'uiScale' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
             'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault' },
             'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'varName' : 'pickerSpawnUnderMouse', 'boolean' : True },
             'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipClear', 'boolean' : True },
             'Keep build when changing ships'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipChange', 'boolean' : True },
-            'blank2'                                : { 'col' : 1, 'type' : 'blank' },
+            'Sort Options:'                         : { 'col' : 1 },
+            'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort' },
+            'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort2' },
+            'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort' },
+
+        }
+        self.configureColumn(settingsTopMiddleLeftFrame, theme=settingsTheme)
+
+        settingsMaintenance = {
+            'Maintenance (auto-saved):'                          : { 'col' : 1, 'type': 'title'},
+            'Open Log'                               : { 'col' : 2, 'type' : 'button', 'varName' : 'openLog' },
+            'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'forceJsonLoad', 'boolean' : True},
             'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
             'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'varName' : 'backupCache' },
@@ -2706,6 +2798,7 @@ class SETS():
             'blank4'                                : { 'col' : 1, 'type' : 'blank' },
             'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearimages' },
 #            'Save cache binaries (TEST)'            : { 'col' : 2, 'type' : 'button', 'varName' : 'cacheSave' },
+
 
         }
         self.configureColumn(settingsTopRightFrame, theme=settingsMaintenance)
@@ -2900,7 +2993,7 @@ class SETS():
         self.logoFrame.pack(fill=X)
         self.menuFrame = Frame(self.containerFrame, bg='#c59129')
         self.menuFrame.pack(fill=X, padx=15)
-        self.verticalFrame = Frame(self.containerFrame, bg='#c59129', height=self.windowHeight)
+        self.verticalFrame = Frame(self.containerFrame, bg='#c59129', height=self.windowHeightDefault)
         self.verticalFrame.pack(fill='none', side='left')
         self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
