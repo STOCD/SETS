@@ -716,7 +716,9 @@ class SETS():
             'boffSort': self.boffSortOptions[0],
             'boffSort2': self.boffSortOptions[0],
             'consoleSort': self.consoleSortOptions[0],
-            'keepTemplateOnShipClear': False,
+            'keepTemplateOnShipClear': 0,
+            'keepTemplateOnShipChange': 0,
+            'pickerSpawnUnderMouse': 1,
             'folder': {
                 'config' : '.config',
                 'cache' : 'cache',
@@ -893,7 +895,7 @@ class SETS():
         if x is None or y is None:
             x = self.window.winfo_pointerx()
             y = self.window.winfo_pointery()
-        if x is not None and y is not None:
+        if self.persistent['pickerSpawnUnderMouse'] and x is not None and y is not None:
             abs_coord_x = x - self.window.winfo_rootx()
             abs_coord_y = y - self.window.winfo_rooty()
             positionWindow = "+"+str(x)+"+"+str(y)
@@ -1160,6 +1162,7 @@ class SETS():
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
         tier = self.backend['shipHtml']['tier']
+        
         self.clearFrame(self.shipTierFrame)
         self.setupTierFrame(tier)
         self.setupShipImageFrame()
@@ -1184,7 +1187,7 @@ class SETS():
                 self.shipButton.configure(text=item['item'])
                 self.backend['ship'].set(item['item'])
                 self.setupBoffFrame('space', self.backend['shipHtml'])
-
+                
     def importCallback(self, event=None):
         """Callback for import button"""
         initialDir = self.getFolderLocation('library')
@@ -1877,7 +1880,16 @@ class SETS():
         self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
     def resetShipSettings(self):
+        # on ship change / removal
+        # Clear specs so we don't gather specs as we change
         self.build['boffseats']['space_spec'] = [None] * 6
+        
+        if not self.persistent['keepTemplateOnShipChange']:
+            self.backend['playerShipName'] = 0
+            self.shipDescText.delete(1.0, END)
+            self.build['playerShipName'] = ''
+            self.build['playerShipDesc'] = ''
+            self.setupInfoFrame(environment='space')
         
     def sortedBoffs2(self, ranks, specs, spec2s, environment, i):
         if environment == 'space' and self.persistent['boffSort2'] == 'ranks':
@@ -2673,7 +2685,9 @@ class SETS():
             'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'varName' : 'uiScale' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
             'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault' },
+            'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'varName' : 'pickerSpawnUnderMouse', 'boolean' : True },
             'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipClear', 'boolean' : True },
+            'Keep build when changing ships'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipChange', 'boolean' : True },
             'blank2'                                : { 'col' : 1, 'type' : 'blank' },
             'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'forceJsonLoad', 'boolean' : True},
             'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
@@ -2689,15 +2703,15 @@ class SETS():
         }
         self.configureColumn(settingsTopRightFrame, theme=settingsMaintenance)
 
-    def persistentSet(self, choice, varName):
+    def persistentSet(self, choice, varName, isBoolean=False):
         if varName is None or varName == '':
             return
             
-        if varName == 'forceJsonLoad': self.persistent[varName] = 1 if choice=='Yes' else 0
+        if isBoolean: self.persistent[varName] = 1 if choice=='Yes' else 0
         elif varName == 'uiScale': self.persistent[varName] = float(choice)
         else: self.persistent[varName] = choice
         
-        self.logWriteSimple("self.persistent", varName, 2, [choice])
+        self.logWriteSimple("self.persistent", varName, 2, [choice, self.persistent[varName]])
         self.stateSave()
         
         if varName == 'consoleSort':
@@ -2744,9 +2758,9 @@ class SETS():
                     elif varName == 'boffSort2': settingOptions = self.boffSortOptions
                     elif varName == 'consoleSort': settingOptions = self.consoleSortOptions
                     elif varName == 'exportDefault': settingOptions = self.exportOptions
-                    elif isBoolean: settingOptions = ['']+self.yesNo
+                    elif isBoolean: settingOptions = self.yesNo
                     
-                    optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName:self.persistentSet(choice, varName=varName))
+                    optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName,isBoolean=isBoolean:self.persistentSet(choice, varName=varName, isBoolean=isBoolean))
                 elif type == 'scale':
                     settingVar = DoubleVar(value=self.persistent[varName] if varName in self.persistent else 1)
                     if varName == 'uiScale': self.uiScaleSetting = settingVar
