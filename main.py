@@ -455,6 +455,7 @@ class SETS():
         self.precacheModifiers()
         self.precacheReputations()
         self.precacheSkills()
+        self.precacheTemplates()
         self.logWriteBreak('precachePreload END')
 
     def precacheIconCleanup(self):
@@ -670,6 +671,25 @@ class SETS():
         elif key2 in self.build[key]:
             self.backend[key][key2].set(self.build[key][key2])
 
+    def precacheTemplates(self):
+        self.shipTemplate = {
+            'name': 'Template',
+            'image': 'none',
+            'tier': 6,
+            'fore': 5,
+            'aft': 4,
+            'equipcannons': 1,
+            'devices': 4,
+            'consolestac': 5,
+            'consolessci': 5,
+            'consoleseng': 5,
+            'experimental': 1,
+            'secdeflector': 1,
+            'hangars': 2,
+            'abilities': [ 'Innovation Effects' ],
+            'boffs': [ 'Commander Universal-Miracle Worker', 'Lieutenant Commander Universal-Command', 'Lieutenant Commander Universal-Temporal Operative', 'Lieutenant Universal-Intelligence', 'Ensign Universal-Pilot' ]
+        }
+        
     def resetPersistent(self):
         # related constants not sourced externally yet
         self.fileStateName = '.state_SETS.json'
@@ -696,6 +716,7 @@ class SETS():
             'boffSort': self.boffSortOptions[0],
             'boffSort2': self.boffSortOptions[0],
             'consoleSort': self.consoleSortOptions[0],
+            'keepTemplateOnShipClear': False,
             'folder': {
                 'config' : '.config',
                 'cache' : 'cache',
@@ -1713,6 +1734,8 @@ class SETS():
         """Set up UI frame containing ship equipment"""
         parentFrame = self.shipEquipmentFrame
         self.clearFrame(parentFrame)
+
+        if ship is None: ship = self.shipTemplate
         
         self.backend['shipForeWeapons'] = int(ship["fore"])
         self.backend['shipAftWeapons'] = int(ship["aft"])
@@ -1875,7 +1898,7 @@ class SETS():
         elif environment == 'space' and self.persistent['boffSort'] == 'spec':
             sortedRange = sorted(rangeRanks, reverse=True, key=lambda i,ranks=ranks,specs=specs,spec2s=spec2s: ( specs[i], self.sortedBoffs2(ranks, specs, spec2s, environment, i)))
         elif environment == 'space' and self.persistent['boffSort'] == 'spec2':
-            sortedRange = sorted(rangeRanks, reverse=True, key=lambda i,ranks=ranks,specs=specs,spec2s=spec2s: ( spec2s[i], self.sortedBoffs2(ranks, specs, spec2s, environment, i)))
+            sortedRange = sorted(rangeRanks, reverse=True, key=lambda i,ranks=ranks,specs=specs,spec2s=spec2s: ( 1 if len(spec2s[i]) else 0, self.sortedBoffs2(ranks, specs, spec2s, environment, i)))
         else:
             sortedRange = rangeRanks
     
@@ -1885,6 +1908,7 @@ class SETS():
         """Set up UI frame containing boff skills"""
         parentFrame = self.groundBoffFrame if environment == 'ground' else self.shipBoffFrame
         self.precacheReputations()
+        if ship is None: ship = self.shipTemplate
         
         self.clearFrame(parentFrame)
 
@@ -2001,15 +2025,18 @@ class SETS():
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
         self.build['tier'] = self.backend['tier'].get()
-        if self.backend['shipHtml'] is not None:
+        if self.backend['shipHtml'] is not None or self.persistent['keepTemplateOnShipClear']:
             self.setupShipBuildFrame(self.backend['shipHtml'])
             self.setupBoffFrame('space', self.backend['shipHtml'])
+            self.setupDoffFrame(self.shipDoffFrame)
+            self.setupSpaceTraitFrame()
         else:
             self.clearFrame(self.shipEquipmentFrame)
             self.clearFrame(self.shipBoffFrame)
             self.clearFrame(self.shipTierFrame)
-        self.setupDoffFrame(self.shipDoffFrame)
-        self.setupSpaceTraitFrame()
+            self.clearFrame(self.shipDoffFrame)
+            self.clearFrame(self.shipTraitFrame)
+
         self.clearInfoboxFrame('space')
         self.requestWindowUpdate('force')
 
@@ -2646,6 +2673,7 @@ class SETS():
             'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'varName' : 'uiScale' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
             'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault' },
+            'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipClear', 'boolean' : True },
             'blank2'                                : { 'col' : 1, 'type' : 'blank' },
             'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'forceJsonLoad', 'boolean' : True},
             'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
