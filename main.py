@@ -1257,15 +1257,18 @@ class SETS():
         self.logWrite("==={} {}".format(name, self.build['skilltree'][name]))
         
         if self.build['skilltree'][name]:
-            canvas.itemconfig(img[1],image=self.epicImage)
+            image1 = self.epicImage
             canvas.configure(bg='yellow', relief='groove')
         else:
-            canvas.itemconfig(img[1],image=self.emptyImage)
+            image1 = self.emptyImage
             canvas.configure(bg='grey', relief='raised')
             
+        self.backend['images'][name] = [self.backend['images'][name][0], image1]
+        canvas.itemconfig(img[1],image=image1)
         ### Check for requiredby to enable
         
         return
+        # Original actions below, prune once new functions stable
         rankReqs = [0, 5, 15, 25, 35]
         if(skill in self.build['skills'][rank]):
             if (rank < 4 and len(self.build['skills'][rank+1])>0):
@@ -2228,21 +2231,29 @@ class SETS():
 
     def setupFooterFrame(self):
         self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
+        self.footerFrame.pack(fill='both', side='bottom', expand=False)
         f = font=('Helvetica', 10, 'bold')
         
-        footerLabelL = Label(self.footerFrame, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=f)
+        self.footerFrameL = Frame(self.footerFrame, bg='#c59129')
+        self.footerFrameL.grid(row=0, column=0, sticky='w')
+        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=f)
         footerLabelL.grid(row=0, column=0, sticky='w')
+
+        self.footerFrameM = Frame(self.footerFrame, bg='#c59129')
+        self.footerFrameM.grid(row=0, column=1, sticky='ew')
+        self.footerFrameM.grid_columnconfigure(0, weight=1, uniform="footerlabel")
+        self.footerProgressBar = Progressbar(self.footerFrameM, orient='horizontal', mode='indeterminate', length=200)
+        self.footerProgressBar.grid(row=0, column=0, sticky='ew')
         
-        self.footerProgressBar = Progressbar(self.footerFrame, orient='horizontal', mode='indeterminate', length=200)
-        self.footerProgressBar.grid(row=0, column=2, sticky='e')
+        self.footerFrameR = Frame(self.footerFrame, bg='#c59129')
+        self.footerFrameR.grid(row=0, column=2, sticky='e')
+        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=f)
+        footerLabelR.grid(row=0, column=0, sticky='e')
         
-        footerLabelR = Label(self.footerFrame, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=f)
-        footerLabelR.grid(row=0, column=1, sticky='e')
-        
-        self.footerFrame.grid_columnconfigure(0, weight=5, uniform="footerlabel")
-        self.footerFrame.grid_columnconfigure(1, weight=2, uniform="footerlabel")
-        self.footerFrame.grid_columnconfigure(2, weight=1, uniform="footerlabel")
-        self.footerFrame.pack(fill='both', side='bottom', expand=False)
+        self.footerFrame.grid_columnconfigure(0, weight=2, uniform="footerlabel")
+        self.footerFrame.grid_columnconfigure(1, weight=1, uniform="footerlabel")
+        self.footerFrame.grid_columnconfigure(2, weight=2, uniform="footerlabel")
+
         
     def lineTruncate(self, content, length=500):
         return '\n'.join(content.split('\n')[-1*length:])
