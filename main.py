@@ -47,6 +47,8 @@ class SETS():
     doff_query = wikihttp+"Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&order+by=Specializations.name&limit=1000&offset=0&format=json"
     #query for Specializations and Reps
     reputation_query = wikihttp+'Special:CargoExport?tables=Reputation&fields=Reputation.name,Reputation.environment,Reputation.boff,Reputation.color1,Reputation.color2,Reputation.description,Reputation.icon,Reputation.link,Reputation.released,Reputation.secondary&order+by=Reputation.boff&limit=1000&offset=0&format=json'
+    #query for Boffskills
+    trayskill_query = wikihttp+"Special:CargoExport?tables=TraySkill&fields=TraySkill._pageName,TraySkill.name,TraySkill.activation,TraySkill.affects,TraySkill.description,TraySkill.description_long,TraySkill.rank1rank,TraySkill.rank2rank,TraySkill.rank3rank,TraySkill.recharge_base,TraySkill.recharge_global,TraySkill.region,TraySkill.system,TraySkill.targets,TraySkill.type&order+by=TraySkill.name&limit=1000&offset=0&format=json"
 
     def encodeBuildInImage(self, src, message, dest):
         img = Image.open(src, 'r')
@@ -931,12 +933,16 @@ class SETS():
         
         return scrollable_frame
         
+    def restrictItemsList(self, items_list, tagsForRequirement = []):
+        # Infobox 'who' denotes restrictions [for future imlementation]
+        
+        return items_list
+        
     def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
         """Open a picker window"""
         pickWindow = Toplevel(self.window)
         pickWindow.resizable(False,True) #vertical resize only
         pickWindow.transient(self.window)
-        #pickWindow.overrideredirect(1) #no window elements, must implement close window in window first
         pickWindow.title(title)
         
         (windowwidth,windowheight) = self.pickerDimensions()
@@ -1080,6 +1086,7 @@ class SETS():
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
+        items_list = self.restrictItemsList(items_list) # Most restrictions should come from the ship
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame], self.window.winfo_pointerx(), self.window.winfo_pointery())
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
@@ -1121,6 +1128,8 @@ class SETS():
                 traitType = "reputation"
             items_list = self.cache['traitsWithImages'][traitType][args[3]]
             self.logWriteSimple('traitLabelCallback', '', 4, tags=[traitType, args[3], str(len(items_list))])
+            
+        items_list = self.restrictItemsList(items_list) # What restrictions exist for traits?
 
         itemVar = self.getEmptyItem()
         item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
@@ -1233,6 +1242,8 @@ class SETS():
             items_list = self.cache['boffAbilitiesWithImages'][environment][args[0]][rank]
         if args[1] is not None and args[1] != '':
             items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][args[1]][rank]
+            
+        items_list = self.restrictItemsList(items_list) # need to send boffseat spec/spec2
 
         itemVar = self.getEmptyItem()
         item = self.pickerGui('Pick Ability', itemVar, items_list, [self.setupSearchFrame])
@@ -1270,6 +1281,7 @@ class SETS():
         """Callback for ship picker button"""
         itemVar = self.getEmptyItem()
         items_list = [(name, '') for name in self.shipNames]
+        # restrict by faction if not KDF unlocked?
         item = self.pickerGui('Pick Starship', itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
             self.resetShipSettings()
@@ -3328,6 +3340,7 @@ class SETS():
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
         self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
         self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations")
+        self.trayskills = self.fetchOrRequestJson(SETS.trayskill_query, "trayskills")
         
         self.r_boffAbilities_source = self.wikihttp+"Bridge_officer_and_kit_abilities"
         r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
