@@ -27,6 +27,7 @@ class SETS():
     imageBoxY = 146
     windowHeight = 634
     windowWidth = 1920
+    daysDelayBeforeReattempt = 7
 
     #base URI
     wikihttp = 'https://sto.fandom.com/wiki/'
@@ -103,7 +104,7 @@ class SETS():
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
-            if interval.days < 7:
+            if interval.days < self.daysDelayBeforeReattempt:
                 with open(filename, 'r', encoding='utf-8') as html_file:
                     s = html_file.read()
                     return HTML(html=s, url = 'https://sto.fandom.com/')
@@ -253,22 +254,26 @@ class SETS():
         return text
     
     def fetchImage(self, url):
-        if url in self.cache['imagesFail'] and self.cache['imagesFail'][url]:
-            # Previously failed this session, do not attempt download again until next run
-            return None
+        today = datetime.date.today()
+        if url in self.persistent['imagesFail'] and self.persistent['imagesFail'][url]:
+            daysSinceFail = today - self.persistent['imagesFail'][url]
+            if daysSinceFail.days <= self.daysDelayBeforeReattempt:
+                # Previously failed, do not attempt download again until next reattempt days have passed
+                return None
             
         img_request = requests.get(url)
         self.logWriteTransaction('fetchImage', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code)])
         
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
-            self.cache['imagesFail'][url] = 1
+            self.persistent['imagesFail'][url] = today
+            self.stateSave(quiet=True)
             return None
 
         return img_request.content
  
     
-    def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None):
+    def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None, forceAspect = False):
         """Request image from web or fetch from local cache"""
         cache_base = self.getFolderLocation('images')
         override_base = self.getFolderLocation('override')
@@ -347,8 +352,8 @@ class SETS():
         if(width is not None):
             #curwidth, curheight = image.size
             #resizeOptions = self.imageResizeDimensions(curwidth, curheight, width, height)
-            #image = image.resize(resizeOptions,Image.ANTIALIAS)
-            image.thumbnail((width, height), resample=Image.LANCZOS)
+            if forceAspect: image = image.resize(resizeOptions,Image.ANTIALIAS)
+            else: image.thumbnail((width, height), resample=Image.LANCZOS)
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
         return ImageTk.PhotoImage(image)
 
@@ -642,14 +647,14 @@ class SETS():
     def setListIndex(self, list, index, value):
         list[index] = value
 
-    def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon', faction=None):
+    def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon', faction=None, forceAspect = False):
         """Translate infobox name into wiki icon link"""
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
 
         #Aeon timeships provide list to name var -- try/except until time to fix
         try:
-            image = self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction)
+            image = self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction, forceAspect=forceAspect)
             if image is None: self.logWrite("==={} NONE".format(name), 4)
             elif image == self.emptyImage: self.logWrite("==={} EMPTY".format(name), 4)
             else: self.logWrite("==={} {}x{}".format(name, image.width(), image.height()), 4)
@@ -709,6 +714,7 @@ class SETS():
             'forceJsonLoad': 0,
             'uiScale': 1,
             'imagesFactionAliases': dict(),
+            'imagesFail': dict(),
             'markDefault': '',
             'rarityDefault': self.rarities[0],
             'factionDefault': self.factionNames[0],
@@ -817,7 +823,6 @@ class SETS():
                 'specsPrimary': dict(),
                 'specsSecondary': dict(),
                 'specsGroundBoff': dict(),
-                'imagesFail': dict(), 
                 'skills': dict(),
                 'modifiers': None,
             }
