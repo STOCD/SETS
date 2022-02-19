@@ -60,6 +60,8 @@ All:
 ### Configuration Files
 - `cache/` (automatic) is used to store downloaded wiki source data
 - `images/` (automatic) is used to store downloaded images.  [^1]
+- `library/` (automatic) is the default open/save location for exports and imports.
+- `override/` (optional) will be checked for images/files before the standard locations, allowing a user to manually override any item.
 - `.state_SETS.json` (automatic) is used to store settings
 - `.config.json` (optional) is used for manual settings
 - `.template.json` (optional) will be imported when running the app [^3]
