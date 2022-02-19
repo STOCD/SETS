@@ -405,7 +405,7 @@ class SETS():
         filename = os.path.join(*filter(None, [cache_base, filename]))
         if os.path.exists(filename):
             image = Image.open(filename)
-            self.logWrite('==={}x{} [{}]'.format(width, height, filename))
+            #self.logWrite('==={}x{} [{}]'.format(width, height, filename), 2)
             if(width is not None):
                 if forceAspect: image = image.resize((width,height),Image.ANTIALIAS)
                 else: image.thumbnail((width, height), resample=Image.LANCZOS)
@@ -1363,7 +1363,7 @@ class SETS():
         if self.persistent['exportDefault'].lower() == 'json':
             filetypesOptions = [('JSON file', '*.json'),('PNG image','*.png'),('All Files','*.*')]
             defaultExtensionOption = 'json'
-            self.logWrite('==={}'.format(self.persistent['exportDefault'].lower()), 2)
+            #self.logWrite('==={}'.format(self.persistent['exportDefault'].lower()), 2)
             
         outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.build['playerShipName'], initialdir=initialDir)
         if not outFilename: return
@@ -1388,7 +1388,7 @@ class SETS():
         
         if name in self.build['skilltree']: self.build['skilltree'][name] = not self.build['skilltree'][name]
         else: self.build['skilltree'][name] = True
-        self.logWrite("==={} {}".format(name, self.build['skilltree'][name]))
+        #self.logWrite("==={} {}".format(name, self.build['skilltree'][name]), 2)
         
         if self.build['skilltree'][name]:
             image1 = self.epicImage
@@ -1850,8 +1850,14 @@ class SETS():
 
     def setupShipBuildFrame(self, ship):
         """Set up UI frame containing ship equipment"""
-        parentFrame = self.shipEquipmentFrame
-        self.clearFrame(parentFrame)
+        
+        outerFrame = self.shipEquipmentFrame
+        outerFrame.grid_rowconfigure(0, weight=1, uniform='shipFrameFullRowSpace')
+        outerFrame.grid_columnconfigure(0, weight=1, uniform='shipFrameFullColSpace')
+        self.clearFrame(outerFrame)
+        
+        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         if ship is None: ship = self.shipTemplate
         
@@ -1909,14 +1915,21 @@ class SETS():
 
     def setupCharBuildFrame(self):
         """Set up UI frame containing ship equipment"""
-        self.clearFrame(self.groundEquipmentFrame)
-        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 6 if self.backend['eliteCaptain'].get() else 5, self.itemLabelCallback, ["Kit Module", "Pick Module", "", 'ground'])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", "", 'ground'])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", "", 'ground'])
-        self.labelBuildBlock(self.groundEquipmentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["EV Suit", "Pick EV Suit", "", 'ground'])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield (G)", "", 'ground'])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", "", 'ground'])
-        self.labelBuildBlock(self.groundEquipmentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.backend['eliteCaptain'].get() else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
+        outerFrame = self.groundEquipmentFrame
+        outerFrame.grid_rowconfigure(0, weight=1, uniform='shiptraitFrameFullRowSpace')
+        outerFrame.grid_columnconfigure(0, weight=1, uniform='shiptraitFrameFullColSpace')
+        self.clearFrame(outerFrame)
+        
+        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
+        
+        self.labelBuildBlock(parentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 6 if self.backend['eliteCaptain'].get() else 5, self.itemLabelCallback, ["Kit Module", "Pick Module", "", 'ground'])
+        self.labelBuildBlock(parentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", "", 'ground'])
+        self.labelBuildBlock(parentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", "", 'ground'])
+        self.labelBuildBlock(parentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["EV Suit", "Pick EV Suit", "", 'ground'])
+        self.labelBuildBlock(parentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield (G)", "", 'ground'])
+        self.labelBuildBlock(parentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", "", 'ground'])
+        self.labelBuildBlock(parentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.backend['eliteCaptain'].get() else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
                 
     def skillGetName(self, rank, row, col, type='name'):
         if 'content' in self.cache['skills']:
@@ -1973,26 +1986,38 @@ class SETS():
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
-        self.clearFrame(self.shipTraitFrame)
+        outerFrame = self.shipTraitFrame
+        outerFrame.grid_rowconfigure(0, weight=1, uniform='shiptraitFrameFullRowSpace')
+        outerFrame.grid_columnconfigure(0, weight=1, uniform='shiptraitFrameFullColSpace')
+        self.clearFrame(outerFrame)
+        
+        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
-        self.labelBuildBlock(self.shipTraitFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "space"])
-        self.labelBuildBlock(self.shipTraitFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.traitLabelCallback, [False, False, False, "space"], 1 if not traitAlien else 0)
-        self.labelBuildBlock(self.shipTraitFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True, "space"])
-        self.labelBuildBlock(self.shipTraitFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.traitLabelCallback, [True, False, False, "space"])
-        self.labelBuildBlock(self.shipTraitFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False, "space"])
+        self.labelBuildBlock(parentFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "space"])
+        self.labelBuildBlock(parentFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.traitLabelCallback, [False, False, False, "space"], 1 if not traitAlien else 0)
+        self.labelBuildBlock(parentFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.traitLabelCallback, [False, False, True, "space"])
+        self.labelBuildBlock(parentFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.traitLabelCallback, [True, False, False, "space"])
+        self.labelBuildBlock(parentFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.traitLabelCallback, [True, True, False, "space"])
 
     def setupGroundTraitFrame(self):
         """Set up UI frame containing traits"""
-        self.clearFrame(self.groundTraitFrame)
+        outerFrame = self.groundTraitFrame
+        outerFrame.grid_rowconfigure(0, weight=1, uniform='shiptraitFrameFullRowSpace')
+        outerFrame.grid_columnconfigure(0, weight=1, uniform='shiptraitFrameFullColSpace')
+        self.clearFrame(outerFrame)
+        
+        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
-        self.labelBuildBlock(self.groundTraitFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "ground"])
-        self.labelBuildBlock(self.groundTraitFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "ground"], 1 if not traitAlien else 0)
-        self.labelBuildBlock(self.groundTraitFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
-        self.labelBuildBlock(self.groundTraitFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
+        self.labelBuildBlock(parentFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "ground"])
+        self.labelBuildBlock(parentFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "ground"], 1 if not traitAlien else 0)
+        self.labelBuildBlock(parentFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.traitLabelCallback, [True, False, False, "ground"])
+        self.labelBuildBlock(parentFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
     def resetShipSettings(self):
         # on ship change / removal
@@ -2033,11 +2058,16 @@ class SETS():
     
     def setupBoffFrame(self, environment='space', ship=None):
         """Set up UI frame containing boff skills"""
-        parentFrame = self.groundBoffFrame if environment == 'ground' else self.shipBoffFrame
         self.precacheReputations()
         if ship is None: ship = self.shipTemplate
         
-        self.clearFrame(parentFrame)
+        outerFrame = self.groundBoffFrame if environment == 'ground' else self.shipBoffFrame
+        outerFrame.grid_rowconfigure(0, weight=1, uniform='shiptraitFrameFullRowSpace')
+        outerFrame.grid_columnconfigure(0, weight=1, uniform='shiptraitFrameFullColSpace')
+        self.clearFrame(outerFrame)
+        
+        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         seats = 6 if environment == 'space' else 4
         if not environment in self.build['boffseats']: self.build['boffseats'][environment] = [None] * seats
@@ -2163,9 +2193,9 @@ class SETS():
         """Set up all relevant space build frames"""
         self.build['tier'] = self.backend['tier'].get()
         if self.backend['shipHtml'] is not None or self.persistent['keepTemplateOnShipClear']:
+            self.setupDoffFrame(self.shipDoffFrame)
             self.setupShipBuildFrame(self.backend['shipHtml'])
             self.setupBoffFrame('space', self.backend['shipHtml'])
-            self.setupDoffFrame(self.shipDoffFrame)
             self.setupSpaceTraitFrame()
         else:
             self.clearFrame(self.shipEquipmentFrame)
@@ -2180,9 +2210,9 @@ class SETS():
     def setupGroundBuildFrames(self):
         """Set up all relevant build frames"""
         self.build['tier'] = self.backend['tier'].get()
+        self.setupDoffFrame(self.groundDoffFrame)
         self.setupCharBuildFrame()
         self.setupBoffFrame('ground')
-        self.setupDoffFrame(self.groundDoffFrame)
         self.setupGroundTraitFrame()
         self.clearInfoboxFrame('ground')
 
@@ -2333,8 +2363,11 @@ class SETS():
         self.precacheDoffs(doffEnvironment)
         doff_list = sorted([self.deWikify(item) for item in list(self.cache['doffNames'][doffEnvironment].keys())])
 
-        DoffFrame = Frame(frame, bg='#b3b3b3', padx=10, pady=2)
-        DoffFrame.pack(side='right' if environment == 'ground' else 'left', fill=BOTH, expand=True)
+        DoffFrame = Frame(frame, bg='#b3b3b3', padx=5, pady=3)
+        DoffFrame.pack(side='left' if environment == 'ground' else 'left', fill=BOTH, expand=True)
+        DoffFrame.grid_columnconfigure(2, weight=1, uniform=environment+'ColDoffList')
+        #DoffFrame.grid_columnconfigure(1, weight=1, uniform=environment+'ColDoffList')
+        #DoffFrame.grid_columnconfigure(2, weight=2, uniform=environment+'ColDoffList')
         
         DoffLabel = Label(DoffFrame, text=environment.upper()+" DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff')
         DoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
@@ -2353,6 +2386,7 @@ class SETS():
             m = OptionMenu(DoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0,font=f, wraplength=300)
+            
             if self.build['doffs'][environment][i] is not None:
                 v0.set(self.build['doffs'][environment][i]['name'])
                 v1.set(self.build['doffs'][environment][i]['spec'])
@@ -2366,8 +2400,7 @@ class SETS():
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0, v1, row, isSpace))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0, v1, row, isSpace))
 
-        #DoffFrame.grid_columnconfigure(1, weight=1, uniform=environment+'DoffList')
-        #DoffFrame.grid_columnconfigure(2, weight=2, uniform=environment+'DoffList')
+
     
     def setupDoffFrame(self, frame):
         self.clearFrame(frame)
@@ -2689,7 +2722,10 @@ class SETS():
 
     def setupBuildFrame(self, environment='space'):
         parentFrame = self.groundBuildFrame if environment == 'ground' else self.spaceBuildFrame
-        
+        parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
+        for i in range(5):
+            parentFrame.grid_columnconfigure(i, weight=1, uniform="mainCol"+environment)
+            
         infoFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
 
@@ -2718,8 +2754,7 @@ class SETS():
         
         infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
-        for i in range(5):
-            parentFrame.grid_columnconfigure(i, weight=1, uniform="mainCol"+environment)
+        
         middleFrame.grid_columnconfigure(0, weight=1, uniform="secCol"+environment)
         middleFrame.grid_columnconfigure(1, weight=1, uniform="secCol"+environment)
         middleFrame.grid_columnconfigure(2, weight=1, uniform="secCol"+environment)
