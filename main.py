@@ -271,7 +271,7 @@ class SETS():
         
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
-            self.persistent['imagesFail'][url] = today
+            #self.persistent['imagesFail'][url] = today
             self.stateSave(quiet=True)
             return None
 
