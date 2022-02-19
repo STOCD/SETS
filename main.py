@@ -21,8 +21,8 @@ if sys.platform.startswith('win'):
 class SETS():
     """Main App Class"""
     
-    itemBoxX = 25
-    itemBoxY = 33
+    itemBoxX = 32 #25
+    itemBoxY = 42 #33
     imageBoxX = 260
     imageBoxY = 146
     windowHeightDefault = 634
@@ -1889,6 +1889,17 @@ class SETS():
             self.labelBuildBlock(parentFrame, "Experimental", 2, 0, 1, 'experimental', 1, self.itemLabelCallback, ["Experimental", "Pick Experimental Weapon", ""])
         self.labelBuildBlock(parentFrame, "Devices", 3, 0, 1, 'devices', self.backend['shipDevices'], self.itemLabelCallback, ["Ship Device", "Pick Device (S)", ""])
         
+        self.setupShipConsoleFrame()
+        
+    def setupShipConsoleFrame(self):
+        outerFrame = self.shipConsoleFrame
+        outerFrame.grid_rowconfigure(0, weight=1, uniform='shipConsoleFrameFullRowSpace')
+        outerFrame.grid_columnconfigure(0, weight=1, uniform='shipConsoleFrameFullColSpace')
+        self.clearFrame(outerFrame)
+        
+        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
+        
         consoleOptions = ['tac', 'eng', 'sci', 'uni']
         consoleTypes = ['Ship Tactical Console', 'Ship Engineering Console', 'Ship Science Console', 'Console']
         if self.persistent['consoleSort'] == 'uets':
@@ -2199,6 +2210,7 @@ class SETS():
             self.setupSpaceTraitFrame()
         else:
             self.clearFrame(self.shipEquipmentFrame)
+            self.clearFrame(self.shipConsoleFrame)
             self.clearFrame(self.shipBoffFrame)
             self.clearFrame(self.shipTierFrame)
             self.clearFrame(self.shipDoffFrame)
@@ -2731,20 +2743,37 @@ class SETS():
 
         middleFrame = Frame(parentFrame, bg='#3a3a3a')
         middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
+        middleFrame.grid_columnconfigure(0, weight=1, uniform="middleCol"+environment)
         middleFrame.grid_rowconfigure(0, weight=3, uniform="middleRow"+environment)
         middleFrame.grid_rowconfigure(1, weight=2, uniform="middleRow"+environment)
+        
         middleFrameUpper = Frame(middleFrame, bg='#3a3a3a')
         middleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nsew')
+        middleFrameUpper.grid_rowconfigure(0, weight=1, uniform="secRow"+environment)
+        middleFrameUpper.grid_columnconfigure(0, weight=1, uniform="secCol"+environment)
+        middleFrameUpper.grid_columnconfigure(1, weight=1, uniform="secCol"+environment)
+        middleFrameUpper.grid_columnconfigure(2, weight=1, uniform="secCol"+environment)
         
+        col = 0
         equipmentFrame = Frame(middleFrameUpper, bg='#3a3a3a')
-        equipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
+        equipmentFrame.grid(row=0,column=col,sticky='nsew')
+        #equipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
+        col += 1
+        if environment == 'space':
+            middleFrameUpper.grid_columnconfigure(3, weight=1, uniform="secCol"+environment)
+            consoleFrame = Frame(middleFrameUpper, bg='#3a3a3a')
+            consoleFrame.grid(row=0,column=col,sticky='nsew')
+            col += 1
         boffFrame = Frame(middleFrameUpper, bg='#3a3a3a')
-        boffFrame.pack(side='left', fill=BOTH, expand=True)
+        boffFrame.grid(row=0,column=col,sticky='nsew')
+        col += 1
         traitFrame = Frame(middleFrameUpper, bg='#3a3a3a')
-        traitFrame.pack(side='left', fill=BOTH, expand=True)
+        traitFrame.grid(row=0,column=col,sticky='nsew')
+        col += 1
         
         middleFrameLower = Frame(middleFrame, bg='#3a3a3a')
         middleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
+        middleFrameLower.grid_columnconfigure(0, weight=1, uniform="secCol2"+environment)
         doffFrame = Frame(middleFrameLower, bg='#3a3a3a')
         doffFrame.pack(fill=BOTH, expand=True, padx=15, side=BOTTOM)
         
@@ -2755,10 +2784,6 @@ class SETS():
         infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
         
-        middleFrame.grid_columnconfigure(0, weight=1, uniform="secCol"+environment)
-        middleFrame.grid_columnconfigure(1, weight=1, uniform="secCol"+environment)
-        middleFrame.grid_columnconfigure(2, weight=1, uniform="secCol"+environment)
-        middleFrameLower.grid_columnconfigure(0, weight=1, uniform="secCol2"+environment)
                 
         if environment == 'ground':
             self.groundInfoFrame = infoFrame
@@ -2772,6 +2797,7 @@ class SETS():
         else:
             self.shipInfoFrame = infoFrame
             self.shipEquipmentFrame = equipmentFrame
+            self.shipConsoleFrame = consoleFrame
             self.shipBoffFrame = boffFrame
             self.shipTraitFrame = traitFrame
             self.shipDoffFrame = doffFrame
