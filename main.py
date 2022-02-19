@@ -2586,13 +2586,17 @@ class SETS():
         
     def setupTagsAndCharFrame(self, frame, environment='space'):
         tagsAndCharFrame = Frame(frame, bg='#b3b3b3')
-        tagsAndCharFrame.pack(fill=X, expand=False, padx=2, side=BOTTOM)
+        tagsAndCharFrame.pack(fill=X, expand=False, padx=2, side=RIGHT if environment=='skill' else BOTTOM)
         tagsAndCharFrame.grid_columnconfigure(0, weight=1)
-        tagsAndCharFrame.grid_columnconfigure(1, weight=1)
+        if environment != 'skill': tagsAndCharFrame.grid_columnconfigure(1, weight=1)
+        
+        sticky = 'ew' if environment == 'skill' else 'sew'
+        
         buildTagFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
-        buildTagFrame.grid(row=0, column=0, sticky='sew')
+        buildTagFrame.grid(row=1 if environment == 'skill' else 0, column=0, sticky=sticky)
+        
         charInfoFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
-        charInfoFrame.grid(row=0, column=1, sticky='sew')
+        charInfoFrame.grid(row=0, column=0 if environment == 'skill' else 1, sticky=sticky)
         
         self.setupTagsFrame(buildTagFrame, environment)
         self.setupCaptainFrame(charInfoFrame, environment)
@@ -2694,36 +2698,38 @@ class SETS():
                 self.shipImagecanvas = imageCanvas
                 self.shipImage0 = img0
                 self.shipImage1 = img1
-   
-        NameFrame = Frame(parentFrame, bg='#b3b3b3')
-        NameFrame.grid_columnconfigure(1, weight=1)
-        
-        row = 0
-        if environment == 'space':
-            Label(NameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='w')
-            self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
-            self.shipButton.grid(column=1, row=row, sticky='nwse')
+                    
+        if environment != 'skill':
+            NameFrame = Frame(parentFrame, bg='#b3b3b3')
+            NameFrame.grid_columnconfigure(1, weight=1)
+            
+            row = 0
+            if environment == 'space':
+                Label(NameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='w')
+                self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
+                self.shipButton.grid(column=1, row=row, sticky='nwse')
+                row += 1
+       
+            Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='w')
+            Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
             row += 1
-   
-        Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='w')
-        Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
-        row += 1
         
-        label = Label(NameFrame, text="Desc ({}):".format('S' if environment == 'space' else 'G'), fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=row, column=0, sticky='nw')
-        # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
-        descText = Text(NameFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
-        if environment != 'space': self.charDescText = descText
-        else: self.shipDescText = descText
-        descText.grid(row=row, column=1, sticky='nsew')
-        descText.bind('<KeyRelease>', self.updateShipDesc if environment == 'space' else self.updatePlayerDesc)
-        if 'player{}Desc'.format('Ship' if environment == 'space' else '') in self.build:
-            descText.delete(1.0, END)
-            descText.insert(1.0, self.build['player{}Desc'.format('Ship' if environment == 'space' else '')])
-        row += 1
+            label = Label(NameFrame, text="Desc ({}):".format('S' if environment == 'space' else 'G'), fg='#3a3a3a', bg='#b3b3b3')
+            label.grid(row=row, column=0, sticky='nw')
+            # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
+            descText = Text(NameFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
+            if environment != 'space': self.charDescText = descText
+            else: self.shipDescText = descText
+            descText.grid(row=row, column=1, sticky='nsew')
+            descText.bind('<KeyRelease>', self.updateShipDesc if environment == 'space' else self.updatePlayerDesc)
+            if 'player{}Desc'.format('Ship' if environment == 'space' else '') in self.build:
+                descText.delete(1.0, END)
+                descText.insert(1.0, self.build['player{}Desc'.format('Ship' if environment == 'space' else '')])
+            row += 1
+            # end of not-skill items
             
         self.setupTagsAndCharFrame(parentFrame, environment)
-        NameFrame.pack(fill=X, expand=False, padx=(0,5), pady=(5,0), side=BOTTOM)
+        if environment != 'skill': NameFrame.pack(fill=X, expand=False, padx=(0,5), pady=(5,0), side=BOTTOM)
         
         if environment == 'space':
             if self.build['ship'] is not None: self.shipButton.configure(text=self.build['ship'])
