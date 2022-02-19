@@ -2936,7 +2936,7 @@ class SETS():
             spanOption = 2 if type == 'button' else 1
             stickyLabel = 'ew' if spanLabel > 1 else 'e'
             if type == 'title': stickylabel = 'n'
-            stickyOption = 'nwe' if type == 'button' else 'nw'
+            stickyOption = 'nwe' if type == 'button' or type == 'scale' else 'nw'
             f = font.Font(family='Helvetica', size=10) if type else font.Font(family='Helvetica', size=12)
             if type == 'title': f = font.Font(family='Helvetica', size=14, weight='bold')
             if columns > 1 and varName == '': continue
