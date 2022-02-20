@@ -49,6 +49,7 @@ class SETS():
     reputation_query = wikihttp+'Special:CargoExport?tables=Reputation&fields=Reputation.name,Reputation.environment,Reputation.boff,Reputation.color1,Reputation.color2,Reputation.description,Reputation.icon,Reputation.link,Reputation.released,Reputation.secondary&order+by=Reputation.boff&limit=1000&offset=0&format=json'
     #query for Boffskills
     trayskill_query = wikihttp+"Special:CargoExport?tables=TraySkill&fields=TraySkill._pageName,TraySkill.name,TraySkill.activation,TraySkill.affects,TraySkill.description,TraySkill.description_long,TraySkill.rank1rank,TraySkill.rank2rank,TraySkill.rank3rank,TraySkill.recharge_base,TraySkill.recharge_global,TraySkill.region,TraySkill.system,TraySkill.targets,TraySkill.type&order+by=TraySkill.name&limit=1000&offset=0&format=json"
+    faction_query = wikihttp+"Special:CargoExport?tables=Faction&fields=Faction.playability,Faction.name,Faction._pageName,Faction.allegiance,Faction.faction,Faction.imagepeople,Faction.origin,Faction.quadrant,Faction.status,Faction.traits&limit=1000&offset=0&format=json"
 
     def encodeBuildInImage(self, src, message, dest):
         img = Image.open(src, 'r')
@@ -468,6 +469,7 @@ class SETS():
             self.precacheDoffs("Ground")
             self.precacheModifiers()
             self.precacheReputations()
+            self.precacheFactions()
             self.precacheSkills()
         self.logWriteBreak('precachePreload END')
 
@@ -553,6 +555,11 @@ class SETS():
         self.logWriteCounter('DOFF', '(json)', len(self.cache['doffs'][keyPhrase]), [keyPhrase])
         self.logWriteCounter('DOFF names', '(json)', len(self.cache['doffNames'][keyPhrase]), [keyPhrase])
 
+    def precacheFactions(self):
+        # self.faction[#][...] -- name, playability, faction // status, traits, allegiance?
+        # prep self.cache['factions'][dict()]
+        pass
+        
     def precacheReputations(self):
         if 'specsPrimary' in self.cache and len(self.cache['specsPrimary']) > 0:
             return
@@ -833,6 +840,7 @@ class SETS():
                 'specsSecondary': dict(),
                 'specsGroundBoff': dict(),
                 'skills': dict(),
+                'factions': dict(),
                 'modifiers': None,
             }
     
@@ -3408,6 +3416,7 @@ class SETS():
         self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
         self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations")
         self.trayskills = self.fetchOrRequestJson(SETS.trayskill_query, "trayskills")
+        self.factions = self.fetchOrRequestJson(SETS.faction_query, "factions")
         
         self.r_boffAbilities_source = self.wikihttp+"Bridge_officer_and_kit_abilities"
         r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
