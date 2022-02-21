@@ -684,6 +684,13 @@ class SETS():
         elif key2 in self.backend[key]:
             self.build[key][key2] = self.backend[key][key2].get()
 
+    def copyBuildToBackendBoolean(self, key, key2=None):
+        """Helper function to copy build value to backend dict"""
+        if key in self.build and key2 == None:
+            self.backend[key].set(1 if self.build[key] else 0)
+        elif key2 in self.build[key]:
+            self.backend[key][key2].set(1 if self.build[key][key2] else 0)
+            
     def copyBuildToBackend(self, key, key2=None):
         """Helper function to copy build value to backend dict"""
         if key in self.build and key2 == None:
@@ -811,10 +818,9 @@ class SETS():
             'groundShield': [None],
             'groundWeapons': [None] * 2,
             'groundDevices': [None] * 5,
-            'eliteCaptain': 0,
+            'eliteCaptain': False,
             'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
             'tags': dict(),
-            'skills': [[], [], [], [], []],
             'skilltree': dict(),
         }
 
@@ -1345,6 +1351,8 @@ class SETS():
             self.setupInfoFrame('space')
             self.setupInfoFrame('ground')
             self.setupInfoFrame('skill')
+            self.setupDescFrame(environment='ground')
+            self.setupDescFrame(environment='space')
             self.setupGroundBuildFrames()
             self.setupSpaceBuildFrames()
             
@@ -1360,6 +1368,17 @@ class SETS():
             else:
                 return False
 
+    def filenameDefault(self):
+        name = self.build['playerShipName'] if 'playerShipName' in self.build else ''
+        type = self.build['ship'] if 'ship' in self.build else ''
+        
+        if name and type: filename = "{} ({})".format(name, type)
+        elif name: filename = name
+        elif type: filename = type
+        else: filename = ''
+        
+        return filename
+        
     def exportCallback(self, event=None):
         """Callback for export as png button"""
         # pixel correction
@@ -1379,7 +1398,7 @@ class SETS():
             defaultExtensionOption = 'json'
             #self.logWrite('==={}'.format(self.persistent['exportDefault'].lower()), 2)
             
-        outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.build['playerShipName'], initialdir=initialDir)
+        outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.filenameDefault(), initialdir=initialDir)
         if not outFilename: return
         justFile, chosenExtension = os.path.splitext(outFilename)
         if chosenExtension.lower() == '.json':
@@ -1437,9 +1456,9 @@ class SETS():
                 self.backend['skillLabels'][s].configure(bg='grey')
 
     def redditExportDisplayGround(self, textframe):
-        if self.build['eliteCaptain'] == 0:
+        if not self.build['eliteCaptain']:
             elite = 'No'
-        elif self.build['eliteCaptain'] == 1:
+        elif self.build['eliteCaptain']:
             elite = 'Yes'
         else:
             elite = 'You should not be seeing this... PANIC!'
@@ -1489,9 +1508,9 @@ class SETS():
         textframe.insert(END, redditString)
     
     def redditExportDisplaySpace(self, textframe):
-        if self.build['eliteCaptain'] == 0:
+        if not self.build['eliteCaptain']:
             elite = 'No'
-        elif self.build['eliteCaptain'] == 1:
+        elif self.build['eliteCaptain']:
             elite = 'Yes'
         else:
             elite = 'You should not be seeing this... PANIC!'
@@ -1618,7 +1637,7 @@ class SETS():
         self.copyBuildToBackend('specSecondary')
         self.copyBuildToBackend('ship')
         self.copyBuildToBackend('tier')
-        self.copyBuildToBackend('eliteCaptain')
+        self.copyBuildToBackendBoolean('eliteCaptain')
         self.persistentToBackend()
 
     def clearBuildCallback(self, event=None):
@@ -1640,6 +1659,8 @@ class SETS():
         self.setupCurrentTraitFrame()
         self.clearInfoboxFrame('ground')
         self.clearInfoboxFrame('skill')
+        self.setupDescFrame(environment='ground')
+        self.setupDescFrame(environment='space')
         self.clearing = 0
         self.setupSpaceBuildFrames()
 
@@ -1686,7 +1707,7 @@ class SETS():
         self.build['tags'][text] = var.get()
         
     def eliteCaptainCallback(self):
-        self.build['eliteCaptain'] = self.backend['eliteCaptain'].get()
+        self.build['eliteCaptain'] = bool(self.backend['eliteCaptain'].get())
 
     def markBoxCallback(self, itemVar, value):
         itemVar['mark'] = value
@@ -1699,9 +1720,12 @@ class SETS():
         self.currentFrame = frame
         if first: self.framePriorheight = self.currentFrame.winfo_height()
         
-        self.logWrite('Frame Prior Height: {}'.format(self.framePriorheight), 5)
+        self.logWrite('Frame Prior Height: {}'.format(self.framePriorheight), 3)
         
     def focusFrameCallback(self, type):
+        if type == 'ground' or type == 'space':
+            self.updateImageLabelSize(source='focus'+type.title()+'BuildFrameCallback')
+    
         if type == 'ground': self.currentFrameUpdateTo(self.groundBuildFrame)
         elif type == 'skill': self.currentFrameUpdateTo(self.skillTreeFrame)
         elif type == 'glossary': self.currentFrameUpdateTo(self.glossaryFrame)
@@ -1717,27 +1741,15 @@ class SETS():
 
         self.currentFrame.pack(fill=BOTH, expand=True, padx=15)
         #self.currentFrame.place(height = self.framePriorheight) # Supposed to maintain frame height, may need grid
+        
+        if type == 'skill': self.setupSkillMainFrame()
 
-    
-    def focusSpaceBuildFrameCallback(self):
-        self.updateImageLabelSize(source='focusSpaceBuildFrameCallback')
-        self.focusFrameCallback('space')
-        #self.setupInfoFrame('space') #get updates from info changes
-
-
-    def focusGroundBuildFrameCallback(self):
-        self.updateImageLabelSize(source='focusGroundBuildFrameCallback')
-        self.focusFrameCallback('ground')
-
-    def focusSkillTreeFrameCallback(self):
-        self.focusFrameCallback('skill')
-        self.setupSkillMainFrame()
-
-    def focusGlossaryFrameCallback(self):
-        self.focusFrameCallback('glossary')
-
-    def focusSettingsFrameCallback(self):
-        self.focusFrameCallback('settings')
+    # Could be removed with lambdas in the original command=
+    def focusSpaceBuildFrameCallback(self): self.focusFrameCallback('space')
+    def focusGroundBuildFrameCallback(self): self.focusFrameCallback('ground')
+    def focusSkillTreeFrameCallback(self): self.focusFrameCallback('skill')
+    def focusGlossaryFrameCallback(self): self.focusFrameCallback('glossary')
+    def focusSettingsFrameCallback(self): self.focusFrameCallback('settings')
 
     def setupCurrentBuildFrames(self, environment=None):
         if not self.clearing:
@@ -2053,7 +2065,8 @@ class SETS():
             self.build['playerShipName'] = ''
             self.copyBuildToBackend('playerShipName')
             self.build['playerShipDesc'] = ''
-            self.shipDescText.delete(1.0, END)
+            #self.shipDescText.delete(1.0, END)
+            self.setupDescFrame(environment=environment)
             self.setupInfoFrame(environment='space')
         
     def sortedBoffs2(self, ranks, specs, spec2s, environment, i):
@@ -2320,7 +2333,7 @@ class SETS():
         self.clearFrame(frame)
         
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
-        text = Text(frame, height=33, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
+        text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
         text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
@@ -2496,16 +2509,25 @@ class SETS():
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
         f = font.Font(family='Helvetica', size=12, weight='bold')
+        col = 0
+        exportImportFrame = Frame(self.menuFrame, bg='#3a3a3a')
+        exportImportFrame.grid(row=0, column=col, sticky='nsew')
+        self.setupButtonExportImportFrame(exportImportFrame)
+        #buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusGlossaryFrameCallback)
+        #buttonLibrary.grid(row=0, column=col, sticky='nsew')
+        col += 1
         buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSpaceBuildFrameCallback)
-        buttonSpace.grid(row=0, column=0, sticky='nsew')
+        buttonSpace.grid(row=0, column=col, sticky='nsew')
+        col += 1
         buttonGround = Button(self.menuFrame, text="GROUND", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusGroundBuildFrameCallback)
-        buttonGround.grid(row=0, column=1, sticky='nsew')
+        buttonGround.grid(row=0, column=col, sticky='nsew')
+        col += 1
         buttonSkill = Button(self.menuFrame, text="SKILL TREE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSkillTreeFrameCallback)
-        buttonSkill.grid(row=0, column=2, sticky='nsew')
-        buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusGlossaryFrameCallback)
-        buttonLibrary.grid(row=0, column=3, sticky='nsew')
+        buttonSkill.grid(row=0, column=col, sticky='nsew')
+        col += 1
         buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSettingsFrameCallback)
-        buttonSettings.grid(row=0, column=4, sticky='nsew')
+        buttonSettings.grid(row=0, column=col, sticky='nsew')
+        col += 1
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
 
@@ -2529,15 +2551,15 @@ class SETS():
         self.setShipImage(self.shipImg)
 
     def setupButtonExportImportFrame(self, frame):
-        exportImportFrame = Frame(frame, bg='#3a3a3a')
-        exportImportFrame.pack(fill=X, expand=True)
-        buttonExportPng = Button(exportImportFrame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
+        self.clearFrame(frame)
+        
+        buttonExportPng = Button(frame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
         buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit = Button(exportImportFrame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
+        buttonExportReddit = Button(frame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
-        buttonImport = Button(exportImportFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
+        buttonImport = Button(frame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
         buttonImport.pack(side='left', fill=BOTH, expand=True)
-        buttonClear = Button(exportImportFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
+        buttonClear = Button(frame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
         buttonClear.pack(side='left', fill=BOTH, expand=True)
 
     def setupTagsFrame(self, buildTagFrame, environment='space'):
@@ -2597,24 +2619,6 @@ class SETS():
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
         
         charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
-        
-    def setupTagsAndCharFrame(self, frame, environment='space'):
-        tagsAndCharFrame = Frame(frame, bg='#b3b3b3')
-        tagsAndCharFrame.pack(fill=X, expand=False, padx=2, side=RIGHT if environment=='skill' else BOTTOM)
-        tagsAndCharFrame.grid_columnconfigure(0, weight=1)
-        if environment != 'skill': tagsAndCharFrame.grid_columnconfigure(1, weight=1)
-        
-        sticky = 'ew' if environment == 'skill' else 'sew'
-        
-        buildTagFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
-        buildTagFrame.grid(row=1 if environment == 'skill' else 0, column=0, sticky=sticky)
-        
-        charInfoFrame = Frame(tagsAndCharFrame, bg='#b3b3b3')
-        charInfoFrame.grid(row=0, column=0 if environment == 'skill' else 1, sticky=sticky)
-        
-        self.setupTagsFrame(buildTagFrame, environment)
-        self.setupCaptainFrame(charInfoFrame, environment)
-
         
     def updateShipDesc(self, event):
         self.build['playerShipDesc'] = self.shipDescText.get("1.0", END)
@@ -2686,10 +2690,12 @@ class SETS():
         else: parentFrame = self.shipInfoFrame
 
         self.clearFrame(parentFrame)
-        #self.setupButtonExportImportFrame(parentFrame)
-        height = 311 if environment == 'space' else 349
         
-        LabelFrame = Frame(parentFrame, bg='#3a3a3a', height=311)
+        #exportImportFrame = Frame(parentFrame, bg='#3a3a3a')
+        #exportImportFrame.pack(fill=X, expand=True)
+        #self.setupButtonExportImportFrame(exportImportFrame)
+        
+        LabelFrame = Frame(parentFrame, bg='#3a3a3a')
         LabelFrame.pack(fill=BOTH, expand=True, side=TOP)
         if 1:
             imageLabel = Label(LabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
@@ -2727,22 +2733,15 @@ class SETS():
             Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='w')
             Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
             row += 1
-        
-            label = Label(NameFrame, text="Desc ({}):".format('S' if environment == 'space' else 'G'), fg='#3a3a3a', bg='#b3b3b3')
-            label.grid(row=row, column=0, sticky='nw')
-            # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
-            descText = Text(NameFrame, height=3, width=46, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
-            if environment != 'space': self.charDescText = descText
-            else: self.shipDescText = descText
-            descText.grid(row=row, column=1, sticky='nsew')
-            descText.bind('<KeyRelease>', self.updateShipDesc if environment == 'space' else self.updatePlayerDesc)
-            if 'player{}Desc'.format('Ship' if environment == 'space' else '') in self.build:
-                descText.delete(1.0, END)
-                descText.insert(1.0, self.build['player{}Desc'.format('Ship' if environment == 'space' else '')])
-            row += 1
             # end of not-skill items
             
-        self.setupTagsAndCharFrame(parentFrame, environment)
+        CharFrame = Frame(parentFrame, bg='#b3b3b3')
+        CharFrame.pack(fill=X, expand=False, padx=2, side=RIGHT if environment=='skill' else BOTTOM)
+        CharFrame.grid_columnconfigure(0, weight=1)
+        charInfoFrame = Frame(CharFrame, bg='#b3b3b3')
+        charInfoFrame.grid(row=0, column=0 if environment == 'skill' else 1, sticky='ew')
+        self.setupCaptainFrame(CharFrame, environment)
+        
         if environment != 'skill': NameFrame.pack(fill=X, expand=False, padx=(0,5), pady=(5,0), side=BOTTOM)
         
         if environment == 'space':
@@ -2752,6 +2751,29 @@ class SETS():
                 self.setupShipImageFrame()
                 pass
 
+    def setupDescFrame(self, environment='space'):
+        if environment == 'space': parentFrame = self.shipDescFrame
+        elif environment == 'ground': parentFrame = self.groundDescFrame
+        else: return
+        
+        self.clearFrame(parentFrame)
+        parentFrame.grid_columnconfigure(0, weight=1)
+
+        label = Label(parentFrame, text="Build Description ({}):".format(environment.title()), fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=0, column=0, sticky='nw')
+        # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
+        descText = Text(parentFrame, height=3, width=28, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
+        #text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
+        descText.grid(row=1, column=0, sticky='nsew', padx=5, pady=2)
+        
+        if environment != 'space': self.charDescText = descText
+        else: self.shipDescText = descText
+        descText.bind('<KeyRelease>', self.updateShipDesc if environment == 'space' else self.updatePlayerDesc)
+        if 'player{}Desc'.format('Ship' if environment == 'space' else '') in self.build:
+            descText.delete(1.0, END)
+            descText.insert(1.0, self.build['player{}Desc'.format('Ship' if environment == 'space' else '')])
+
+    
     def setupBuildFrame(self, environment='space'):
         parentFrame = self.groundBuildFrame if environment == 'ground' else self.spaceBuildFrame
         parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
@@ -2799,11 +2821,16 @@ class SETS():
         
         infoBoxOuterFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
-        self.setupButtonExportImportFrame(infoBoxOuterFrame)
+
+        descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
+        descFrame.pack(fill=X, expand=True)
+        
+        buildTagFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
+        buildTagFrame.pack(fill=X, expand=True, side=BOTTOM)
+
         
         infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
-        
                 
         if environment == 'ground':
             self.groundInfoFrame = infoFrame
@@ -2812,6 +2839,7 @@ class SETS():
             self.groundTraitFrame = traitFrame
             self.groundDoffFrame = doffFrame
             self.groundInfoboxFrame = infoboxFrame
+            self.groundDescFrame = descFrame
             self.groundImg = self.getEmptyFactionImage()
             self.setupGroundBuildFrames()
         else:
@@ -2822,9 +2850,14 @@ class SETS():
             self.shipTraitFrame = traitFrame
             self.shipDoffFrame = doffFrame
             self.shipInfoboxFrame = infoboxFrame
+            self.shipDescFrame = descFrame
             self.shipImg = self.getEmptyFactionImage()
+            
+        self.setupDescFrame(environment)
+        self.setupTagsFrame(buildTagFrame, environment)
+        self.clearInfoboxFrame(environment)
 
-    def setupSkillTreeFrame(self):
+    def setupSkillTreeFrame(self, environment='skill'):
         self.skillInfoFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         self.skillInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
         self.skillMiddleFrame = Frame(self.skillTreeFrame, bg='#3a3a3a')
@@ -2832,13 +2865,17 @@ class SETS():
 
         self.skillInfoBoxOuterFrame = self.skillInfoboxFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         self.skillInfoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
-        self.setupButtonExportImportFrame(self.skillInfoBoxOuterFrame)
+        
+        buildTagFrame = Frame(self.skillInfoBoxOuterFrame, bg='#b3b3b3')
+        buildTagFrame.pack(fill=X, expand=True, side=BOTTOM)
+        self.setupTagsFrame(buildTagFrame, environment)
         
         self.skillInfoboxFrame = Frame(self.skillInfoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         self.skillInfoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
         for i in range(5):
             self.skillTreeFrame.grid_columnconfigure(i, weight=1, uniform="mainColSkill")
         
+        self.clearInfoboxFrame(environment)
         self.setupSkillBuildFrames()
 
     def setupLibraryFrame(self):
@@ -3134,6 +3171,8 @@ class SETS():
 
         if not self.templateFileLoad(): self.setupSpaceBuildFrames()
         self.updateImageLabelSize(source='setupUIFrames')
+        
+        if self.args.startuptab is not None: self.focusFrameCallback(self.args.startuptab)
 
     def argParserSetup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
@@ -3143,6 +3182,7 @@ class SETS():
         parser.add_argument('--file', type=str, help='File to import on open')
         parser.add_argument('--nofetch', type=str, help='Do not fetch new images')
         parser.add_argument('--nocache', type=str, help='Do not precache at start')
+        parser.add_argument('--startuptab', type=str, help='space, ground, skill, settings [space is default]')
 
         self.args = parser.parse_args()
         
