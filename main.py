@@ -912,18 +912,24 @@ class SETS():
         
         return (windowwidth,windowheight)
 
-    def pickerLocation(self, x, y):
-        positionWindow = '+{}+{}'.format(self.windowXCache, self.windowYCache)
+    def pickerLocation(self, x, y, height):
+        screen_width = self.window.winfo_screenwidth()
+        screen_height = self.window.winfo_screenheight()
 
         if x is None or y is None:
             x = self.window.winfo_pointerx()
             y = self.window.winfo_pointery()
+            
         if self.persistent['pickerSpawnUnderMouse'] and x is not None and y is not None:
-            abs_coord_x = x - self.window.winfo_rootx()
-            abs_coord_y = y - self.window.winfo_rooty()
-            positionWindow = "+"+str(x)+"+"+str(y)
             self.logWrite("pickerGUI position update: x{},y{}".format(str(x), str(y)), 2)
-            # This should position the pickerGUI under the pointer when working
+        else:
+            x = self.windowXCache
+            y = self.windowYCache
+            
+        if height < screen_height and (y + height) > screen_height:
+            y = screen_height - height
+        positionWindow = "+"+str(x)+"+"+str(y)
+        
         return positionWindow
     
     def windowAddScrollbar(self, parentFrame, canvas):
@@ -955,7 +961,7 @@ class SETS():
         
         (windowwidth,windowheight) = self.pickerDimensions()
         sizeWindow = '{}x{}'.format(windowwidth, windowheight)
-        pickWindow.geometry(sizeWindow+self.pickerLocation(x, y))
+        pickWindow.geometry(sizeWindow+self.pickerLocation(x, y, windowheight))
         
         origVar = dict()
         for key in itemVar:
@@ -2044,10 +2050,10 @@ class SETS():
         self.build['boffseats']['space_spec'] = [None] * 6
         
         if not self.persistent['keepTemplateOnShipChange']:
-            self.backend['playerShipName'] = 0
-            self.shipDescText.delete(1.0, END)
             self.build['playerShipName'] = ''
+            self.copyBuildToBackend('playerShipName')
             self.build['playerShipDesc'] = ''
+            self.shipDescText.delete(1.0, END)
             self.setupInfoFrame(environment='space')
         
     def sortedBoffs2(self, ranks, specs, spec2s, environment, i):
@@ -2714,7 +2720,7 @@ class SETS():
             row = 0
             if environment == 'space':
                 Label(NameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='w')
-                self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=280)
+                self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=270)
                 self.shipButton.grid(column=1, row=row, sticky='nwse')
                 row += 1
        
