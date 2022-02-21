@@ -262,7 +262,7 @@ class SETS():
     def fetchImage(self, url):
         today = datetime.date.today()
         if url in self.persistent['imagesFail'] and self.persistent['imagesFail'][url]:
-            daysSinceFail = today - self.persistent['imagesFail'][url]
+            daysSinceFail = today - datetime.date.fromisoformat(self.persistent['imagesFail'][url])
             if daysSinceFail.days <= self.daysDelayBeforeReattempt:
                 # Previously failed, do not attempt download again until next reattempt days have passed
                 return None
@@ -272,7 +272,7 @@ class SETS():
         
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
-            #self.persistent['imagesFail'][url] = today
+            self.persistent['imagesFail'][url] = today.isoformat()
             self.stateSave(quiet=True)
             return None
 
