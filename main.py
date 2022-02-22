@@ -25,7 +25,7 @@ class SETS():
     itemBoxY = 42 #33
     imageBoxX = 260
     imageBoxY = 146
-    windowHeightDefault = 634
+    windowHeightDefault = 659 #634
     windowWidthDefault = 1920
     windowHeight = windowHeightDefault
     windowWidth = windowWidthDefault
@@ -1729,7 +1729,8 @@ class SETS():
         logNote2 = 'Width Change: {:>4}->{:>4}'.format(preWidth, postWidth) if postWidth != preWidth else ''
         if logNote1 or logNote2: self.logWrite('FRAME {:>26}{:>26}'.format(logNote1, logNote2), 3)
         
-    def focusFrameCallback(self, type):
+    def focusFrameCallback(self, type='space', init=False):
+        if type is None: type = 'space'
         if type == 'ground' or type == 'space':
             self.updateImageLabelSize(source='focus'+type.title()+'BuildFrameCallback')
     
@@ -2339,9 +2340,12 @@ class SETS():
 
 
         self.clearFrame(frame)
+        height = 25
+        width = 40
+        if environment == 'skill': height -= 5
         
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
-        text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
+        text = Text(frame, height=height, width=width, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
         text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
@@ -2771,22 +2775,30 @@ class SETS():
                 pass
 
     def setupDescFrame(self, environment='space'):
-        if environment == 'space': parentFrame = self.shipDescFrame
+        if environment == 'skill':
+            self.setupDescEnvironmentFrame(environment='space', destination='skill')
+            self.setupDescEnvironmentFrame(environment='ground', destination='skill', row=2)
+        else: self.setupDescEnvironmentFrame(environment=environment)
+    
+    def setupDescEnvironmentFrame(self, environment='space', destination=None, row=0):
+        if destination is not None: parentFrame = self.skillDescFrame
+        elif environment == 'space': parentFrame = self.shipDescFrame
         elif environment == 'ground': parentFrame = self.groundDescFrame
         else: return
         
-        self.clearFrame(parentFrame)
+        if row == 0: self.clearFrame(parentFrame)
         parentFrame.grid_columnconfigure(0, weight=1)
 
         label = Label(parentFrame, text="Build Description ({}):".format(environment.title()), fg='#3a3a3a', bg='#b3b3b3')
-        label.grid(row=0, column=0, sticky='nw')
+        label.grid(row=row, column=0, sticky='nw')
         # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
-        descText = Text(parentFrame, height=3, width=28, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
-        #text = Text(frame, height=25, width=30, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
-        descText.grid(row=1, column=0, sticky='nsew', padx=5, pady=2)
+        descText = Text(parentFrame, height=3, width=20, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
+        descText.grid(row=row+1, column=0, sticky='nsew', padx=5, pady=2)
         
-        if environment != 'space': self.charDescText = descText
-        else: self.shipDescText = descText
+        if destination is None:
+            if environment != 'space': self.charDescText = descText
+            else: self.shipDescText = descText
+        
         descText.bind('<KeyRelease>', self.updateShipDesc if environment == 'space' else self.updatePlayerDesc)
         if 'player{}Desc'.format('Ship' if environment == 'space' else '') in self.build:
             descText.delete(1.0, END)
@@ -2864,9 +2876,8 @@ class SETS():
         buildTagFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
         buildTagFrame.pack(fill=X, expand=True, side=BOTTOM)
 
-        if environment == 'space' or environment == 'ground':
-            descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
-            descFrame.pack(fill=X, expand=True, side=BOTTOM)
+        descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
+        descFrame.pack(fill=X, expand=True, side=BOTTOM)
         
         infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
@@ -2875,6 +2886,7 @@ class SETS():
             self.skillInfoFrame = infoFrame
             self.skillMiddleFrame = middleFrame
             self.skillInfoboxFrame = infoboxFrame
+            self.skillDescFrame = descFrame
             self.skillImg = self.getEmptyFactionImage()
         elif environment == 'ground':
             self.groundInfoFrame = infoFrame
@@ -3167,7 +3179,9 @@ class SETS():
         self.skillTreeFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.libraryFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a')
-        self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+        
+        #self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
+        self.focusFrameCallback(type=self.args.startuptab, init=True)
 
         self.setupFooterFrame()
         self.setupLogoFrame()
@@ -3187,7 +3201,7 @@ class SETS():
             
         self.updateImageLabelSize(source='setupUIFrames')
         
-        if self.args.startuptab is not None: self.focusFrameCallback(self.args.startuptab)
+        #if self.args.startuptab is not None: self.focusFrameCallback(self.args.startuptab)
 
     def argParserSetup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
