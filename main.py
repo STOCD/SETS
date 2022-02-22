@@ -1209,19 +1209,18 @@ class SETS():
             return
         self.progressBarStart()
         
-        boffAbilities = self.fetchOrRequestHtml(self.r_boffAbilities_source, "boff_abilities") 
         # Categories beyond tac/eng/sci should come from a json load when capt specs are converted
         boffCategories = ['Tactical', 'Engineering', 'Science', 'Intelligence', 'Command', 'Pilot', 'Temporal', 'Miracle Worker']
         boffRanks = [1, 2, 3, 4]
         boffEnvironments = ['space', 'ground']
         
         for environment in boffEnvironments:
-            l0 = [h2 for h2 in boffAbilities.find('h2') if ' Abilities' in h2.html]
+            l0 = [h2 for h2 in self.r_boffAbilities.find('h2') if ' Abilities' in h2.html]
             if environment == 'ground':
                 l0 = [l for l in l0 if "Pilot" not in l.text]
-                l1 = boffAbilities.find('h2+h3+table+h3+table')
+                l1 = self.r_boffAbilities.find('h2+h3+table+h3+table')
             else:
-                l1 = boffAbilities.find('h2+h3+table')   
+                l1 = self.r_boffAbilities.find('h2+h3+table')   
                 
             for category in boffCategories:
                 table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'+category.replace(' ','_')+'_Abilities', first=True), Element)]
@@ -2420,7 +2419,7 @@ class SETS():
         #DoffFrame.grid_columnconfigure(1, weight=1, uniform=environment+'ColDoffList')
         #DoffFrame.grid_columnconfigure(2, weight=2, uniform=environment+'ColDoffList')
         
-        DoffLabel = Label(DoffFrame, text=environment.upper()+" DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff')
+        DoffLabel = Label(DoffFrame, text=environment.upper()+" DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff', width=60)
         DoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
         
         f = font.Font(family='Helvetica', size=9)
@@ -2433,7 +2432,7 @@ class SETS():
             #m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
             m = OptionMenu(DoffFrame, v1, 'SPECIALIZATION', *doff_list)
             m.grid(row=i+1, column=1, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=23)
             m = OptionMenu(DoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0,font=f, wraplength=340)
@@ -3498,7 +3497,8 @@ class SETS():
         self.trayskills = self.fetchOrRequestJson(SETS.trayskill_query, "trayskills")
         self.factions = self.fetchOrRequestJson(SETS.faction_query, "factions")
         
-        self.r_boffAbilities_source = self.wikihttp+"Bridge_officer_and_kit_abilities"
+        self.r_boffAbilities = self.fetchOrRequestHtml(self.wikihttp+"Bridge_officer_and_kit_abilities", "boff_abilities") 
+        
         r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
         self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
 
