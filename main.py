@@ -2521,8 +2521,6 @@ class SETS():
         exportImportFrame = Frame(self.menuFrame, bg='#3a3a3a')
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         self.setupButtonExportImportFrame(exportImportFrame)
-        #buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusLibraryFrameCallback)
-        #buttonLibrary.grid(row=0, column=col, sticky='nsew')
         col += 1
         buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSpaceBuildFrameCallback)
         buttonSpace.grid(row=0, column=col, sticky='nsew')
@@ -2533,12 +2531,13 @@ class SETS():
         buttonSkill = Button(self.menuFrame, text="SKILL TREE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSkillTreeFrameCallback)
         buttonSkill.grid(row=0, column=col, sticky='nsew')
         col += 1
-        buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSettingsFrameCallback)
+        buttonSettings = Frame(self.menuFrame, bg='#3a3a3a')
         buttonSettings.grid(row=0, column=col, sticky='nsew')
+        self.setupButtonSettingsFrame(buttonSettings)
         col += 1
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
-
+            
     def setupTierFrame(self, tier):
         f = font.Font(family='Helvetica', size=9)
         l = Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3', font=f)
@@ -2558,16 +2557,31 @@ class SETS():
             self.shipImg = self.getEmptyFactionImage()
         self.setShipImage(self.shipImg)
 
-    def setupButtonExportImportFrame(self, frame):
-        self.clearFrame(frame)
+    def setupButtonExportImportFrame(self, parentFrame):
+        self.clearFrame(parentFrame)
         
-        buttonExportPng = Button(frame, text='Export\nFull', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
+        buttonExportPng = Button(parentFrame, text='Export\nFull', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
         buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit = Button(frame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
+        buttonExportReddit = Button(parentFrame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
-        buttonImport = Button(frame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
+        buttonImport = Button(parentFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
         buttonImport.pack(side='left', fill=BOTH, expand=True)
-        buttonClear = Button(frame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
+        buttonClear = Button(parentFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
+        buttonClear.pack(side='left', fill=BOTH, expand=True)
+        
+    def setupButtonSettingsFrame(self, parentFrame):
+        #buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusLibraryFrameCallback)
+        #buttonLibrary.grid(row=0, column=col, sticky='nsew')
+        #buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSettingsFrameCallback)
+        self.clearFrame(parentFrame)
+        
+        buttonExportPng = Button(parentFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
+        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
+        buttonExportReddit = Button(parentFrame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
+        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
+        buttonImport = Button(parentFrame, text='LIBRARY', bg='#3a3a3a',fg='#b3b3b3', command=self.focusLibraryFrameCallback)
+        buttonImport.pack(side='left', fill=BOTH, expand=True)
+        buttonClear = Button(parentFrame, text='SETTINGS', bg='#3a3a3a',fg='#b3b3b3', command=self.focusSettingsFrameCallback)
         buttonClear.pack(side='left', fill=BOTH, expand=True)
 
     def setupTagsFrame(self, buildTagFrame, environment='space'):
