@@ -2415,7 +2415,7 @@ class SETS():
         doff_list = sorted([self.deWikify(item) for item in list(self.cache['doffNames'][doffEnvironment].keys())])
 
         DoffFrame = Frame(frame, bg='#b3b3b3', padx=5, pady=3)
-        DoffFrame.pack(side='left' if environment == 'ground' else 'left', fill=BOTH, expand=True)
+        DoffFrame.pack(side='left' if environment == 'ground' else 'left', fill=Y, expand=True)
         DoffFrame.grid_columnconfigure(2, weight=1, uniform=environment+'ColDoffList')
         #DoffFrame.grid_columnconfigure(1, weight=1, uniform=environment+'ColDoffList')
         #DoffFrame.grid_columnconfigure(2, weight=2, uniform=environment+'ColDoffList')
@@ -2436,12 +2436,12 @@ class SETS():
             m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0)
             m = OptionMenu(DoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0,font=f, wraplength=300)
+            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0,font=f, wraplength=340)
             
             if self.build['doffs'][environment][i] is not None:
                 v0.set(self.build['doffs'][environment][i]['name'])
                 v1.set(self.build['doffs'][environment][i]['spec'])
-                v2.set(self.build['doffs'][environment][i]['effect'])
+                v2.set(self.doffSpecClean(self.build['doffs'][environment][i]['effect']))
                 m['menu'].delete(0, END)
                 doff_desclist = sorted([self.doffStripPrefix(self.cache['doffs'][doffEnvironment][item]['description'], isSpace) for item in list(self.cache['doffs'][doffEnvironment].keys()) if v1.get() in self.cache['doffs'][doffEnvironment][item]['name']])
         
@@ -2451,7 +2451,11 @@ class SETS():
             v1.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffSpecCallback(menu, v0, v1, row, isSpace))
             v2.trace_add("write", lambda v,i,m,menu=m,v0=v1,v1=v2,row=i:self.doffEffectCallback(menu, v0, v1, row, isSpace))
 
-
+    def doffSpecClean(self, text):
+        text = text.replace('; ', '\n')
+        text = text.replace(' + ', '\n')
+        text = text.replace('+ ', '\n')
+        return text
     
     def setupDoffFrame(self, frame):
         self.clearFrame(frame)
