@@ -756,7 +756,7 @@ class SETS():
         # self.settings are optionally loaded from config, but manually edited or saved
         self.settings = {
             'debug': self.debugDefault,
-            'template': '.template.json',
+            'template': '.template',
             'skills':   'skills.json',
             'folder': {
                 'config' : '.config',
@@ -1654,9 +1654,7 @@ class SETS():
         self.groundImg = self.getEmptyFactionImage()
         self.setShipImage(self.shipImg)
         self.setCharImage(self.groundImg)
-        
-        self.clearInfoboxFrame('ground')
-        self.clearInfoboxFrame('skill')
+
         self.resetBuildFrames()
 
         self.clearing = 0
@@ -1999,7 +1997,7 @@ class SETS():
         self.clearFrame(parentFrame)
         
         frame = Frame(parentFrame, bg='#3a3a3a')
-        frame.grid(row=0, column=0, sticky='s', padx=1, pady=1)
+        frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRowSpace')
         parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullColSpace')
         
@@ -2032,6 +2030,8 @@ class SETS():
                         self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky='n', relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
                     else:
                         self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
+                        
+        self.clearInfoboxFrame('skill')
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -2561,7 +2561,7 @@ class SETS():
     def setupButtonExportImportFrame(self, frame):
         self.clearFrame(frame)
         
-        buttonExportPng = Button(frame, text='Export', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
+        buttonExportPng = Button(frame, text='Export\nFull', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
         buttonExportPng.pack(side='left', fill=BOTH, expand=True)
         buttonExportReddit = Button(frame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
         buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
@@ -3302,6 +3302,9 @@ class SETS():
         else:
             fileName = self.settings['template']
         
+        if os.path.exists(fileName+'.json'): fileName += '.json'
+        else: fileName += '.png'
+        
         return fileName
     
     def configFileLoad(self):
@@ -3407,10 +3410,8 @@ class SETS():
             
     def templateFileLoad(self):
         configFile = self.templateFileLocation()
-        if not os.path.exists(configFile):
-            configFile = self.settings['template']
-        if self.args.file is not None and os.path.exists(self.args.file):
-            configFile = self.args.file
+        if not os.path.exists(configFile): configFile = self.settings['template']
+        if self.args.file is not None and os.path.exists(self.args.file): configFile = self.args.file
             
         if os.path.exists(configFile):
             self.logWriteTransaction('Template File', 'found', '', configFile, 1)
