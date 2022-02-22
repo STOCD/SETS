@@ -1990,12 +1990,18 @@ class SETS():
     def setupSkillBuildFrames(self):
         self.precacheSkills()
         if not 'content' in self.cache['skills']: return
-        skillTable = self.cache['skills']['content']
+
         self.requestWindowUpdateHold(30) # Still requires tuning
         
         parentFrame = self.skillMiddleFrame
         self.clearFrame(parentFrame)
         
+        self.setupSkillTreeFrame(parentFrame)
+        self.setupSkillBonusFrame(parentFrame)
+        
+        self.clearInfoboxFrame('skill')
+        
+    def setupSkillTreeFrame(self, parentFrame):
         frame = Frame(parentFrame, bg='#3a3a3a')
         frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRowSpace')
@@ -2011,8 +2017,6 @@ class SETS():
                     frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameColSpace'+str(rank))
                     name = self.skillGetName(rank, row, col, type='name')
                     args = [rank, row, col, 'skill']
-                    #if col == 0: padxCanvas = (25,2)
-                    #if col == 2: padxCanvas = (2,25)
 
                     if name and col != 3:
                         imagename = self.skillGetName(rank, row, col, type='image')
@@ -2030,8 +2034,23 @@ class SETS():
                         self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky='n', relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
                     else:
                         self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
-                        
-        self.clearInfoboxFrame('skill')
+        
+    def setupSkillBonusFrame(self, parentFrame):
+        frame = Frame(parentFrame, bg='#3a3a3a')
+        frame.grid(row=0, column=1, sticky='ns', padx=1, pady=1)
+        parentFrame.grid_rowconfigure(0, weight=1, uniform='skillBonusFrameFullRowSpace')
+        parentFrame.grid_columnconfigure(0, weight=1, uniform='skillBonusFrameFullColSpace')
+        
+        padxCanvas = (2,2)
+        padyCanvas = (1,1)
+        for row in range(11):
+            frame.grid_rowconfigure(row, weight=1, uniform='skillBonusFrameRowSpace')
+            for col in range(4):
+                colActual = col
+                frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillBonusFrameColSpace'+str(col))
+                args = [None, row, col, 'skill']
+
+                self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -2340,7 +2359,8 @@ class SETS():
 
         self.clearFrame(frame)
         height = 25
-        width = 40
+        width = 15
+        if environment != 'skill': width += 25
         if environment == 'skill': height -= 5
         
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
@@ -2609,7 +2629,7 @@ class SETS():
         m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
         m.grid(column=1, row=row, sticky='w', pady=2, padx=2)
         m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
-        if environment != 'ground':
+        if environment == 'space':
             self.shipTierFrame = Frame(charInfoFrame, bg='#b3b3b3')
             self.shipTierFrame.grid(column=3, row=row, columnspan=1, sticky='swe')
 
@@ -2760,13 +2780,18 @@ class SETS():
             Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
             row += 1
             # end of not-skill items
-            
+           
+        ExtraFrame = Frame(parentFrame, bg='#b3b3b3')
+        ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=BOTTOM)
         CharFrame = Frame(parentFrame, bg='#b3b3b3')
-        CharFrame.pack(fill=X, expand=False, padx=2, side=RIGHT if environment=='skill' else BOTTOM)
+        CharFrame.pack(fill=X, expand=False, padx=2, side=BOTTOM)
         CharFrame.grid_columnconfigure(0, weight=1)
         charInfoFrame = Frame(CharFrame, bg='#b3b3b3')
-        charInfoFrame.grid(row=0, column=0 if environment == 'skill' else 1, sticky='ew')
-        self.setupCaptainFrame(CharFrame, environment)
+        charInfoFrame.grid(row=0, column=0, columnspan=2, sticky='ew')
+        self.setupCaptainFrame(CharFrame, environment)   
+        if environment == 'skill':
+            ExtraFrame = Frame(parentFrame, bg='#b3b3b3')
+            ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=BOTTOM)
         
         if environment != 'skill': NameFrame.pack(fill=X, expand=False, padx=(0,5), pady=(5,0), side=BOTTOM)
         
@@ -2776,7 +2801,7 @@ class SETS():
                 self.setupTierFrame(int(self.build['tier'][1]))
                 self.setupShipImageFrame()
                 pass
-
+                
     def setupDescFrame(self, environment='space'):
         if environment == 'skill':
             self.setupDescEnvironmentFrame(environment='space', destination='skill')
