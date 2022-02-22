@@ -124,7 +124,7 @@ class SETS():
 
     def fetchOrRequestJson(self, url, designation, local=False):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
-        if local: cache_base = self.persistent['folder']['local']
+        if local: cache_base = self.settings['folder']['local']
         else: cache_base = self.getFolderLocation('cache')
         override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
@@ -142,6 +142,7 @@ class SETS():
                 with open(filename, 'r', encoding='utf-8') as json_file:
                     json_data = json.load(json_file)
                     return json_data
+            if interval.days >= 7: self.clearCacheFolder(designation+".json")
         elif local:
             return
         
@@ -401,7 +402,7 @@ class SETS():
     
     def loadLocalImage(self, filename, width = None, height = None, forceAspect=False):
         """Request image from web or fetch from local cache"""
-        cache_base = self.persistent['folder']['local']
+        cache_base = self.settings['folder']['local']
         self.makeFilenamePath(cache_base)
         filename = os.path.join(*filter(None, [cache_base, filename]))
         if os.path.exists(filename):
@@ -461,7 +462,7 @@ class SETS():
         self.precacheDownloads()
         self.precacheShips()
         self.precacheTemplates()
-        if not limited or self.persistent['noPreCache']:
+        if not limited:
             self.precacheBoffAbilities()
             self.precacheTraits()
             self.precacheShipTraits()
@@ -749,15 +750,6 @@ class SETS():
             'keepTemplateOnShipChange': 0,
             'pickerSpawnUnderMouse': 1,
             'useFactionSpecificIcons': 0,
-            'folder': {
-                'config' : '.config',
-                'cache' : 'cache',
-                'images' : 'images',
-                'custom' : 'images_custom',
-                'override' : 'override',
-                'local' : 'local',
-                'library' : "library",
-            }
         }
     
     def resetSettings(self):
@@ -766,6 +758,16 @@ class SETS():
             'debug': self.debugDefault,
             'template': '.template.json',
             'skills':   'skills.json',
+            'folder': {
+                'config' : '.config',
+                'cache' : 'cache',
+                'images' : 'images',
+                'custom' : 'images_custom',
+                'override' : 'override',
+                'local' : 'local',
+                'library' : 'library',
+                'backups' : 'backups',
+            }
         }
         
     def clearBuild(self):
@@ -850,7 +852,7 @@ class SETS():
                 'modifiers': None,
             }
     
-    def clearBackend(self):
+    def resetBackend(self, rebuild=False):
         self.logWriteBreak('clearBackend')
         self.updateImageLabelSize(source='clearBackend')
         self.backend = {
@@ -874,6 +876,8 @@ class SETS():
                 'skillCount': 0
             }
         self.persistentToBackend()
+        if rebuild: self.buildToBackendSeries()
+        self.hookBackend()
 
     def hookBackend(self):
         self.backend['playerShipName'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerShipName'))
@@ -1312,7 +1316,7 @@ class SETS():
                 self.setShipImage()
                 self.shipButton.configure(text=item['item'])
                 self.backend['ship'].set(item['item'])
-                self.setupSpaceBuildFrames()
+                self.setupCurrentBuildFrames('space')
             else:
                 self.shipButton.configure(text=item['item'])
                 self.backend['ship'].set(item['item'])
@@ -1323,7 +1327,7 @@ class SETS():
         initialDir = self.getFolderLocation('library')
         inFilename = filedialog.askopenfilename(filetypes=[('SETS files', '*.json *.png'),('JSON files', '*.json'),('PNG image','*.png'),('All Files','*.*')], initialdir=initialDir)
         self.importByFilename(inFilename)
-
+            
     def importByFilename(self, inFilename, force=False):
         if not inFilename: return
         
@@ -1345,16 +1349,10 @@ class SETS():
             self.build.update(self.buildImport)
             logNote = logNote+str(len(self.build))+' merged)'
             
-            self.clearBackend()
-            self.buildToBackendSeries()
-            self.hookBackend()
-            self.setupInfoFrame('space')
-            self.setupInfoFrame('ground')
-            self.setupInfoFrame('skill')
-            self.setupDescFrame(environment='ground')
-            self.setupDescFrame(environment='space')
-            self.setupGroundBuildFrames()
-            self.setupSpaceBuildFrames()
+            self.resetBackend(rebuild=True)
+            self.resetBuildFrames()
+
+            self.setupCurrentBuildFrames()
             
             if force:
                 logNote=' (FORCE LOAD)'+logNote
@@ -1584,30 +1582,36 @@ class SETS():
         self.redditExportDisplaySpace(redditText)
         redditWindow.mainloop()
 
+    def clearCacheFolder(self, file=None):
+        dir = self.getFolderLocation('cache')
+        dirBak = self.getFolderLocation('backups')
+        for filename in os.listdir(dir):
+            if filename == file or filename.endswith('.json') or filename.endswith('.html'):
+                file_path = os.path.join(dir, filename)
+                backup_path = os.path.join(dirBak, filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        if os.path.isfile(backup_path) or os.path.islink(backup_path):
+                            os.unlink(backup_path)
+                        os.rename(file_path, backup_path)
+                except Exception as e:
+                    log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
+        #self.precachePreload()
+            
+    def clearImagesFolder(self):
+        dir = self.getFolderLocation('images')
+        for filename in os.listdir(dir):
+            file_path = os.path.join(dir, filename)
+            try:
+                os.unlink(file_path)
+            except Exception as e:
+                log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
+                    
     def settingsButtonCallback(self, type):
         self.logWriteSimple("settingsButtonCallback", '', 2, [type])
         
-        if type == 'clearcache':
-            dir = self.getFolderLocation('cache')
-            for filename in os.listdir(dir):
-                if not filename.endswith('.bak'):
-                    file_path = os.path.join(dir, filename)
-                    try:
-                        if os.path.isfile(file_path) or os.path.islink(file_path):
-                            if os.path.isfile(file_path+'.bak') or os.path.islink(file_path+'.bak'):
-                                os.unlink(file_path+'.bak')
-                            os.rename(file_path, file_path+'.bak')
-                    except Exception as e:
-                        log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
-            self.precachePreload()
-        elif type == 'clearimages':
-            dir = self.getFolderLocation('images')
-            for filename in os.listdir(dir):
-                file_path = os.path.join(dir, filename)
-                try:
-                    os.unlink(file_path)
-                except Exception as e:
-                    log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
+        if type == 'clearcache': self.clearCacheFolder()
+        elif type == 'clearimages': self.clearImagesFolder()
         elif type == 'clearfactionImages':
             self.persistent['imagesFactionAliases'] = dict()
             self.stateSave()
@@ -1615,13 +1619,11 @@ class SETS():
             self.resetCache()
             self.requestWindowUpdateHold(0)
             self.precachePreload()
-        elif type == 'cacheSave':
-            self.cacheSave()
-        elif type == 'openLog':
-            self.logWindowCreate()
+        elif type == 'cacheSave': self.cacheSave()
+        elif type == 'openLog': self.logWindowCreate()
         elif type == 'backupCache':
             # Backup state file
-            # Backup caches (no unlink phase)
+            # Backup caches (leave as current as well)
             # make a duplicate/compressed image archive folder?
             # make a duplicate/compressed library archive folder?  Just template?
             pass
@@ -1648,21 +1650,17 @@ class SETS():
 
         #self.backend['tier'].set('')
         self.backend['shipHtml'] = None
-        self.setupInfoFrame('space')
-        self.clearFrame(self.shipEquipmentFrame)
-        self.clearFrame(self.shipBoffFrame)
-        self.setupGroundBuildFrames()
         self.shipImg = self.getEmptyFactionImage()
         self.groundImg = self.getEmptyFactionImage()
         self.setShipImage(self.shipImg)
         self.setCharImage(self.groundImg)
-        self.setupCurrentTraitFrame()
+        
         self.clearInfoboxFrame('ground')
         self.clearInfoboxFrame('skill')
-        self.setupDescFrame(environment='ground')
-        self.setupDescFrame(environment='space')
+        self.resetBuildFrames()
+
         self.clearing = 0
-        self.setupSpaceBuildFrames()
+        self.setupCurrentBuildFrames()
 
     def getEmptyFactionImage(self, faction=None):
         if faction is None:
@@ -1716,11 +1714,22 @@ class SETS():
         pass
     
     def currentFrameUpdateTo(self, frame=None, first=False):
-        if not first: self.framePriorheight = self.currentFrame.winfo_height()
+        try:
+            preHeight = self.currentFrame.winfo_height()
+            preWidth = self.currentFrame.winfo_width()
+        except:
+            preHeight = 0
+            preWidth = 0
         self.currentFrame = frame
-        if first: self.framePriorheight = self.currentFrame.winfo_height()
+        postHeight = self.currentFrame.winfo_height()
+        postWidth = self.currentFrame.winfo_width()
         
-        self.logWrite('Frame Prior Height: {}'.format(self.framePriorheight), 3)
+        self.framePriorheight = postHeight if first else preHeight
+        self.framePriorwidth = postWidth if first else preWidth
+        
+        logNote1 = 'Height Change: {:>4}->{:>4}'.format(preHeight, postHeight) if postHeight != preHeight else ''
+        logNote2 = 'Width Change: {:>4}->{:>4}'.format(preWidth, postWidth) if postWidth != preWidth else ''
+        if logNote1 or logNote2: self.logWrite('FRAME {:>26}{:>26}'.format(logNote1, logNote2), 3)
         
     def focusFrameCallback(self, type):
         if type == 'ground' or type == 'space':
@@ -1728,33 +1737,34 @@ class SETS():
     
         if type == 'ground': self.currentFrameUpdateTo(self.groundBuildFrame)
         elif type == 'skill': self.currentFrameUpdateTo(self.skillTreeFrame)
-        elif type == 'glossary': self.currentFrameUpdateTo(self.glossaryFrame)
+        elif type == 'library': self.currentFrameUpdateTo(self.libraryFrame)
         elif type == 'settings': self.currentFrameUpdateTo(self.settingsFrame)
         elif type == 'space': self.currentFrameUpdateTo(self.spaceBuildFrame)
         else: return
         
         self.groundBuildFrame.pack_forget() if type != 'ground' else None
         self.skillTreeFrame.pack_forget() if type != 'skill' else None
-        self.glossaryFrame.pack_forget() if type != 'glossary' else None
+        self.libraryFrame.pack_forget() if type != 'library' else None
         self.settingsFrame.pack_forget() if type != 'settings' else None
         self.spaceBuildFrame.pack_forget() if type != 'space' else None
 
         self.currentFrame.pack(fill=BOTH, expand=True, padx=15)
         #self.currentFrame.place(height = self.framePriorheight) # Supposed to maintain frame height, may need grid
         
-        if type == 'skill': self.setupSkillMainFrame()
+        if type == 'skill': self.setupSkillBuildFrames()
 
     # Could be removed with lambdas in the original command=
     def focusSpaceBuildFrameCallback(self): self.focusFrameCallback('space')
     def focusGroundBuildFrameCallback(self): self.focusFrameCallback('ground')
     def focusSkillTreeFrameCallback(self): self.focusFrameCallback('skill')
-    def focusGlossaryFrameCallback(self): self.focusFrameCallback('glossary')
+    def focusLibraryFrameCallback(self): self.focusFrameCallback('library')
     def focusSettingsFrameCallback(self): self.focusFrameCallback('settings')
 
     def setupCurrentBuildFrames(self, environment=None):
         if not self.clearing:
             if environment == 'space' or environment == None: self.setupSpaceBuildFrames()
             if environment == 'ground' or environment == None: self.setupGroundBuildFrames()
+            if environment == 'skill' or environment == None: self.setupSkillBuildFrames()
             
     def setupCurrentTraitFrame(self):
         if not self.clearing:
@@ -1874,7 +1884,7 @@ class SETS():
         
         return canvas, img0, img1
 
-    def setupShipBuildFrame(self, ship):
+    def setupShipGearFrame(self, ship):
         """Set up UI frame containing ship equipment"""
         
         outerFrame = self.shipEquipmentFrame
@@ -1950,7 +1960,7 @@ class SETS():
         if self.backend['shipHangars'] > 0:
             self.labelBuildBlock(parentFrame, "Hangars", 4, 0, 1, 'hangars', self.backend['shipHangars'], self.itemLabelCallback, ["Hangar Bay", "Pick Hangar Pet", ""])
 
-    def setupCharBuildFrame(self):
+    def setupGroundGearFrame(self):
         """Set up UI frame containing ship equipment"""
         outerFrame = self.groundEquipmentFrame
         outerFrame.grid_rowconfigure(0, weight=1, uniform='shiptraitFrameFullRowSpace')
@@ -1979,12 +1989,14 @@ class SETS():
             
         return ''
 
-    def setupSkillMainFrame(self):
-        parentFrame = self.skillMiddleFrame
-        self.clearFrame(parentFrame)
+    def setupSkillBuildFrames(self):
         self.precacheSkills()
         if not 'content' in self.cache['skills']: return
         skillTable = self.cache['skills']['content']
+        self.requestWindowUpdateHold(30) # Still requires tuning
+        
+        parentFrame = self.skillMiddleFrame
+        self.clearFrame(parentFrame)
         
         frame = Frame(parentFrame, bg='#3a3a3a')
         frame.grid(row=0, column=0, sticky='s', padx=1, pady=1)
@@ -2011,13 +2023,13 @@ class SETS():
                         if not name in self.build['skilltree']: self.build['skilltree'][name] = False
                         if not name in self.backend['images']: self.backend['images'][name] = [ ]
                         bg = 'yellow' if name in self.build['skilltree'] and self.build['skilltree'][name] else 'grey'
-                        if self.build['skilltree']:
+                        if self.build['skilltree'][name]:
                             relief = 'raised'
-                            image1Name = 'epic.png'
+                            image1 = self.epicImage
                         else:
                             relief = 'groove'
-                            image1Name = None
-                        self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, sticky='n', relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
+                            image1 = None
+                        self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky='n', relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
                     else:
                         self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
@@ -2065,9 +2077,7 @@ class SETS():
             self.build['playerShipName'] = ''
             self.copyBuildToBackend('playerShipName')
             self.build['playerShipDesc'] = ''
-            #self.shipDescText.delete(1.0, END)
-            self.setupDescFrame(environment=environment)
-            self.setupInfoFrame(environment='space')
+            self.resetBuildFrames(types=['space'])
         
     def sortedBoffs2(self, ranks, specs, spec2s, environment, i):
         if environment == 'space' and self.persistent['boffSort2'] == 'ranks':
@@ -2232,7 +2242,7 @@ class SETS():
         self.build['tier'] = self.backend['tier'].get()
         if self.backend['shipHtml'] is not None or self.persistent['keepTemplateOnShipClear']:
             self.setupDoffFrame(self.shipDoffFrame)
-            self.setupShipBuildFrame(self.backend['shipHtml'])
+            self.setupShipGearFrame(self.backend['shipHtml'])
             self.setupBoffFrame('space', self.backend['shipHtml'])
             self.setupSpaceTraitFrame()
         else:
@@ -2250,15 +2260,10 @@ class SETS():
         """Set up all relevant build frames"""
         self.build['tier'] = self.backend['tier'].get()
         self.setupDoffFrame(self.groundDoffFrame)
-        self.setupCharBuildFrame()
+        self.setupGroundGearFrame()
         self.setupBoffFrame('ground')
         self.setupGroundTraitFrame()
         self.clearInfoboxFrame('ground')
-
-    def setupSkillBuildFrames(self):
-        """Set up all relevant build frames"""
-        self.setupSkillMainFrame()
-        self.clearInfoboxFrame('skill')
 
     def setupModFrame(self, frame, rarity, itemVar):
         """Set up modifier frame in equipment picker"""
@@ -2277,6 +2282,9 @@ class SETS():
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
             OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='n')
 
+    def getURL(self, name):
+        return self.wikihttp + name
+        
     def clearInfoboxFrame(self, environment):
         self.setupInfoboxFrame(self.getEmptyItem(), '', environment)
         
@@ -2513,7 +2521,7 @@ class SETS():
         exportImportFrame = Frame(self.menuFrame, bg='#3a3a3a')
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         self.setupButtonExportImportFrame(exportImportFrame)
-        #buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusGlossaryFrameCallback)
+        #buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusLibraryFrameCallback)
         #buttonLibrary.grid(row=0, column=col, sticky='nsew')
         col += 1
         buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSpaceBuildFrameCallback)
@@ -2772,24 +2780,13 @@ class SETS():
         if 'player{}Desc'.format('Ship' if environment == 'space' else '') in self.build:
             descText.delete(1.0, END)
             descText.insert(1.0, self.build['player{}Desc'.format('Ship' if environment == 'space' else '')])
-
     
-    def setupBuildFrame(self, environment='space'):
-        parentFrame = self.groundBuildFrame if environment == 'ground' else self.spaceBuildFrame
-        parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
-        for i in range(5):
-            parentFrame.grid_columnconfigure(i, weight=1, uniform="mainCol"+environment)
-            
-        infoFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        infoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
-
-        middleFrame = Frame(parentFrame, bg='#3a3a3a')
-        middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
-        middleFrame.grid_columnconfigure(0, weight=1, uniform="middleCol"+environment)
-        middleFrame.grid_rowconfigure(0, weight=3, uniform="middleRow"+environment)
-        middleFrame.grid_rowconfigure(1, weight=2, uniform="middleRow"+environment)
+    def setupInitialBuildGearFrame(self, parentFrame, environment='space'):
+        parentFrame.grid_columnconfigure(0, weight=1, uniform="middleCol"+environment)
+        parentFrame.grid_rowconfigure(0, weight=3, uniform="middleRow"+environment)
+        parentFrame.grid_rowconfigure(1, weight=2, uniform="middleRow"+environment)
         
-        middleFrameUpper = Frame(middleFrame, bg='#3a3a3a')
+        middleFrameUpper = Frame(parentFrame, bg='#3a3a3a')
         middleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nsew')
         middleFrameUpper.grid_rowconfigure(0, weight=1, uniform="secRow"+environment)
         middleFrameUpper.grid_columnconfigure(0, weight=1, uniform="secCol"+environment)
@@ -2813,70 +2810,74 @@ class SETS():
         traitFrame.grid(row=0,column=col,sticky='nsew')
         col += 1
         
-        middleFrameLower = Frame(middleFrame, bg='#3a3a3a')
+        middleFrameLower = Frame(parentFrame, bg='#3a3a3a')
         middleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
         middleFrameLower.grid_columnconfigure(0, weight=1, uniform="secCol2"+environment)
         doffFrame = Frame(middleFrameLower, bg='#3a3a3a')
         doffFrame.pack(fill=BOTH, expand=True, padx=15, side=BOTTOM)
         
-        infoBoxOuterFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        infoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
-
-        descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
-        descFrame.pack(fill=X, expand=True)
-        
-        buildTagFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
-        buildTagFrame.pack(fill=X, expand=True, side=BOTTOM)
-
-        
-        infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
-                
         if environment == 'ground':
-            self.groundInfoFrame = infoFrame
             self.groundEquipmentFrame = equipmentFrame
             self.groundBoffFrame = boffFrame
             self.groundTraitFrame = traitFrame
             self.groundDoffFrame = doffFrame
-            self.groundInfoboxFrame = infoboxFrame
-            self.groundDescFrame = descFrame
-            self.groundImg = self.getEmptyFactionImage()
-            self.setupGroundBuildFrames()
         else:
-            self.shipInfoFrame = infoFrame
             self.shipEquipmentFrame = equipmentFrame
             self.shipConsoleFrame = consoleFrame
             self.shipBoffFrame = boffFrame
             self.shipTraitFrame = traitFrame
             self.shipDoffFrame = doffFrame
+
+            
+    def setupInitialBuildFrames(self, environment='space'):
+        if environment == 'skill': parentFrame = self.skillTreeFrame
+        elif environment == 'ground': parentFrame = self.groundBuildFrame
+        else: parentFrame = self.spaceBuildFrame
+        
+        parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
+        for i in range(5):
+            parentFrame.grid_columnconfigure(i, weight=1, uniform="mainCol"+environment)
+            
+        infoFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
+
+        middleFrame = Frame(parentFrame, bg='#3a3a3a')
+        middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
+        
+        if environment == 'space' or environment == 'ground':
+            self.setupInitialBuildGearFrame(middleFrame, environment=environment)
+            
+        infoBoxOuterFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
+
+        if environment == 'space' or environment == 'ground':
+            descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
+            descFrame.pack(fill=X, expand=True)
+        
+        buildTagFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
+        buildTagFrame.pack(fill=X, expand=True, side=BOTTOM)
+        
+        infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
+                
+        if environment == 'skill':
+            self.skillInfoFrame = infoFrame
+            self.skillMiddleFrame = middleFrame
+            self.skillInfoboxFrame = infoboxFrame
+            self.skillImg = self.getEmptyFactionImage()
+        elif environment == 'ground':
+            self.groundInfoFrame = infoFrame
+            self.groundInfoboxFrame = infoboxFrame
+            self.groundDescFrame = descFrame
+            self.groundImg = self.getEmptyFactionImage()
+        else:
+            self.shipInfoFrame = infoFrame
             self.shipInfoboxFrame = infoboxFrame
             self.shipDescFrame = descFrame
             self.shipImg = self.getEmptyFactionImage()
             
-        self.setupDescFrame(environment)
         self.setupTagsFrame(buildTagFrame, environment)
-        self.clearInfoboxFrame(environment)
 
-    def setupSkillTreeFrame(self, environment='skill'):
-        self.skillInfoFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        self.skillInfoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
-        self.skillMiddleFrame = Frame(self.skillTreeFrame, bg='#3a3a3a')
-        self.skillMiddleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
-
-        self.skillInfoBoxOuterFrame = self.skillInfoboxFrame = Frame(self.skillTreeFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        self.skillInfoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
-        
-        buildTagFrame = Frame(self.skillInfoBoxOuterFrame, bg='#b3b3b3')
-        buildTagFrame.pack(fill=X, expand=True, side=BOTTOM)
-        self.setupTagsFrame(buildTagFrame, environment)
-        
-        self.skillInfoboxFrame = Frame(self.skillInfoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        self.skillInfoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
-        for i in range(5):
-            self.skillTreeFrame.grid_columnconfigure(i, weight=1, uniform="mainColSkill")
-        
-        self.clearInfoboxFrame(environment)
-        self.setupSkillBuildFrames()
 
     def setupLibraryFrame(self):
         pass #placeholder
@@ -2914,7 +2915,7 @@ class SETS():
             'Faction'                    : { 'col' : 2, 'type' : 'menu', 'varName' : 'factionDefault' },
 
         }
-        self.configureColumn(settingsTopLeftFrame, theme=settingsDefaults)
+        self.configureColumn(settingsTopMiddleLeftFrame, theme=settingsDefaults)
 
         settingsTheme = {
             'Theme Settings (auto-saved):'          : { 'col' : 1, 'type': 'title'},
@@ -2930,22 +2931,22 @@ class SETS():
             'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort' },
 
         }
-        self.configureColumn(settingsTopMiddleLeftFrame, theme=settingsTheme)
+        self.configureColumn(settingsTopMiddleRightFrame, theme=settingsTheme)
 
         settingsMaintenance = {
             'Maintenance (auto-saved):'                          : { 'col' : 1, 'type': 'title'},
             'Open Log'                              : { 'col' : 2, 'type' : 'button', 'varName' : 'openLog' },
-            'blank3'                                : { 'col' : 1, 'type' : 'blank' },
+            'blank1'                                : { 'col' : 1, 'type' : 'blank' },
             'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'forceJsonLoad', 'boolean' : True},
             'Disabled precache at startup'          : { 'col' : 2, 'type' : 'menu', 'varName' : 'noPreCache', 'boolean' : True},
-            'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
-            'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'varName' : 'backupCache' },
-#            'Export SETS manual settings'           : { 'col' : 2, 'type' : 'button', 'varName' : 'exportConfigFile' },
-            'blank3'                                : { 'col' : 1, 'type' : 'blank' },
-            'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'varName' : 'clearmemcache' },
-            'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'varName' : 'clearfactionImages' },
             'Use faction-specific icons (experimental)' : { 'col' : 2, 'type' : 'menu', 'varName' : 'useFactionSpecificIcons', 'boolean' : True },
-            'blank4'                                : { 'col' : 1, 'type' : 'blank' },
+            'blank2'                                : { 'col' : 1, 'type' : 'blank' },
+#            'Export SETS manual settings'           : { 'col' : 2, 'type' : 'button', 'varName' : 'exportConfigFile' },
+            'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'varName' : 'backupCache' },
+            'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
+            'blank3'                                : { 'col' : 1, 'type' : 'blank' },
+            'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'varName' : 'clearfactionImages' },
+            'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'varName' : 'clearmemcache' },
             'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearimages' },
 #            'Save cache binaries (TEST)'            : { 'col' : 2, 'type' : 'button', 'varName' : 'cacheSave' },
 
@@ -3130,6 +3131,11 @@ class SETS():
             
         self.updateWindowSize()
         
+    def resetBuildFrames(self, types=['skill', 'ground', 'space']):
+        for type in types:
+            self.setupInfoFrame(type)
+            self.setupDescFrame(type)
+    
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family='Helvetica', size='10')
@@ -3148,7 +3154,7 @@ class SETS():
         self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.skillTreeFrame = Frame(self.containerFrame, bg='#3a3a3a')
-        self.glossaryFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.libraryFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
 
@@ -3157,19 +3163,17 @@ class SETS():
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
         self.currentFrameUpdateTo(self.spaceBuildFrame, first=True)
-        self.precachePreload(limited=self.args.nocache)
+        self.precachePreload(limited=self.args.nocache or self.persistent['noPreCache'])
         
-
-        self.setupBuildFrame('ground')
-        self.setupInfoFrame('ground')
-        self.setupSkillTreeFrame()
-        self.setupInfoFrame('skill')
         self.setupLibraryFrame()
         self.setupSettingsFrame()
-        self.setupBuildFrame('space')
-        self.setupInfoFrame('space')
+        for type in ['skill', 'ground', 'space']:
+            self.setupInitialBuildFrames(type)
 
-        if not self.templateFileLoad(): self.setupSpaceBuildFrames()
+        if not self.templateFileLoad():
+            self.setupCurrentBuildFrames()
+            self.resetBuildFrames()
+            
         self.updateImageLabelSize(source='setupUIFrames')
         
         if self.args.startuptab is not None: self.focusFrameCallback(self.args.startuptab)
@@ -3194,14 +3198,14 @@ class SETS():
             self.fileConfigName = self.args.configfile
 
         if self.args.configfolder is not None:
-            self.persistent['folder']['config'] = self.args.configfolder
+            self.settings['folder']['config'] = self.args.configfolder
 
     def configFolderLocation(self):
         # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
         system = sys.platform
-        if os.path.exists(self.persistent['folder']['config']):
+        if os.path.exists(self.settings['folder']['config']):
             # We already have a config folder in the app home directory, use portable mode
-            filePath = self.persistent['folder']['config']
+            filePath = self.settings['folder']['config']
         elif os.path.exists(self.fileConfigName):
             # We already have a config file in the app home directory, use portable mode
             filePath=''
@@ -3250,19 +3254,19 @@ class SETS():
     
     def getFolderLocation(self, subfolder=None):
         filePath = self.configFolderLocation()
-        
-        if subfolder == 'images' and os.path.exists(self.persistent['folder']['images']):
+
+        if subfolder == 'images' and os.path.exists(self.settings['folder']['images']):
             # use appdir cache if it already exists /legacy
-            filePath = self.persistent['folder']['images']
+            filePath = self.settings['folder']['images']
         else:
-            if subfolder is not None and subfolder in self.persistent['folder']:
-                filePath = os.path.join(filePath, self.persistent['folder'][subfolder])
+            if subfolder is not None and subfolder in self.settings['folder']:
+                filePath = os.path.join(filePath, self.settings['folder'][subfolder])
             self.makeFilenamePath(filePath)
 
         if not os.path.exists ( filePath ):
             filePath = ''
-            if subfolder in self.persistent['folder']:
-                filePath = self.persistent['folder'][subfolder]
+            if subfolder in self.settings['folder']:
+                filePath = self.settings['folder'][subfolder]
 
         return filePath
             
@@ -3488,9 +3492,8 @@ class SETS():
         self.window.title("STO Equipment and Trait Selector")
         self.session = HTMLSession()
         self.clearBuild()
-        self.clearBackend()
         self.resetCache()
-        self.hookBackend()
+        self.resetBackend()
         self.images = dict()
         self.setupEmptyImages()
         self.precacheDownloads()
