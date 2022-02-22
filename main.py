@@ -2570,9 +2570,6 @@ class SETS():
         buttonClear.pack(side='left', fill=BOTH, expand=True)
         
     def setupButtonSettingsFrame(self, parentFrame):
-        #buttonLibrary = Button(self.menuFrame, text="LIBRARY", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusLibraryFrameCallback)
-        #buttonLibrary.grid(row=0, column=col, sticky='nsew')
-        #buttonSettings = Button(self.menuFrame, text="SETTINGS", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSettingsFrameCallback)
         self.clearFrame(parentFrame)
         
         buttonExportPng = Button(parentFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
@@ -2863,13 +2860,13 @@ class SETS():
             
         infoBoxOuterFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
-
-        if environment == 'space' or environment == 'ground':
-            descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
-            descFrame.pack(fill=X, expand=True)
         
         buildTagFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
         buildTagFrame.pack(fill=X, expand=True, side=BOTTOM)
+
+        if environment == 'space' or environment == 'ground':
+            descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
+            descFrame.pack(fill=X, expand=True, side=BOTTOM)
         
         infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
