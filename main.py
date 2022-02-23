@@ -1999,6 +1999,10 @@ class SETS():
         self.setupSkillTreeFrame(parentFrame)
         self.setupSkillBonusFrame(parentFrame)
         
+        #off-screen
+        #self.setupSkillTreeFrameGround(parentFrame)
+        #self.setupSkillBonusFrameGround(parentFrame)
+         
         self.clearInfoboxFrame('skill')
         
     def setupSkillTreeFrame(self, parentFrame):
@@ -2544,20 +2548,21 @@ class SETS():
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
         f = font.Font(family='Helvetica', size=12, weight='bold')
+        
+        settingsMenuTop = {
+            'SPACE'             : {'type' : 'buttonblock', 'varName' : 'spaceButton', 'callback' : self.focusSpaceBuildFrameCallback},
+            'GROUND'            : {'type' : 'buttonblock', 'varName' : 'groundButton', 'callback' : self.focusGroundBuildFrameCallback},
+            'SKILL TREE'        : {'type' : 'buttonblock', 'varName' : 'skillButton', 'callback' : self.focusSkillTreeFrameCallback},
+        }
+        
         col = 0
         exportImportFrame = Frame(self.menuFrame, bg='#3a3a3a')
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         self.setupButtonExportImportFrame(exportImportFrame)
         col += 1
-        buttonSpace = Button(self.menuFrame, text="SPACE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSpaceBuildFrameCallback)
-        buttonSpace.grid(row=0, column=col, sticky='nsew')
-        col += 1
-        buttonGround = Button(self.menuFrame, text="GROUND", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusGroundBuildFrameCallback)
-        buttonGround.grid(row=0, column=col, sticky='nsew')
-        col += 1
-        buttonSkill = Button(self.menuFrame, text="SKILL TREE", bg='#6b6b6b', fg='#ffffff', font=f, command=self.focusSkillTreeFrameCallback)
-        buttonSkill.grid(row=0, column=col, sticky='nsew')
-        col += 1
+        self.createItemBlock(self.menuFrame, row=0, col=col, theme=settingsMenuTop, shape='row', elements=1, bg='#6b6b6b', fg='#ffffff', padx=0, pady=0, fontDefault={'size':12,'weight':'bold'}, colWeight=1)
+        col += 3
+
         buttonSettings = Frame(self.menuFrame, bg='#3a3a3a')
         buttonSettings.grid(row=0, column=col, sticky='nsew')
         self.setupButtonSettingsFrame(buttonSettings)
@@ -2587,26 +2592,25 @@ class SETS():
     def setupButtonExportImportFrame(self, parentFrame):
         self.clearFrame(parentFrame)
         
-        buttonExportPng = Button(parentFrame, text='Export\nFull', bg='#3a3a3a',fg='#b3b3b3', command=self.exportCallback)
-        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit = Button(parentFrame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
-        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
-        buttonImport = Button(parentFrame, text='Import', bg='#3a3a3a',fg='#b3b3b3', command=self.importCallback)
-        buttonImport.pack(side='left', fill=BOTH, expand=True)
-        buttonClear = Button(parentFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
-        buttonClear.pack(side='left', fill=BOTH, expand=True)
+        settingsMenuExport = {
+            'Export\nFull'  : { 'type' : 'buttonblock', 'varName' : 'exportFullButton', 'callback' : self.exportCallback},
+            'Export\nreddit': { 'type' : 'buttonblock', 'varName' : 'exportRedditButton', 'callback' : self.exportRedditCallback},
+            'Import'        : { 'type' : 'buttonblock', 'varName' : 'importButton', 'callback' : self.importCallback},
+        }
+        
+        self.createItemBlock(parentFrame, theme=settingsMenuExport, shape='row', elements=1, bg='#3a3a3a', fg='#b3b3b3', padx=0, pady=0, colWeight=1, rowWeight=1)
+
         
     def setupButtonSettingsFrame(self, parentFrame):
         self.clearFrame(parentFrame)
         
-        buttonExportPng = Button(parentFrame, text='Clear', bg='#3a3a3a',fg='#b3b3b3', command=self.clearBuildCallback)
-        buttonExportPng.pack(side='left', fill=BOTH, expand=True)
-        buttonExportReddit = Button(parentFrame, text='Export\nreddit', bg='#3a3a3a',fg='#b3b3b3', command=self.exportRedditCallback)
-        buttonExportReddit.pack(side='left', fill=BOTH, expand=True)
-        buttonImport = Button(parentFrame, text='LIBRARY', bg='#3a3a3a',fg='#b3b3b3', command=self.focusLibraryFrameCallback)
-        buttonImport.pack(side='left', fill=BOTH, expand=True)
-        buttonClear = Button(parentFrame, text='SETTINGS', bg='#3a3a3a',fg='#b3b3b3', command=self.focusSettingsFrameCallback)
-        buttonClear.pack(side='left', fill=BOTH, expand=True)
+        settingsMenuSettings = {
+            'Clear'     : { 'type' : 'buttonblock', 'varName' : 'clearButton', 'callback' : self.clearBuildCallback},
+            'LIBRARY'   : { 'type' : 'buttonblock', 'varName' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
+            'SETTINGS'  : { 'type' : 'buttonblock', 'varName' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
+        }
+        
+        self.createItemBlock(parentFrame, theme=settingsMenuSettings, shape='row', elements=1, bg='#3a3a3a', fg='#b3b3b3', padx=0, pady=0, colWeight=1, rowWeight=1)
 
     def setupTagsFrame(self, buildTagFrame, environment='space'):
         if environment != 'ground':
@@ -2886,9 +2890,10 @@ class SETS():
         else: parentFrame = self.spaceBuildFrame
         
         parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
-        for i in range(5):
-            parentFrame.grid_columnconfigure(i, weight=1, uniform="mainCol"+environment)
-            
+        for i in range(4):
+            parentFrame.grid_columnconfigure(i, weight=5, uniform="mainCol"+environment)
+        parentFrame.grid_columnconfigure(4, weight=5, uniform="mainCol"+environment)
+        
         infoFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
         infoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
 
@@ -2966,7 +2971,7 @@ class SETS():
             'Faction'                    : { 'col' : 2, 'type' : 'menu', 'varName' : 'factionDefault' },
 
         }
-        self.configureColumn(settingsTopMiddleLeftFrame, theme=settingsDefaults)
+        self.createItemBlock(settingsTopMiddleLeftFrame, theme=settingsDefaults)
 
         settingsTheme = {
             'Theme Settings (auto-saved):'          : { 'col' : 1, 'type': 'title'},
@@ -2982,7 +2987,7 @@ class SETS():
             'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort' },
 
         }
-        self.configureColumn(settingsTopMiddleRightFrame, theme=settingsTheme)
+        self.createItemBlock(settingsTopMiddleRightFrame, theme=settingsTheme)
 
         settingsMaintenance = {
             'Maintenance (auto-saved):'                          : { 'col' : 1, 'type': 'title'},
@@ -3003,12 +3008,12 @@ class SETS():
 
 
         }
-        self.configureColumn(settingsTopRightFrame, theme=settingsMaintenance)
+        self.createItemBlock(settingsTopRightFrame, theme=settingsMaintenance)
 
     def persistentSet(self, choice, varName, isBoolean=False):
         if varName is None or varName == '':
             return
-            
+        self.logWrite('==={} = {} [{}]'.format(varName, choice, isBoolean))
         if isBoolean: self.persistent[varName] = 1 if choice=='Yes' else 0
         elif varName == 'uiScale': self.persistent[varName] = float(choice)
         else: self.persistent[varName] = choice
@@ -3024,56 +3029,94 @@ class SETS():
             # Need to hook rescaling
             pass
         
-    def configureColumn(self, parentFrame, theme=None, row=0, columnTotal=2):
+    def createItemBlock(self, parentFrame, theme=None, shape='col', elements=2, callback=None, row=0, col=0, padx=2, pady=2, fg='#b3b3b3', bg='#3a3a3a', sticky=None, fontDefault=None, rowWeight=None, colWeight=None):
         if theme is None or not len(theme): return
         
+        i = 0 # count of keys processed
         for title in theme.keys():
             type = theme[title]['type'] if 'type' in theme[title] else ''
+            tag = theme[title]['tag'] if 'tag' in theme[title] else ''
+            isButton = True if type == 'button' or type == 'buttonblock' else False
             
             varName = theme[title]['varName'] if 'varName' in theme[title] else ''
             isBoolean = True if 'boolean' in theme[title] and theme[title]['boolean'] else False
+            callback = theme[title]['callback'] if 'callback' in theme[title] else callback
 
             columns = theme[title]['col'] if 'col' in theme[title] else 1
-            colOption = 0 if type == 'button' else 1
-            spanLabel = 1 + (columnTotal - columns)
-            spanOption = 2 if type == 'button' else 1
-            stickyLabel = 'ew' if spanLabel > 1 else 'e'
-            if type == 'title': stickylabel = 'n'
-            stickyOption = 'nwe' if type == 'button' or type == 'scale' else 'nw'
-            f = font.Font(family='Helvetica', size=10) if type else font.Font(family='Helvetica', size=12)
-            if type == 'title': f = font.Font(family='Helvetica', size=14, weight='bold')
-            if columns > 1 and varName == '': continue
-            #self.logWrite("==={}: {}/{}".format(title, varName, type), 2)
-            
-            if type != 'button':
-                label = Label(parentFrame, text='' if type == 'blank' else title, fg='#3a3a3a', bg='#b3b3b3', font=f)
-                label.grid(row=row, column=0, columnspan=spanLabel, sticky=stickyLabel, pady=2, padx=2)
-            if columns > 1:
-                if type == 'menu':
-                    if isBoolean:  settingVar = StringVar(value='Yes' if self.persistent[varName] else 'No')
-                    else: settingVar = StringVar(value=self.persistent[varName] if varName in self.persistent else '')
-                    # Integrate these into the theme, or *assignment in if phase
-                    if varName == 'markDefault': settingOptions = self.marks
-                    elif varName == 'rarityDefault': settingOptions = ['']+self.rarities
-                    elif varName == 'factionDefault': settingOptions = self.factionNames
-                    elif varName == 'boffSort': settingOptions = self.boffSortOptions
-                    elif varName == 'boffSort2': settingOptions = self.boffSortOptions
-                    elif varName == 'consoleSort': settingOptions = self.consoleSortOptions
-                    elif varName == 'exportDefault': settingOptions = self.exportOptions
-                    elif isBoolean: settingOptions = self.yesNo
-                    
-                    optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName,isBoolean=isBoolean:self.persistentSet(choice, varName=varName, isBoolean=isBoolean))
-                elif type == 'scale':
-                    settingVar = DoubleVar(value=self.persistent[varName] if varName in self.persistent else 1)
-                    if varName == 'uiScale': self.uiScaleSetting = settingVar
-                    # range/resolution from theme in future
-                    optionFrame = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=settingVar, command=lambda choice,varName=varName:self.persistentSet(choice, varName=varName))
-                elif type == 'button':
-                    optionFrame = Button(parentFrame, text=title, bg='#3a3a3a',fg='#b3b3b3', command=lambda varName=varName:self.settingsButtonCallback(type=varName))
+            if 'fg' in theme[title]: fg=theme[title]['fg'] 
+            if 'bg' in theme[title]: bg=theme[title]['bg']
+            labelfg=theme[title]['labelfg'] if 'labelfg' in theme[title] else '#3a3a3a'
+            labelbg=theme[title]['labelbg'] if 'labelbg' in theme[title] else '#b3b3b3'
+            if 'padx' in theme[title]: padx=theme[title]['padx']
+            if 'pady' in theme[title]: pady=theme[title]['pady']
+            if 'rowWeight' in theme[title]: rowWeight=themet[title]['rowWeight']
+            if 'colWeight' in theme[title]: colWeight=themet[title]['colWeight']
+            colOption = 0 if isButton else 1
 
-                optionFrame.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
-                optionFrame.grid(row=row, column=colOption, columnspan=spanOption, sticky=stickyOption, pady=2, padx=2)
-            row += 1
+            spanOption = elements if isButton else 1
+            stickyOption = 'nw'
+            if type == 'button': stickyOption = 'nwe'
+            if type == 'buttonblock': stickyOption = 'nsew'
+            if sticky is not None: stickyOption = sticky
+            if 'sticky' in theme[title]: stickyOption = theme[title]['sticky']
+            
+            fontData = { 'family' : 'Helvetica', 'size' : 10, 'weight' : ''}
+            fontLabel = { 'family' : 'Helvetica', 'size' : 12, 'weight' : ''}
+            if type == 'title': fontLabel.update({'size': 14, 'weight': 'bold'})
+            if fontDefault is not None: fontData.update(fontDefault)
+            
+            f = font.Font(family=fontLabel['family'], size=fontLabel['size'], weight=fontLabel['weight']) if fontLabel['weight'] else font.Font(family=fontLabel['family'], size=fontLabel['size'])
+            f2 = font.Font(family=fontData['family'], size=fontData['size'], weight=fontData['weight']) if fontData['weight'] else font.Font(family=fontData['family'], size=fontData['size'])
+
+            if columns > 1 and varName == '': continue
+            self.logWrite("==={}: {}/{}".format(title, varName, type), 2)
+            rowCurrent = (i * elements) if shape == 'col' else 0
+            rowCurrent += row
+            colStart = (i * elements) if shape == 'row' else 0
+            colStart += col
+            
+            if type == 'label' or type == 'blank' or (not isButton and columns > 1):
+                spanLabel = 1 + (elements - columns)
+                stickyLabel = 'ew' if spanLabel > 1 else 'e'
+                if type == 'title': stickylabel = 'n'
+                label = Label(parentFrame, text='' if type == 'blank' else title, fg=labelfg, bg=labelbg, font=f)
+                label.grid(row=rowCurrent, column=colStart, columnspan=spanLabel, sticky=stickyLabel, pady=pady, padx=padx)
+
+            if type == 'menu':
+                if isBoolean:  settingVar = StringVar(value='Yes' if self.persistent[varName] else 'No')
+                else: settingVar = StringVar(value=self.persistent[varName] if varName in self.persistent else '')
+                # Integrate these into the theme, or *assignment in if phase
+                if varName == 'markDefault': settingOptions = self.marks
+                elif varName == 'rarityDefault': settingOptions = ['']+self.rarities
+                elif varName == 'factionDefault': settingOptions = self.factionNames
+                elif varName == 'boffSort': settingOptions = self.boffSortOptions
+                elif varName == 'boffSort2': settingOptions = self.boffSortOptions
+                elif varName == 'consoleSort': settingOptions = self.consoleSortOptions
+                elif varName == 'exportDefault': settingOptions = self.exportOptions
+                elif isBoolean: settingOptions = self.yesNo
+
+                if callback is None: optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName,isBoolean=isBoolean:self.persistentSet(choice, varName=varName, isBoolean=isBoolean))
+                else: optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=callback)
+            elif type == 'scale':
+                settingVar = DoubleVar(value=self.persistent[varName] if varName in self.persistent else 1)
+                if varName == 'uiScale': self.uiScaleSetting = settingVar
+                # range/resolution from theme in future
+                if callback is None: optionFrame = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=settingVar, command=lambda choice,varName=varName:self.persistentSet(choice, varName=varName))
+                else: optionFrame = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=settingVar, command=callback)
+            elif isButton:
+                if callback is None: optionFrame = Button(parentFrame, text=title, fg=fg, bg=bg, command=lambda varName=varName:self.settingsButtonCallback(type=varName))
+                else: optionFrame = Button(parentFrame, text=title, fg=fg, bg=bg, command=callback)
+            else:
+                type = 'blank'
+
+            if type != 'blank':
+                if type == 'buttonblock': optionFrame.configure(bg=bg,fg=fg,font=f2)
+                else: optionFrame.configure(bg=bg,fg=fg, borderwidth=0, highlightthickness=0, width=10)
+                optionFrame.grid(row=rowCurrent, column=colStart+colOption, columnspan=spanOption, sticky=stickyOption, pady=pady, padx=padx)
+                if rowWeight is not None: parentFrame.grid_rowconfigure(rowCurrent, weight=rowWeight)
+                if colWeight is not None: parentFrame.grid_columnconfigure(colStart+colOption, weight=colWeight)
+                
+            i += 1
 
     def setupUIScaling(self,event=None):
         # Partially effect, some errors in the log formatting
