@@ -1709,6 +1709,7 @@ class SETS():
 
     def currentFrameRefresh(self):
         pass
+        
     
     def currentFrameUpdateTo(self, frame=None, first=False):
         try:
@@ -1749,7 +1750,7 @@ class SETS():
         self.currentFrame.pack(fill=BOTH, expand=True, padx=15)
         #self.currentFrame.place(height = self.framePriorheight) # Supposed to maintain frame height, may need grid
         
-        if type == 'skill': self.setupSkillBuildFrames()
+        if type == 'skill': self.setupCurrentSkillBuildFrames()
 
     # Could be removed with lambdas in the original command=
     def focusSpaceBuildFrameCallback(self): self.focusFrameCallback('space')
@@ -1757,12 +1758,35 @@ class SETS():
     def focusSkillTreeFrameCallback(self): self.focusFrameCallback('skill')
     def focusLibraryFrameCallback(self): self.focusFrameCallback('library')
     def focusSettingsFrameCallback(self): self.focusFrameCallback('settings')
+    
+    def focusSpaceSkillBuildFrameCallback(self): self.focusSkillBuildFrameCallback('space')
+    def focusGroundSkillBuildFrameCallback(self): self.focusSkillBuildFrameCallback('ground')
+    
+    def focusSkillBuildFrameCallback(self, type='space', init=False):
 
+        if type == 'ground': self.currentSkillFrame = self.skillGroundBuildFrame
+        elif type == 'space': self.currentSkillFrame = self.skillSpaceBuildFrame
+        else: return
+        
+        self.skillGroundBuildFrame.pack_forget() if type != 'ground' else None
+        self.skillSpaceBuildFrame.pack_forget() if type != 'space' else None
+
+        self.currentSkillFrame.pack(fill=BOTH, expand=True, padx=15)
+        
+        #self.setupCurrentSkillBuildFrames() #here or in the main button callback?
+    
     def setupCurrentBuildFrames(self, environment=None):
         if not self.clearing:
             if environment == 'space' or environment == None: self.setupSpaceBuildFrames()
             if environment == 'ground' or environment == None: self.setupGroundBuildFrames()
-            if environment == 'skill' or environment == None: self.setupSkillBuildFrames()
+            if environment == 'skill' or environment == None: self.setupCurrentSkillBuildFrames()
+            
+    def setupCurrentSkillBuildFrames(self, environment=None):
+        if not self.clearing:
+            if environment is None: self.setupSkillBuildFrames()
+            if environment == 'space': self.setupSkillBuildFrames('space')
+            if environment == 'ground': self.setupSkillBuildFrames('ground')
+
             
     def setupCurrentTraitFrame(self):
         if not self.clearing:
@@ -1987,21 +2011,23 @@ class SETS():
             
         return ''
 
-    def setupSkillBuildFrames(self):
+    def setupSkillBuildFrames(self, environment=None):
         self.precacheSkills()
         if not 'content' in self.cache['skills']: return
 
         self.requestWindowUpdateHold(30) # Still requires tuning
         
-        parentFrame = self.skillMiddleFrame
-        self.clearFrame(parentFrame)
+        if environment is None or environment == 'space':
+            parentFrame = self.skillSpaceBuildFrame
+            self.clearFrame(parentFrame)
+            self.setupSkillTreeFrame(parentFrame)
+            self.setupSkillBonusFrame(parentFrame)
         
-        self.setupSkillTreeFrame(parentFrame)
-        self.setupSkillBonusFrame(parentFrame)
-        
-        #off-screen
-        #self.setupSkillTreeFrameGround(parentFrame)
-        #self.setupSkillBonusFrameGround(parentFrame)
+        if environment is None or environment == 'ground':
+            parentFrame = self.skillGroundBuildFrame
+            self.clearFrame(parentFrame)
+            #self.setupSkillTreeFrameGround(parentFrame)
+            #self.setupSkillBonusFrameGround(parentFrame)
          
         self.clearInfoboxFrame('skill')
         
@@ -2545,9 +2571,19 @@ class SETS():
             self.logmini.set(rightnote)
         
 
+    def setupSkillMenuFrame(self, parentFrame):
+        self.clearFrame(parentFrame)
+        
+        settingsMenuSkill = {
+            'SPACE'             : {'type' : 'buttonblock', 'varName' : 'spaceSkillButton', 'callback' : self.focusSpaceSkillBuildFrameCallback},
+            'SPACE2'            : {'type' : 'buttonblock', 'varName' : 'groundSkillButton', 'callback' : self.focusGroundSkillBuildFrameCallback},
+        }
+        
+        self.createItemBlock(parentFrame, theme=settingsMenuSkill, shape='row', elements=1, bg='#6b6b6b', fg='#ffffff')
+
+
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
-        f = font.Font(family='Helvetica', size=12, weight='bold')
         
         settingsMenuTop = {
             'SPACE'             : {'type' : 'buttonblock', 'varName' : 'spaceButton', 'callback' : self.focusSpaceBuildFrameCallback},
@@ -2560,7 +2596,8 @@ class SETS():
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         self.setupButtonExportImportFrame(exportImportFrame)
         col += 1
-        self.createItemBlock(self.menuFrame, row=0, col=col, theme=settingsMenuTop, shape='row', elements=1, bg='#6b6b6b', fg='#ffffff', padx=0, pady=0, fontDefault={'size':12,'weight':'bold'}, colWeight=1)
+        
+        self.createItemBlock(self.menuFrame, row=0, col=col, theme=settingsMenuTop, shape='row', elements=1, bg='#6b6b6b', fg='#ffffff', fontDefault={'size':12,'weight':'bold'})
         col += 3
 
         buttonSettings = Frame(self.menuFrame, bg='#3a3a3a')
@@ -2569,7 +2606,32 @@ class SETS():
         col += 1
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
-            
+
+
+    def setupButtonExportImportFrame(self, parentFrame):
+        self.clearFrame(parentFrame)
+        
+        settingsMenuExport = {
+            'Export\nFull'  : { 'type' : 'buttonblock', 'varName' : 'exportFullButton', 'callback' : self.exportCallback},
+            'Export\nreddit': { 'type' : 'buttonblock', 'varName' : 'exportRedditButton', 'callback' : self.exportRedditCallback},
+            'Import'        : { 'type' : 'buttonblock', 'varName' : 'importButton', 'callback' : self.importCallback},
+        }
+        
+        self.createItemBlock(parentFrame, theme=settingsMenuExport, shape='row', elements=1)
+
+        
+    def setupButtonSettingsFrame(self, parentFrame):
+        self.clearFrame(parentFrame)
+        
+        settingsMenuSettings = {
+            'Clear'     : { 'type' : 'buttonblock', 'varName' : 'clearButton', 'callback' : self.clearBuildCallback},
+            'LIBRARY'   : { 'type' : 'buttonblock', 'varName' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
+            'SETTINGS'  : { 'type' : 'buttonblock', 'varName' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
+        }
+        
+        self.createItemBlock(parentFrame, theme=settingsMenuSettings, shape='row', elements=1)
+        
+        
     def setupTierFrame(self, tier):
         f = font.Font(family='Helvetica', size=9)
         l = Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3', font=f)
@@ -2588,29 +2650,6 @@ class SETS():
         except:
             self.shipImg = self.getEmptyFactionImage()
         self.setShipImage(self.shipImg)
-
-    def setupButtonExportImportFrame(self, parentFrame):
-        self.clearFrame(parentFrame)
-        
-        settingsMenuExport = {
-            'Export\nFull'  : { 'type' : 'buttonblock', 'varName' : 'exportFullButton', 'callback' : self.exportCallback},
-            'Export\nreddit': { 'type' : 'buttonblock', 'varName' : 'exportRedditButton', 'callback' : self.exportRedditCallback},
-            'Import'        : { 'type' : 'buttonblock', 'varName' : 'importButton', 'callback' : self.importCallback},
-        }
-        
-        self.createItemBlock(parentFrame, theme=settingsMenuExport, shape='row', elements=1, bg='#3a3a3a', fg='#b3b3b3', padx=0, pady=0, colWeight=1, rowWeight=1)
-
-        
-    def setupButtonSettingsFrame(self, parentFrame):
-        self.clearFrame(parentFrame)
-        
-        settingsMenuSettings = {
-            'Clear'     : { 'type' : 'buttonblock', 'varName' : 'clearButton', 'callback' : self.clearBuildCallback},
-            'LIBRARY'   : { 'type' : 'buttonblock', 'varName' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
-            'SETTINGS'  : { 'type' : 'buttonblock', 'varName' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
-        }
-        
-        self.createItemBlock(parentFrame, theme=settingsMenuSettings, shape='row', elements=1, bg='#3a3a3a', fg='#b3b3b3', padx=0, pady=0, colWeight=1, rowWeight=1)
 
     def setupTagsFrame(self, buildTagFrame, environment='space'):
         if environment != 'ground':
@@ -2899,7 +2938,17 @@ class SETS():
 
         middleFrame = Frame(parentFrame, bg='#3a3a3a')
         middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
-        
+        if environment == 'skill':
+            middleFrameUpper = Frame(middleFrame, bg='#3a3a3a')
+            middleFrameUpper.grid(row=0,column=0,sticky='nsew')
+            self.setupSkillMenuFrame(middleFrameUpper)
+            middleFrameLower = Frame(middleFrame, bg='#3a3a3a')
+            middleFrameLower.grid(row=1,column=0,sticky='nsew')
+            middleFrame.grid_rowconfigure(1, weight=1)
+            middleFrame.grid_columnconfigure(0, weight=1)
+            self.skillSpaceBuildFrame = Frame(middleFrameLower, bg='#3a3a3a')
+            self.skillGroundBuildFrame = Frame(middleFrameLower, bg='#3a3a3a')
+            self.focusSkillBuildFrameCallback('space', init=True)
         if environment == 'space' or environment == 'ground':
             self.setupInitialBuildGearFrame(middleFrame, environment=environment)
             
@@ -2917,7 +2966,6 @@ class SETS():
                 
         if environment == 'skill':
             self.skillInfoFrame = infoFrame
-            self.skillMiddleFrame = middleFrame
             self.skillInfoboxFrame = infoboxFrame
             self.skillDescFrame = descFrame
             self.skillImg = self.getEmptyFactionImage()
@@ -3047,18 +3095,22 @@ class SETS():
             if 'bg' in theme[title]: bg=theme[title]['bg']
             labelfg=theme[title]['labelfg'] if 'labelfg' in theme[title] else '#3a3a3a'
             labelbg=theme[title]['labelbg'] if 'labelbg' in theme[title] else '#b3b3b3'
+            colOption = 0 if isButton else 1
+            spanOption = elements if isButton else 1
+            stickyOption = 'nw'
+            if type == 'button': stickyOption = 'nwe'
+            if type == 'buttonblock':
+                stickyOption = 'nsew'
+                padx = 0
+                pady = 0
+                rowWeight = 1
+                colWeight = 1
+            if sticky is not None: stickyOption = sticky
+            if 'sticky' in theme[title]: stickyOption = theme[title]['sticky']
             if 'padx' in theme[title]: padx=theme[title]['padx']
             if 'pady' in theme[title]: pady=theme[title]['pady']
             if 'rowWeight' in theme[title]: rowWeight=themet[title]['rowWeight']
             if 'colWeight' in theme[title]: colWeight=themet[title]['colWeight']
-            colOption = 0 if isButton else 1
-
-            spanOption = elements if isButton else 1
-            stickyOption = 'nw'
-            if type == 'button': stickyOption = 'nwe'
-            if type == 'buttonblock': stickyOption = 'nsew'
-            if sticky is not None: stickyOption = sticky
-            if 'sticky' in theme[title]: stickyOption = theme[title]['sticky']
             
             fontData = { 'family' : 'Helvetica', 'size' : 10, 'weight' : ''}
             fontLabel = { 'family' : 'Helvetica', 'size' : 12, 'weight' : ''}
@@ -3069,7 +3121,7 @@ class SETS():
             f2 = font.Font(family=fontData['family'], size=fontData['size'], weight=fontData['weight']) if fontData['weight'] else font.Font(family=fontData['family'], size=fontData['size'])
 
             if columns > 1 and varName == '': continue
-            self.logWrite("==={}: {}/{}".format(title, varName, type), 2)
+            #self.logWrite("==={}: {}/{}".format(title, varName, type), 2)
             rowCurrent = (i * elements) if shape == 'col' else 0
             rowCurrent += row
             colStart = (i * elements) if shape == 'row' else 0
