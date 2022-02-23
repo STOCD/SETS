@@ -2575,8 +2575,8 @@ class SETS():
         self.clearFrame(parentFrame)
         
         settingsMenuSkill = {
-            'SPACE'             : {'type' : 'buttonblock', 'varName' : 'spaceSkillButton', 'callback' : self.focusSpaceSkillBuildFrameCallback},
-            'SPACE2'            : {'type' : 'buttonblock', 'varName' : 'groundSkillButton', 'callback' : self.focusGroundSkillBuildFrameCallback},
+            'Space Skill Tree'             : {'type' : 'buttonblock', 'varName' : 'spaceSkillButton', 'callback' : self.focusSpaceSkillBuildFrameCallback, 'colWeight' : 1},
+            'Space2 Skill Tree'            : {'type' : 'buttonblock', 'varName' : 'groundSkillButton', 'callback' : self.focusGroundSkillBuildFrameCallback, 'colWeight' : 1},
         }
         
         self.createItemBlock(parentFrame, theme=settingsMenuSkill, shape='row', elements=1, bg='#6b6b6b', fg='#ffffff')
@@ -2939,13 +2939,15 @@ class SETS():
         middleFrame = Frame(parentFrame, bg='#3a3a3a')
         middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         if environment == 'skill':
+            middleFrame.grid_rowconfigure(1, weight=1)
+            middleFrame.grid_columnconfigure(0, weight=1)
             middleFrameUpper = Frame(middleFrame, bg='#3a3a3a')
             middleFrameUpper.grid(row=0,column=0,sticky='nsew')
+            
             self.setupSkillMenuFrame(middleFrameUpper)
             middleFrameLower = Frame(middleFrame, bg='#3a3a3a')
             middleFrameLower.grid(row=1,column=0,sticky='nsew')
-            middleFrame.grid_rowconfigure(1, weight=1)
-            middleFrame.grid_columnconfigure(0, weight=1)
+
             self.skillSpaceBuildFrame = Frame(middleFrameLower, bg='#3a3a3a')
             self.skillGroundBuildFrame = Frame(middleFrameLower, bg='#3a3a3a')
             self.focusSkillBuildFrameCallback('space', init=True)
@@ -3109,8 +3111,8 @@ class SETS():
             if 'sticky' in theme[title]: stickyOption = theme[title]['sticky']
             if 'padx' in theme[title]: padx=theme[title]['padx']
             if 'pady' in theme[title]: pady=theme[title]['pady']
-            if 'rowWeight' in theme[title]: rowWeight=themet[title]['rowWeight']
-            if 'colWeight' in theme[title]: colWeight=themet[title]['colWeight']
+            if 'rowWeight' in theme[title]: rowWeight=theme[title]['rowWeight']
+            if 'colWeight' in theme[title]: colWeight=theme[title]['colWeight']
             
             fontData = { 'family' : 'Helvetica', 'size' : 10, 'weight' : ''}
             fontLabel = { 'family' : 'Helvetica', 'size' : 12, 'weight' : ''}
