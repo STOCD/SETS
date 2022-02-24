@@ -2660,8 +2660,6 @@ class SETS():
             mainframe.rowconfigure(rowinsert+1, weight=0)
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
-            placeholderframe = Frame(lineframe, highlightthickness=0, highlightcolor='#090b0d', bg="#090b0d")
-            placeholderframe.grid(row=0, column=0)
             lineframe.rowconfigure(0, weight=0)
             lineframe.columnconfigure(0, weight=1, minsize=12)
             lineframe.columnconfigure(1, weight=7)
