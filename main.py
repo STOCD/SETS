@@ -2513,7 +2513,171 @@ class SETS():
         text = text.replace(" *", "*")
         #deHTML will be integrated into insertInfoboxParagraph(), because some HTML tokens are required for formatting text insets and lists
         return text
-    
+    def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow): #returns text string that has to be placed a level above (for recursion)
+        mainframe = Frame(inframe, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+        mainframe.grid(row=gridrow,column=0, sticky="nsew")
+        inframe.rowconfigure(gridrow, weight=0)
+        inframe.rowconfigure(gridrow+1, weight=1)
+        inframe.columnconfigure(0, weight=1)
+        inframe.columnconfigure(1, weight=1)
+        ###print(ptext)
+        if ("\n:" in ptext or ptext.startswith(":")) and not ptext.startswith("*"):
+            ###print("here1")
+            inserttext1 = ""
+            inserttext2 = ""
+            passtext = ""
+            occs = [i.start() for i in re.finditer('\n:', ptext)]
+            ###print(occs)
+            if ptext.startswith(":"):
+                end=0
+                if occs == []:
+                    end = len(ptext)-1
+                elif "\n" in ptext[:occs[0]] :
+                    end = ptext.find("\n")
+                else:
+                    for j in range(0, len(occs)):
+                        if "\n" in ptext[:occs[j]].replace("\n:",""):
+                            end = ptext.find("\n", occs[j]+1)
+                            break
+                    if end==0:
+                        if "\n" in ptext.replace("\n:",""):
+                            end = ptext.find("\n", occs[len(occs)-1]+1)
+                        else:
+                            end=-2
+                if end == -2:
+                    passtext = ptext[1:].replace("\n:", "\n")
+                else:
+                    passtext = ptext[1:end].replace("\n:","\n")
+                    inserttext2 = ptext[end+1:]
+            else:
+                start = occs[0]
+                end = 0
+                for k in range(0, len(occs)-1):
+                    if "\n" in ptext[occs[k]+1:occs[k+1]]:
+                        end = ptext.find("\n", occs[k], occs[k+1])
+                        ###print("end1: ")
+                        ###print(end)
+                        break
+                if end == 0:
+                    if "\n" in ptext[occs[len(occs)-1]+1:]:
+                        end = ptext.find("\n", occs[len(occs)-1]+1)
+                        ###print("end2: ")
+                        ###print(end)
+                    else:
+                        end=-2
+                inserttext1 = ptext[:start]
+                if end == -2:
+                    passtext = ptext[start+2:].replace("\n:", "\n")
+                else:
+                    passtext = ptext[start+2:end].replace("\n:", "\n")
+                    inserttext2 = ptext[end+1:]
+        elif "\n*" in ptext or ptext.startswith("*"):
+            ###print("here2")
+            inserttext1 = ""
+            inserttext2 = ""
+            passtext = ""
+            occs = [i.start() for i in re.finditer('\n\*', ptext)]
+            ###print(occs)
+            if ptext.startswith("*"):
+                end=0
+                if occs == []:
+                    end = len(ptext)-1
+                elif "\n" in ptext[:occs[0]] :
+                    end = ptext.find("\n")
+                else:
+                    for j in range(0, len(occs)-1):
+                        if "\n" in ptext[occs[j]+1:occs[j+1]].replace("\n*",""):
+                            end = ptext.find("\n", occs[j], occs[j+1])
+                            break
+                    if end==0:
+                        if "\n" in ptext.replace("\n*",""):
+                            end = ptext.find("\n", occs[len(occs)-1] if occs != [] else len(ptext)-1)
+                        else:
+                            end=-2
+                if end == -2:
+                    passtext = ptext[1:].replace("\n*", "\n• ").replace("*","• ")
+                else:
+                    passtext = ptext[0:end+1].replace("\n*","\n• ").replace("*","• ")
+                    inserttext2 = ptext[end+2:]
+            else:
+                start = occs[0]
+                end = 0
+                for k in range(0, len(occs)-1):
+                    if "\n" in ptext[occs[k]+1:occs[k+1]]:
+                        end = ptext.find("\n", occs[k]+1)
+                        break
+                if end == 0:
+                    ###print("occs: ")
+                    ###print(occs)
+                    ###print("len(occs): ")
+                    ###print(len(occs))
+                    ###print("ptext: ")
+                    ###print(ptext)
+                    ###print("sliced: ")
+                    ###print(ptext[occs[len(occs)-1]+2:])
+                    ###print(occs[len(occs)-1])
+                    if "\n" in ptext[occs[len(occs)-1]+2:]:
+                        end = ptext.find("\n", occs[len(occs)-1]+2)
+                        ###print(end)
+                    else:
+                        end=-2
+                ###print("inserttext1:")
+                inserttext1 = ptext[:start]
+                ###print(inserttext1)
+                ###print("start / end: "+str(start)+" / "+str(end))
+                if end == -2:
+                    passtext = ptext[start+1:].replace("\n*", "\n• ").replace("*","• ")
+                    ###print("passtext: ")
+                    ###print(passtext)
+                else:
+                    passtext = ptext[start+1:end].replace("\n*", "\n• ").replace("*","• ")
+                    inserttext2 = ptext[end+1:]
+                    ###print("2passtext: ")
+                    ###print(passtext)
+                    ###print("inserttext2: ")
+                    ###print(inserttext2)
+        elif (not ("\n:" or "*" or "<ul>" or "<li>") in ptext) and not ptext.startswith(":"):
+            ###print("here0")
+            inserttext1 = ptext
+            inserttext2 = ""
+            passtext = ""
+        rowinsert=0
+        if not inserttext1 == "":
+            maintext = Text(mainframe, bg='#090b0d', fg=pcolor, wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat", font=(pfamily, psize, pweight))
+            maintext.grid(row=rowinsert,column=0)
+            mainframe.rowconfigure(rowinsert, weight=0)
+            mainframe.rowconfigure(rowinsert+1, weight=0)
+            mainframe.columnconfigure(0, weight=1)
+            mainframe.columnconfigure(1, weight=1)
+            maintext.insert(END, inserttext1)
+            maintextheight = maintext.getDH( pfamily, psize, pweight)
+            maintext.configure(height=maintextheight)
+            rowinsert = rowinsert+1
+        if not passtext == "":
+            lineframe = Frame(mainframe, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            lineframe.grid(row=rowinsert, column=0)
+            mainframe.rowconfigure(rowinsert, weight=0)
+            mainframe.rowconfigure(rowinsert+1, weight=0)
+            mainframe.columnconfigure(0, weight=1)
+            mainframe.columnconfigure(1, weight=1)
+            placeholderframe = Frame(lineframe, highlightthickness=0, highlightcolor='#090b0d', bg="#090b0d")
+            placeholderframe.grid(row=0, column=0)
+            lineframe.rowconfigure(0, weight=0)
+            lineframe.columnconfigure(0, weight=1, minsize=12)
+            lineframe.columnconfigure(1, weight=7)
+            lineframe.columnconfigure(2, weight=1)
+            daughterframe = Frame(lineframe, bg="#090b0d", highlightcolor="#090b0d", highlightthickness=0)
+            daughterframe.grid(row=0, column=1, sticky="nsew")
+            self.insertInfoboxParagraph(daughterframe, passtext, pfamily, pcolor, psize, pweight, 0)
+            rowinsert = rowinsert + 1
+        if not inserttext2 == "":
+            lineframe = Frame(mainframe, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            lineframe.grid(row=rowinsert, column=0)
+            mainframe.rowconfigure(rowinsert, weight=0)
+            mainframe.rowconfigure(rowinsert+1, weight=0)
+            mainframe.columnconfigure(0, weight=1)
+            mainframe.columnconfigure(1, weight=1)
+            self.insertInfoboxParagraph(lineframe, inserttext2, pfamily, pcolor, psize, pweight, 0)
     
     
     
