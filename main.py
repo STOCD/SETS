@@ -2681,23 +2681,9 @@ class SETS():
     
     
     
-    def setupInfoboxFrame(self, item, key, environment='space', tooltip=None):
+    def setupInfoboxFrame(self, item, key, environment='space', tooltip=None): #qwer <- thats for me to get here quickly lol
         """Set up infobox frame with given item"""
-        def compensate(text):
-            text = self.deWikify(text, leaveHTML=True)
-            # Wiki elements moved into self.deWikify
-            # HTML elements left here
-            text = text.replace('<br>\n', '\n')
-            text = text.replace('<br/>\n', '\n')
-            text = text.replace('<br />\n', '\n')
-            text = text.replace('<br>', '\n')
-            text = text.replace('<br/>', '\n')
-            text = text.replace('<br />', '\n')
-
-            #text = text.replace("&nsbp;", "") # Should be handled by deWikify, need to test
-            text = self.deHTML(text)    # Remove any remaining html tags
-            return text
-
+        
         if environment == 'skill':
             frame = self.skillInfoboxFrame
         elif environment == 'ground':
@@ -2732,48 +2718,114 @@ class SETS():
 
 
         self.clearFrame(frame)
-        height = 25
-        width = 15
-        if environment != 'skill': width += 25
-        if environment == 'skill': height -= 5
         
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
-        text = Text(frame, height=height, width=width, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
+        mtfr = Frame(frame, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+        mtfr.pack(fill="both",expand=True,side=TOP)
+        text = Text(mtfr, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat")
+        
+        text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
+        #equipment formatting tags
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
-        text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
-        text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
-        text.tag_configure('who', foreground='#ff6347', font=('Helvetica', 10, 'bold' ))
-        text.tag_configure('distance', foreground='#000000', font=('Helvetica', 4))
-        text.pack(fill="both", expand=True, padx=2, pady=2, side=BOTTOM)
+        #text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
+        #text.tag_configure('who', foreground='#ff6347', font=('Helvetica', 10, 'bold' ))
+        #starship trait formatting tags 
+        text.tag_configure('starshipTraitHead', foreground='#42afca', font=('Helvetica', 15, 'bold' ))
+        
+        text.grid(row=0, column=0)
+        mtfr.rowconfigure(0, weight=0)
+        mtfr.rowconfigure(2, weight=0, minsize=8)
+        mtfr.rowconfigure(1, weight=0)
+        mtfr.rowconfigure(3, weight=1)
+        mtfr.columnconfigure(0, weight=1)
+        mtfr.columnconfigure(1, weight=1)
+
+        printed = bool(False)
+
+        if key in self.cache['equipment'] and name in self.cache['equipment'][key]:
+            text.insert(END, name, 'name')
+            if 'mark' in item and item['mark']:
+                text.insert(END, ' '+item['mark'], 'name')
+            if 'modifiers' in item and item['modifiers']:
+                text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
+            lines = text.getDH("Helvetica", 15, "bold")
+            text.configure(height=lines)
+            html = self.cache['equipment'][key][name]
+            if 'rarity' in item and item['rarity']:
+                text.insert(END, '\n'+item['rarity']+' ', 'rarity')
+                if 'type' in html and html['type']:
+                    text.insert(END, html['type'], 'rarity')
+            if html['who'] != "":
+                whotext = Text(mtfr, font=('Helvetica', 10), bg='#090b0d', fg='#ff6347', wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat")
+                whotext.grid(row=1, column=0)
+                whotext.insert(END, html["who"])
+                whotext.configure(height=whotext.getDH("Helvetica", 10, "normal"))
+            Frame(mtfr, background='#090b0d', highlightthickness=0, highlightcolor='#090b0d').grid(row=2,column=0,sticky="nsew")
+            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            contentframe.grid(row=3, column=0, sticky="nsew")
+            insertinrow = 0
+            for i in range(1,9):
+                t = html["head"+str(i)].strip()
+                if t.strip() != "":
+                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#42afca", 12, "bold", insertinrow)
+                    insertinrow = insertinrow+1
+                t = html["subhead"+str(i)].strip()
+                if t.strip() != "":
+                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#f4f400", 10, "bold", insertinrow)
+                    insertinrow = insertinrow+1
+                t = html["text"+str(i)].strip()
+                if t.strip() != "":
+                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#ffffff", 10, "normal", insertinrow)
+                    insertinrow = insertinrow+1
+            printed = True
+        
+        if (name in self.cache['shipTraits'])and not printed:
+            text.insert(END, name+"\n", 'starshipTraitHead')
+            text.insert(END, "Starship Trait\n", 'head')
+            text.insert(END, "")
+            printed = True
+
+        '''text.pack(fill="x", expand=True, side=TOP)
         if name is None or name == '':
             return
         
-        
 
-        text.insert(END, name, 'name')
-        if 'mark' in item and item['mark']:
-            text.insert(END, ' '+item['mark'], 'name')
-        if 'modifiers' in item and item['modifiers']:
-            text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
-        text.insert(END, '\n')
+
+
+        printed = False
         
         #if 'tooltip' in item and item['tooltip']:
         #    text.insert(END, html['tooltip'])
             
-        if name in self.cache['shipTraits']:
+        if (name in self.cache['shipTraits'])and not printed:
+            text.insert(END, name+"\n", 'starshipTraitHead')
+            text.insert(END, "Starship Trait\n","head")
+            text.insert(END, "\n", "distance")
             text.insert(END, self.cache['shipTraits'][name])
+            printed = True
             
         if tooltip is not None: text.insert(END, tooltip)
 
-        if environment in self.cache['traits'] and name in self.cache['traits'][environment]:
+        if (environment in self.cache['traits'] and name in self.cache['traits'][environment]) and not printed:
+            text.insert(END, name+"\n", 'name')
             text.insert(END, self.cache['traits'][environment][name])
+            printed = True
             
-        if environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]:
-                text.insert(END, self.cache['boffTooltips'][environment][name])
+        if (environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]) and not printed:
+            text.insert(END, name+"\n", 'name')
+            text.insert(END, self.cache['boffTooltips'][environment][name])
+            printed = True
                 
         if key in self.cache['equipment'] and name in self.cache['equipment'][key]:
             # Show the infobox data from json
+            text.insert(END, name, 'name')
+            if 'mark' in item and item['mark']:
+                text.insert(END, ' '+item['mark'], 'name')
+            if 'modifiers' in item and item['modifiers']:
+                text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
+            text.insert(END, '\n')
+            
             html = self.cache['equipment'][key][name]
 
             if 'rarity' in item and item['rarity']:
@@ -2782,23 +2834,38 @@ class SETS():
                 text.insert(END, html['type'], 'rarity')
             if ('rarity' in item and item['rarity']) or ('type' in html and html['type']):
                 text.insert(END, '\n')
-            text.insert(END, '\n\n', 'distance')
+            text.insert(END, '\n', 'distance')
 
             for i in range(1,9):
-                t = html["head"+str(i)].replace("*","  • ").strip()
+                t = html["head"+str(i)].strip()                             #.replace("*","  • ")
                 if t.strip() != '':
+                    text.insert(END, '\n', 'distance')
                     text.insert(END, compensate(t)+'\n','head')
-                    text.insert(END, '\n', 'distance')
-                t = html["subhead"+str(i)].replace("*","  • ").strip()
+                t = html["subhead"+str(i)].strip()
                 if t.strip() != '':
+                    text.insert(END, '\n', 'distance')
                     text.insert(END, compensate(t)+'\n', 'subhead')
-                    text.insert(END, '\n', 'distance')
-                t = html["text"+str(i)].replace("*","  • ").strip()
+                t = html["text"+str(i)].strip()
                 if t.strip() != '':
-                    text.insert(END, compensate(t)+'\n')
                     text.insert(END, '\n', 'distance')
+                    text.insert(END, compensate(t)+'\n')
+            printed = True
+        
+        #text.configure(height=int(text.count("0.0",END,'displaylines')[0]))
+        #teststr = text.get("1.0",END)
+        #print(int(teststr.count("\n")))
+        #text.configure(height=int(teststr.count("\n")))
+        """while text.get(int(text.index(END).split(".")[0]-1),int(text.index(END).split(".")[0])) == "" or "\n":
+            text.delete(int(text.index(END).split(".")[0]),END)"""
+        lines=1
+        l = text.index("end").split(".")
+        lines = int(l[0])-1  
+        text.configure(height=lines)'''
 
-                        
+        #text.getDH(text.winfo_width())
+        #text.update()
+        #print(text.getDH(text.winfo_width(), fhead))
+
         text.configure(state=DISABLED)
 
     def setupDoffListFrame(self, frame, environment='space'):
