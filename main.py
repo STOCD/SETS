@@ -372,32 +372,28 @@ class SETS():
         return textBlock
         
     def deWikify(self, textBlock, leaveHTML=False):
-        textBlock = self.deHTML(textBlock, leaveHTML)
-
+        textBlock = textBlock.replace('&lt;',"<")
+        textBlock = textBlock.replace('&gt;',">")
         textBlock = textBlock.replace('&#34;', '"')
         textBlock = textBlock.replace('&#39;', '\'')
         textBlock = textBlock.replace('&#91;', '[')
         textBlock = textBlock.replace('&#93;', ']')
-
         # clean up wikitext
         textBlock = textBlock.replace('\x7f', '')
         # \u007f'&quot;`UNIQ--nowiki-00000000-QINU`&quot;'\u007f
-        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', ' • ', textBlock)
-        
-        # Needs to be adjusted to look for the closest "[[" to work with multi-stage
-        # Adapt for "{{" as well?
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', '\*', textBlock)
         if "[[" and "|" in textBlock:
-            start = textBlock.find("[[")
-            end = textBlock.find("|")
-            textBlock = textBlock[:start] + textBlock[end+1:]
+            while "[[" and "|" in textBlock:
+                start = textBlock.find("[[")
+                end = textBlock.find("|")
+                textBlock = textBlock[:start] + textBlock[end+1:]
         textBlock = textBlock.replace('[[', '')
         textBlock = textBlock.replace(']]', '')
-
-        # Better done in framing with a grid
-        textBlock = re.sub('\n:', '\n        ', textBlock)
-        textBlock = re.sub('^:', '        ', textBlock)
-
-        #self.logWrite(textBlock, 1)
+        textBlock = textBlock.replace("{{lc: ","").replace("{{lc:","")
+        textBlock = textBlock.replace("{{ucfirst: ","").replace("{{ucfirst:","")
+        textBlock = textBlock.replace("{{","").replace("}}","")
+        textBlock = textBlock.replace("&amp;", "&")
+        textBlock = textBlock.replace("&#42;","*")
         return textBlock
     
     def loadLocalImage(self, filename, width = None, height = None, forceAspect=False):
@@ -2445,7 +2441,82 @@ class SETS():
         
     def clearInfoboxFrame(self, environment):
         self.setupInfoboxFrame(self.getEmptyItem(), '', environment)
-        
+    
+    def getDisplayedTextHeight(self: Text, pfamily, psize, pweight):
+        """{ Call as tkinter.text.getDH(Parameters) }
+        Returns the height that the text inside the Widget occupies. Value is given in lines (This number may be higher than the actual number of lines to compensate
+        for different heights of different fonts), returns -1 if text widget is empty; Parameters: pfamily: Font Family of the inserted text; psize: Font size of the
+        inserted Text; pweight: Font weight of the inserted text"""
+        self.update()
+        width = self.winfo_width()
+        if self.get("1.0", "1.1000") != "":                                               #Currently only a line-length below 1000 characters is supported
+            iter = 0
+            br = False
+            lines = 1
+            for i in range(1, int(self.get("1.0","end").count("\n"))+2):                  #Iterates over each 'inserted' line to determine how many linebreaks are inserted by the wrap=word feature
+                if not self.get(str(i)+".0", str(i)+".1000") == "":
+                    words = self.get(str(i)+".0", str(i)+".1000").split(" ")
+                    while words[-1] =="":
+                            del words[-1]
+                    currentlength = 0.0
+                    for content in words:
+                        currentlength = currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(content)
+                        if currentlength > width:
+                            lines = lines+1
+                            currentlength = currentlength - width
+                        if currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(" ") > width:
+                            lines = lines+1
+                            currentlength=0
+                        else:
+                            currentlength = currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(" ")
+                    w = font.Font(size=15, family="Helvetica", weight="bold").measure(self.get(str(i)+".0", str(i)+".1000"))
+                    iter = iter + int(w/width)+1
+                else:                                                                     #If three lines in a row are empty, this is considered to be the end of the text
+                    if self.get(str(i+1)+".0", str(i+1)+".1000") == "":
+                        if self.get(str(i+2)+".0", str(i+2)+".1000") == "":
+                            br=True
+                if br:
+                    break
+                else:
+                    lines = lines+1
+            lines = lines-1
+            hgt=1
+            if pfamily=="Helvetica" and psize==15 and pweight=="bold":                    #This structure compensates for the different height of different text size
+                if lines==1:                                                              #If a text format has no respective if statement, the functions returns 1. For Equipment field "Head" there is no if statement, because I never saw more than 1 line
+                    hgt=2.5
+                elif lines==2:
+                    hgt=3.5
+                elif lines ==3:
+                    hgt=5.5
+                else:
+                    hgt=lines+2.5
+            elif pfamily=="Helvetica" and psize==10 and pweight=="normal":
+                hgt=lines
+            return hgt                      
+        else:
+            return -1
+    
+    
+    Text.getDH = getDisplayedTextHeight
+    
+    def compensateInfoboxString(self, text):
+        text = self.deWikify(text, leaveHTML=True)
+        text = text.replace('<br>\n', '\n')
+        text = text.replace('<br/>\n', '\n')
+        text = text.replace('<br />\n', '\n')
+        text = text.replace('<br>', '\n')
+        text = text.replace('<br/>', '\n')
+        text = text.replace('<br />', '\n')
+        text = text.replace('<hr/>', "\n––––––––––––––––––––––––––––––\n")
+        text = text.replace('<hr>', "\n––––––––––––––––––––––––––––––\n")
+        text = text.replace('<hr />', "\n––––––––––––––––––––––––––––––\n")
+        text = text.replace(" *", "*")
+        #deHTML will be integrated into insertInfoboxParagraph(), because some HTML tokens are required for formatting text insets and lists
+        return text
+    
+    
+    
+    
     def setupInfoboxFrame(self, item, key, environment='space', tooltip=None):
         """Set up infobox frame with given item"""
         def compensate(text):
