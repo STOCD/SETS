@@ -262,7 +262,7 @@ class SETS():
     
     def fetchImage(self, url):
         today = datetime.date.today()
-        if url in self.persistent['imagesFail'] and self.persistent['imagesFail'][url]:
+        if not self.args.allfetch and url in self.persistent['imagesFail'] and self.persistent['imagesFail'][url]:
             daysSinceFail = today - datetime.date.fromisoformat(self.persistent['imagesFail'][url])
             if daysSinceFail.days <= self.daysDelayBeforeReattempt:
                 # Previously failed, do not attempt download again until next reattempt days have passed
@@ -287,7 +287,7 @@ class SETS():
         if not os.path.exists(cache_base):
             return
             
-        self.logWriteTransaction('Image File', 'try', '----', url, 5, [designation])
+        self.logWriteTransaction('Image File', 'try', '----', url, 5, [designation, faction, forceAspect])
         image_data = None
         designation.replace("/", "_") # Missed by the path sanitizer
         designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
@@ -302,7 +302,7 @@ class SETS():
         filenameOverride = os.path.join(*filter(None, [override_base, designation]))+fileextension
         filenameExisting = ''
         
-        if faction is not None and '_icon' in url and not '_icon_(' in url:
+        if faction is not None and faction != False and '_icon' in url and not '_icon_(' in url:
             url = re.sub('_icon', '_icon{}'.format(factionCode), url)
             if factionCode != factionCodeDefault:
                 # Don't alter filename for default faction
@@ -543,6 +543,13 @@ class SETS():
             
         self.cache['spaceSkills'] = self.fetchOrRequestJson('', 'space_skills', local=True)
         self.logWriteCounter('spaceSkills', '(json)', len(self.cache['spaceSkills']))
+
+    def precacheGroundSkills(self):
+        if 'groundSkills' in self.cache and len(self.cache['groundSkills']) > 0:
+            return
+            
+        self.cache['groundSkills'] = self.fetchOrRequestJson('', 'ground_skills', local=True)
+        self.logWriteCounter('groundSkills', '(json)', len(self.cache['groundSkills']))
         
     def precacheSkills(self):
         if 'skills' in self.cache and len(self.cache['skills']) > 0:
@@ -856,6 +863,8 @@ class SETS():
                 'specsSecondary': dict(),
                 'specsGroundBoff': dict(),
                 'skills': dict(),
+                'spaceSkills': dict(),
+                'groundSkills': dict(),
                 'factions': dict(),
                 'modifiers': None,
             }
@@ -1438,9 +1447,9 @@ class SETS():
         canvas.itemconfig(img[1],image=image1)
         ### Check for requiredby to enable
         
-    def skillLabelCallback(self, e, canvas, img, i, key, args):
+    def skillGroundLabelCallback(self, e, canvas, img, i, key, args):
         rank, row, col, environment = args
-        name = self.skillGetName(rank, row, col, type='name')
+        name = self.skillGetGroundNode(rank, row, col, type='name')
         backendName = name
         
         ### Check for requirements before enable
@@ -2028,12 +2037,12 @@ class SETS():
         self.labelBuildBlock(parentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", "", 'ground'])
         self.labelBuildBlock(parentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.backend['eliteCaptain'].get() else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
                 
-    def skillGetName(self, rank, row, col, type='name'):
+    def skillGetGroundNode(self, rank, row, col, type='name'):
         if 'content' in self.cache['skills']:
             # needs to be smarter than 'try'
             try:
-                if type in self.cache['skills']['content'][rank][row][col]:
-                    return self.cache['skills']['content'][rank][row][col][type]
+                if type in self.cache['groundSkills']['content'][rank][row][col]:
+                    return self.cache['groundSkills']['content'][rank][row][col][type]
             except:
                 return ''
             
@@ -2074,25 +2083,42 @@ class SETS():
         if environment is None or environment == 'ground':
             parentFrame = self.skillGroundBuildFrame
             self.clearFrame(parentFrame)
-            self.setupSkillTreeFrame(parentFrame, 'ground')
+            self.setupGroundSkillTreeFrame(parentFrame, 'ground')
             self.setupSkillBonusFrame(parentFrame, 'ground')
          
         #self.clearInfoboxFrame('skill')
+        
+    def setupGroundSkillTreeFrame(self, parentFrame, environment='ground'):
+        self.precacheGroundSkills()
+        frame = Frame(parentFrame, bg='#3a3a3a')
+        frame.grid(row=0, column=0, sticky='n', padx=1, pady=1)
+        parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
+        parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullCol'+environment)
+        
+        rankColumns = 4
+        for row in range(8):
+            frame.grid_rowconfigure(row, weight=1, uniform='skillFrameRow'+environment)
+            for rank in range(rankColumns):
+                for col in range(4):
+                    rowspan = 1
+                    sticky = ''
+                    
+                    self.setupSkillButton(frame, rank, '', rankColumns, row, col, rowspan, environment, sticky=sticky)
         
     def setupSpaceSkillTreeFrame(self, parentFrame, environment='space'):
         self.precacheSpaceSkills()
         frame = Frame(parentFrame, bg='#3a3a3a')
         frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
-        parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRowSpace')
-        parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullColSpace')
+        parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
+        parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullCol'+environment)
         
 
         rankColumns = 4
-        frame.grid_rowconfigure(0, weight=0, uniform='skillFrameRowSpace')
+        frame.grid_rowconfigure(0, weight=0, uniform='skillFrameRow'+environment)
         for row in range(6):
             rowGroup = "0" if row == 0 else ''
-            frame.grid_rowconfigure((row*2)+1, weight=1, uniform='skillFrameRowSpace'+rowGroup)
-            frame.grid_rowconfigure((row*2)+2, weight=1, uniform='skillFrameRowSpace'+rowGroup)
+            frame.grid_rowconfigure((row*2)+1, weight=1, uniform='skillFrameRow'+environment+rowGroup)
+            frame.grid_rowconfigure((row*2)+2, weight=1, uniform='skillFrameRow'+environment+rowGroup)
             rank = -1
             for rankName in self.cache['spaceSkills']:
                 rank += 1
@@ -2108,26 +2134,33 @@ class SETS():
                         sticky = 'n'
                     if dependencySplit and col == 2: col = 3
                     
-                    self.setupSkillButton(frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky=sticky)
+                    self.setupSkillButton(frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky=sticky, rowShift=1)
                     if dependencySplit and col == 1:
-                        self.setupSkillButton(frame, rank, rankName, rankColumns, row, col+1, rowspan, environment, sticky=sticky, colShift=-1, rowShift=1)
+                        self.setupSkillButton(frame, rank, rankName, rankColumns, row, col+1, rowspan, environment, sticky=sticky, colShift=-1, rowShift=2)
         
     def setupSkillButton(self, frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky='', colShift=0, rowShift=0):
         rowspan = 2
         colActual = ((rank*rankColumns)+col) + colShift
-        rowActual = (row * rowspan)+1+rowShift
+        rowActual = (row * rowspan)+rowShift
         padxCanvas = (2,2)
         padyCanvas = (3,0) if rowActual % 2 != 0 else (0,3)
-        frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameColSpace'+str(rank))
-        name = self.skillSpaceGetFieldNode(rankName, row, col, type='name')
-        backendName = environment+"_"+name
-        args = [rankName, row, col, 'skill']
-
+        frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameCol'+environment+str(rank))
+        if environment == 'space': name = self.skillSpaceGetFieldNode(rankName, row, col, type='name')
+        elif environment == 'ground': name = self.skillGetGroundNode(rank, row, col, type='name')
+        backendName = name
+        args = [rankName if environment=='space' else rank, row, col, 'skill']
+        #self.logWriteSimple('SkillButton', 'create', 2, [rank, row, col, environment, name])
 
         if name and col != 3:
-            imagename = self.skillSpaceGetFieldNode(rankName, row, col, type='image')
-            desc = self.skillSpaceGetFieldNode(rankName, row, col, type='desc')
-
+            if environment == 'space':
+                imagename = self.skillSpaceGetFieldNode(rankName, row, col, type='image')
+                desc = self.skillSpaceGetFieldNode(rankName, row, col, type='desc')
+                callback = self.skillSpaceLabelCallback
+            elif environment == 'ground':
+                imagename = self.skillGetGroundNode(rank, row, col, type='image')
+                desc = self.skillGetGroundNode(rank, row, col, type='desc')
+                callback = self.skillGroundLabelCallback
+        
             if not name in self.build['skilltree']: self.build['skilltree'][name] = False
             if not backendName in self.backend['images']: self.backend['images'][backendName] = [ ]
             bg = 'yellow' if name in self.build['skilltree'] and self.build['skilltree'][name] else 'grey'
@@ -2137,46 +2170,10 @@ class SETS():
             else:
                 relief = 'groove'
                 image1 = None
-            self.createButton(frame, 'skilltree', callback=self.skillSpaceLabelCallback, row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky=sticky, relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
+            self.createButton(frame, 'skilltree', callback=callback, row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky=sticky, relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
         else:
             self.createButton(frame, '', row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
                         
-    def setupSkillTreeFrame(self, parentFrame, environment='space'):
-        self.precacheSkills()
-        frame = Frame(parentFrame, bg='#3a3a3a')
-        frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
-        parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRowSpace')
-        parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullColSpace')
-        
-        padxCanvas = (2,2)
-        padyCanvas = (1,1)
-        for row in range(11):
-            frame.grid_rowconfigure(row, weight=1, uniform='skillFrameRowSpace')
-            for rank in range(5):
-                for col in range(4):
-                    colActual = ((rank*4)+col)
-                    frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameColSpace'+str(rank))
-                    name = self.skillGetName(rank, row, col, type='name')
-                    backendName = name
-                    args = [rank, row, col, 'skill']
-
-                    if name and col != 3:
-                        imagename = self.skillGetName(rank, row, col, type='image')
-                        desc = self.skillGetName(rank, row, col, type='desc')
-
-                        if not name in self.build['skilltree']: self.build['skilltree'][name] = False
-                        if not backendName in self.backend['images']: self.backend['images'][backendName] = [ ]
-                        bg = 'yellow' if name in self.build['skilltree'] and self.build['skilltree'][name] else 'grey'
-                        if self.build['skilltree'][name]:
-                            relief = 'raised'
-                            image1 = self.epicImage
-                        else:
-                            relief = 'groove'
-                            image1 = None
-                        self.createButton(frame, 'skilltree', callback=self.skillLabelCallback, row=row, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky='n', relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
-                    else:
-                        self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
-        
     def setupSkillBonusFrame(self, parentFrame, environment='space'):
         frame = Frame(parentFrame, bg='#3a3a3a')
         frame.grid(row=0, column=1, sticky='ns', padx=1, pady=1)
@@ -2688,7 +2685,7 @@ class SETS():
         
         settingsMenuSkill = {
             'Space Skill Tree'             : {'type' : 'buttonblock', 'varName' : 'spaceSkillButton', 'callback' : self.focusSpaceSkillBuildFrameCallback, 'colWeight' : 1},
-            'Space2 Skill Tree'            : {'type' : 'buttonblock', 'varName' : 'groundSkillButton', 'callback' : self.focusGroundSkillBuildFrameCallback, 'colWeight' : 1},
+            'Ground Skill Tree'            : {'type' : 'buttonblock', 'varName' : 'groundSkillButton', 'callback' : self.focusGroundSkillBuildFrameCallback, 'colWeight' : 1},
         }
         
         self.createItemBlock(parentFrame, theme=settingsMenuSkill, shape='row', elements=1)
@@ -3053,12 +3050,15 @@ class SETS():
         if environment == 'skill':
             middleFrame.grid_rowconfigure(1, weight=1)
             middleFrame.grid_columnconfigure(0, weight=1)
+            
             middleFrameUpper = Frame(middleFrame, bg='#3a3a3a')
             middleFrameUpper.grid(row=0,column=0,sticky='nsew')
-            
             self.setupSkillMenuFrame(middleFrameUpper)
+            
             middleFrameLower = Frame(middleFrame, bg='#3a3a3a')
             middleFrameLower.grid(row=1,column=0,sticky='nsew')
+            middleFrameLower.grid_rowconfigure(1, weight=1)
+            middleFrameLower.grid_columnconfigure(0, weight=1)
 
             self.skillSpaceBuildFrame = Frame(middleFrameLower, bg='#3a3a3a')
             self.skillGroundBuildFrame = Frame(middleFrameLower, bg='#3a3a3a')
@@ -3424,7 +3424,7 @@ class SETS():
         self.setupLogoFrame()
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
-        self.currentFrameUpdateTo(self.spaceBuildFrame, first=True)
+        #self.currentFrameUpdateTo(self.spaceBuildFrame, first=True)
         self.precachePreload(limited=self.args.nocache or self.persistent['noPreCache'])
         
         self.setupLibraryFrame()
@@ -3447,6 +3447,7 @@ class SETS():
         parser.add_argument('--debug', type=int, help='Set debug level (default: 0)')
         parser.add_argument('--file', type=str, help='File to import on open')
         parser.add_argument('--nofetch', type=str, help='Do not fetch new images')
+        parser.add_argument('--allfetch', type=str, help='Retry images every load')
         parser.add_argument('--nocache', type=str, help='Do not precache at start')
         parser.add_argument('--startuptab', type=str, help='space, ground, skill, settings [space is default]')
 
