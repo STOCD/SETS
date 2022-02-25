@@ -761,6 +761,7 @@ class SETS():
             'keepTemplateOnShipChange': 0,
             'pickerSpawnUnderMouse': 1,
             'useFactionSpecificIcons': 0,
+            'useExperimentalTooltip': 0,
         }
     
     def resetSettings(self):
@@ -1145,7 +1146,7 @@ class SETS():
                 environment = 'space'
                 if len(args) >= 4:
                     environment = args[3]
-                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, args[0], environment))
+                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrameSplitter(item, args[0], environment))
                 self.build[key][i] = item
                 self.backend['images'][key][i] = [item['image'], image1]
                 item.pop('image')
@@ -1183,7 +1184,7 @@ class SETS():
                 environment = 'space'
                 if len(args) >= 4:
                     environment = args[3]
-                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, '', environment))
+                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrameSplitter(item, '', environment))
                 item.pop('image')
                 self.build[key][i] = item
 
@@ -1295,7 +1296,7 @@ class SETS():
                 #if item['item']+str(i) not in self.backend['images']:
                 self.backend['images'][backendKey] = item['image']
                 canvas.itemconfig(img,image=self.backend['images'][item['item']+str(i)])
-                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrame(item, '', environment))
+                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrameSplitter(item, '', environment))
                 self.build['boffs'][key][i] = item['item']
                 
         # ground used +'_'+str(i)
@@ -1935,7 +1936,7 @@ class SETS():
             internalKey = args[0] if args is not None and type(args[0]) is str else ''
             if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
             if name != 'blank':
-                canvas.bind('<Enter>', lambda e,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrame(item, internalKey, environment, tooltip))
+                canvas.bind('<Enter>', lambda e,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrameSplitter(item, internalKey, environment, tooltip))
         
         return canvas, img0, img1
 
@@ -2388,7 +2389,7 @@ class SETS():
                     canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                     img0 = canvas.create_image(0,0, anchor="nw",image=image)
                     canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i, environment]))
-                    canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrame(item, '', environment))
+                    canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrameSplitter(item, '', environment))
 
 
     def setupSpaceBuildFrames(self):
@@ -2440,7 +2441,11 @@ class SETS():
         return self.wikihttp + name
         
     def clearInfoboxFrame(self, environment):
-        self.setupInfoboxFrame(self.getEmptyItem(), '', environment)
+        self.setupInfoboxFrameSplitter(self.getEmptyItem(), '', environment)
+        
+    def setupInfoboxFrameSplitter(self, item, key, environment='space', tooltip=None):
+        if self.persistent['useExperimentalTooltip']: self.setupInfoboxFrame(item, key, environment, tooltip)
+        else: self.setupInfoboxFrameStatic(item, key, environment, tooltip)
     
     def getDisplayedTextHeight(self: Text, pfamily, psize, pweight):
         """{ Call as tkinter.text.getDH(Parameters) }
@@ -2513,6 +2518,7 @@ class SETS():
         text = text.replace(" *", "*")
         #deHTML will be integrated into insertInfoboxParagraph(), because some HTML tokens are required for formatting text insets and lists
         return text
+        
     def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow): #returns text string that has to be placed a level above (for recursion)
         mainframe = Frame(inframe, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
         mainframe.grid(row=gridrow,column=0, sticky="nsew")
@@ -2866,6 +2872,110 @@ class SETS():
 
         text.configure(state=DISABLED)
 
+    def setupInfoboxFrameStatic(self, item, key, environment='space', tooltip=None):
+        """Set up infobox frame with given item"""
+        # Retain until experimental version is stable
+
+        if environment == 'skill':
+            frame = self.skillInfoboxFrame
+        elif environment == 'ground':
+            frame = self.groundInfoboxFrame
+        else:
+            frame = self.shipInfoboxFrame
+
+        if item is not None and 'item' in item:
+            name = item['item']
+        elif isinstance(item, str):
+            name = item
+        else:
+            self.logWriteSimple('InfoboxFail', environment, 4, tags=["NO NAME", key])
+            return
+        self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
+        
+        if key is not None and key != '':
+            self.precacheEquipment(key)
+        
+        raritycolor = '#ffffff'
+        if 'rarity' in item:
+            if item["rarity"].lower() == "epic":
+                raritycolor = '#ffd700'
+            elif item["rarity"].lower() == "ultra rare":
+                raritycolor = "#6d65bc"
+            elif item["rarity"].lower() == "very rare":
+                raritycolor = "#a245b9"
+            elif item["rarity"].lower() == "rare":
+                raritycolor = "#0099ff"
+            elif item["rarity"].lower() == "uncommon":
+                raritycolor = "#00cc00"
+
+        self.clearFrame(frame)
+        height = 25
+        width = 15
+        if environment != 'skill': width += 25
+        if environment == 'skill': height -= 5
+        
+        Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
+        text = Text(frame, height=height, width=width, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
+        text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
+        text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
+        text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
+        text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
+        text.tag_configure('who', foreground='#ff6347', font=('Helvetica', 10, 'bold' ))
+        text.tag_configure('distance', foreground='#000000', font=('Helvetica', 4))
+        text.pack(fill="both", expand=True, padx=2, pady=2, side=BOTTOM)
+        if name is None or name == '':
+            return
+        
+        text.insert(END, name, 'name')
+        if 'mark' in item and item['mark']:
+            text.insert(END, ' '+item['mark'], 'name')
+        if 'modifiers' in item and item['modifiers']:
+            text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
+        text.insert(END, '\n')
+        
+        #if 'tooltip' in item and item['tooltip']:
+        #    text.insert(END, html['tooltip'])
+            
+        if name in self.cache['shipTraits']:
+            text.insert(END, self.cache['shipTraits'][name])
+            
+        if tooltip is not None: text.insert(END, tooltip)
+
+        if environment in self.cache['traits'] and name in self.cache['traits'][environment]:
+            text.insert(END, self.cache['traits'][environment][name])
+            
+        if environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]:
+                text.insert(END, self.cache['boffTooltips'][environment][name])
+                
+        if key in self.cache['equipment'] and name in self.cache['equipment'][key]:
+            # Show the infobox data from json
+            html = self.cache['equipment'][key][name]
+
+            if 'rarity' in item and item['rarity']:
+                text.insert(END, item['rarity']+' ', 'rarity')
+            if 'type' in html and html['type']:
+                text.insert(END, html['type'], 'rarity')
+            if ('rarity' in item and item['rarity']) or ('type' in html and html['type']):
+                text.insert(END, '\n')
+            text.insert(END, '\n\n', 'distance')
+
+            for i in range(1,9):
+                t = html["head"+str(i)].replace("*","  • ").strip()
+                if t.strip() != '':
+                    text.insert(END, self.deHTML(self.compensateInfoboxString(t))+'\n','head')
+                    text.insert(END, '\n', 'distance')
+                t = html["subhead"+str(i)].replace("*","  • ").strip()
+                if t.strip() != '':
+                    text.insert(END, self.deHTML(self.compensateInfoboxString(t))+'\n', 'subhead')
+                    text.insert(END, '\n', 'distance')
+                t = html["text"+str(i)].replace("*","  • ").strip()
+                if t.strip() != '':
+                    text.insert(END, self.deHTML(self.compensateInfoboxString(t))+'\n')
+                    text.insert(END, '\n', 'distance')
+
+                        
+        text.configure(state=DISABLED)
+        
     def setupDoffListFrame(self, frame, environment='space'):
         doffEnvironment = environment.title()
         isSpace = False if environment == 'ground' else True
@@ -3439,6 +3549,7 @@ class SETS():
             'Theme Settings (auto-saved):'          : { 'col' : 1, 'type': 'title'},
             'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'varName' : 'uiScale' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
+            'Use experimental tooltips'             : { 'col' : 2, 'type' : 'menu', 'varName' : 'useExperimentalTooltip', 'boolean' : True },
             'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault' },
             'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'varName' : 'pickerSpawnUnderMouse', 'boolean' : True },
             'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipClear', 'boolean' : True },
