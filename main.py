@@ -51,6 +51,9 @@ class SETS():
     trayskill_query = wikihttp+"Special:CargoExport?tables=TraySkill&fields=TraySkill._pageName,TraySkill.name,TraySkill.activation,TraySkill.affects,TraySkill.description,TraySkill.description_long,TraySkill.rank1rank,TraySkill.rank2rank,TraySkill.rank3rank,TraySkill.recharge_base,TraySkill.recharge_global,TraySkill.region,TraySkill.system,TraySkill.targets,TraySkill.type&order+by=TraySkill.name&limit=1000&offset=0&format=json"
     faction_query = wikihttp+"Special:CargoExport?tables=Faction&fields=Faction.playability,Faction.name,Faction._pageName,Faction.allegiance,Faction.faction,Faction.imagepeople,Faction.origin,Faction.quadrant,Faction.status,Faction.traits&limit=1000&offset=0&format=json"
 
+    #to prevent Infobox from loading the same element twice in a row
+    displayedInfoboxItem = str()
+
     def encodeBuildInImage(self, src, message, dest):
         img = Image.open(src, 'r')
         width, height = img.size
@@ -2447,11 +2450,11 @@ class SETS():
         if self.persistent['useExperimentalTooltip']: self.setupInfoboxFrame(item, key, environment, tooltip)
         else: self.setupInfoboxFrameStatic(item, key, environment, tooltip)
     
-    def getDisplayedTextHeight(self: Text, pfamily, psize, pweight):
+    def getDisplayedTextHeight(self: Text, pfamily, psize, pweight, identifier=""):
         """{ Call as tkinter.text.getDH(Parameters) }
         Returns the height that the text inside the Widget occupies. Value is given in lines (This number may be higher than the actual number of lines to compensate
         for different heights of different fonts), returns -1 if text widget is empty; Parameters: pfamily: Font Family of the inserted text; psize: Font size of the
-        inserted Text; pweight: Font weight of the inserted text"""
+        inserted Text; pweight: Font weight of the inserted text; identifier: identifier to adjust height for special cases [may be left empty]"""
         self.update()
         width = self.winfo_width()
         if self.get("1.0", "1.1000") != "":                                               #Currently only a line-length below 1000 characters is supported
@@ -2486,7 +2489,7 @@ class SETS():
                     lines = lines+1
             lines = lines-1
             hgt=1
-            if pfamily=="Helvetica" and psize==15 and pweight=="bold":                    #This structure compensates for the different height of different text size
+            if identifier == "equipmenthead":                                             #This structure compensates for the different height of different text size
                 if lines==1:                                                              #If a text format has no respective if statement, the functions returns 1. For Equipment field "Head" there is no if statement, because I never saw more than 1 line
                     hgt=2.5
                 elif lines==2:
@@ -2495,7 +2498,12 @@ class SETS():
                     hgt=5.5
                 else:
                     hgt=lines+2.5
-            elif pfamily=="Helvetica" and psize==10 and pweight=="normal":
+            elif identifier == "traithead":
+                if lines == 3:
+                    hgt = 3.5
+                elif lines == 4:
+                    hgt = 5
+            elif identifier == "":
                 hgt=lines
             return hgt                      
         else:
@@ -2704,6 +2712,10 @@ class SETS():
             return
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
         
+        if self.displayedInfoboxItem == name:
+            return
+        self.displayedInfoboxItem = name
+
         if key is not None and key != '':
             self.precacheEquipment(key)
         
@@ -2732,7 +2744,7 @@ class SETS():
         #equipment formatting tags
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
-        #text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
+        text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
         #text.tag_configure('who', foreground='#ff6347', font=('Helvetica', 10, 'bold' ))
         #starship trait formatting tags 
         text.tag_configure('starshipTraitHead', foreground='#42afca', font=('Helvetica', 15, 'bold' ))
@@ -2753,7 +2765,7 @@ class SETS():
                 text.insert(END, ' '+item['mark'], 'name')
             if 'modifiers' in item and item['modifiers']:
                 text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
-            lines = text.getDH("Helvetica", 15, "bold")
+            lines = text.getDH("Helvetica", 15, "bold", "equipmenthead")
             text.configure(height=lines)
             html = self.cache['equipment'][key][name]
             if 'rarity' in item and item['rarity']:
@@ -2787,7 +2799,12 @@ class SETS():
         if (name in self.cache['shipTraits'])and not printed:
             text.insert(END, name+"\n", 'starshipTraitHead')
             text.insert(END, "Starship Trait\n", 'head')
-            text.insert(END, "")
+            text.insert(END, "Placeholder for obtain information", "subhead")
+            text.configure(height=text.getDH("Helvetica", 15, "bold", "traithead"))
+            Frame(mtfr, background='#090b0d', highlightthickness=0, highlightcolor='#090b0d').grid(row=2,column=0,sticky="nsew")
+            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            contentframe.grid(row=3, column=0, sticky="nsew")
+            self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['shipTraits'][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0)
             printed = True
 
         '''text.pack(fill="x", expand=True, side=TOP)
