@@ -2131,8 +2131,8 @@ class SETS():
                     sticky = sticky2 = ''
                     if dependencySplit and col == 1: 
                         rowspan = 1
-                        sticky = 'ns'
-                        sticky2 = 'ns'
+                        sticky = 's'
+                        sticky2 = 'n'
                     if dependencySplit and col == 2: col = 3
                     
                     self.setupSkillButton(frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky=sticky, rowShift=1)
@@ -2140,9 +2140,9 @@ class SETS():
                         self.setupSkillButton(frame, rank, rankName, rankColumns, row, col+1, rowspan, environment, sticky=sticky2, colShift=-1, rowShift=2)
         
     def setupSkillButton(self, frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky='', colShift=0, rowShift=0):
-        rowspan = 2
+        rowspanMaster = 2
         colActual = ((rank*rankColumns)+col) + colShift
-        rowActual = (row * rowspan)+rowShift
+        rowActual = (row * rowspanMaster)+rowShift
         padxCanvas = (2,2)
         padyCanvas = (3,0) if rowActual % 2 != 0 else (0,3)
         frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameCol'+environment+str(rank))
