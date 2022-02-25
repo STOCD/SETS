@@ -1427,14 +1427,48 @@ class SETS():
         
         self.logWriteTransaction('Export build', chosenExtension, str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size) if chosenExtension.lower() == '.png' else None])
         
+    def skillSpaceAllowed(self, rank, row, col):
+        name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
+        split = self.skillSpaceGetFieldSkill(rank, row, '', type='linear')
+        # col is the position-in-chain
+        
+        if not name in self.build['skilltree']: self.build['skilltree'][name] = False
+        enabled = self.build['skilltree'][name]
+        child = self.build['skilltree'][self.skillSpaceGetFieldNode(rank, row, col+1, type='name')] if col < 2 else False
+        child2 = self.build['skilltree'][self.skillSpaceGetFieldNode(rank, row, col+2, type='name')] if col < 1 else False
+        parent = self.build['skilltree'][self.skillSpaceGetFieldNode(rank, row, col-1, type='name')] if col > 0 else True
+        parent2 = self.build['skilltree'][self.skillSpaceGetFieldNode(rank, row, col-2, type='name')] if col > 1 else True
+        
+        if enabled: # Can we turn this off?
+            # Would disabling this reduce rank below other existing skills?
+            # Do we have requiredby that are True?
+            if not ( col == 1 and split ):
+                if child: return False
+            if child2: return False
+                
+        else: # Can we turn this on?
+            # Can we activate that rank / spend that many points
+            # Is our required already True?
+            if col == 2 and split:
+                if not parent2: return False
+            else:
+                if not parent: return False
+            
+        return True
+        
+    def skillSpaceButtonChildUpdate(self, rank, row, col):
+        # Change disable status of children based on selection change
+        
+        return
+        
     def skillSpaceLabelCallback(self, e, canvas, img, i, key, args):
         rank, row, col, environment = args
         name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
         backendName = name
+
+        if not self.skillSpaceAllowed(rank, row, col): return # Check for requirements before enable
         
-        ### Check for requirements before enable
-        if name in self.build['skilltree']: self.build['skilltree'][name] = not self.build['skilltree'][name]
-        else: self.build['skilltree'][name] = True
+        self.build['skilltree'][name] = not self.build['skilltree'][name]
         
         if self.build['skilltree'][name]:
             image1 = self.epicImage
@@ -1445,7 +1479,8 @@ class SETS():
             
         self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
         canvas.itemconfig(img[1],image=image1)
-        ### Check for requiredby to enable
+        
+        self.skillSpaceButtonChildUpdate(rank, row, col)
         
     def skillGroundLabelCallback(self, e, canvas, img, i, key, args):
         rank, row, col, environment = args
@@ -2910,7 +2945,7 @@ class SETS():
             return
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
         
-        if key is not None and key != '':
+        if key is not None and key != '' and environment != 'skill':
             self.precacheEquipment(key)
         
         raritycolor = '#ffffff'
