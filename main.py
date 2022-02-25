@@ -2128,15 +2128,16 @@ class SETS():
                     l.grid(row=row, column=rank*rankColumns, columnspan=3, sticky='s', pady=1)
                 for col in range(rankColumns):
                     rowspan = 2
-                    sticky = ''
+                    sticky = sticky2 = ''
                     if dependencySplit and col == 1: 
                         rowspan = 1
-                        sticky = 'n'
+                        sticky = 'ns'
+                        sticky2 = 'ns'
                     if dependencySplit and col == 2: col = 3
                     
                     self.setupSkillButton(frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky=sticky, rowShift=1)
                     if dependencySplit and col == 1:
-                        self.setupSkillButton(frame, rank, rankName, rankColumns, row, col+1, rowspan, environment, sticky=sticky, colShift=-1, rowShift=2)
+                        self.setupSkillButton(frame, rank, rankName, rankColumns, row, col+1, rowspan, environment, sticky=sticky2, colShift=-1, rowShift=2)
         
     def setupSkillButton(self, frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky='', colShift=0, rowShift=0):
         rowspan = 2
@@ -3567,10 +3568,12 @@ class SETS():
             'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'varName' : 'uiScale' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
             'Use experimental tooltips'             : { 'col' : 2, 'type' : 'menu', 'varName' : 'useExperimentalTooltip', 'boolean' : True },
+            'blank2'                                : { 'col' : 1, 'type' : 'blank' },
             'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault' },
             'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'varName' : 'pickerSpawnUnderMouse', 'boolean' : True },
             'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipClear', 'boolean' : True },
             'Keep build when changing ships'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipChange', 'boolean' : True },
+            'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Sort Options:'                         : { 'col' : 1 },
             'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort' },
             'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort2' },
@@ -3580,7 +3583,7 @@ class SETS():
         self.createItemBlock(settingsTopMiddleRightFrame, theme=settingsTheme)
 
         settingsMaintenance = {
-            'Maintenance (auto-saved):'                          : { 'col' : 1, 'type': 'title'},
+            'Maintenance (auto-saved):'             : { 'col' : 1, 'type': 'title'},
             'Open Log'                              : { 'col' : 2, 'type' : 'button', 'varName' : 'openLog' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
             'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'forceJsonLoad', 'boolean' : True},
@@ -3668,8 +3671,9 @@ class SETS():
             rowCurrent += row
             colStart = (i * elements) if shape == 'row' else 0
             colStart += col
+            useLabel = True if type == 'label' or type == 'blank' or type == 'title' or (not isButton and columns > 1) else False
             
-            if type == 'label' or type == 'blank' or (not isButton and columns > 1):
+            if useLabel:
                 spanLabel = 1 + (elements - columns)
                 stickyLabel = 'ew' if spanLabel > 1 else 'e'
                 if type == 'title': stickylabel = 'n'
@@ -3705,7 +3709,7 @@ class SETS():
 
             if type != 'blank':
                 if type == 'buttonblock': optionFrame.configure(bg=bg,fg=fg,font=f2)
-                else: optionFrame.configure(bg=bg,fg=fg, borderwidth=0, highlightthickness=0, width=10)
+                else: optionFrame.configure(bg=bg,fg=fg, borderwidth=0, highlightthickness=0, width=9)
                 optionFrame.grid(row=rowCurrent, column=colStart+colOption, columnspan=spanOption, sticky=stickyOption, pady=pady, padx=padx)
                 if rowWeight is not None: parentFrame.grid_rowconfigure(rowCurrent, weight=rowWeight)
                 if colWeight is not None: parentFrame.grid_columnconfigure(colStart+colOption, weight=colWeight)
