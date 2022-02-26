@@ -692,6 +692,17 @@ class SETS():
         except:
             return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
 
+    def resetAfterImport(self):
+        self.skillCount('space')
+        self.skillCount('ground')
+        
+        self.logWriteSimple('Skill count', 'import', 3, [self.backend['skillCount']['space'], self.backend['skillCount']['ground']])
+        
+    def skillCount(self, environment):
+        self.backend['skillCount'][environment]
+        for name in self.build['skilltree'][environment]:
+            if self.build['skilltree'][environment][name]: self.backend['skillCount'][environment] += 1
+    
     def copyBackendToBuild(self, key, key2=None):
         """Helper function to copy backend value to build dict"""
         if key in self.backend and key2 == None:
@@ -838,7 +849,7 @@ class SETS():
             'eliteCaptain': False,
             'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
             'tags': dict(),
-            'skilltree': dict(),
+            'skilltree': { 'space': dict(), 'ground': dict() },
         }
 
     def resetCache(self, text = None):
@@ -890,7 +901,7 @@ class SETS():
                 'eliteCaptain': IntVar(self.window),
                 'skillLabels': dict(),
                 'skillNames': [[], [], [], [], []],
-                'skillCount': 0
+                'skillCount': { 'space': 0, 'ground': 0 },
             }
         self.persistentToBackend()
         if rebuild: self.buildToBackendSeries()
@@ -1354,13 +1365,17 @@ class SETS():
             self.buildImport = json.loads(self.decodeBuildFromImage(inFilename))
         else:
             with open(inFilename, 'r') as inFile:
-                self.buildImport = json.load(inFile)
+                try:
+                    self.buildImport = json.load(inFile)
+                except:
+                    self.logWriteTransaction('Template File', 'load complaint', '', configFile, 0)
         
         if 'versionJSON' not in self.buildImport and not force:
             self.logWriteTransaction('Template File', 'version missing', '', inFilename, 0)
             if self.persistent['forceJsonLoad']:
                 return self.importByFilename(inFilename, True)
         elif self.buildImport['versionJSON'] >= self.versionJSONminimum or force:
+            self.logWriteBreak('IMPORT PROCESSING START')
             logNote = ' (fields:['+str(len(self.buildImport))+'=>'+str(len(self.build))+']='
             self.build.update(self.buildImport)
             logNote = logNote+str(len(self.build))+' merged)'
@@ -1374,6 +1389,8 @@ class SETS():
                 logNote=' (FORCE LOAD)'+logNote
 
             self.logWriteTransaction('Template File', 'loaded', '', inFilename, 0, [logNote])
+            self.resetAfterImport()
+            self.logWriteBreak('IMPORT PROCESSING END')
             return True
         else:
             self.logWriteTransaction('Template File', 'version mismatch', '', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
@@ -1427,82 +1444,86 @@ class SETS():
         
         self.logWriteTransaction('Export build', chosenExtension, str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size) if chosenExtension.lower() == '.png' else None])
         
-    def skillSpaceAllowed(self, rank, row, col):
-        name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
-        split = self.skillSpaceGetFieldSkill(rank, row, '', type='linear')
+    def skillAllowed(self, rank, row, col, environment):
+        if environment == 'ground':
+            maxSkills = 10 # Could be set by captain rank/level
+            name = self.skillGetGroundNode(rank, row, col, type='name')
+            split = False
+            plusOne = self.skillGetGroundNode(rank, row, col+1, type='name')
+            plusTwo = self.skillGetGroundNode(rank, row, col+2, type='name')
+            minusOne = self.skillGetGroundNode(rank, row, col-1, type='name')
+            minusTwo = self.skillGetGroundNode(rank, row, col-2, type='name')
+        else:
+            maxSkills = 46 # Could be set by captain rank/level
+            rankReqs = [0, 5, 15, 25, 35]
+            name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
+            split = self.skillSpaceGetFieldSkill(rank, row, '', type='linear')
+            plusOne = self.skillSpaceGetFieldNode(rank, row, col+1, type='name')
+            plusTwo = self.skillSpaceGetFieldNode(rank, row, col+2, type='name')
+            minusOne = self.skillSpaceGetFieldNode(rank, row, col-1, type='name')
+            minusTwo = self.skillSpaceGetFieldNode(rank, row, col-2, type='name')
         # col is the position-in-chain
-        
-        if not name in self.build['skilltree']: self.build['skilltree'][name] = False
-        enabled = self.build['skilltree'][name]
-        child = self.build['skilltree'][self.skillSpaceGetFieldNode(rank, row, col+1, type='name')] if col < 2 else False
-        child2 = self.build['skilltree'][self.skillSpaceGetFieldNode(rank, row, col+2, type='name')] if col < 1 else False
-        parent = self.build['skilltree'][self.skillSpaceGetFieldNode(rank, row, col-1, type='name')] if col > 0 else True
-        parent2 = self.build['skilltree'][self.skillSpaceGetFieldNode(rank, row, col-2, type='name')] if col > 1 else True
+       
+        #if environment == 'ground': return True
+        self.logWriteSimple('skillAllowed', environment, 3, [name])
+        if not name in self.build['skilltree'][environment]: self.build['skilltree'][environment][name] = False
+        enabled = self.build['skilltree'][environment][name]
+        child = self.build['skilltree'][environment][plusOne] if plusOne and col < 2 else False
+        child2 = self.build['skilltree'][environment][plusTwo] if plusTwo and col < 1 else False
+        parent = self.build['skilltree'][environment][minusOne] if minusOne and col > 0 else True
+        parent2 = self.build['skilltree'][environment][minusTwo] if minusTwo and col > 1 else True
         
         if enabled: # Can we turn this off?
             # Would disabling this reduce rank below other existing skills?
+            
             # Do we have requiredby that are True?
+            if child2: return False
             if not ( col == 1 and split ):
                 if child: return False
-            if child2: return False
                 
         else: # Can we turn this on?
             # Can we activate that rank / spend that many points
+            if self.backend['skillCount'][environment] + 1 > maxSkills: return False
             # Is our required already True?
-            if col == 2 and split:
-                if not parent2: return False
-            else:
+            if not parent2: return False
+            if not ( col == 2 and split ):
                 if not parent: return False
             
         return True
         
-    def skillSpaceButtonChildUpdate(self, rank, row, col):
+    def skillButtonChildUpdate(self, rank, row, col, environment='space'):
         # Change disable status of children based on selection change
         
         return
         
-    def skillSpaceLabelCallback(self, e, canvas, img, i, key, args):
-        rank, row, col, environment = args
-        name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
+    def skillLabelCallback(self, e, canvas, img, i, key, args, environment='space'):
+        rank, row, col, drawEnvironment = args
+        if environment == 'ground': name = self.skillGetGroundNode(rank, row, col, type='name')
+        else: name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
         backendName = name
 
-        if not self.skillSpaceAllowed(rank, row, col): return # Check for requirements before enable
+        if not self.skillAllowed(rank, row, col, environment): return # Check for requirements before enable
         
-        self.build['skilltree'][name] = not self.build['skilltree'][name]
+        self.build['skilltree'][environment][name] = not self.build['skilltree'][environment][name]
         
-        if self.build['skilltree'][name]:
+        if self.build['skilltree'][environment][name]:
+            countChange = 1
             image1 = self.epicImage
             canvas.configure(bg='yellow', relief='groove')
         else:
+            countChange = -1
             image1 = self.emptyImage
             canvas.configure(bg='grey', relief='raised')
             
+        self.backend['skillCount'][environment] += countChange
         self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
         canvas.itemconfig(img[1],image=image1)
         
-        self.skillSpaceButtonChildUpdate(rank, row, col)
+        self.skillButtonChildUpdate(rank, row, col, environment)
         
-    def skillGroundLabelCallback(self, e, canvas, img, i, key, args):
-        rank, row, col, environment = args
-        name = self.skillGetGroundNode(rank, row, col, type='name')
-        backendName = name
-        
-        ### Check for requirements before enable
-        if name in self.build['skilltree']: self.build['skilltree'][name] = not self.build['skilltree'][name]
-        else: self.build['skilltree'][name] = True
-        #self.logWrite("==={} {}".format(name, self.build['skilltree'][name]), 2)
-        
-        if self.build['skilltree'][name]:
-            image1 = self.epicImage
-            canvas.configure(bg='yellow', relief='groove')
-        else:
-            image1 = self.emptyImage
-            canvas.configure(bg='grey', relief='raised')
-            
-        self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
-        canvas.itemconfig(img[1],image=image1)
-        ### Check for requiredby to enable
-        
+    def skillGroundLabelCallback(self, e, canvas, img, i, key, args, environment='ground'): 
+        self.skillLabelCallback(e, canvas, img, i, key, args, environment)
+    
         return
         # Original actions below, prune once new functions stable
         rankReqs = [0, 5, 15, 25, 35]
@@ -2191,16 +2212,16 @@ class SETS():
             if environment == 'space':
                 imagename = self.skillSpaceGetFieldNode(rankName, row, col, type='image')
                 desc = self.skillSpaceGetFieldNode(rankName, row, col, type='desc')
-                callback = self.skillSpaceLabelCallback
+                callback = self.skillLabelCallback
             elif environment == 'ground':
                 imagename = self.skillGetGroundNode(rank, row, col, type='image')
                 desc = self.skillGetGroundNode(rank, row, col, type='desc')
                 callback = self.skillGroundLabelCallback
         
-            if not name in self.build['skilltree']: self.build['skilltree'][name] = False
+            if not name in self.build['skilltree'][environment]: self.build['skilltree'][environment][name] = False
             if not backendName in self.backend['images']: self.backend['images'][backendName] = [ ]
-            bg = 'yellow' if name in self.build['skilltree'] and self.build['skilltree'][name] else 'grey'
-            if self.build['skilltree'][name]:
+            bg = 'yellow' if name in self.build['skilltree'][environment] and self.build['skilltree'][environment][name] else 'grey'
+            if self.build['skilltree'][environment][name]:
                 relief = 'raised'
                 image1 = self.epicImage
             else:
@@ -4146,11 +4167,8 @@ class SETS():
         if os.path.exists(configFile):
             self.logWriteTransaction('Template File', 'found', '', configFile, 1)
             with open(configFile, 'r') as inFile:
-                try:
-                    return self.importByFilename(configFile)
-                except:
-                    self.logWriteTransaction('Template File', 'load complaint', '', configFile, 0)
-                    return True
+                return self.importByFilename(configFile)
+
         else:
             self.logWriteTransaction('Template File', 'not found', '', configFile, 0)
         return False
