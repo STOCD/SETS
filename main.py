@@ -1447,6 +1447,7 @@ class SETS():
     def skillAllowed(self, rank, row, col, environment):
         if environment == 'ground':
             maxSkills = 10 # Could be set by captain rank/level
+            rankReqs = [0, 0]
             name = self.skillGetGroundNode(rank, row, col, type='name')
             split = False
             plusOne = self.skillGetGroundNode(rank, row, col+1, type='name')
@@ -1455,7 +1456,7 @@ class SETS():
             minusTwo = self.skillGetGroundNode(rank, row, col-2, type='name')
         else:
             maxSkills = 46 # Could be set by captain rank/level
-            rankReqs = [0, 5, 15, 25, 35]
+            rankReqs = { 'lieutenant': 0, 'lieutenant commander': 5, 'commander': 15, 'captain': 25, 'admiral': 35 }
             name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
             split = self.skillSpaceGetFieldSkill(rank, row, '', type='linear')
             plusOne = self.skillSpaceGetFieldNode(rank, row, col+1, type='name')
@@ -1474,7 +1475,7 @@ class SETS():
         parent2 = self.build['skilltree'][environment][minusTwo] if minusTwo and col > 1 else True
         
         if enabled: # Can we turn this off?
-            # Would disabling this reduce rank below other existing skills?
+            # If this takes us below our current rank, are there skills above this rank?
             
             # Do we have requiredby that are True?
             if child2: return False
@@ -1482,7 +1483,8 @@ class SETS():
                 if child: return False
                 
         else: # Can we turn this on?
-            # Can we activate that rank / spend that many points
+            # Can we activate that rank?
+            if self.backend['skillCount'][environment] < rankReqs[rank]: return False
             if self.backend['skillCount'][environment] + 1 > maxSkills: return False
             # Is our required already True?
             if not parent2: return False
