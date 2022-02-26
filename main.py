@@ -2509,20 +2509,20 @@ class SETS():
         if self.persistent['useExperimentalTooltip']: self.setupInfoboxFrame(item, key, environment, tooltip)
         else: self.setupInfoboxFrameStatic(item, key, environment, tooltip)
     
-    def getDisplayedTextHeight(self: Text, pfamily, psize, pweight, identifier=""):
-        """{ Call as tkinter.text.getDH(Parameters) }
+    def getDisplayedTextHeight(self, wid: Text, pfamily, psize, pweight, identifier=""):
+        """{ Call as self.getDH(Parameters) }
         Returns the height that the text inside the Widget occupies. Value is given in lines (This number may be higher than the actual number of lines to compensate
         for different heights of different fonts), returns -1 if text widget is empty; Parameters: pfamily: Font Family of the inserted text; psize: Font size of the
         inserted Text; pweight: Font weight of the inserted text; identifier: identifier to adjust height for special cases [may be left empty]"""
-        self.update()
-        width = self.winfo_width()
-        if self.get("1.0", "1.1000") != "":                                               #Currently only a line-length below 1000 characters is supported
+        wid.update()
+        width = wid.winfo_width()
+        if wid.get("1.0", "1.1000") != "":                                               #Currently only a line-length below 1000 characters is supported
             iter = 0
             br = False
             lines = 1
-            for i in range(1, int(self.get("1.0","end").count("\n"))+2):                  #Iterates over each 'inserted' line to determine how many linebreaks are inserted by the wrap=word feature
-                if not self.get(str(i)+".0", str(i)+".1000") == "":
-                    words = self.get(str(i)+".0", str(i)+".1000").split(" ")
+            for i in range(1, int(wid.get("1.0","end").count("\n"))+2):                  #Iterates over each 'inserted' line to determine how many linebreaks are inserted by the wrap=word feature
+                if not wid.get(str(i)+".0", str(i)+".1000") == "":
+                    words = wid.get(str(i)+".0", str(i)+".1000").split(" ")
                     while words[-1] =="":
                             del words[-1]
                     currentlength = 0.0
@@ -2536,11 +2536,11 @@ class SETS():
                             currentlength=0
                         else:
                             currentlength = currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(" ")
-                    w = font.Font(size=15, family="Helvetica", weight="bold").measure(self.get(str(i)+".0", str(i)+".1000"))
+                    w = font.Font(size=15, family="Helvetica", weight="bold").measure(wid.get(str(i)+".0", str(i)+".1000"))
                     iter = iter + int(w/width)+1
                 else:                                                                     #If three lines in a row are empty, this is considered to be the end of the text
-                    if self.get(str(i+1)+".0", str(i+1)+".1000") == "":
-                        if self.get(str(i+2)+".0", str(i+2)+".1000") == "":
+                    if wid.get(str(i+1)+".0", str(i+1)+".1000") == "":
+                        if wid.get(str(i+2)+".0", str(i+2)+".1000") == "":
                             br=True
                 if br:
                     break
@@ -2569,7 +2569,7 @@ class SETS():
             return -1
     
     
-    Text.getDH = getDisplayedTextHeight
+    getDH = getDisplayedTextHeight
     
     def compensateInfoboxString(self, text):
         text = self.deWikify(text, leaveHTML=True)
@@ -2723,7 +2723,7 @@ class SETS():
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
             maintext.insert(END, inserttext1)
-            maintextheight = maintext.getDH( pfamily, psize, pweight)
+            maintextheight = self.getDH(maintext, pfamily, psize, pweight)
             maintext.configure(height=maintextheight)
             rowinsert = rowinsert+1
         if not passtext == "":
@@ -2754,14 +2754,6 @@ class SETS():
     
     def setupInfoboxFrame(self, item, key, environment='space', tooltip=None): #qwer <- thats for me to get here quickly lol
         """Set up infobox frame with given item"""
-        
-        if environment == 'skill':
-            frame = self.skillInfoboxFrame
-        elif environment == 'ground':
-            frame = self.groundInfoboxFrame
-        else:
-            frame = self.shipInfoboxFrame
-
         if item is not None and 'item' in item:
             name = item['item']
         elif isinstance(item, str):
@@ -2770,10 +2762,18 @@ class SETS():
             self.logWriteSimple('InfoboxFail', environment, 4, tags=["NO NAME", key])
             return
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
-        
         if self.displayedInfoboxItem == name:
             return
         self.displayedInfoboxItem = name
+
+        if environment == 'skill':
+            frame = self.skillInfoboxFrame
+        elif environment == 'ground':
+            frame = self.groundInfoboxFrame
+        else:
+            frame = self.shipInfoboxFrame
+        
+        frame.pack_propagate(False)
 
         if key is not None and key != '':
             self.precacheEquipment(key)
@@ -2796,7 +2796,7 @@ class SETS():
         
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
         mtfr = Frame(frame, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
-        mtfr.pack(fill="both",expand=True,side=TOP)
+        mtfr.pack(fill="both",expand=False,side=TOP)
         text = Text(mtfr, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat")
         
         text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
@@ -2824,7 +2824,7 @@ class SETS():
                 text.insert(END, ' '+item['mark'], 'name')
             if 'modifiers' in item and item['modifiers']:
                 text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
-            lines = text.getDH("Helvetica", 15, "bold", "equipmenthead")
+            lines = self.getDH(text, "Helvetica", 15, "bold", "equipmenthead")
             text.configure(height=lines)
             html = self.cache['equipment'][key][name]
             if 'rarity' in item and item['rarity']:
@@ -2835,7 +2835,7 @@ class SETS():
                 whotext = Text(mtfr, font=('Helvetica', 10), bg='#090b0d', fg='#ff6347', wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat")
                 whotext.grid(row=1, column=0)
                 whotext.insert(END, html["who"])
-                whotext.configure(height=whotext.getDH("Helvetica", 10, "normal"))
+                whotext.configure(height=self.getDH(whotext,"Helvetica", 10, "normal"))
             Frame(mtfr, background='#090b0d', highlightthickness=0, highlightcolor='#090b0d').grid(row=2,column=0,sticky="nsew")
             contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
             contentframe.grid(row=3, column=0, sticky="nsew")
@@ -2859,7 +2859,7 @@ class SETS():
             text.insert(END, name+"\n", 'starshipTraitHead')
             text.insert(END, "Starship Trait\n", 'head')
             text.insert(END, "Placeholder for obtain information", "subhead")
-            text.configure(height=text.getDH("Helvetica", 15, "bold", "traithead"))
+            text.configure(height=self.getDH(text, "Helvetica", 15, "bold", "traithead"))
             Frame(mtfr, background='#090b0d', highlightthickness=0, highlightcolor='#090b0d').grid(row=2,column=0,sticky="nsew")
             contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
             contentframe.grid(row=3, column=0, sticky="nsew")
@@ -2942,11 +2942,9 @@ class SETS():
         lines = int(l[0])-1  
         text.configure(height=lines)'''
 
-        #text.getDH(text.winfo_width())
-        #text.update()
-        #print(text.getDH(text.winfo_width(), fhead))
-
         text.configure(state=DISABLED)
+        frame.pack_propagate(True)
+
 
     def setupInfoboxFrameStatic(self, item, key, environment='space', tooltip=None):
         """Set up infobox frame with given item"""
@@ -3556,13 +3554,13 @@ class SETS():
         infoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
         
         buildTagFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
-        buildTagFrame.pack(fill=X, expand=True, side=BOTTOM)
+        buildTagFrame.pack(fill=X, expand=False, side=BOTTOM)
 
         descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
-        descFrame.pack(fill=X, expand=True, side=BOTTOM)
+        descFrame.pack(fill=X, expand=False, side=BOTTOM)
         
         infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        infoboxFrame.pack(fill=BOTH, expand=True, side=BOTTOM)
+        infoboxFrame.pack(fill=BOTH, expand=False, side=TOP)
                 
         if environment == 'skill':
             self.skillInfoFrame = infoFrame
