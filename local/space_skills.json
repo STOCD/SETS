@@ -416,17 +416,17 @@
       "nodes": [
         {
           "name": "Shield Hardness 1",
-          "image": "Science_Skill_1_R1",
+          "image": "Science_Skill_2_R1",
           "desc": "+50 Shield Hardness<br>Total Additional Shield Damage Negation = +10%"
         },
         {
           "name": "Shield Hardness 2",
-          "image": "Science_Skill_1_R2",
+          "image": "Science_Skill_2_R2",
           "desc": "+35 Shield Hardness (Improved)<br>Total Additional Shield Damage Negation = +17%"
         },
         {
           "name": "Shield Hardness 3",
-          "image": "Science_Skill_1_R3",
+          "image": "Science_Skill_2_R3",
           "desc": "+15 Shield Hardness (Advanced)<br>Total Additional Shield Damage Negation = +20%"
         }
       ]
