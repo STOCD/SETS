@@ -374,7 +374,8 @@ class SETS():
         
         return textBlock
         
-    def deWikify(self, textBlock, deHTML=True, leaveHTML=False):
+    def deWikify(self, textBlock, leaveHTML=False):
+        textBlock = self.deHTML(textBlock, leaveHTML) # required first-- the below are *secondary* filters due to wiki formatting
         textBlock = textBlock.replace('&lt;',"<")
         textBlock = textBlock.replace('&gt;',">")
         textBlock = textBlock.replace('&#34;', '"')
@@ -385,11 +386,7 @@ class SETS():
         # clean up wikitext
         textBlock = textBlock.replace('\x7f', '')
         # \u007f'&quot;`UNIQ--nowiki-00000000-QINU`&quot;'\u007f
-        textBlock = re.sub('\'\"`UNIQ--nowiki-0000000.-QINU`\"\'', '*', textBlock)
-        textBlock = re.sub('\'\"`UNIQ--nowiki-0000001.-QINU`\"\'', '*', textBlock)
-        textBlock = re.sub('\'\"`UNIQ--nowiki-0000002.-QINU`\"\'', '*', textBlock)
-        textBlock = re.sub('\'\"`UNIQ--nowiki-0000003.-QINU`\"\'', '*', textBlock)
-        textBlock = re.sub('\'\"`UNIQ--nowiki-0000004.-QINU`\"\'', '*', textBlock)
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', '\*', textBlock)
         if "[[" and "|" in textBlock:
             while "[[" and "|" in textBlock:
                 start = textBlock.find("[[")
@@ -402,8 +399,6 @@ class SETS():
         textBlock = textBlock.replace("{{","").replace("}}","")
         textBlock = textBlock.replace("&amp;", "&")
         textBlock = textBlock.replace("&#42;","*")
-        #if deHTML == False:
-            #textBlock = self.deHTML(textBlock, leaveHTML)
         return textBlock
     
     def loadLocalImage(self, filename, width = None, height = None, forceAspect=False):
@@ -600,7 +595,7 @@ class SETS():
             name = re.sub(' Officer', '', name)
             # keep Miracle Worker currently
             environment = item['environment'] if 'environment' in item else ''
-            description = self.deWikify(item['description']) if 'description' in item else ''
+            description = self.deWikify(item['description'], leaveHTML=True) if 'description' in item else ''
             if not name:
                 # other reps
                 pass
@@ -610,7 +605,7 @@ class SETS():
                     if not 'secondary' in item or item['secondary'] != 'yes':
                         self.cache['specsPrimary'][name] = description
                 if 'boff' in item and item['boff'] == 'yes' and (environment == "ground" or environment == "both"):
-                    self.cache['specsGroundBoff'][self.deWikify(name)] = description
+                    self.cache['specsGroundBoff'][self.deWikify(name)] = self.deWikify(description, leaveHTML=True)
 
         self.logWriteCounter('Specs', '(json)', len(self.cache['specsPrimary']))
         self.logWriteCounter('Specs2', '(json)', len(self.cache['specsSecondary']))
@@ -623,7 +618,7 @@ class SETS():
             self.cache['shipTraitsWithImages']['cache'] = []
         
         if not name in self.cache['shipTraits']:
-            self.cache['shipTraits'][name] = self.deWikify(desc)
+            self.cache['shipTraits'][name] = self.deWikify(desc, leaveHTML=True)
             self.cache['shipTraitsWithImages']['cache'].append((name,self.imageFromInfoboxName(name)))
             self.logWriteSimple('precacheShipTrait', '', 5, tags=[name])
 
@@ -666,7 +661,7 @@ class SETS():
             self.cache['traitsWithImages'][type][environment] = []
             
         if not name in self.cache['traits'][environment]:
-            self.cache['traits'][environment][name] = self.deWikify(desc)
+            self.cache['traits'][environment][name] = self.deWikify(desc, leaveHTML=True)
 
             self.cache['traitsWithImages'][type][environment].append((name,self.imageFromInfoboxName(name)))
             self.logWriteSimple('precacheTrait', '', 4, tags=[type, environment, name, '|'+str(len(desc))+'|'])
@@ -816,6 +811,7 @@ class SETS():
         self.versionJSONminimum = 0
         self.versionJSON = 2022020203
         self.clearing = False
+        self.shipImageResizeCount = 0
         self.build = {
             'versionJSON': self.versionJSON,
             'boffs': dict(),
@@ -1224,7 +1220,7 @@ class SETS():
             self.cache['boffTooltips'][environment] = dict()
         if not name in self.cache['boffTooltips'][environment]:
             # Longer descriptions stored only once
-            self.cache['boffTooltips'][environment][name] = self.deWikify(desc)
+            self.cache['boffTooltips'][environment][name] = self.deWikify(desc, leaveHTML=True)
         
         if not environment in self.cache['boffAbilities']:
             self.cache['boffAbilities'][environment] = dict()
@@ -2309,6 +2305,7 @@ class SETS():
         # on ship change / removal
         # Clear specs so we don't gather specs as we change
         self.build['boffseats']['space_spec'] = [None] * 6
+        self.shipImageResizeCount = 0
         
         if not self.persistent['keepTemplateOnShipChange']:
             self.build['playerShipName'] = ''
@@ -2586,7 +2583,7 @@ class SETS():
     getDH = getDisplayedTextHeight
     
     def compensateInfoboxString(self, text):
-        text = self.deWikify(text, deHTML=False)
+        text = self.deWikify(text, leaveHTML=True)
         text = text.replace("<p>","")
         text = text.replace('<br>\n', '\n')
         text = text.replace('<br/>\n', '\n')
@@ -3328,8 +3325,9 @@ class SETS():
 
                 self.shipImageWidth  = width-1
                 self.shipImageHeight = height-7
-                if resizeShip: 
+                if resizeShip and self.shipImageResizeCount < 3: 
                     self.setupShipImageFrame()
+                    self.shipImageResizeCount += 1
         else:
             self.shipImageWidth  = self.imageBoxX
             self.shipImageHeight = self.imageBoxY
