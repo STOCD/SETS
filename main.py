@@ -1376,7 +1376,7 @@ class SETS():
                 try:
                     self.buildImport = json.load(inFile)
                 except:
-                    self.logWriteTransaction('Template File', 'load complaint', '', configFile, 0)
+                    self.logWriteTransaction('Template File', 'load complaint', '', inFilename, 0)
         
         if 'versionJSON' not in self.buildImport and not force:
             self.logWriteTransaction('Template File', 'version missing', '', inFilename, 0)
@@ -2219,6 +2219,7 @@ class SETS():
         backendName = name
         args = [rankName if environment=='space' else rank, row, col, 'skill']
         #self.logWriteSimple('SkillButton', 'create', 2, [rank, row, col, environment, name])
+        if not environment in self.build['skilltree']: self.build['skilltree'][environment] = dict()
 
         if name and col != 3:
             if environment == 'space':
