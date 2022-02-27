@@ -6,7 +6,7 @@ from tkinter.ttk import Progressbar
 from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, time
+import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, time, platform
 import numpy as np
 
 CLEANR = re.compile('<.*?>') 
@@ -1375,7 +1375,8 @@ class SETS():
             try:
                 self.buildImport = json.loads(self.decodeBuildFromImage(inFilename))
             except:
-                self.logWriteTransaction('Template File', 'PNG load complaint', '', inFilename, 0)
+                self.logWriteTransaction('Template File', 'PNG load error', '', inFilename, 0)
+                return
         else:
             with open(inFilename, 'r') as inFile:
                 try:
@@ -3786,7 +3787,7 @@ class SETS():
         self.window.call('tk', 'scaling', factor)
         self.itemBoxX = self.itemBoxX * scale
         self.itemBoxY = self.itemBoxY * scale
-        self.logminiWrite('{:>4}dpi (x{:>0.2}) '.format(self.dpi, (factor * scale)))
+        self.logminiWrite('{} {} | {:>4}dpi (x{:>0.2}) '.format(platform.system(), platform.release(), self.dpi, (factor * scale)))
 
 
     def logDisplayUpdate(self):
