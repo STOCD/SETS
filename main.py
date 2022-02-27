@@ -1392,16 +1392,17 @@ class SETS():
             logNote = ' (fields:['+str(len(self.buildImport))+'=>'+str(len(self.build))+']='
             self.build.update(self.buildImport)
             logNote = logNote+str(len(self.build))+' merged)'
-            
+
             self.resetBackend(rebuild=True)
             self.resetBuildFrames()
 
             self.setupCurrentBuildFrames()
-            
+
             if force:
                 logNote=' (FORCE LOAD)'+logNote
 
             self.logWriteTransaction('Template File', 'loaded', '', inFilename, 0, [logNote])
+
             self.resetAfterImport()
             self.logWriteBreak('IMPORT PROCESSING END')
             return True
@@ -3120,7 +3121,8 @@ class SETS():
     def setupFooterFrame(self):
         self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
         self.footerFrame.pack(fill='both', side='bottom', expand=False)
-        f = font=('Helvetica', 10, 'bold')
+        f = font=('Helvetica', 9)
+        f2 = font=('Helvetica', 10, 'bold')
         
         self.footerFrameL = Frame(self.footerFrame, bg='#c59129')
         self.footerFrameL.grid(row=0, column=0, sticky='w')
@@ -3130,12 +3132,12 @@ class SETS():
         self.footerFrameM = Frame(self.footerFrame, bg='#c59129')
         self.footerFrameM.grid(row=0, column=1, sticky='ew')
         self.footerFrameM.grid_columnconfigure(0, weight=1, uniform="footerlabel")
-        self.footerProgressBar = Progressbar(self.footerFrameM, orient='horizontal', mode='indeterminate', length=200)
+        self.footerProgressBar = Progressbar(self.footerFrameM, orient='horizontal', mode='indeterminate', length=120)
         self.footerProgressBar.grid(row=0, column=0, sticky='ew')
         
         self.footerFrameR = Frame(self.footerFrame, bg='#c59129')
         self.footerFrameR.grid(row=0, column=2, sticky='e')
-        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=f)
+        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=f2)
         footerLabelR.grid(row=0, column=0, sticky='e')
         
         self.footerFrame.grid_columnconfigure(0, weight=2, uniform="footerlabel")
@@ -3148,12 +3150,14 @@ class SETS():
         
     def setFooterFrame(self, leftnote, rightnote=None):
         """Set up footer frame with given item"""
+        leftnote = leftnote[:150]
+        rightnote = rightnote[:60]
 
         if not len(leftnote):
             self.log.set(self.log.get())
         else:
             self.log.set(leftnote)
-            
+
         if not len(rightnote):
             self.logmini.set(self.logmini.get())
         else:
