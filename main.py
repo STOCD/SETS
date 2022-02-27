@@ -374,18 +374,22 @@ class SETS():
         
         return textBlock
         
-    def deWikify(self, textBlock, leaveHTML=False):
-        textBlock = self.deHTML(textBlock, leaveHTML) # required -- the below are *secondary* filters due to wiki formatting
+    def deWikify(self, textBlock, deHTML=True, leaveHTML=False):
         textBlock = textBlock.replace('&lt;',"<")
         textBlock = textBlock.replace('&gt;',">")
         textBlock = textBlock.replace('&#34;', '"')
         textBlock = textBlock.replace('&#39;', '\'')
         textBlock = textBlock.replace('&#91;', '[')
         textBlock = textBlock.replace('&#93;', ']')
+        textBlock = textBlock.replace('&quot;', '\"')
         # clean up wikitext
         textBlock = textBlock.replace('\x7f', '')
         # \u007f'&quot;`UNIQ--nowiki-00000000-QINU`&quot;'\u007f
-        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', '\*', textBlock)
+        textBlock = re.sub('\'\"`UNIQ--nowiki-0000000.-QINU`\"\'', '*', textBlock)
+        textBlock = re.sub('\'\"`UNIQ--nowiki-0000001.-QINU`\"\'', '*', textBlock)
+        textBlock = re.sub('\'\"`UNIQ--nowiki-0000002.-QINU`\"\'', '*', textBlock)
+        textBlock = re.sub('\'\"`UNIQ--nowiki-0000003.-QINU`\"\'', '*', textBlock)
+        textBlock = re.sub('\'\"`UNIQ--nowiki-0000004.-QINU`\"\'', '*', textBlock)
         if "[[" and "|" in textBlock:
             while "[[" and "|" in textBlock:
                 start = textBlock.find("[[")
@@ -398,6 +402,8 @@ class SETS():
         textBlock = textBlock.replace("{{","").replace("}}","")
         textBlock = textBlock.replace("&amp;", "&")
         textBlock = textBlock.replace("&#42;","*")
+        #if deHTML == False:
+            #textBlock = self.deHTML(textBlock, leaveHTML)
         return textBlock
     
     def loadLocalImage(self, filename, width = None, height = None, forceAspect=False):
@@ -2522,28 +2528,21 @@ class SETS():
     def getDisplayedTextHeight(self, width, pString: str, pfamily, psize, pweight, identifier=""):
         """{ Call as self.getDH(Parameters) }
         Returns the height that the text inside the Widget occupies. Value is given in lines (This number may be higher than the actual number of lines to compensate
-        for different heights of different fonts), returns -1 if text widget is empty; Parameters: pfamily: Font Family of the inserted text; psize: Font size of the
+        for different heights of different fonts), returns -1 if text is empty; Parameters: width: Width of the text widget; pString: Text to be measured; pfamily: Font Family of the inserted text; psize: Font size of the
         inserted Text; pweight: Font weight of the inserted text; identifier: identifier to adjust height for special cases [may be left empty]"""
-        #print("pString: "+pString)
-        #print("width: "+str(width)+" of frame:")
         if pString != "" and pString is not None:
             lines = 1
             lin = pString.split("\n")
             while lin[-1] == "" or lin[-1] is None: del lin[-1]
-            for i in range(0, len(lin)):                                            #Iterates over each 'inserted' line to determine how many linebreaks are inserted by the wrap=word feature
+            for i in range(0, len(lin)):                                            
                 if not lin[i] == "":
                     words = lin[i].split(" ")
                     while words[-1] =="": del words[-1]
                     while " " in words: words.remove(" ")
                     while ""  in words: words.remove("")
-                    #print("words: ")
-                    #print(words)
                     currentlength = 0.0
                     for content in words:
                         currentlength = currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(content)
-                        #print("content: "+content)
-                        #print("currentlenght: "+str(currentlength))
-                        #print("width: "+str(width))
                         if currentlength > width:
                             lines = lines+1
                             currentlength = currentlength - width
@@ -2552,9 +2551,7 @@ class SETS():
                             currentlength=0
                         else:
                             currentlength = currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(" ")
-                        #print("lines: "+str(lines))
                 lines = lines+1
-            #print("final lines: "+str(lines))
             lines = lines-1
             hgt=1
             if identifier == "equipmenthead":                                             #This structure compensates for the different height of different text size
@@ -2571,10 +2568,12 @@ class SETS():
                     hgt = 3.5
                 elif lines == 4:
                     hgt = 5
+            elif identifier == "personaltrait":
+                hgt = lines+1
+            elif identifier == "boff":
+                hgt = lines+1
             elif identifier == "":
                 hgt=lines
-            #print("hgt: "+str(hgt))
-            #print("----------------------------------------------------------------")
             return hgt                      
         else:
             return -1
@@ -2583,7 +2582,8 @@ class SETS():
     getDH = getDisplayedTextHeight
     
     def compensateInfoboxString(self, text):
-        text = self.deWikify(text, leaveHTML=True)
+        text = self.deWikify(text, deHTML=False)
+        text = text.replace("<p>","")
         text = text.replace('<br>\n', '\n')
         text = text.replace('<br/>\n', '\n')
         text = text.replace('<br />\n', '\n')
@@ -2593,29 +2593,30 @@ class SETS():
         text = text.replace('<hr/>', "\n––––––––––––––––––––––––––––––\n")
         text = text.replace('<hr>', "\n––––––––––––––––––––––––––––––\n")
         text = text.replace('<hr />', "\n––––––––––––––––––––––––––––––\n")
+        text = text.replace('<li> ', '\n*')
+        text = text.replace(' <li>', '\n*')
+        text = text.replace('<li>', '\n*')
         text = text.replace(" *", "*")
-        #deHTML will be integrated into insertInfoboxParagraph(), because some HTML tokens are required for formatting text insets and lists
         return text
         
     def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, framewidth): #returns text string that has to be placed a level above (for recursion)
+        """Inserts Infobox paragraph into a frame"""
         mainframe = Frame(inframe, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
         mainframe.grid(row=gridrow,column=0, sticky="nsew")
         inframe.rowconfigure(gridrow, weight=0)
         inframe.rowconfigure(gridrow+1, weight=1)
         inframe.columnconfigure(0, weight=1)
         inframe.columnconfigure(1, weight=1)
-        ###print(ptext)
-        if ("\n:" in ptext or ptext.startswith(":")) and not ptext.startswith("*"):
-            ###print("here1")
+        ptext = ptext.strip()
+        if ("\n:" in ptext or ptext.startswith(":")) and not ptext.startswith("*") and not ptext.startswith("<ul>"):
             inserttext1 = ""
             inserttext2 = ""
             passtext = ""
             occs = [i.start() for i in re.finditer('\n:', ptext)]
-            ###print(occs)
             if ptext.startswith(":"):
                 end=0
                 if occs == []:
-                    end = len(ptext)-1
+                    end = -2
                 elif "\n" in ptext[:occs[0]] :
                     end = ptext.find("\n")
                 else:
@@ -2624,7 +2625,7 @@ class SETS():
                             end = ptext.find("\n", occs[j]+1)
                             break
                     if end==0:
-                        if "\n" in ptext.replace("\n:",""):
+                        if "\n" in ptext.replace("\n:","").strip():
                             end = ptext.find("\n", occs[len(occs)-1]+1)
                         else:
                             end=-2
@@ -2639,14 +2640,10 @@ class SETS():
                 for k in range(0, len(occs)-1):
                     if "\n" in ptext[occs[k]+1:occs[k+1]]:
                         end = ptext.find("\n", occs[k], occs[k+1])
-                        ###print("end1: ")
-                        ###print(end)
                         break
                 if end == 0:
                     if "\n" in ptext[occs[len(occs)-1]+1:]:
                         end = ptext.find("\n", occs[len(occs)-1]+1)
-                        ###print("end2: ")
-                        ###print(end)
                     else:
                         end=-2
                 inserttext1 = ptext[:start]
@@ -2655,13 +2652,65 @@ class SETS():
                 else:
                     passtext = ptext[start+2:end].replace("\n:", "\n")
                     inserttext2 = ptext[end+1:]
+        elif ("<ul>" in ptext or ptext.startswith("<ul>")) and not ptext.startswith("*"):
+            inserttext1 = ""
+            inserttext2 = ""
+            passtext = ""
+            occs = [i.start() for i in re.finditer('<ul>', ptext)]
+            occs2 = [i.start() for i in re.finditer('</ul>', ptext)]
+            if ptext.startswith("<ul>"):
+                end = 0
+                if len(occs)>1:
+                    if len(occs2)==0:
+                        end = -2
+                    elif occs[0]<occs2[0] and occs2[0]<occs[1]:
+                        end = ptext.find("</ul>")
+                    else:
+                        c = int(0)
+                        while occs[c]<occs2[0]:
+                            if (c+1)<len(occs): c = c+1
+                            else: break
+                        try:
+                            end = occs[c]
+                        except IndexError:
+                            end = -2
+                else:
+                    if "</ul>" in ptext: end = ptext.find("</ul>")
+                    else: end = -2
+                if end != -2:
+                    passtext = ptext[:end]
+                    inserttext2 = ptext[end+5:]
+                else: passtext=ptext[4:]
+            else:
+                start = occs[0]
+                end = 0
+                inserttext1 = ptext[:start]
+                if len(occs)>1:
+                    if len(occs2) == 0:
+                        end=-2
+                    elif occs[0]<occs2[0] and occs2[0]<occs[1]:
+                        end = ptext.find("</ul>")
+                    else:
+                        c = int(0)
+                        while occs[c]<occs2[0]:
+                            if (c+1)<len(occs): c = c+1
+                            else: break
+                        try:
+                            end = occs[c]
+                        except IndexError:
+                            end = -2
+                else:
+                    if "</ul>" in ptext: end = ptext.find("</ul>")
+                    else: end = -2
+                if end != -2:
+                    passtext = ptext[start+4:end]
+                    inserttext2 = ptext[end+5:]
+                else: passtext=ptext[start:]
         elif "\n*" in ptext or ptext.startswith("*"):
-            ###print("here2")
             inserttext1 = ""
             inserttext2 = ""
             passtext = ""
             occs = [i.start() for i in re.finditer('\n\*', ptext)]
-            ###print(occs)
             if ptext.startswith("*"):
                 end=0
                 if occs == []:
@@ -2679,7 +2728,7 @@ class SETS():
                         else:
                             end=-2
                 if end == -2:
-                    passtext = ptext[1:].replace("\n*", "\n• ").replace("*","• ")
+                    passtext = ptext.replace("\n*", "\n• ").replace("*","• ")
                 else:
                     passtext = ptext[0:end+1].replace("\n*","\n• ").replace("*","• ")
                     inserttext2 = ptext[end+2:]
@@ -2691,53 +2740,27 @@ class SETS():
                         end = ptext.find("\n", occs[k]+1)
                         break
                 if end == 0:
-                    ###print("occs: ")
-                    ###print(occs)
-                    ###print("len(occs): ")
-                    ###print(len(occs))
-                    ###print("ptext: ")
-                    ###print(ptext)
-                    ###print("sliced: ")
-                    ###print(ptext[occs[len(occs)-1]+2:])
-                    ###print(occs[len(occs)-1])
                     if "\n" in ptext[occs[len(occs)-1]+2:]:
                         end = ptext.find("\n", occs[len(occs)-1]+2)
-                        ###print(end)
                     else:
                         end=-2
-                ###print("inserttext1:")
                 inserttext1 = ptext[:start]
-                ###print(inserttext1)
-                ###print("start / end: "+str(start)+" / "+str(end))
                 if end == -2:
                     passtext = ptext[start+1:].replace("\n*", "\n• ").replace("*","• ")
-                    ###print("passtext: ")
-                    ###print(passtext)
                 else:
                     passtext = ptext[start+1:end].replace("\n*", "\n• ").replace("*","• ")
                     inserttext2 = ptext[end+1:]
-                    ###print("2passtext: ")
-                    ###print(passtext)
-                    ###print("inserttext2: ")
-                    ###print(inserttext2)
         elif (not ("\n:" or "*" or "<ul>" or "<li>") in ptext) and not ptext.startswith(":"):
-            ###print("here0")
             inserttext1 = ptext
             inserttext2 = ""
             passtext = ""
         rowinsert=0
         if not inserttext1 == "":
-            #maintextheight = self.getDH(framewidth, inserttext1, pfamily, psize, pweight)
-            #testtext = Text(mainframe, relief="flat", height=1, width=1)
-            #testtext.grid(row=rowinsert,column=0)
-            #print("maintextheight: "+str(maintextheight))
-            #maintext.configure(height=maintextheight)
             maintext = Text(mainframe, bg='#090b0d', fg=pcolor, wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat", font=(pfamily, psize, pweight), height=self.getDH(framewidth, inserttext1, pfamily, psize, pweight))
             maintext.grid(row=rowinsert,column=0)
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
             inframe.update()
-            #print("inframewidth: "+str(inframe.winfo_width()))
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
             maintext.insert(END, inserttext1)
@@ -2752,8 +2775,6 @@ class SETS():
             mainframe.columnconfigure(1, weight=1)
             lineframe.rowconfigure(0, weight=0)
             lineframe.columnconfigure(0, weight=1, minsize=12)
-            lineframe.update()
-           # print("lineframewidth: "+str(lineframe.winfo_width()-12))
             lineframe.columnconfigure(1, weight=7)
             lineframe.columnconfigure(2, weight=1)
             daughterframe = Frame(lineframe, bg="#090b0d", highlightcolor="#090b0d", highlightthickness=0)
@@ -2791,7 +2812,7 @@ class SETS():
             frame = self.groundInfoboxFrame
         else:
             frame = self.shipInfoboxFrame
-        
+        frame.configure(highlightthickness=0)
         frame.pack_propagate(False)
 
         if key is not None and key != '':
@@ -2819,13 +2840,12 @@ class SETS():
         text = Text(mtfr, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat", height=3.5)
         
         text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
-        #equipment formatting tags
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
-        text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
-        #text.tag_configure('who', foreground='#ff6347', font=('Helvetica', 10, 'bold' ))
-        #starship trait formatting tags 
+        text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' )) 
         text.tag_configure('starshipTraitHead', foreground='#42afca', font=('Helvetica', 15, 'bold' ))
+        text.tag_configure('boffhead', foreground="#42afca", font=('Helvetica', 15, 'bold'))
+        
         
         text.grid(row=0, column=0)
         mtfr.rowconfigure(0, weight=0)
@@ -2899,81 +2919,23 @@ class SETS():
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['shipTraits'][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
             printed = True
 
-        '''text.pack(fill="x", expand=True, side=TOP)
-        if name is None or name == '':
-            return
-        
-
-
-
-        printed = False
-        
-        #if 'tooltip' in item and item['tooltip']:
-        #    text.insert(END, html['tooltip'])
-            
-        if (name in self.cache['shipTraits'])and not printed:
-            text.insert(END, name+"\n", 'starshipTraitHead')
-            text.insert(END, "Starship Trait\n","head")
-            text.insert(END, "\n", "distance")
-            text.insert(END, self.cache['shipTraits'][name])
-            printed = True
-            
-        if tooltip is not None: text.insert(END, tooltip)
-
         if (environment in self.cache['traits'] and name in self.cache['traits'][environment]) and not printed:
-            text.insert(END, name+"\n", 'name')
-            text.insert(END, self.cache['traits'][environment][name])
+            text.insert(END, name+"\n", 'starshipTraitHead')
+            text.update()
+            text.configure(height=self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", "personaltrait"))
+            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            contentframe.grid(row=2, column=0, sticky="nsew")
+            self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['traits'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
             printed = True
-            
+
         if (environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]) and not printed:
-            text.insert(END, name+"\n", 'name')
-            text.insert(END, self.cache['boffTooltips'][environment][name])
+            text.insert(END, name, 'boffhead')
+            text.update()
+            text.configure(height=self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", "boff"))
+            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            contentframe.grid(row=2, column=0, sticky="nsew")
+            self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['boffTooltips'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
             printed = True
-                
-        if key in self.cache['equipment'] and name in self.cache['equipment'][key]:
-            # Show the infobox data from json
-            text.insert(END, name, 'name')
-            if 'mark' in item and item['mark']:
-                text.insert(END, ' '+item['mark'], 'name')
-            if 'modifiers' in item and item['modifiers']:
-                text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
-            text.insert(END, '\n')
-            
-            html = self.cache['equipment'][key][name]
-
-            if 'rarity' in item and item['rarity']:
-                text.insert(END, item['rarity']+' ', 'rarity')
-            if 'type' in html and html['type']:
-                text.insert(END, html['type'], 'rarity')
-            if ('rarity' in item and item['rarity']) or ('type' in html and html['type']):
-                text.insert(END, '\n')
-            text.insert(END, '\n', 'distance')
-
-            for i in range(1,9):
-                t = html["head"+str(i)].strip()                             #.replace("*","  • ")
-                if t.strip() != '':
-                    text.insert(END, '\n', 'distance')
-                    text.insert(END, compensate(t)+'\n','head')
-                t = html["subhead"+str(i)].strip()
-                if t.strip() != '':
-                    text.insert(END, '\n', 'distance')
-                    text.insert(END, compensate(t)+'\n', 'subhead')
-                t = html["text"+str(i)].strip()
-                if t.strip() != '':
-                    text.insert(END, '\n', 'distance')
-                    text.insert(END, compensate(t)+'\n')
-            printed = True
-        
-        #text.configure(height=int(text.count("0.0",END,'displaylines')[0]))
-        #teststr = text.get("1.0",END)
-        #print(int(teststr.count("\n")))
-        #text.configure(height=int(teststr.count("\n")))
-        """while text.get(int(text.index(END).split(".")[0]-1),int(text.index(END).split(".")[0])) == "" or "\n":
-            text.delete(int(text.index(END).split(".")[0]),END)"""
-        lines=1
-        l = text.index("end").split(".")
-        lines = int(l[0])-1  
-        text.configure(height=lines)'''
 
         text.configure(state=DISABLED)
         frame.pack_propagate(True)
