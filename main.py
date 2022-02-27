@@ -1373,10 +1373,13 @@ class SETS():
         if not inFilename: return
         
         self.requestWindowUpdateHold(30) # Still requires tuning
-        if inFilename.endswith('.png'):
+        if inFilename.lower().endswith('.png'):
             # image = Image.open(inFilename)
             # self.build = json.loads(image.text['build'])
-            self.buildImport = json.loads(self.decodeBuildFromImage(inFilename))
+            try:
+                self.buildImport = json.loads(self.decodeBuildFromImage(inFilename))
+            except:
+                self.logWriteTransaction('Template File', 'PNG load complaint', '', inFilename, 0)
         else:
             with open(inFilename, 'r') as inFile:
                 try:
