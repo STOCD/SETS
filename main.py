@@ -375,6 +375,7 @@ class SETS():
         return textBlock
         
     def deWikify(self, textBlock, leaveHTML=False):
+        textBlock = self.deHTML(textBlock, leaveHTML) # required -- the below are *secondary* filters due to wiki formatting
         textBlock = textBlock.replace('&lt;',"<")
         textBlock = textBlock.replace('&gt;',">")
         textBlock = textBlock.replace('&#34;', '"')
@@ -535,6 +536,13 @@ class SETS():
     def precacheShips(self):
         self.shipNames = [e["Page"] for e in self.ships]
         self.logWriteCounter('Ships', '(json)', len(self.shipNames), ['space'])
+        
+    def predownloadGearImages(self):
+        pass
+        
+    def predownloadShipImages(self):
+        for e in self.ships:
+            self.fetchOrRequestImage(self.wikiImages+e['image'].replace(' ','_'), e['Page'], self.shipImageWidth, self.shipImageHeight)
         
     def precacheSpaceSkills(self):
         if 'spaceSkills' in self.cache and len(self.cache['spaceSkills']) > 0:
@@ -1715,6 +1723,8 @@ class SETS():
             self.precachePreload()
         elif type == 'cacheSave': self.cacheSave()
         elif type == 'openLog': self.logWindowCreate()
+        elif type == 'predownloadShipImages': self.predownloadShipImages()
+        elif type == 'predownloadGearImages': self.predownloadGearImages()
         elif type == 'backupCache':
             # Backup state file
             # Backup caches (leave as current as well)
@@ -3676,6 +3686,8 @@ class SETS():
             'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'varName' : 'clearfactionImages' },
             'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'varName' : 'clearmemcache' },
             'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearimages' },
+            'Download ship images (VERY SLOW!)'     : { 'col' : 2, 'type' : 'button', 'varName' : 'predownloadShipImages' },
+#            'Download gear images (VERY SLOW!)'     : { 'col' : 2, 'type' : 'button', 'varName' : 'predownloadGearImages' },
 #            'Save cache binaries (TEST)'            : { 'col' : 2, 'type' : 'button', 'varName' : 'cacheSave' },
 
 
@@ -3936,7 +3948,7 @@ class SETS():
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
         #self.currentFrameUpdateTo(self.spaceBuildFrame, first=True)
-        self.precachePreload(limited=self.args.nocache or self.persistent['noPreCache'])
+        self.precachePreload(limited=(self.args.nocache or self.persistent['noPreCache']))
         
         self.setupLibraryFrame()
         self.setupSettingsFrame()
