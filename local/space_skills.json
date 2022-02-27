@@ -298,7 +298,7 @@
     {
       "skill": [
         "Electro-Plasma System Flow",
-        ""
+        "Full Impulse Energy Shunt"
       ],
       "gdesc": [
         "This skill improves the speed at which power can flow between all of your subsystems. Each point of Electro-Plasma Flow skill improves the base value of your Power Transfer Rate by 1%.<br><br>Your base Power Transfer Rate allows up to a maximum of 5 subsystem power to be added or subtracted from a subsystem every 1 second. A bonus of 100% would move the same amount of subsystem power twice as quickly.",
