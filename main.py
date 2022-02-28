@@ -3549,6 +3549,7 @@ class SETS():
         elif environment == 'ground': parentFrame = self.groundBuildFrame
         else: parentFrame = self.spaceBuildFrame
         
+        parentFrame.grid_propagate(False)
         parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
         for i in range(4):
             parentFrame.grid_columnconfigure(i, weight=5, uniform="mainCol"+environment)
