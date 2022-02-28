@@ -1567,25 +1567,6 @@ class SETS():
         self.skillLabelCallback(e, canvas, img, i, key, args, environment)
     
         return
-        # Original actions below, prune once new functions stable
-        rankReqs = [0, 5, 15, 25, 35]
-        if(skill in self.build['skills'][rank]):
-            if (rank < 4 and len(self.build['skills'][rank+1])>0):
-                if self.backend['skillCount'] > rankReqs[rank+1]:
-                    self.build['skills'][rank].remove(skill)
-                    self.backend['skillLabels'][skill].configure(bg='gray')
-                    self.backend['skillCount'] -= 1
-                    if self.backend['skillCount'] < rankReqs[rank]:
-                        for s in self.backend['skillNames'][rank]:
-                            self.backend['skillLabels'][s].configure(bg='black')
-            return
-        if self.backend['skillCount'] < rankReqs[rank] or self.backend['skillCount'] == 46: return
-        self.build['skills'][rank].append(skill)
-        self.backend['skillLabels'][skill].configure(bg='yellow')
-        self.backend['skillCount'] += 1
-        if rank < 4 and self.backend['skillCount'] == rankReqs[rank+1]:
-            for s in self.backend['skillNames'][rank+1]:
-                self.backend['skillLabels'][s].configure(bg='grey')
 
     def redditExportDisplayGround(self, textframe):
         if not self.build['eliteCaptain']:
@@ -2788,7 +2769,7 @@ class SETS():
             maintext.grid(row=rowinsert,column=0)
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
-            inframe.update()
+            #inframe.update() # forcing updates can alter the frames and is causing error conditions in the next couple of statements.  Disabling does not have any immediate negative impact, so leaving off for the moment.
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
             maintext.insert(END, inserttext1)
