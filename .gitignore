@@ -145,3 +145,6 @@ test.json
 .config.json
 .state_SETS.json
 main.py.bak
+
+# Pycharm data
+.idea/

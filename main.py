@@ -1,12 +1,12 @@
-from textwrap import fill
+# from textwrap import fill
 from tkinter import *
 from tkinter import filedialog
 from tkinter import font
 from tkinter.ttk import Progressbar
-from requests.models import requote_uri
+# from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab, PngImagePlugin
-import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, time, platform
+import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, platform
 import numpy as np
 
 CLEANR = re.compile('<.*?>') 
@@ -360,9 +360,7 @@ class SETS():
   
         image = Image.open(filename)
         if(width is not None):
-            #curwidth, curheight = image.size
-            #resizeOptions = self.imageResizeDimensions(curwidth, curheight, width, height)
-            if forceAspect: image = image.resize(resizeOptions,Image.ANTIALIAS)
+            if forceAspect: image = image.resize((width, height),Image.ANTIALIAS)
             else: image.thumbnail((width, height), resample=Image.LANCZOS)
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
         return ImageTk.PhotoImage(image)
@@ -1710,7 +1708,7 @@ class SETS():
                             os.unlink(backup_path)
                         os.rename(file_path, backup_path)
                 except Exception as e:
-                    log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
+                    self.logWrite('Failed to delete %s. Reason: %s' % (file_path, e), 2)
         #self.precachePreload()
             
     def clearImagesFolder(self):
@@ -1720,7 +1718,7 @@ class SETS():
             try:
                 os.unlink(file_path)
             except Exception as e:
-                log.Write('Failed to delete %s. Reason: %s' % (file_path, e))
+                self.logWrite('Failed to delete %s. Reason: %s' % (file_path, e), 2)
                     
     def settingsButtonCallback(self, type):
         self.logWriteSimple("settingsButtonCallback", '', 2, [type])
