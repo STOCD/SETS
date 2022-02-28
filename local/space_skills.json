@@ -751,7 +751,7 @@
       ]
     },
     {
-      "skill": "Scientific Rreadiness",
+      "skill": "Scientific Readiness",
       "gdesc": "This skill provides a bonus to your Ability Recharge for all Science Bridge Officer Abilities. For each point of Scientific Readiness skill, these abilities will recharge 0.2% faster.<br><br>100% Ability Recharge bonus would reduce an ability's recharge time to half of its base value. Most abilities have a minimum recharge time which varies from ability to ability. This skill (and all other Power Recharge bonuses) can never push an ability past their minimum recharge.",
       "career": "sci",
       "linear": 0,
