@@ -581,17 +581,32 @@ class SETS():
 
     def precacheFactions(self):
         if 'factions' in self.cache and len(self.cache['factions']) > 0: return
-        self.speciesNames = []
         
+        self.speciesNames = { 'all': [] }
+        for faction in self.factionNames:
+            self.speciesNames[faction] = []
+            
         for i in range(len(self.factions)):
             name = self.factions[i]['name'] if 'name' in self.factions[i] else ''
-            playDetail = self.factions[i]['playability'] if 'playability' in self.factions[i] else ''
+            playDetail = self.factions[i]['playability'].lower() if 'playability' in self.factions[i] else ''
             traits = self.factions[i]['traits'] if 'traits' in self.factions[i] else ''
-            if len(name) and len(playDetail) and not 'officer only' in playDetail.lower() and not 'officers only' in playDetail.lower() and not 'officer]] only' in playDetail.lower() and not 'none' in playDetail.lower():
+            
+            # Must handle multiple factions, liberated borg needs to create four entries
+            # Discovery as separate Faction?
+            if 'starfleet]]' in playDetail: self.speciesNames['Federation'] += name
+            if 'dsc]]' in playDetail: self.speciesNames['DSC Federation'] += name
+            if 'kdf]]' in playDetail: self.speciesNames['Klingon'] += name
+            if 'tos]]' in playDetail: self.speciesNames['TOS Federation'] += name
+            if playDetail.startswith('dominion '): self.speciesNames['Dominion'] += name
+            
+            if 'rom]]' in playDetail or 'Playable captains with Romulan Republic' in playDetail: self.speciesNames['Romulan'] += name
+            
+            if len(name) and len(playDetail) and not 'officer only' in playDetail and not 'officers only' in playDetail and not 'officer]] only' in playDetail and not 'none' in playDetail:
                 self.cache['factions'][name] = traits
-                self.speciesNames += [name]
+                self.speciesNames['all'] += [name]
                 
-        self.speciesNames = sorted(self.speciesNames)
+        self.speciesNames['all'] = sorted(self.speciesNames['all'])
+        for faction in self.factionNames: self.speciesNames[faction] = sorted(self.speciesNames[faction])
         self.logWriteCounter('Factions', '(json)', len(self.cache['factions']))
             
     def precacheReputations(self):
@@ -771,7 +786,7 @@ class SETS():
         self.universalTypes = ['Tactical', 'Engineering', 'Science' ]
         self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
         self.rarities = ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra rare', 'Epic']
-        self.factionNames = [ 'Federation', 'Dominion', 'Klingon', 'Romulan', 'TOS Federation' ]
+        self.factionNames = [ 'Federation', 'Dominion', 'DSC Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
         self.exportOptions = [ 'PNG', 'Json' ]
         self.boffSortOptions = [ 'release', 'ranks', 'spec', 'spec2' ]
         self.consoleSortOptions = [ 'tesu', 'uets', 'utse', 'uest' ]
@@ -3287,20 +3302,20 @@ class SETS():
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
  
-        row += 1       
-        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames)
-        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
- 
-        row += 1
+        row += 1    
         myFactionNames = self.factionNames
         Label(charInfoFrame, text="Faction", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend['captain']['faction'], *myFactionNames)
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
         m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
 
-        row += 1 
+        row += 1         
+        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames['all'])
+        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
+        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+ 
+        row += 1
         Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *sorted(self.cache['specsPrimary']))
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
