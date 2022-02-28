@@ -737,21 +737,21 @@ class SETS():
 
     def copyBackendToBuild(self, key, key2=None):
         """Helper function to copy backend value to build dict"""
-        if key in self.backend and key2 == None:
+        if key in self.backend and key2 is None:
             self.build[key] = self.backend[key].get()
         elif key2 in self.backend[key]:
             self.build[key][key2] = self.backend[key][key2].get()
 
     def copyBuildToBackendBoolean(self, key, key2=None):
         """Helper function to copy build value to backend dict"""
-        if key in self.build and key2 == None:
+        if key in self.build and key2 is None:
             self.backend[key].set(1 if self.build[key] else 0)
         elif key2 in self.build[key]:
             self.backend[key][key2].set(1 if self.build[key][key2] else 0)
 
     def copyBuildToBackend(self, key, key2=None):
         """Helper function to copy build value to backend dict"""
-        if key in self.build and key2 == None:
+        if key in self.build and key2 is None:
             self.backend[key].set(self.build[key])
         elif key2 in self.build[key]:
             self.backend[key][key2].set(self.build[key][key2])
@@ -1892,9 +1892,9 @@ class SETS():
 
     def setupCurrentBuildFrames(self, environment=None):
         if not self.clearing:
-            if environment == 'space' or environment == None: self.setupSpaceBuildFrames()
-            if environment == 'ground' or environment == None: self.setupGroundBuildFrames()
-            if environment == 'skill' or environment == None: self.setupCurrentSkillBuildFrames()
+            if environment == 'space' or environment is None: self.setupSpaceBuildFrames()
+            if environment == 'ground' or environment is None: self.setupGroundBuildFrames()
+            if environment == 'skill' or environment is None: self.setupCurrentSkillBuildFrames()
 
     def setupCurrentSkillBuildFrames(self, environment=None):
         if not self.clearing:
@@ -1995,7 +1995,7 @@ class SETS():
             if image0 is None: image0=self.imageFromInfoboxName(image0Name, suffix=suffix, faction=faction) if image0Name is not None else self.emptyImage
             if image1 is None: image1=self.imageFromInfoboxName(image1Name, suffix=suffix, faction=faction) if image1Name is not None else self.emptyImage
             if not backendKey in self.backend['images']: self.backend['images'][backendKey] = [None, None]
-            if name == 'blank': pass #no backend/image
+            if name == 'blank': pass  # no backend/image
             elif name: self.backend['images'][name] = [image0, image1]
             else: self.backend['images'][backendKey][i] = [image0, image1]
         else:
@@ -3317,8 +3317,8 @@ class SETS():
     def setupShipImageFrame(self):
         try:
             self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
-            ship_image = self.backend['shipHtml']['image']
-            self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image.replace(' ','_'), self.build['ship'], self.shipImageWidth, self.shipImageHeight)
+            ship_image = self.backend['shipHtml']['image'].replace(' ','_')
+            self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image, self.build['ship'], self.shipImageWidth, self.shipImageHeight)
         except:
             self.shipImg = self.getEmptyFactionImage()
         self.setShipImage(self.shipImg)
@@ -3963,7 +3963,9 @@ class SETS():
 
         self.updateWindowSize()
 
-    def resetBuildFrames(self, types=['skill', 'ground', 'space']):
+    def resetBuildFrames(self, types=None):
+        if types is None:
+            types = ['skill', 'ground', 'space']
         for type in types:
             self.setupInfoFrame(type)
             self.setupDescFrame(type)
@@ -4082,7 +4084,7 @@ class SETS():
     def makeFilenamePath(self, filePath):
         if not os.path.exists(filePath):
             try:
-                os.MakeDirs = os.makedirs(filePath)
+                os.makedirs(filePath)
                 self.logWriteTransaction('makedirs', 'written', '', filePath, 1)
             except:
                 self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
