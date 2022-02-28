@@ -11,17 +11,17 @@
         {
           "name": "Energy Weapon Training 1",
           "image": "Tactical_Skill_1_R1",
-          "desc": "+50 Energy Weapon Training Total Damage Increase from Skill = +25%"
+          "desc": "+50 Energy Weapon Training<br>Total Damage Increase from Skill = +25%"
         },
         {
           "name": "Energy Weapon Training 2",
           "image": "Tactical_Skill_1_R2",
-          "desc": "+35 Energy Weapon Training (Improved) Total Damage Increase from Skill = +42.5%"
+          "desc": "+35 Energy Weapon Training<br>(Improved) Total Damage Increase from Skill = +42.5%"
         },
         {
           "name": "Energy Weapon Training 3",
           "image": "Tactical_Skill_1_R3",
-          "desc": "+15 Energy Weapon Training (Advanced) Total Damage Increase from Skill = +50%"
+          "desc": "+15 Energy Weapon Training<br>(Advanced) Total Damage Increase from Skill = +50%"
         }
       ]
     },
@@ -36,17 +36,17 @@
         {
           "name": "Projectile Weapon Training 1",
           "image": "Tactical_Skill_1_R1",
-          "desc": "+50 Projectile Weapon Training Total Damage Increase from Skill = +25%"
+          "desc": "+50 Projectile Weapon Training<br>Total Damage Increase from Skill = +25%"
         },
         {
           "name": "Projectile Weapon Training 2",
           "image": "Tactical_Skill_1_R2",
-          "desc": "+35 Projectile Weapon Training (Improved) Total Damage Increase from Skill = +42.5%"
+          "desc": "+35 Projectile Weapon Training<br>(Improved) Total Damage Increase from Skill = +42.5%"
         },
         {
           "name": "Projectile Weapon Training 3",
           "image": "Tactical_Skill_1_R3",
-          "desc": "+15 Projectile Weapon Training (Advanced) Total Damage Increase from Skill = +50%"
+          "desc": "+15 Projectile Weapon Training<br>(Advanced) Total Damage Increase from Skill = +50%"
         }
       ]
     },
@@ -631,7 +631,7 @@
         "Offensive Subsystem Tuning (Engines)"
       ],
       "gdesc": [
-        "This skill improves the amount of subsystem power available in your Weapons and Engines Subsystems.<br><br>Each point of Weapons Subsystem Power improves the base damage dealt by your starship energy weapons by 1%<br><br>",
+        "This skill improves the amount of subsystem power available in your Weapons and Engines Subsystems.<br><br>Each point of Weapons Subsystem Power improves the base damage dealt by your starship energy weapons by 1%",
         "This skill improves the amount of subsystem power available in your Weapons Subsystem.<br><br>Each point of Weapons Subsystem Power improves the base damage dealt by your starship energy weapons by 1%",
         "This skill improves the amount of subsystem power available in yourEngines Subsystem.<br><br>Each point of Engines Subsystem Power improves the base Turn Rate of your starship by 1%, as well as improving your Impulse Speed."
       ],
