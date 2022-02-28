@@ -580,10 +580,20 @@ class SETS():
         self.logWriteCounter('DOFF names', '(json)', len(self.cache['doffNames'][keyPhrase]), [keyPhrase])
 
     def precacheFactions(self):
-        # self.faction[#][...] -- name, playability, faction // status, traits, allegiance?
-        # prep self.cache['factions'][dict()]
-        pass
+        if 'factions' in self.cache and len(self.cache['factions']) > 0: return
+        self.speciesNames = []
         
+        for i in range(len(self.factions)):
+            name = self.factions[i]['name'] if 'name' in self.factions[i] else ''
+            playDetail = self.factions[i]['playability'] if 'playability' in self.factions[i] else ''
+            traits = self.factions[i]['traits'] if 'traits' in self.factions[i] else ''
+            if len(name) and len(playDetail) and not 'officer only' in playDetail.lower() and not 'officers only' in playDetail.lower() and not 'officer]] only' in playDetail.lower() and not 'none' in playDetail.lower():
+                self.cache['factions'][name] = traits
+                self.speciesNames += [name]
+                
+        self.speciesNames = sorted(self.speciesNames)
+        self.logWriteCounter('Factions', '(json)', len(self.cache['factions']))
+            
     def precacheReputations(self):
         if 'specsPrimary' in self.cache and len(self.cache['specsPrimary']) > 0:
             return
@@ -3260,6 +3270,7 @@ class SETS():
             Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
         
     def setupCaptainFrame(self, charInfoFrame, environment='space'):
+        self.precacheFactions()
         self.precacheReputations()
         row = 0
         Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
@@ -3666,7 +3677,7 @@ class SETS():
     def persistentSet(self, choice, varName, isBoolean=False):
         if varName is None or varName == '':
             return
-        self.logWrite('==={} = {} [{}]'.format(varName, choice, isBoolean))
+        self.logWrite('==={} = {} [{}]'.format(varName, choice, isBoolean), 3)
         if isBoolean: self.persistent[varName] = 1 if choice=='Yes' else 0
         elif varName == 'uiScale': self.persistent[varName] = float(choice)
         else: self.persistent[varName] = choice
@@ -4223,8 +4234,8 @@ class SETS():
         
         self.r_boffAbilities = self.fetchOrRequestHtml(self.wikihttp+"Bridge_officer_and_kit_abilities", "boff_abilities") 
         
-        r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
-        self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
+        #r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
+        #self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
 
     
     def __init__(self) -> None:
