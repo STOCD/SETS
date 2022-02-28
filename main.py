@@ -2554,8 +2554,8 @@ class SETS():
                         currentlength = currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(content)
                         if currentlength > width:
                             lines = lines+1
-                            currentlength = currentlength - width
-                        if currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(" ") > width:
+                            currentlength = font.Font(family=pfamily, size=psize, weight=pweight).measure(content)
+                        if currentlength + font.Font(family=pfamily, size=psize, weight=pweight).measure(" ") >= width:
                             lines = lines+1
                             currentlength=0
                         else:
@@ -2581,6 +2581,11 @@ class SETS():
                 hgt = lines+1
             elif identifier == "boff":
                 hgt = lines+1
+            elif identifier == "skill":
+                if lines == 1:
+                    hgt = 3.5
+                elif lines == 2:
+                    hgt = 5.5
             elif identifier == "":
                 hgt=lines
             return hgt                      
@@ -2626,11 +2631,11 @@ class SETS():
                 end=0
                 if occs == []:
                     end = -2
-                elif "\n" in ptext[:occs[0]] :
+                elif "\n" in ptext[:occs[0]-1]:
                     end = ptext.find("\n")
                 else:
                     for j in range(0, len(occs)):
-                        if "\n" in ptext[:occs[j]].replace("\n:",""):
+                        if "\n" in ptext[:occs[j]+1].replace("\n:",""):
                             end = ptext.find("\n", occs[j]+1)
                             break
                     if end==0:
@@ -2639,6 +2644,7 @@ class SETS():
                         else:
                             end=-2
                 if end == -2:
+
                     passtext = ptext[1:].replace("\n:", "\n")
                 else:
                     passtext = ptext[1:end].replace("\n:","\n")
@@ -2648,7 +2654,7 @@ class SETS():
                 end = 0
                 for k in range(0, len(occs)-1):
                     if "\n" in ptext[occs[k]+1:occs[k+1]]:
-                        end = ptext.find("\n", occs[k], occs[k+1])
+                        end = ptext.find("\n", occs[k]+1, occs[k+1])
                         break
                 if end == 0:
                     if "\n" in ptext[occs[len(occs)-1]+1:]:
@@ -2724,16 +2730,16 @@ class SETS():
                 end=0
                 if occs == []:
                     end = len(ptext)-1
-                elif "\n" in ptext[:occs[0]] :
+                elif "\n" in ptext[:occs[0]-1] :
                     end = ptext.find("\n")
                 else:
                     for j in range(0, len(occs)-1):
                         if "\n" in ptext[occs[j]+1:occs[j+1]].replace("\n*",""):
-                            end = ptext.find("\n", occs[j], occs[j+1])
+                            end = ptext.find("\n", occs[j]+1, occs[j+1])
                             break
                     if end==0:
                         if "\n" in ptext.replace("\n*",""):
-                            end = ptext.find("\n", occs[len(occs)-1] if occs != [] else len(ptext)-1)
+                            end = ptext.find("\n", occs[len(occs)-1]+1 if occs != [] else len(ptext)-1)
                         else:
                             end=-2
                 if end == -2:
@@ -2769,7 +2775,7 @@ class SETS():
             maintext.grid(row=rowinsert,column=0)
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
-            #inframe.update() # forcing updates can alter the frames and is causing error conditions in the next couple of statements.  Disabling does not have any immediate negative impact, so leaving off for the moment.
+            inframe.update()
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
             maintext.insert(END, inserttext1)
@@ -2815,15 +2821,25 @@ class SETS():
             return
         self.displayedInfoboxItem = name
 
+        skillcolor = "pink"
         if environment == 'skill':
             frame = self.skillInfoboxFrame
+            if key in self.cache['spaceSkills']:
+                for i in range(0,6):
+                    skillname = self.cache['spaceSkills'][key][i]['skill']
+                    if (skillname == name[:-2] and isinstance(skillname, str)) or (isinstance(skillname, list) and (name[:-2] in skillname or name in skillname)):
+                        if self.cache['spaceSkills'][key][i]['career'] == "tac":
+                            skillcolor = "#c83924"
+                        elif self.cache['spaceSkills'][key][i]['career'] == "eng":
+                            skillcolor = "#c59129"
+                        elif self.cache['spaceSkills'][key][i]['career'] == "sci":
+                            skillcolor = "#1265a3"
         elif environment == 'ground':
             frame = self.groundInfoboxFrame
         else:
             frame = self.shipInfoboxFrame
         frame.configure(highlightthickness=0)
         frame.pack_propagate(False)
-
         if key is not None and key != '':
             self.precacheEquipment(key)
         
@@ -2840,7 +2856,6 @@ class SETS():
             elif item["rarity"].lower() == "uncommon":
                 raritycolor = "#00cc00"
 
-
         self.clearFrame(frame)
         
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
@@ -2853,7 +2868,8 @@ class SETS():
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
         text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' )) 
         text.tag_configure('starshipTraitHead', foreground='#42afca', font=('Helvetica', 15, 'bold' ))
-        text.tag_configure('boffhead', foreground="#42afca", font=('Helvetica', 15, 'bold'))
+        text.tag_configure('skillhead', foreground=skillcolor, font=('Helvetica', 15, 'bold'))
+        text.tag_configure('skillsub', foreground=skillcolor, font=('Helvetica', 12, 'normal'))
         
         
         text.grid(row=0, column=0)
@@ -2900,6 +2916,7 @@ class SETS():
             Frame(mtfr, background='#090b0d', highlightthickness=0, highlightcolor='#090b0d').grid(row=2,column=0,sticky="nsew")
             contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
             contentframe.grid(row=3, column=0, sticky="nsew")
+            contentframe.grid_propagate(False)
             insertinrow = 0
             for i in range(1,9):
                 t = html["head"+str(i)].strip()
@@ -2914,6 +2931,7 @@ class SETS():
                 if t.strip() != "":
                     self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#ffffff", 10, "normal", insertinrow, text.winfo_width())
                     insertinrow = insertinrow+1
+            contentframe.grid_propagate(True)
             printed = True
         
         if (name in self.cache['shipTraits'])and not printed:
@@ -2925,7 +2943,9 @@ class SETS():
             Frame(mtfr, background='#090b0d', highlightthickness=0, highlightcolor='#090b0d').grid(row=2,column=0,sticky="nsew")
             contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
             contentframe.grid(row=3, column=0, sticky="nsew")
+            contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['shipTraits'][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
+            contentframe.grid_propagate(True)
             printed = True
 
         if (environment in self.cache['traits'] and name in self.cache['traits'][environment]) and not printed:
@@ -2934,17 +2954,70 @@ class SETS():
             text.configure(height=self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", "personaltrait"))
             contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
             contentframe.grid(row=2, column=0, sticky="nsew")
+            contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['traits'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
+            contentframe.grid_propagate(True)
             printed = True
 
         if (environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]) and not printed:
-            text.insert(END, name, 'boffhead')
+            text.insert(END, name, 'starshipTraitHead')
             text.update()
             text.configure(height=self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", "boff"))
             contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
             contentframe.grid(row=2, column=0, sticky="nsew")
+            contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['boffTooltips'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
+            contentframe.grid_propagate(True)
             printed = True
+
+        if environment == "skill":
+            skillnode = None
+            for j in range(0,6):
+                skillname = self.cache['spaceSkills'][key][j]['skill']
+                if isinstance(skillname, str) and skillname == name[:-2]:
+                    skillnode = self.cache['spaceSkills'][key][j]
+                    break
+                elif isinstance(skillname, list) and (name in skillname or name[:-2] in skillname):
+                    skillnode = self.cache['spaceSkills'][key][j]
+                    for k in range(0, len(skillnode['skill'])):
+                        if skillnode['skill'][k]==name or skillnode['skill'][k]==name[:-2]:
+                            skillindex=k
+                            break
+            if skillnode['career']=="tac": skillprofession = "Tactical "
+            elif skillnode['career']=="eng": skillprofession = "Engineering "
+            elif skillnode['career']=="sci": skillprofession = "Science "
+            if skillnode['linear']==0:
+                if int(name[-1])==1: lev=""
+                elif int(name[-1])==2: lev="Improved "
+                elif int(name[-1])==3: lev="Advanced "
+                text.insert(END, lev+name[:-2], 'skillhead')
+            elif skillnode['linear']==1:
+                if skillindex==1: text.insert(END, name, 'skillhead')
+                elif int(name[-1])==1: text.insert(END, name[:-2], 'skillhead')
+                elif int(name[-1])==2: text.insert(END, "Improved "+name[:-2], 'skillhead')
+            elif skillnode['linear']==2:
+                text.insert(END, name, 'skillhead')
+            text.insert(END, "\n"+skillprofession+"Space Skill\n"+key.title(), 'skillsub')
+            text.update()
+            if self.build['skilltree']["space"][name]:
+                text.insert(END, "\nSkill is active!", "subhead")
+                text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill")+1)
+            else:
+                text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
+            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            contentframe.grid(row=2, column=0, sticky="nsew")
+            contentframe.grid_propagate(False)
+            if skillnode['linear']==0:
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc']+"<hr>"+skillnode['nodes'][int(name[-1])-1]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            elif skillnode['linear']==1 and skillindex==0:
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][int(name[-1])-1]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            elif skillnode['linear']==1 and skillindex==1:
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][2]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            elif skillnode['linear']==2:
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][skillindex]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            contentframe.grid_propagate(True)
+            printed=True
+
 
         text.configure(state=DISABLED)
         frame.pack_propagate(True)
