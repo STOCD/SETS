@@ -347,7 +347,7 @@ class SETS():
                         image_data = self.fetchImage(url4) if url4 != url3 and url4 != url and url4 != url2 else image_data
 
         if os.path.exists(filenameExisting):
-            self.progressBarUpdate(self.updateOnHeavyStep / 2)
+            self.progressBarUpdate(int(self.updateOnHeavyStep / 2))
             self.persistent['imagesFactionAliases'][filename] = filenameExisting
             self.logWriteTransaction('Image File', 'alias', '----', filename, 3, [filenameExisting])
             self.stateSave(quiet=True)
@@ -359,7 +359,7 @@ class SETS():
                 handler.write(image_data)
             self.logWriteTransaction('Image File', 'write', len(str(os.path.getsize(filename))) if os.path.exists(filename) else '----', filename, 1)
         elif not os.path.exists(filename):
-            self.progressBarUpdate(self.updateOnHeavyStep / 4)
+            self.progressBarUpdate(int(self.updateOnHeavyStep / 4))
             return self.emptyImage
 
         image = Image.open(filename)
@@ -2260,8 +2260,10 @@ class SETS():
         padxCanvas = (2,2)
         padyCanvas = (3,0) if rowActual % 2 != 0 else (0,3)
         frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameCol'+environment+str(rank))
-        if environment == 'space': name = self.skillSpaceGetFieldNode(rankName, row, col, type='name')
-        elif environment == 'ground': name = self.skillGetGroundNode(rank, row, col, type='name')
+        if environment == 'ground':
+            name = self.skillGetGroundNode(rank, row, col, type='name')
+        else:
+            name = self.skillSpaceGetFieldNode(rankName, row, col, type='name')
         backendName = name
         args = [rankName if environment=='space' else rank, row, col, 'skill']
         #self.logWriteSimple('SkillButton', 'create', 2, [rank, row, col, environment, name])
@@ -3411,8 +3413,17 @@ class SETS():
         if environment == 'space':
             self.shipTierFrame = Frame(charInfoFrame, bg='#b3b3b3')
             self.shipTierFrame.grid(column=3, row=row, columnspan=1, sticky='swe')
-
         row += 1
+        """
+        captainSettingsDefaults = {
+            'Captain Career': {'col': 2, 'type': 'menu', 'varName': 'career', 'settingOptions': ['', 'Tactical', 'Engineering', 'Science']},
+            'Faction': {'col': 2, 'type': 'menu', 'varName': 'captain', 'varSubName': 'faction', 'settingOptions': self.factionNames},
+            'Species': {'col': 2, 'type': 'menu', 'varName': 'species', 'settingOptions': self.speciesNames['all']},
+            'Primary Spec': {'col': 2, 'type': 'menu', 'varName': 'specPrimary', 'settingOptions': sorted(self.cache['specsPrimary'])},
+            'Secondary Spec': {'col': 2, 'type': 'menu', 'varName': 'specSecondary', 'settingOptions': sorted(self.cache['specsSecondary'])},
+        }
+        self.createItemBlock(charInfoFrame, theme=captainSettingsDefaults, row=row, store='backend')
+        """
         Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
@@ -3836,7 +3847,7 @@ class SETS():
             # Need to hook rescaling
             pass
 
-    def createItemBlock(self, parentFrame, theme=None, shape='col', elements=2, callback=None, row=0, col=0, padx=2, pady=2, fg='#b3b3b3', bg='#3a3a3a', sticky=None, fontDefault=None, rowWeight=None, colWeight=None):
+    def createItemBlock(self, parentFrame, theme=None, shape='col', elements=2, callback=None, row=0, col=0, padx=2, pady=2, fg='#b3b3b3', bg='#3a3a3a', sticky=None, fontDefault=None, rowWeight=None, colWeight=None, store=None):
         if theme is None or not len(theme): return
 
         i = 0 # count of keys processed
@@ -3846,8 +3857,13 @@ class SETS():
             isButton = True if type == 'button' or type == 'buttonblock' else False
 
             varName = theme[title]['varName'] if 'varName' in theme[title] else ''
+            varSubName = theme[title]['varSubName'] if 'varSubName' in theme[title] else ''
             isBoolean = True if 'boolean' in theme[title] and theme[title]['boolean'] else False
             callback = theme[title]['callback'] if 'callback' in theme[title] else callback
+            if store == 'backend':
+                storageDict = self.backend
+            else:
+                storageDict = self.persistent
 
             columns = theme[title]['col'] if 'col' in theme[title] else 1
             if 'fg' in theme[title]: fg=theme[title]['fg']
@@ -3895,8 +3911,8 @@ class SETS():
                 label.grid(row=rowCurrent, column=colStart, columnspan=spanLabel, sticky=stickyLabel, pady=pady, padx=padx)
 
             if type == 'menu':
-                if isBoolean:  settingVar = StringVar(value='Yes' if self.persistent[varName] else 'No')
-                else: settingVar = StringVar(value=self.persistent[varName] if varName in self.persistent else '')
+                if isBoolean:  settingVar = StringVar(value='Yes' if storageDict[varName] else 'No')
+                else: settingVar = StringVar(value=storageDict[varName] if varName in storageDict else '')
 
                 settingOptions = self.yesNo
                 if 'settingOptions' in theme[title]:
@@ -3905,9 +3921,8 @@ class SETS():
                 if callback is None: optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName,isBoolean=isBoolean:self.persistentSet(choice, varName=varName, isBoolean=isBoolean))
                 else: optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=callback)
             elif type == 'scale':
-                settingVar = DoubleVar(value=self.persistent[varName] if varName in self.persistent else 1)
+                settingVar = DoubleVar(value=storageDict[varName] if varName in storageDict else 1)
                 if varName == 'uiScale': self.uiScaleSetting = settingVar
-                # range/resolution from theme in future
                 if callback is None: optionFrame = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=settingVar, command=lambda choice,varName=varName:self.persistentSet(choice, varName=varName))
                 else: optionFrame = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=settingVar, command=callback)
             elif isButton:
@@ -4041,7 +4056,7 @@ class SETS():
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
-        defaultFont.configure(family='Helvetica', size='10')
+        defaultFont.configure(family='Helvetica', size=10)
         self.footerProgressBarUpdates = 0
         self.dpi = round(self.window.winfo_fpixels('1i'), 0)
         self.setupUIScaling()
