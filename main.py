@@ -794,7 +794,7 @@ class SETS():
             'forceJsonLoad': 0,
             'noPreCache': 0,
             'uiScale': 1,
-            'tooltipDelay': 33,
+            'tooltipDelay': 15,
             'imagesFactionAliases': dict(),
             'imagesFail': dict(),
             'markDefault': '',
@@ -2557,9 +2557,15 @@ class SETS():
 
     def setupInfoboxFrameMaster(self, ui_key, item, key, environment, tooltip):
         """Actually draw the tooltip if ui_key is None or still true"""
-        if ui_key is None or ( ui_key in self.tooltip_tracking and self.tooltip_tracking[ui_key]):
+        if 'hold' in self.tooltip_tracking and self.tooltip_tracking['hold']:
+                # Would it be good to re-initiate a .after call?
+                return
+        if ui_key is None or (ui_key in self.tooltip_tracking and self.tooltip_tracking[ui_key]):
+            self.tooltip_tracking[ui_key] = False
+            self.tooltip_tracking['hold'] = True
             if self.persistent['useExperimentalTooltip']: self.setupInfoboxFrame(item, key, environment, tooltip)
             else: self.setupInfoboxFrameStatic(item, key, environment, tooltip)
+            self.tooltip_tracking['hold'] = False
 
     def setupInfoboxFrameLeave(self, ui_key):
         """Tooltip mouse-exit -- deactivate any pending tooltip"""
