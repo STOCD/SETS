@@ -1771,8 +1771,8 @@ class SETS():
         redditText = Text(redditWindow)
         btfr = Frame(redditWindow)
         btfr.pack(side='top', fill='x')
-        redditbtspace = Button(btfr,text="SPACE", font=phi,  bg="#6b6b6b",fg="white",command=lambda: self.redditExportDisplaySpace(redditText))
-        redditbtground = Button(btfr, text="GROUND", font =phi, bg="#6b6b6b", fg="white",command=lambda: self.redditExportDisplayGround(redditText))
+        redditbtspace = Button(btfr,text="SPACE", font=phi,  bg=self.theme['button_heavy']['bg'],fg=self.theme['button_heavy']['fg'],command=lambda: self.redditExportDisplaySpace(redditText))
+        redditbtground = Button(btfr, text="GROUND", font =phi, bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'],command=lambda: self.redditExportDisplayGround(redditText))
         redditbtspace.grid(row=0,column=0,sticky="nsew")
         redditbtground.grid(row=0,column=1,sticky="nsew")
         btfr.grid_columnconfigure(0,weight=1)
@@ -2996,7 +2996,7 @@ class SETS():
 
         self.clearFrame(frame)
 
-        Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
+        Label(frame, text="Stats & Other Info", highlightbackground=self.theme['tooltip']['bg'], highlightthickness=1).pack(fill=X, expand=False, side=TOP)
         mtfr = Frame(frame, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
         mtfr.pack(fill="both",expand=False,side=TOP)
         text = Text(mtfr, font=('Helvetica', 10), bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=3.5)

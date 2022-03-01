@@ -3,12 +3,17 @@ A Star Trek Online build tool in Python
 
 ## Description
 
-Pre-alpha version of build tool for STO
+Alpha version of build management and sharing tool for STO.  Builds can be exported to a PNG file that can be opened by another person using SETS.
+
+## Contributing
+If you find any information or images missing, please check or update the official wiki (https://sto.fandom.com/) -- where SETS gets this information.
+
+For application-related issues or suggestions, please visit the github: https://github.com/STOCD/SETS/issues
 
 ## Getting Started
 Follow the instructions below to setup your Python environment.
 
-**NOTE**: At this early stage of development, performance will be slow as the cache is built. It will take several seconds after the click of a button for the pop-up window to appear!
+**NOTE**: At this early stage of development, performance will be slow as the image cache is build from the wiki. It may take several seconds after the click of a button for the pop-up window to appear!
 
 ### Easy Access
 Easy way for Windows 10 users: Download the latest version, double-click to unpack it and follow instructions in readme.txt. Most of the images are included in this package, so the app runs smoother. I you start the app this way, you'll get the latest version each time you execute it.
@@ -36,9 +41,9 @@ Linux:
 > python3 main.py
 
 ## Configuration locations
-The configuration directory will house all of the configuration files. [^1]
+The configuration directory will house all the configuration files. [^1]
 
-Portable mode can be enabled (keeping all of the files inside the application's directory) or the application can be allowed to create an OS-based default settings directory.
+Portable mode can be enabled (keeping all the files inside the application's directory) or the application can be allowed to create an OS-based default settings directory.
 ### Configuration directory
 Portable mode:
 : Create a folder named `.config/` inside the application directory (uses APPDIR/.config/ for all files)
