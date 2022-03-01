@@ -113,6 +113,8 @@ class SETS():
         'icon_off': {
             'bg': 'grey',  # self.theme['icon_off']['bg']
             'fg': '#ffffff',  # self.theme['icon_off']['fg']
+            'hlbg': 'grey',  # self.theme['icon_off']['hlbg']  # highlightbackground
+            'hlthick': 0,  # self.theme['icon_off']['hlthick']  # highlightthickness
             'relief': 'raised',  # self.theme['icon_off']['relief']
         },
         'icon_on': {
@@ -2067,7 +2069,7 @@ class SETS():
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args)
 
 
-    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None, row=0, column=0, columnspan=1, rowspan=1, highlightthickness=0, highlightbackground='grey', borderwidth=0, width=None, height=None, bg=theme['icon_off']['bg'], padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center', faction=False, suffix=''):
+    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None, row=0, column=0, columnspan=1, rowspan=1, highlightthickness=self.theme['icon_off']['hlthick'], highlightbackground=self.theme['icon_off']['hlbg'], borderwidth=0, width=None, height=None, bg=theme['icon_off']['bg'], padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center', faction=False, suffix=''):
         """ Button building (including click and tooltip binds) """
         # self.build[key][buildSubKey] is the build code for callback updating and image identification
         # self.backend['images'][backendKey][#] is the location for (img,img)
@@ -2347,15 +2349,19 @@ class SETS():
                 desc = self.skillGetGroundNode(rank, row, col, type='desc')
                 callback = self.skillGroundLabelCallback
 
-            if not name in self.build['skilltree'][environment]: self.build['skilltree'][environment][name] = False
-            if not backendName in self.backend['images']: self.backend['images'][backendName] = [ ]
-            bg = 'yellow' if name in self.build['skilltree'][environment] and self.build['skilltree'][environment][name] else 'grey'
+            if not name in self.build['skilltree'][environment]:
+                self.build['skilltree'][environment][name] = False
+            if not backendName in self.backend['images']:
+                self.backend['images'][backendName] = [ ]
+
             if self.build['skilltree'][environment][name]:
-                relief = 'raised'
+                relief = self.theme['icon_off']['relief']
                 image1 = self.epicImage
+                bg = self.theme['icon_on']['bg']
             else:
-                relief = 'groove'
+                relief = self.theme['icon_on']['relief']
                 image1 = None
+                bg = self.theme['icon_off']['bg']
             self.createButton(frame, 'skilltree', callback=callback, row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky=sticky, relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
         else:
             self.createButton(frame, '', row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
@@ -3205,7 +3211,7 @@ class SETS():
         if environment != 'skill': width += 25
         if environment == 'skill': height -= 5
 
-        Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
+        Label(frame, text="Stats & Other Info", highlightbackground=self.theme['frame_medium']['hlbg'], highlightthickness=self.theme['frame_medium']['hlthick']).pack(fill=X, expand=False, side=TOP)
         text = Text(frame, height=height, width=width, font=('Helvetica', 10), bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD)
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
@@ -3764,7 +3770,7 @@ class SETS():
         for i in range(5):
             parentFrame.grid_columnconfigure(i, weight=5, uniform="mainCol"+environment)
 
-        infoFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'], highlightbackground="grey", highlightthickness=1)
+        infoFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'], highlightbackground=self.theme['frame_medium']['hlbg'], highlightthickness=self.theme['frame_medium']['hlthick'])
         infoFrame.grid(row=0,column=0,sticky='nsew', padx=(2,0), pady=(2,2))
 
         middleFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
