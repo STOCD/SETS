@@ -26,9 +26,12 @@ class SETS():
     itemBoxY = 42 #33
     imageBoxX = 260
     imageBoxY = 146
-    windowHeightDefault = 659 #634
+    windowX = 100  # Window top left corner
+    windowY = 100
+    windowHeightDefault = 840
+    windowActiveHeightDefault = 659 #634
     windowWidthDefault = 1920
-    windowHeight = windowHeightDefault
+    windowActiveHeight = windowActiveHeightDefault
     windowWidth = windowWidthDefault
     logoHeight = 134
     daysDelayBeforeReattempt = 7
@@ -795,6 +798,7 @@ class SETS():
             'forceJsonLoad': 0,
             'noPreCache': 0,
             'uiScale': 1,
+            'geometry': '',
             'tooltipDelay': 5,
             'imagesFactionAliases': dict(),
             'imagesFail': dict(),
@@ -981,7 +985,7 @@ class SETS():
 
     def pickerDimensions(self):
         #self.window.update()
-        windowheight = self.windowHeight
+        windowheight = self.windowActiveHeight
         windowwidth = int(self.windowWidth / 6)
         if windowheight < 400: windowheight = 400
         if windowwidth < 240: windowwidth = 240
@@ -1106,7 +1110,7 @@ class SETS():
 
     def windowDimensions(self):
         #self.window.update()
-        windowheight = self.windowHeight - self.logoHeight - 45
+        windowheight = self.windowActiveHeight - self.logoHeight - 45
         windowwidth = self.windowWidth
 
         return (windowwidth,windowheight)
@@ -1750,6 +1754,16 @@ class SETS():
         elif type == 'openLog': self.logWindowCreate()
         elif type == 'predownloadShipImages': self.predownloadShipImages()
         elif type == 'predownloadGearImages': self.predownloadGearImages()
+        elif type == 'savePositionOnly':
+            self.persistent['geometry'] = self.window.geometry()
+            self.stateSave()
+        elif type == 'savePosition':
+            self.persistent['geometry'] = '+{}+{}'.format(self.window.winfo_x(), self.window.winfo_y())
+            self.stateSave()
+        elif type == 'resetPosition':
+                self.persistent['geometry'] = ''
+                self.stateSave()
+                self.setupGeometry()
         elif type == 'backupCache':
             # Backup state file
             # Backup caches (leave as current as well)
@@ -3439,7 +3453,7 @@ class SETS():
 
     def updateWindowSize(self):
         self.windowWidth = self.window.winfo_width()
-        self.windowHeight = self.window.winfo_height()
+        self.windowActiveHeight = self.window.winfo_height()
         self.windowXCache = self.window.winfo_x()
         self.windowYCache = self.window.winfo_y()
 
@@ -3662,12 +3676,11 @@ class SETS():
 
         parentFrame.grid_propagate(False)
         parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
-        for i in range(4):
+        for i in range(5):
             parentFrame.grid_columnconfigure(i, weight=5, uniform="mainCol"+environment)
-        parentFrame.grid_columnconfigure(4, weight=5, uniform="mainCol"+environment)
 
         infoFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        infoFrame.grid(row=0,column=0,sticky='nsew',rowspan=2, padx=(2,0), pady=(2,2))
+        infoFrame.grid(row=0,column=0,sticky='nsew', padx=(2,0), pady=(2,2))
 
         middleFrame = Frame(parentFrame, bg='#3a3a3a')
         middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
@@ -3691,7 +3704,7 @@ class SETS():
             self.setupInitialBuildGearFrame(middleFrame, environment=environment)
 
         infoBoxOuterFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        infoBoxOuterFrame.grid(row=0,column=4,rowspan=2,sticky='nsew', padx=(2,0), pady=(2,2))
+        infoBoxOuterFrame.grid(row=0,column=4,sticky='nsew', padx=(2,0), pady=(2,2))
 
         buildTagFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
         buildTagFrame.pack(fill=X, expand=False, side=BOTTOM)
@@ -3774,7 +3787,10 @@ class SETS():
             'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort' },
             'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort2' },
             'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort' },
-
+            'blank4': {'col': 1, 'type': 'blank'},
+            'Save current window position': {'col': 2, 'type': 'button', 'varName': 'savePositionOnly'},
+            'Save current window size+position': {'col': 2, 'type': 'button', 'varName': 'savePosition'},
+            'Reset to default window size/position': {'col': 2, 'type': 'button', 'varName': 'resetPosition'},
         }
         self.createItemBlock(settingsTopMiddleRightFrame, theme=settingsTheme)
 
@@ -4041,7 +4057,7 @@ class SETS():
         self.logoFrame.pack(fill=X)
         self.menuFrame = Frame(self.containerFrame, bg='#c59129')
         self.menuFrame.pack(fill=X, padx=15)
-        self.verticalFrame = Frame(self.containerFrame, bg='#c59129', height=self.windowHeightDefault)
+        self.verticalFrame = Frame(self.containerFrame, bg='#c59129', height=self.windowActiveHeightDefault)
         self.verticalFrame.pack(fill='none', side='left')
         self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
         self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
@@ -4368,6 +4384,12 @@ class SETS():
         #r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
         #self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
 
+    def setupGeometry(self, default=False):
+        # Check that it's not off-screen?
+        if not default and 'geometry' in self.persistent and self.persistent['geometry']:
+                self.window.geometry(self.persistent['geometry'])
+        else:
+                self.window.geometry("{}x{}+{}+{}".format(self.windowWidthDefault, self.windowHeightDefault, self.windowX, self.windowY))
 
     def __init__(self) -> None:
         """Main setup function"""
@@ -4380,7 +4402,7 @@ class SETS():
         self.stateSave()
         self.configFileLoad()
 
-        # self.window.geometry('1280x650')
+        self.setupGeometry()
         self.windowUpdate = dict()
         self.requestWindowUpdateHold(0)
         self.updateWindowSize()
