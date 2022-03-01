@@ -58,6 +58,70 @@ class SETS():
     #to prevent Infobox from loading the same element twice in a row
     displayedInfoboxItem = str()
 
+    # Needs fonts, padx, pady, possibly others
+    theme = {
+        'app': {
+            'bg': '#c59129',  # self.theme['app']['bg']
+            'fg': '#3a3a3a',  # self.theme['app']['fg']
+        },
+        'frame': {
+            'bg': '#3a3a3a',  # self.theme['frame']['bg']
+            'fg': '#b3b3b3',  # self.theme['frame']['fg']
+        },
+        'frame_medium': {
+            'bg': '#b3b3b3',  # self.theme['frame_medium']['bg']
+            'fg': '#3a3a3a',  # self.theme['frame_medium']['fg']
+            'hlbg': 'grey',  # self.theme['frame_medium']['hlbg']  # highlightbackground
+            'hlthick': 1,  # self.theme['frame_medium']['hlthick']  # highlightthickness
+        },
+        'frame_light': {
+            'bg': '#b3b3b3',  # self.theme['frame_light']['bg']
+            'fg': '#ffffff',  # self.theme['frame_light']['fg']
+        },
+        'button_heavy': {
+            'bg': '#6b6b6b',  # self.theme['button_heavy']['bg']
+            'fg': '#ffffff',  # self.theme['button_heavy']['fg']
+        },
+        'button': {
+            'bg': '#3a3a3a',  # self.theme['button']['bg']
+            'fg': '#b3b3b3',  # self.theme['button']['fg']
+        },
+        'label': {
+            'bg': '#b3b3b3',  # self.theme['label']['bg']
+            'fg': '#3a3a3a',  # self.theme['label']['fg']
+        },
+        'entry': {  # Entry and Text widgets
+            'bg': '#b3b3b3',  # self.theme['entry']['bg']
+            'fg': '#3a3a3a',  # self.theme['entry']['fg']
+        },
+        'entry_dark': {
+            'bg': '#3a3a3a',  # self.theme['entry_dark']['bg']
+            'fg': '#ffffff',  # self.theme['entry_dark']['fg']
+        },
+        'tooltip': {
+            'bg': '#090b0d',  # self.theme['tooltip']['bg']
+            'fg': '#ffffff',  # self.theme['tooltip']['fg']
+            'highlight': '#090b0d',  # self.theme['tooltip']['highlight']
+            'relief': 'flat',  # self.theme['tooltip']['relief']
+            # Tags
+            'head1': {'fg': '#42afca'},  # self.theme['tooltip']['head1']['fg']
+            'head': {'fg': '#42afca'},  # self.theme['tooltip']['head']['fg']
+            'subhead': {'fg':  '#f4f400'},  # self.theme['tooltip']['subhead']['fg']
+            'who': {'fg':  '#ff6347'},  # self.theme['tooltip']['who']['fg']
+            'distance': {'fg':  '#000000'},  # self.theme['tooltip']['distance']['fg']
+        },
+        'icon_off': {
+            'bg': 'grey',  # self.theme['icon_off']['bg']
+            'fg': '#ffffff',  # self.theme['icon_off']['fg']
+            'relief': 'raised',  # self.theme['icon_off']['relief']
+        },
+        'icon_on': {
+            'bg': 'yellow',  # self.theme['icon_on']['bg']
+            'fg': '#ffffff',  # self.theme['icon_on']['fg']
+            'relief': 'groove',  # self.theme['icon_on']['relief']
+        },
+    }
+
     def encodeBuildInImage(self, src, message, dest):
         img = Image.open(src, 'r')
         width, height = img.size
@@ -1067,7 +1131,7 @@ class SETS():
             self.logWriteSimple('pickerGUI', 'TRY_EXCEPT', 1, tags=['item_list.sort() failed in '+title])
 
         i = 0
-        clearSlotButton = Button(scrollable_frame, text='Clear Slot', padx=5, bg='#3a3a3a',fg='#b3b3b3')
+        clearSlotButton = Button(scrollable_frame, text='Clear Slot', padx=5, bg=self.theme['button']['bg'],fg=self.theme['button']['fg'])
         clearSlotButton.grid(row=0, column=0, sticky='nsew')
         clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
         i += 1
@@ -1150,7 +1214,7 @@ class SETS():
         subWindow.protocol('WM_DELETE_WINDOW', lambda:self.windowCloseCallback(subWindow))
 
         container = Frame(subWindow)
-        container.configure(bg='#b3b3b3')
+        container.configure(bg=self.theme['frame']['bg'])
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
         topFrame = Frame(subWindow, width=windowWidth)
@@ -1160,13 +1224,13 @@ class SETS():
 
         if noclose:
             optionFrame = Button(topFrame, text='Close', command=lambda:self.windowCloseCallback(subWindow))
-            optionFrame.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, width=10)
+            optionFrame.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, width=10)
             optionFrame.grid(row=0, column=0, sticky='e')
 
         if type == 'log':
             scrollbar = Scrollbar(mainFrame)
             scrollbar.pack(side=RIGHT, fill=Y)
-            self.logDisplay = Text(mainFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
+            self.logDisplay = Text(mainFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
             self.logDisplay.pack(side=LEFT, fill=BOTH, expand=True)
             self.logDisplay.insert('0.0', self.logFull.get())
             scrollbar.config(command=self.logDisplay.yview)
@@ -1571,11 +1635,11 @@ class SETS():
         if self.build['skilltree'][environment][name]:
             countChange = 1
             image1 = self.epicImage
-            canvas.configure(bg='yellow', relief='groove')
+            canvas.configure(bg=self.theme['icon_on']['bg'], relief=self.theme['icon_on']['relief'])
         else:
             countChange = -1
             image1 = self.emptyImage
-            canvas.configure(bg='grey', relief='raised')
+            canvas.configure(bg=self.theme['icon_off']['bg'], relief=self.theme['icon_off']['relief'])
 
         self.backend['skillCount'][environment] += countChange
         self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
@@ -1970,7 +2034,7 @@ class SETS():
         rarity = StringVar(value=self.persistent['rarityDefault'])
         rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
         rarityOption.grid(row=0, column=1, sticky='nsew')
-        modFrame = Frame(topbarFrame, bg='gray')
+        modFrame = Frame(topbarFrame)
         modFrame.grid(row=1, column=0, columnspan=2, sticky='nsew')
         mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
@@ -1984,14 +2048,14 @@ class SETS():
         """Set up n-element line of ship equipment"""
         self.backend['images'][key] = [None] * n
 
-        cFrame = Frame(frame, bg='#3a3a3a')
+        cFrame = Frame(frame, bg=self.theme['frame']['bg'])
         cFrame.grid(row=row, column=col, columnspan=cspan, sticky='nsew', padx=10)
 
-        lFrame = Frame(cFrame, bg='#3a3a3a')
+        lFrame = Frame(cFrame, bg=self.theme['frame']['bg'])
         lFrame.pack(fill=BOTH, expand=True)
-        label =  Label(lFrame, text=name, bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 8))
+        label =  Label(lFrame, text=name, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=('Helvetica', 8))
         label.pack(side='left')
-        iFrame = Frame(cFrame, bg='#3a3a3a')
+        iFrame = Frame(cFrame, bg=self.theme['frame']['bg'])
         iFrame.pack(fill=BOTH, expand=True)
 
         disabledStart = n - disabledCount
@@ -2003,7 +2067,7 @@ class SETS():
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args)
 
 
-    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None, row=0, column=0, columnspan=1, rowspan=1, highlightthickness=0, highlightbackground='grey', borderwidth=0, width=None, height=None, bg='gray', padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center', faction=False, suffix=''):
+    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None, row=0, column=0, columnspan=1, rowspan=1, highlightthickness=0, highlightbackground='grey', borderwidth=0, width=None, height=None, bg=theme['icon_off']['bg'], padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center', faction=False, suffix=''):
         """ Button building (including click and tooltip binds) """
         # self.build[key][buildSubKey] is the build code for callback updating and image identification
         # self.backend['images'][backendKey][#] is the location for (img,img)
@@ -2067,7 +2131,7 @@ class SETS():
         outerFrame.grid_columnconfigure(0, weight=1, uniform='shipFrameFullColSpace')
         self.clearFrame(outerFrame)
 
-        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         if ship is None: ship = self.shipTemplate
@@ -2108,7 +2172,7 @@ class SETS():
         outerFrame.grid_columnconfigure(0, weight=1, uniform='shipConsoleFrameFullColSpace')
         self.clearFrame(outerFrame)
 
-        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         consoleOptions = ['tac', 'eng', 'sci', 'uni']
@@ -2142,7 +2206,7 @@ class SETS():
         outerFrame.grid_columnconfigure(0, weight=1, uniform='shiptraitFrameFullColSpace')
         self.clearFrame(outerFrame)
 
-        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         self.labelBuildBlock(parentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 6 if self.backend['eliteCaptain'].get() else 5, self.itemLabelCallback, ["Kit Module", "Pick Module", "", 'ground'])
@@ -2208,7 +2272,7 @@ class SETS():
 
     def setupGroundSkillTreeFrame(self, parentFrame, environment='ground'):
         self.precacheGroundSkills()
-        frame = Frame(parentFrame, bg='#3a3a3a')
+        frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=0, sticky='n', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
         parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullCol'+environment)
@@ -2225,7 +2289,7 @@ class SETS():
 
     def setupSpaceSkillTreeFrame(self, parentFrame, environment='space'):
         self.precacheSpaceSkills()
-        frame = Frame(parentFrame, bg='#3a3a3a')
+        frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
         parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullCol'+environment)
@@ -2242,7 +2306,7 @@ class SETS():
                 rank += 1
                 dependencySplit = self.skillSpaceGetFieldSkill(rankName, row, 0, type='linear')
                 if row == 0:
-                    l = Label(frame, text=rankName.title().replace(' ', '\n'), bg='#3a3a3a', fg='#ffffff', font=font.Font(family='Helvetica', size=12, weight='bold'))
+                    l = Label(frame, text=rankName.title().replace(' ', '\n'), bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=font.Font(family='Helvetica', size=12, weight='bold'))
                     l.grid(row=row, column=rank*rankColumns, columnspan=3, sticky='s', pady=1)
                 for col in range(rankColumns):
                     rowspan = 2
@@ -2294,10 +2358,10 @@ class SETS():
                 image1 = None
             self.createButton(frame, 'skilltree', callback=callback, row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky=sticky, relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
         else:
-            self.createButton(frame, '', row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
+            self.createButton(frame, '', row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
     def setupSkillBonusFrame(self, parentFrame, environment='space'):
-        frame = Frame(parentFrame, bg='#3a3a3a')
+        frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=1, sticky='ns', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillBonusFrameFullRowSpace')
         parentFrame.grid_columnconfigure(0, weight=1, uniform='skillBonusFrameFullColSpace')
@@ -2311,7 +2375,7 @@ class SETS():
                 frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillBonusFrameColSpace'+str(col))
                 args = [None, row, col, 'skill']
 
-                self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg='#3a3a3a', image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
+                self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -2320,7 +2384,7 @@ class SETS():
         outerFrame.grid_columnconfigure(0, weight=1, uniform='shiptraitFrameFullColSpace')
         self.clearFrame(outerFrame)
 
-        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
@@ -2338,7 +2402,7 @@ class SETS():
         outerFrame.grid_columnconfigure(0, weight=1, uniform='shiptraitFrameFullColSpace')
         self.clearFrame(outerFrame)
 
-        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
@@ -2395,7 +2459,7 @@ class SETS():
         outerFrame.grid_columnconfigure(0, weight=1, uniform='shiptraitFrameFullColSpace')
         self.clearFrame(outerFrame)
 
-        parentFrame = Frame(outerFrame, bg='#3a3a3a')
+        parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
         seats = 6 if environment == 'space' else 4
@@ -2439,9 +2503,9 @@ class SETS():
                 if spec == 'Tactical' and rank == 3 and 'Science Destroyer' in self.build['ship']: #sci destroyers get tac mode turning lt cmdr to cmdr
                     rank = 4
 
-            bFrame = Frame(parentFrame, width=120, height=80, bg='#3a3a3a')
+            bFrame = Frame(parentFrame, width=120, height=80, bg=self.theme['frame']['bg'])
             bFrame.pack(fill=BOTH, expand=True)
-            bSubFrame0 = Frame(bFrame, bg='#3a3a3a')
+            bSubFrame0 = Frame(bFrame, bg=self.theme['frame']['bg'])
             bSubFrame0.pack(fill=BOTH, pady=(2,0))
 
             self.backend['images'][boffSan] = [None] * rank
@@ -2468,7 +2532,7 @@ class SETS():
             else:
                 specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
                 specLabel0.configure(pady=2)
-            specLabel0.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10), highlightthickness=0)
+            specLabel0.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=('Helvetica', 10), highlightthickness=0)
             specLabel0.pack(side='left')
 
             if environment == 'ground' or (sspec is not None and sspec != ''):
@@ -2477,10 +2541,10 @@ class SETS():
                     specLabel1.configure(pady=2)
                 else:
                     specLabel1 = Label(bSubFrame0, text='/  '+sspec)
-                specLabel1.configure(bg='#3a3a3a', fg='#ffffff', font=('Helvetica', 10), highlightthickness=0)
+                specLabel1.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=('Helvetica', 10), highlightthickness=0)
                 specLabel1.pack(side='left')
 
-            bSubFrame1 = Frame(bFrame, bg='#3a3a3a')
+            bSubFrame1 = Frame(bFrame, bg=self.theme['frame']['bg'])
             bSubFrame1.pack(fill=BOTH)
 
             if boffSan in self.build['boffs']:
@@ -2680,7 +2744,7 @@ class SETS():
 
     def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, framewidth): #returns text string that has to be placed a level above (for recursion)
         """Inserts Infobox paragraph into a frame"""
-        mainframe = Frame(inframe, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+        mainframe = Frame(inframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
         mainframe.grid(row=gridrow,column=0, sticky="nsew")
         inframe.rowconfigure(gridrow, weight=0)
         inframe.rowconfigure(gridrow+1, weight=1)
@@ -2844,7 +2908,7 @@ class SETS():
             passtext = ""
         rowinsert=0
         if not inserttext1 == "":
-            maintext = Text(mainframe, bg='#090b0d', fg=pcolor, wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat", font=(pfamily, psize, pweight), height=self.getDH(framewidth, inserttext1, pfamily, psize, pweight))
+            maintext = Text(mainframe, bg=self.theme['tooltip']['bg'], fg=pcolor, wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], font=(pfamily, psize, pweight), height=self.getDH(framewidth, inserttext1, pfamily, psize, pweight))
             maintext.grid(row=rowinsert,column=0)
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
@@ -2855,7 +2919,7 @@ class SETS():
             maintext.configure(state=DISABLED)
             rowinsert = rowinsert+1
         if not passtext == "":
-            lineframe = Frame(mainframe, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            lineframe = Frame(mainframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             lineframe.grid(row=rowinsert, column=0, sticky="nsew")
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
@@ -2865,12 +2929,12 @@ class SETS():
             lineframe.columnconfigure(0, weight=1, minsize=12)
             lineframe.columnconfigure(1, weight=7)
             lineframe.columnconfigure(2, weight=1)
-            daughterframe = Frame(lineframe, bg="#090b0d", highlightcolor="#090b0d", highlightthickness=0)
+            daughterframe = Frame(lineframe, bg=self.theme['tooltip']['bg'], highlightcolor=self.theme['tooltip']['highlight'], highlightthickness=0)
             daughterframe.grid(row=0, column=1, sticky="nsew")
             self.insertInfoboxParagraph(daughterframe, passtext, pfamily, pcolor, psize, pweight, 0, framewidth-12)
             rowinsert = rowinsert + 1
         if not inserttext2 == "":
-            lineframe = Frame(mainframe, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            lineframe = Frame(mainframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             lineframe.grid(row=rowinsert, column=0, sticky="nsew")
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
@@ -2933,15 +2997,15 @@ class SETS():
         self.clearFrame(frame)
 
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
-        mtfr = Frame(frame, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+        mtfr = Frame(frame, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
         mtfr.pack(fill="both",expand=False,side=TOP)
-        text = Text(mtfr, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat", height=3.5)
+        text = Text(mtfr, font=('Helvetica', 10), bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=3.5)
 
-        text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
+        text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], font=('Helvetica', 12, 'bold' ))
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
-        text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
-        text.tag_configure('starshipTraitHead', foreground='#42afca', font=('Helvetica', 15, 'bold' ))
+        text.tag_configure('subhead', foreground=self.theme['tooltip']['subhead']['fg'], font=('Helvetica', 10, 'bold' ))
+        text.tag_configure('starshipTraitHead', foreground=self.theme['tooltip']['head1']['fg'], font=('Helvetica', 15, 'bold' ))
         text.tag_configure('skillhead', foreground=skillcolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('skillsub', foreground=skillcolor, font=('Helvetica', 12, 'normal'))
 
@@ -2985,12 +3049,12 @@ class SETS():
                     text.insert(END, html['type'], 'rarity')
             if html['who'] != "":
                 mtfr.update()
-                whotext = Text(mtfr, font=('Helvetica', 10), bg='#090b0d', fg='#ff6347', wrap=WORD, highlightthickness=0, highlightcolor='#090b0d', relief="flat", height=self.getDH(mtfr.winfo_width(), html['who'], "Helvetica", 10, "normal"))
+                whotext = Text(mtfr, font=('Helvetica', 10), bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['who']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=self.getDH(mtfr.winfo_width(), html['who'], "Helvetica", 10, "normal"))
                 whotext.grid(row=1, column=0)
                 whotext.insert(END, html["who"])
                 whotext.configure(state=DISABLED)
-            Frame(mtfr, background='#090b0d', highlightthickness=0, highlightcolor='#090b0d').grid(row=2,column=0,sticky="nsew")
-            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            Frame(mtfr, background=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight']).grid(row=2,column=0,sticky="nsew")
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=3, column=0, sticky="nsew")
             contentframe.grid_propagate(False)
             insertinrow = 0
@@ -3016,8 +3080,8 @@ class SETS():
             text.insert(END, "Placeholder for obtain information", "subhead")
             text.update()
             text.configure(height=self.getDH(text.winfo_width(), name+"\n"+"StarshipTrait\n"+"Placeholder for obtain information", "Helvetica", 15, "bold", "traithead"))
-            Frame(mtfr, background='#090b0d', highlightthickness=0, highlightcolor='#090b0d').grid(row=2,column=0,sticky="nsew")
-            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            Frame(mtfr, background=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight']).grid(row=2,column=0,sticky="nsew")
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=3, column=0, sticky="nsew")
             contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['shipTraits'][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
@@ -3028,7 +3092,7 @@ class SETS():
             text.insert(END, name+"\n", 'starshipTraitHead')
             text.update()
             text.configure(height=self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", "personaltrait"))
-            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=2, column=0, sticky="nsew")
             contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['traits'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
@@ -3039,7 +3103,7 @@ class SETS():
             text.insert(END, name, 'starshipTraitHead')
             text.update()
             text.configure(height=self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", "boff"))
-            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=2, column=0, sticky="nsew")
             contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['boffTooltips'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
@@ -3080,7 +3144,7 @@ class SETS():
                 text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill")+1)
             else:
                 text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
-            contentframe = Frame(mtfr, bg="#090b0d", highlightthickness=0, highlightcolor='#090b0d')
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=2, column=0, sticky="nsew")
             contentframe.grid_propagate(False)
             if skillnode['linear']==0:
@@ -3142,13 +3206,13 @@ class SETS():
         if environment == 'skill': height -= 5
 
         Label(frame, text="Stats & Other Info", highlightbackground="grey", highlightthickness=1).pack(fill=X, expand=False, side=TOP)
-        text = Text(frame, height=height, width=width, font=('Helvetica', 10), bg='#090b0d', fg='#ffffff', wrap=WORD)
+        text = Text(frame, height=height, width=width, font=('Helvetica', 10), bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD)
         text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
         text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
-        text.tag_configure('head', foreground='#42afca', font=('Helvetica', 12, 'bold' ))
-        text.tag_configure('subhead', foreground='#f4f400', font=('Helvetica', 10, 'bold' ))
-        text.tag_configure('who', foreground='#ff6347', font=('Helvetica', 10, 'bold' ))
-        text.tag_configure('distance', foreground='#000000', font=('Helvetica', 4))
+        text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], font=('Helvetica', 12, 'bold' ))
+        text.tag_configure('subhead', foreground=self.theme['tooltip']['subhead']['fg'], font=('Helvetica', 10, 'bold' ))
+        text.tag_configure('who', foreground=self.theme['tooltip']['who']['fg'], font=('Helvetica', 10, 'bold' ))
+        text.tag_configure('distance', foreground=self.theme['tooltip']['distance']['fg'], font=('Helvetica', 4))
         text.pack(fill="both", expand=True, padx=2, pady=2, side=BOTTOM)
         if name is None or name == '':
             return
@@ -3209,13 +3273,11 @@ class SETS():
         self.precacheDoffs(doffEnvironment)
         doff_list = sorted([self.deWikify(item) for item in list(self.cache['doffNames'][doffEnvironment].keys())])
 
-        DoffFrame = Frame(frame, bg='#b3b3b3', padx=5, pady=3)
+        DoffFrame = Frame(frame, bg=self.theme['frame_light']['bg'], padx=5, pady=3)
         DoffFrame.pack(side='left' if environment == 'ground' else 'left', fill=Y, expand=True)
         DoffFrame.grid_columnconfigure(2, weight=1, uniform=environment+'ColDoffList')
-        #DoffFrame.grid_columnconfigure(1, weight=1, uniform=environment+'ColDoffList')
-        #DoffFrame.grid_columnconfigure(2, weight=2, uniform=environment+'ColDoffList')
 
-        DoffLabel = Label(DoffFrame, text=environment.upper()+" DUTY OFFICERS", bg='#3a3a3a', fg='#ffffff', width=60)
+        DoffLabel = Label(DoffFrame, text=environment.upper()+" DUTY OFFICERS", bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], width=60)
         DoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
 
         f = font.Font(family='Helvetica', size=9)
@@ -3225,13 +3287,13 @@ class SETS():
             v2 = StringVar(self.window)
             #m = OptionMenu(DoffFrame, v0, 'NAME', *['A','B','C'])
             #m.grid(row=i+1, column=0, sticky='nsew')
-            #m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, state=DISABLED)
+            #m.configure(bg=self.theme['frame_light']['bg'],fg=self.theme['frame_light']['fg'], borderwidth=0, highlightthickness=0, state=DISABLED)
             m = OptionMenu(DoffFrame, v1, 'SPECIALIZATION', *doff_list)
             m.grid(row=i+1, column=1, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0, width=23)
+            m.configure(bg=self.theme['frame_light']['bg'],fg=self.theme['frame_light']['fg'], borderwidth=0, highlightthickness=0, width=23)
             m = OptionMenu(DoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg='#b3b3b3',fg='#ffffff', borderwidth=0, highlightthickness=0,font=f, wraplength=340)
+            m.configure(bg=self.theme['frame_light']['bg'],fg=self.theme['frame_light']['fg'], borderwidth=0, highlightthickness=0,font=f, wraplength=340)
 
             if self.build['doffs'][environment][i] is not None:
                 v0.set(self.build['doffs'][environment][i]['name'])
@@ -3254,13 +3316,13 @@ class SETS():
 
     def setupDoffFrame(self, frame):
         self.clearFrame(frame)
-        mainFrame = Frame(frame, bg='#3a3a3a')
+        mainFrame = Frame(frame, bg=self.theme['frame']['bg'])
         mainFrame.pack(side='bottom', fill=BOTH, expand=True, pady=(5,0))
 
         self.setupDoffListFrame(mainFrame, 'space')
-        DoffBreak = Frame(mainFrame, bg='#3a3a3a', width=10)
+        DoffBreak = Frame(mainFrame, bg=self.theme['frame']['bg'], width=10)
         DoffBreak.pack(side='left')
-        DoffBreakLabel = Label(DoffBreak, text='', bg='#3a3a3a', fg='#ffffff')
+        DoffBreakLabel = Label(DoffBreak, text='', bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'])
         DoffBreakLabel.grid(row=0, column=0, sticky='nsew')
         self.setupDoffListFrame(mainFrame, 'ground')
 
@@ -3275,25 +3337,25 @@ class SETS():
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
 
     def setupFooterFrame(self):
-        self.footerFrame = Frame(self.containerFrame, bg='#c59129', height=20)
+        self.footerFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'], height=20)
         self.footerFrame.pack(fill='both', side='bottom', expand=False)
         f = font=('Helvetica', 9)
         f2 = font=('Helvetica', 10, 'bold')
 
-        self.footerFrameL = Frame(self.footerFrame, bg='#c59129')
+        self.footerFrameL = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameL.grid(row=0, column=0, sticky='w')
-        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg='#3a3a3a', bg='#c59129', anchor='w', font=f)
+        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='w', font=f)
         footerLabelL.grid(row=0, column=0, sticky='w')
 
-        self.footerFrameM = Frame(self.footerFrame, bg='#c59129')
+        self.footerFrameM = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameM.grid(row=0, column=1, sticky='ew')
         self.footerFrameM.grid_columnconfigure(0, weight=1, uniform="footerlabel")
         self.footerProgressBar = Progressbar(self.footerFrameM, orient='horizontal', mode='indeterminate', length=120)
         self.footerProgressBar.grid(row=0, column=0, sticky='ew')
 
-        self.footerFrameR = Frame(self.footerFrame, bg='#c59129')
+        self.footerFrameR = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameR.grid(row=0, column=2, sticky='e')
-        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg='#3a3a3a', bg='#c59129', anchor='e', font=f2)
+        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='e', font=f2)
         footerLabelR.grid(row=0, column=0, sticky='e')
 
         self.footerFrame.grid_columnconfigure(0, weight=2, uniform="footerlabel")
@@ -3341,15 +3403,15 @@ class SETS():
         }
 
         col = 0
-        exportImportFrame = Frame(self.menuFrame, bg='#3a3a3a')
+        exportImportFrame = Frame(self.menuFrame, bg=self.theme['frame']['bg'])
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         self.setupButtonExportImportFrame(exportImportFrame)
         col += 1
 
-        self.create_item_block(self.menuFrame, row=0, col=col, theme=settingsMenuTop, shape='row', elements=1, bg='#6b6b6b', fg='#ffffff', font_default={'size':12, 'weight': 'bold'})
+        self.create_item_block(self.menuFrame, row=0, col=col, theme=settingsMenuTop, shape='row', elements=1, bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'], font_default={'size':12, 'weight': 'bold'})
         col += 3
 
-        buttonSettings = Frame(self.menuFrame, bg='#3a3a3a')
+        buttonSettings = Frame(self.menuFrame, bg=self.theme['frame']['bg'])
         buttonSettings.grid(row=0, column=col, sticky='nsew')
         self.setupButtonSettingsFrame(buttonSettings)
         col += 1
@@ -3383,12 +3445,12 @@ class SETS():
 
     def setupTierFrame(self, tier):
         f = font.Font(family='Helvetica', size=9)
-        l = Label(self.shipTierFrame, text="Tier:", fg='#3a3a3a', bg='#b3b3b3', font=f)
+        l = Label(self.shipTierFrame, text="Tier:", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=f)
         l.grid(row=0, column=0, sticky='nsew')
         l.configure(borderwidth=0, highlightthickness=0)
         m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
         m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0, font=f)
+        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, font=f)
 
 
     def setupShipImageFrame(self):
@@ -3402,28 +3464,28 @@ class SETS():
 
     def setupTagsFrame(self, buildTagFrame, environment='space'):
         if environment != 'ground':
-            self.shipTierFrame = Frame(buildTagFrame, bg='#b3b3b3')
+            self.shipTierFrame = Frame(buildTagFrame)
             self.shipTierFrame.pack(fill=X, expand=False)
 
-        #Label(buildTagFrame, text="BUILD TAGS", fg='#3a3a3a', bg='#b3b3b3').pack(fill=X, expand=False)
+        #Label(buildTagFrame, text="BUILD TAGS", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).pack(fill=X, expand=False)
         for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
-            tagFrame = Frame(buildTagFrame, bg='#b3b3b3')
+            tagFrame = Frame(buildTagFrame, bg=self.theme['frame_medium']['bg'])
             tagFrame.pack(fill=X, expand=False)
             v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
-            Checkbutton(tagFrame, variable=v, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=0)
+            Checkbutton(tagFrame, variable=v, fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(row=0,column=0)
             v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
-            Label(tagFrame, text=tag, fg='#3a3a3a', bg='#b3b3b3').grid(row=0,column=1)
+            Label(tagFrame, text=tag, fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(row=0,column=1)
 
     def setupCaptainFrame(self, charInfoFrame, environment='space'):
         self.precacheFactions()
         self.precacheReputations()
         row = 0
-        Label(charInfoFrame, text="Elite Captain", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
-        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg='#3a3a3a', bg='#b3b3b3', command=self.eliteCaptainCallback)
+        Label(charInfoFrame, text="Elite Captain", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(column=0, row = row, sticky='e')
+        m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], command=self.eliteCaptainCallback)
         m.grid(column=1, row=row, sticky='w', pady=2, padx=2)
-        m.configure(fg='#3a3a3a', bg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        m.configure(fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], borderwidth=0, highlightthickness=0)
         if environment == 'space':
-            self.shipTierFrame = Frame(charInfoFrame, bg='#b3b3b3')
+            self.shipTierFrame = Frame(charInfoFrame, bg=self.theme['frame_medium']['bg'])
             self.shipTierFrame.grid(column=3, row=row, columnspan=1, sticky='swe')
         row += 1
         """
@@ -3436,35 +3498,35 @@ class SETS():
         }
         self.createItemBlock(charInfoFrame, theme=captainSettingsDefaults, row=row, store='backend')
         """
-        Label(charInfoFrame, text="Captain Career", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        Label(charInfoFrame, text="Captain Career", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
 
         row += 1
         myFactionNames = self.factionNames
-        Label(charInfoFrame, text="Faction", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        Label(charInfoFrame, text="Faction", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend['captain']['faction'], *myFactionNames)
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
 
         row += 1
-        Label(charInfoFrame, text="Species", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        Label(charInfoFrame, text="Species", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames['all'])
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
 
         row += 1
-        Label(charInfoFrame, text="Primary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        Label(charInfoFrame, text="Primary Spec", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *sorted(self.cache['specsPrimary']))
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
 
         row += 1
-        Label(charInfoFrame, text="Secondary Spec", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='e')
+        Label(charInfoFrame, text="Secondary Spec", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
         m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *sorted(self.cache['specsSecondary']))
         m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg='#3a3a3a',fg='#b3b3b3', borderwidth=0, highlightthickness=0)
+        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
 
         charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
 
@@ -3540,21 +3602,21 @@ class SETS():
 
         self.clearFrame(parentFrame)
 
-        #exportImportFrame = Frame(parentFrame, bg='#3a3a3a')
+        #exportImportFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         #exportImportFrame.pack(fill=X, expand=True)
         #self.setupButtonExportImportFrame(exportImportFrame)
 
-        LabelFrame = Frame(parentFrame, bg='#3a3a3a')
+        LabelFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         LabelFrame.pack(fill=BOTH, expand=True, side=TOP)
         if 1:
-            imageLabel = Label(LabelFrame, fg='#3a3a3a', bg='#3a3a3a', highlightbackground="black", highlightthickness=1)
+            imageLabel = Label(LabelFrame, fg=self.theme['button']['fg'], bg=self.theme['button']['bg'], highlightbackground="black", highlightthickness=1)
             if environment == 'ground': self.charImageLabel = imageLabel
             elif environment == 'skill': self.skillImageLabel = imageLabel
             else: self.shipImageLabel = imageLabel
             imageLabel.pack(fill=BOTH, expand=True)
             imageLabel.configure(image=self.getEmptyFactionImage())
         else:  #canvas conversion tests
-            imageCanvas = Canvas(LabelFrame, highlightthickness=1, borderwidth=0, bg='#3a3a3a', highlightbackground="black")
+            imageCanvas = Canvas(LabelFrame, highlightthickness=1, borderwidth=0, bg=self.theme['button']['bg'], highlightbackground="black")
             imageCanvas.grid(row=0, column=0, sticky='nse')
             LabelFrame.grid_columnconfigure(0, weight=1)
             img0 = imageCanvas.create_image(imageCanvas.winfo_width() / 2,imageCanvas.winfo_height() / 2, anchor="center",image=self.getEmptyFactionImage())
@@ -3569,31 +3631,31 @@ class SETS():
                 self.shipImage1 = img1
 
         if environment != 'skill':
-            NameFrame = Frame(parentFrame, bg='#b3b3b3')
+            NameFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
             NameFrame.grid_columnconfigure(1, weight=1)
 
             row = 0
             if environment == 'space':
-                Label(NameFrame, text="Ship: ", fg='#3a3a3a', bg='#b3b3b3').grid(column=0, row = row, sticky='w')
-                self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg='#b3b3b3', wraplength=270)
+                Label(NameFrame, text="Ship: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(column=0, row = row, sticky='w')
+                self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg=self.theme['frame_medium']['bg'], wraplength=270)
                 self.shipButton.grid(column=1, row=row, sticky='nwse')
                 row += 1
 
-            Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg='#3a3a3a', bg='#b3b3b3').grid(row=row, column=0, sticky='w')
-            Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
+            Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(row=row, column=0, sticky='w')
+            Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
             row += 1
             # end of not-skill items
 
-        ExtraFrame = Frame(parentFrame, bg='#b3b3b3')
+        ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
         ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=BOTTOM)
-        CharFrame = Frame(parentFrame, bg='#b3b3b3')
+        CharFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
         CharFrame.pack(fill=X, expand=False, padx=2, side=BOTTOM)
         CharFrame.grid_columnconfigure(0, weight=1)
-        charInfoFrame = Frame(CharFrame, bg='#b3b3b3')
+        charInfoFrame = Frame(CharFrame, bg=self.theme['frame_medium']['bg'])
         charInfoFrame.grid(row=0, column=0, columnspan=2, sticky='ew')
         self.setupCaptainFrame(CharFrame, environment)
         if environment == 'skill':
-            ExtraFrame = Frame(parentFrame, bg='#b3b3b3')
+            ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
             ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=BOTTOM)
 
         if environment != 'skill': NameFrame.pack(fill=X, expand=False, padx=(0,5), pady=(5,0), side=BOTTOM)
@@ -3620,19 +3682,19 @@ class SETS():
         if row == 0: self.clearFrame(parentFrame)
         parentFrame.grid_columnconfigure(0, weight=1)
 
-        frame = Frame(parentFrame, bg='#b3b3b3')
+        frame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
         frame.grid(row=0, column=0, sticky='nsew')
         frame.columnconfigure(1, weight=1)
-        label = Label(frame, text="Player Handle: ", fg='#3a3a3a', bg='#b3b3b3')
+        label = Label(frame, text="Player Handle: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
         label.grid(row=0, column=0, sticky='w')
-        entry = Entry(frame, textvariable=self.backend['playerHandle'], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold'))
+        entry = Entry(frame, textvariable=self.backend['playerHandle'], fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=('Helvetica', 10, 'bold'))
         entry.grid(row=0, column=1, sticky='nsew',ipady=5, pady=5)
         row += 1
 
-        label = Label(parentFrame, text="Build Description ({}):".format(environment.title()), fg='#3a3a3a', bg='#b3b3b3')
+        label = Label(parentFrame, text="Build Description ({}):".format(environment.title()), fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
         label.grid(row=row, column=0, sticky='nw')
         # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
-        descText = Text(parentFrame, height=3, width=20, wrap=WORD, fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 8, 'bold'))
+        descText = Text(parentFrame, height=3, width=20, wrap=WORD, fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=('Helvetica', 8, 'bold'))
         descText.grid(row=row+1, column=0, sticky='nsew', padx=5, pady=2)
 
         if destination is None:
@@ -3649,7 +3711,7 @@ class SETS():
         parentFrame.grid_rowconfigure(0, weight=3, uniform="middleRow"+environment)
         parentFrame.grid_rowconfigure(1, weight=2, uniform="middleRow"+environment)
 
-        middleFrameUpper = Frame(parentFrame, bg='#3a3a3a')
+        middleFrameUpper = Frame(parentFrame, bg=self.theme['frame']['bg'])
         middleFrameUpper.grid(row=0,column=0,columnspan=3,sticky='nsew')
         middleFrameUpper.grid_rowconfigure(0, weight=1, uniform="secRow"+environment)
         middleFrameUpper.grid_columnconfigure(0, weight=1, uniform="secCol"+environment)
@@ -3657,26 +3719,26 @@ class SETS():
         middleFrameUpper.grid_columnconfigure(2, weight=1, uniform="secCol"+environment)
 
         col = 0
-        equipmentFrame = Frame(middleFrameUpper, bg='#3a3a3a')
+        equipmentFrame = Frame(middleFrameUpper, bg=self.theme['frame']['bg'])
         equipmentFrame.grid(row=0,column=col,sticky='nsew')
         #equipmentFrame.pack(side='left', fill=BOTH, expand=True, padx=20)
         col += 1
         if environment == 'space':
             middleFrameUpper.grid_columnconfigure(3, weight=1, uniform="secCol"+environment)
-            consoleFrame = Frame(middleFrameUpper, bg='#3a3a3a')
+            consoleFrame = Frame(middleFrameUpper, bg=self.theme['frame']['bg'])
             consoleFrame.grid(row=0,column=col,sticky='nsew')
             col += 1
-        boffFrame = Frame(middleFrameUpper, bg='#3a3a3a')
+        boffFrame = Frame(middleFrameUpper, bg=self.theme['frame']['bg'])
         boffFrame.grid(row=0,column=col,sticky='nsew')
         col += 1
-        traitFrame = Frame(middleFrameUpper, bg='#3a3a3a')
+        traitFrame = Frame(middleFrameUpper, bg=self.theme['frame']['bg'])
         traitFrame.grid(row=0,column=col,sticky='nsew')
         col += 1
 
-        middleFrameLower = Frame(parentFrame, bg='#3a3a3a')
+        middleFrameLower = Frame(parentFrame, bg=self.theme['frame']['bg'])
         middleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
         middleFrameLower.grid_columnconfigure(0, weight=1, uniform="secCol2"+environment)
-        doffFrame = Frame(middleFrameLower, bg='#3a3a3a')
+        doffFrame = Frame(middleFrameLower, bg=self.theme['frame']['bg'])
         doffFrame.pack(fill=BOTH, expand=True, padx=15, side=BOTTOM)
 
         if environment == 'ground':
@@ -3702,40 +3764,40 @@ class SETS():
         for i in range(5):
             parentFrame.grid_columnconfigure(i, weight=5, uniform="mainCol"+environment)
 
-        infoFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'], highlightbackground="grey", highlightthickness=1)
         infoFrame.grid(row=0,column=0,sticky='nsew', padx=(2,0), pady=(2,2))
 
-        middleFrame = Frame(parentFrame, bg='#3a3a3a')
+        middleFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         middleFrame.grid(row=0,column=1,columnspan=3,sticky='nsew', pady=5)
         if environment == 'skill':
             middleFrame.grid_rowconfigure(1, weight=1)
             middleFrame.grid_columnconfigure(0, weight=1)
 
-            middleFrameUpper = Frame(middleFrame, bg='#3a3a3a')
+            middleFrameUpper = Frame(middleFrame, bg=self.theme['frame']['bg'])
             middleFrameUpper.grid(row=0,column=0,sticky='nsew')
             self.setupSkillMenuFrame(middleFrameUpper)
 
-            middleFrameLower = Frame(middleFrame, bg='#3a3a3a')
+            middleFrameLower = Frame(middleFrame, bg=self.theme['frame']['bg'])
             middleFrameLower.grid(row=1,column=0,sticky='nsew')
             middleFrameLower.grid_rowconfigure(1, weight=1)
             middleFrameLower.grid_columnconfigure(0, weight=1)
 
-            self.skillSpaceBuildFrame = Frame(middleFrameLower, bg='#3a3a3a')
-            self.skillGroundBuildFrame = Frame(middleFrameLower, bg='#3a3a3a')
+            self.skillSpaceBuildFrame = Frame(middleFrameLower, bg=self.theme['frame']['bg'])
+            self.skillGroundBuildFrame = Frame(middleFrameLower, bg=self.theme['frame']['bg'])
             self.focusSkillBuildFrameCallback('space', init=True)
         if environment == 'space' or environment == 'ground':
             self.setupInitialBuildGearFrame(middleFrame, environment=environment)
 
-        infoBoxOuterFrame = Frame(parentFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
+        infoBoxOuterFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'], highlightbackground=self.theme['frame_medium']['hlbg'] , highlightthickness=self.theme['frame_medium']['hlthick'])
         infoBoxOuterFrame.grid(row=0,column=4,sticky='nsew', padx=(2,0), pady=(2,2))
 
-        buildTagFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
+        buildTagFrame = Frame(infoBoxOuterFrame, bg=self.theme['frame_medium']['bg'])
         buildTagFrame.pack(fill=X, expand=False, side=BOTTOM)
 
-        descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
+        descFrame = Frame(infoBoxOuterFrame, bg=self.theme['frame_medium']['bg'])
         descFrame.pack(fill=X, expand=False, side=BOTTOM)
 
-        infoboxFrame = Frame(infoBoxOuterFrame, bg='#090b0d', highlightbackground="grey", highlightthickness=1)
+        infoboxFrame = Frame(infoBoxOuterFrame, bg=self.theme['tooltip']['bg'])
         infoboxFrame.pack(fill=BOTH, expand=True, side=TOP)
 
         if environment == 'skill':
@@ -3761,30 +3823,24 @@ class SETS():
         pass #placeholder
 
     def setupSettingsFrame(self):
-        settingsTopFrame = Frame(self.settingsFrame, bg='#b3b3b3')
+        settingsTopFrame = Frame(self.settingsFrame, bg=self.theme['frame_medium']['bg'])
         settingsTopFrame.pack(side='top', fill=BOTH, expand=True)
-        settingsBottomFrame = Frame(self.settingsFrame, bg='#b3b3b3')
+        settingsBottomFrame = Frame(self.settingsFrame, bg=self.theme['frame_medium']['bg'])
         settingsBottomFrame.pack(side='bottom', fill=BOTH, expand=True)
 
-        settingsTopLeftFrame = Frame(settingsTopFrame, bg='#b3b3b3')
+        settingsTopLeftFrame = Frame(settingsTopFrame, bg=self.theme['frame_medium']['bg'])
         settingsTopLeftFrame.grid(row=0,column=0,sticky='nsew', pady=5)
-        settingsTopMiddleLeftFrame = Frame(settingsTopFrame, bg='#b3b3b3')
+        settingsTopMiddleLeftFrame = Frame(settingsTopFrame, bg=self.theme['frame_medium']['bg'])
         settingsTopMiddleLeftFrame.grid(row=0,column=1,sticky='nsew', pady=5)
-        settingsTopMiddleRightFrame = Frame(settingsTopFrame, bg='#b3b3b3')
+        settingsTopMiddleRightFrame = Frame(settingsTopFrame, bg=self.theme['frame_medium']['bg'])
         settingsTopMiddleRightFrame.grid(row=0,column=2,sticky='nsew', pady=5)
-        settingsTopRightFrame = Frame(settingsTopFrame, bg='#b3b3b3')
+        settingsTopRightFrame = Frame(settingsTopFrame, bg=self.theme['frame_medium']['bg'])
         settingsTopRightFrame.grid(row=0,column=3,sticky='nsew', pady=5)
 
         settingsTopFrame.grid_columnconfigure(0, weight=2, uniform="settingsColSpace")
         settingsTopFrame.grid_columnconfigure(1, weight=2, uniform="settingsColSpace")
         settingsTopFrame.grid_columnconfigure(2, weight=2, uniform="settingsColSpace")
         settingsTopFrame.grid_columnconfigure(3, weight=2, uniform="settingsColSpace")
-
-        #label = Label(settingsTopLeftFrame, text="Log (mousewheel to scroll):", fg='#3a3a3a', bg='#b3b3b3')
-        #label.grid(row=0, column=0, sticky='nw')
-        #self.logDisplay = Text(settingsTopLeftFrame, bg='#3a3a3a', fg='#ffffff', wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
-        #self.logDisplay.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
-        #self.logDisplay.insert('0.0', self.logFull.get())
 
         settingsDefaults = {
             'Defaults (auto-saved):'     : { 'col' : 1, 'type': 'title'},
@@ -3859,7 +3915,7 @@ class SETS():
             # Need to hook rescaling
             pass
 
-    def create_item_block(self, parent_frame, theme=None, shape='col', elements=2, callback=None, row=0, col=0, pad_x=2, pad_y=2, fg='#b3b3b3', bg='#3a3a3a', sticky=None, font_default=None, row_weight=None, col_weight=None, store=None):
+    def create_item_block(self, parent_frame, theme=None, shape='col', elements=2, callback=None, row=0, col=0, pad_x=2, pad_y=2, fg=theme['button']['fg'], bg=theme['button']['bg'], sticky=None, font_default=None, row_weight=None, col_weight=None, store=None):
         if theme is None or not len(theme): return
 
         i = -1  # count of keys processed
@@ -4100,19 +4156,19 @@ class SETS():
         self.dpi = round(self.window.winfo_fpixels('1i'), 0)
         self.setupUIScaling()
 
-        self.containerFrame = Frame(self.window, bg='#c59129')
+        self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'])
         self.containerFrame.pack(fill=BOTH, expand=True)
-        self.logoFrame = Frame(self.containerFrame, bg='#c59129')
+        self.logoFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'])
         self.logoFrame.pack(fill=X)
-        self.menuFrame = Frame(self.containerFrame, bg='#c59129')
+        self.menuFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'])
         self.menuFrame.pack(fill=X, padx=15)
-        self.verticalFrame = Frame(self.containerFrame, bg='#c59129', height=self.windowActiveHeightDefault)
+        self.verticalFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'], height=self.windowActiveHeightDefault)
         self.verticalFrame.pack(fill='none', side='left')
-        self.spaceBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
-        self.groundBuildFrame = Frame(self.containerFrame, bg='#3a3a3a')
-        self.skillTreeFrame = Frame(self.containerFrame, bg='#3a3a3a')
-        self.libraryFrame = Frame(self.containerFrame, bg='#3a3a3a')
-        self.settingsFrame = Frame(self.containerFrame, bg='#3a3a3a')
+        self.spaceBuildFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
+        self.groundBuildFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
+        self.skillTreeFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
+        self.libraryFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
+        self.settingsFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
 
         #self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.focusFrameCallback(type=self.args.startuptab, init=True)
