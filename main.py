@@ -3324,20 +3324,20 @@ class SETS():
         self.clearFrame(parentFrame)
 
         settingsMenuSkill = {
-            'Space Skill Tree'             : {'type' : 'buttonblock', 'varName' : 'spaceSkillButton', 'callback' : self.focusSpaceSkillBuildFrameCallback, 'colWeight' : 1},
-            'Ground Skill Tree'            : {'type' : 'buttonblock', 'varName' : 'groundSkillButton', 'callback' : self.focusGroundSkillBuildFrameCallback, 'colWeight' : 1},
+            'Space Skill Tree'             : {'type' : 'button_block', 'var_name' : 'spaceSkillButton', 'callback' : self.focusSpaceSkillBuildFrameCallback, 'colWeight' : 1},
+            'Ground Skill Tree'            : {'type' : 'button_block', 'var_name' : 'groundSkillButton', 'callback' : self.focusGroundSkillBuildFrameCallback, 'colWeight' : 1},
         }
 
-        self.createItemBlock(parentFrame, theme=settingsMenuSkill, shape='row', elements=1)
+        self.create_item_block(parentFrame, theme=settingsMenuSkill, shape='row', elements=1)
 
 
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
 
         settingsMenuTop = {
-            'SPACE'             : {'type' : 'buttonblock', 'varName' : 'spaceButton', 'callback' : self.focusSpaceBuildFrameCallback},
-            'GROUND'            : {'type' : 'buttonblock', 'varName' : 'groundButton', 'callback' : self.focusGroundBuildFrameCallback},
-            'SKILL TREE'        : {'type' : 'buttonblock', 'varName' : 'skillButton', 'callback' : self.focusSkillTreeFrameCallback},
+            'SPACE'             : {'type' : 'button_block', 'var_name' : 'spaceButton', 'callback' : self.focusSpaceBuildFrameCallback},
+            'GROUND'            : {'type' : 'button_block', 'var_name' : 'groundButton', 'callback' : self.focusGroundBuildFrameCallback},
+            'SKILL TREE'        : {'type' : 'button_block', 'var_name' : 'skillButton', 'callback' : self.focusSkillTreeFrameCallback},
         }
 
         col = 0
@@ -3346,7 +3346,7 @@ class SETS():
         self.setupButtonExportImportFrame(exportImportFrame)
         col += 1
 
-        self.createItemBlock(self.menuFrame, row=0, col=col, theme=settingsMenuTop, shape='row', elements=1, bg='#6b6b6b', fg='#ffffff', fontDefault={'size':12,'weight':'bold'})
+        self.create_item_block(self.menuFrame, row=0, col=col, theme=settingsMenuTop, shape='row', elements=1, bg='#6b6b6b', fg='#ffffff', font_default={'size':12, 'weight': 'bold'})
         col += 3
 
         buttonSettings = Frame(self.menuFrame, bg='#3a3a3a')
@@ -3361,24 +3361,24 @@ class SETS():
         self.clearFrame(parentFrame)
 
         settingsMenuExport = {
-            'Export\nFull'  : { 'type' : 'buttonblock', 'varName' : 'exportFullButton', 'callback' : self.exportCallback},
-            'Export\nreddit': { 'type' : 'buttonblock', 'varName' : 'exportRedditButton', 'callback' : self.exportRedditCallback},
-            'Import'        : { 'type' : 'buttonblock', 'varName' : 'importButton', 'callback' : self.importCallback},
+            'Export\nFull'  : { 'type' : 'button_block', 'var_name' : 'exportFullButton', 'callback' : self.exportCallback},
+            'Export\nreddit': { 'type' : 'button_block', 'var_name' : 'exportRedditButton', 'callback' : self.exportRedditCallback},
+            'Import'        : { 'type' : 'button_block', 'var_name' : 'importButton', 'callback' : self.importCallback},
         }
 
-        self.createItemBlock(parentFrame, theme=settingsMenuExport, shape='row', elements=1)
+        self.create_item_block(parentFrame, theme=settingsMenuExport, shape='row', elements=1)
 
 
     def setupButtonSettingsFrame(self, parentFrame):
         self.clearFrame(parentFrame)
 
         settingsMenuSettings = {
-            'Clear'     : { 'type' : 'buttonblock', 'varName' : 'clearButton', 'callback' : self.clearBuildCallback},
-            'LIBRARY'   : { 'type' : 'buttonblock', 'varName' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
-            'SETTINGS'  : { 'type' : 'buttonblock', 'varName' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
+            'Clear'     : { 'type' : 'button_block', 'var_name' : 'clearButton', 'callback' : self.clearBuildCallback},
+            'LIBRARY'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
+            'SETTINGS'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
         }
 
-        self.createItemBlock(parentFrame, theme=settingsMenuSettings, shape='row', elements=1)
+        self.create_item_block(parentFrame, theme=settingsMenuSettings, shape='row', elements=1)
 
 
     def setupTierFrame(self, tier):
@@ -3428,11 +3428,11 @@ class SETS():
         row += 1
         """
         captainSettingsDefaults = {
-            'Captain Career': {'col': 2, 'type': 'menu', 'varName': 'career', 'settingOptions': ['', 'Tactical', 'Engineering', 'Science']},
-            'Faction': {'col': 2, 'type': 'menu', 'varName': 'captain', 'varSubName': 'faction', 'settingOptions': self.factionNames},
-            'Species': {'col': 2, 'type': 'menu', 'varName': 'species', 'settingOptions': self.speciesNames['all']},
-            'Primary Spec': {'col': 2, 'type': 'menu', 'varName': 'specPrimary', 'settingOptions': sorted(self.cache['specsPrimary'])},
-            'Secondary Spec': {'col': 2, 'type': 'menu', 'varName': 'specSecondary', 'settingOptions': sorted(self.cache['specsSecondary'])},
+            'Captain Career': {'col': 2, 'type': 'menu', 'var_name': 'career', 'setting_options': ['', 'Tactical', 'Engineering', 'Science']},
+            'Faction': {'col': 2, 'type': 'menu', 'var_name': 'captain', 'varSubName': 'faction', 'setting_options': self.factionNames},
+            'Species': {'col': 2, 'type': 'menu', 'var_name': 'species', 'setting_options': self.speciesNames['all']},
+            'Primary Spec': {'col': 2, 'type': 'menu', 'var_name': 'specPrimary', 'setting_options': sorted(self.cache['specsPrimary'])},
+            'Secondary Spec': {'col': 2, 'type': 'menu', 'var_name': 'specSecondary', 'setting_options': sorted(self.cache['specsSecondary'])},
         }
         self.createItemBlock(charInfoFrame, theme=captainSettingsDefaults, row=row, store='backend')
         """
@@ -3788,169 +3788,196 @@ class SETS():
 
         settingsDefaults = {
             'Defaults (auto-saved):'     : { 'col' : 1, 'type': 'title'},
-            'Mark'                       : { 'col' : 2, 'type' : 'menu', 'varName' : 'markDefault', 'settingOptions': self.marks},
-            'Rarity'                     : { 'col' : 2, 'type' : 'menu', 'varName' : 'rarityDefault', 'settingOptions': [''] + self.rarities},
-            'Faction'                    : { 'col' : 2, 'type' : 'menu', 'varName' : 'factionDefault', 'settingOptions': self.factionNames},
+            'Mark'                       : { 'col' : 2, 'type' : 'menu', 'var_name' : 'markDefault', 'setting_options': self.marks},
+            'Rarity'                     : { 'col' : 2, 'type' : 'menu', 'var_name' : 'rarityDefault', 'setting_options': [''] + self.rarities},
+            'Faction'                    : { 'col' : 2, 'type' : 'menu', 'var_name' : 'factionDefault', 'setting_options': self.factionNames},
 
         }
-        self.createItemBlock(settingsTopMiddleLeftFrame, theme=settingsDefaults)
+        self.create_item_block(settingsTopMiddleLeftFrame, theme=settingsDefaults)
 
         settingsTheme = {
             'Theme Settings (auto-saved):'          : { 'col' : 1, 'type': 'title'},
-            'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'varName' : 'uiScale' },
+            'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'var_name' : 'uiScale' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
-            'Use experimental tooltips'             : { 'col' : 2, 'type' : 'menu', 'varName' : 'useExperimentalTooltip', 'boolean' : True },
+            'Use experimental tooltips'             : { 'col' : 2, 'type' : 'menu', 'var_name' : 'useExperimentalTooltip', 'boolean' : True },
             'blank2'                                : { 'col' : 1, 'type' : 'blank' },
-            'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault', 'settingOptions': self.exportOptions },
-            'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'varName' : 'pickerSpawnUnderMouse', 'boolean' : True },
-            'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipClear', 'boolean' : True },
-            'Keep build when changing ships'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipChange', 'boolean' : True },
+            'Export default'                        : { 'col' : 2, 'type' : 'menu', 'var_name' : 'exportDefault', 'setting_options': self.exportOptions },
+            'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'var_name' : 'pickerSpawnUnderMouse', 'boolean' : True },
+            'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'var_name' : 'keepTemplateOnShipClear', 'boolean' : True },
+            'Keep build when changing ships'        : { 'col' : 2, 'type' : 'menu', 'var_name' : 'keepTemplateOnShipChange', 'boolean' : True },
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Sort Options:'                         : { 'col' : 1 },
-            'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort', 'settingOptions': self.boffSortOptions },
-            'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort2', 'settingOptions': self.boffSortOptions },
-            'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort', 'settingOptions': self.consoleSortOptions },
+            'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'menu', 'var_name' : 'boffSort', 'setting_options': self.boffSortOptions },
+            'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'menu', 'var_name' : 'boffSort2', 'setting_options': self.boffSortOptions },
+            'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'var_name' : 'consoleSort', 'setting_options': self.consoleSortOptions },
             'blank4': {'col': 1, 'type': 'blank'},
-            'Save current window position': {'col': 2, 'type': 'button', 'varName': 'savePositionOnly'},
-            'Save current window size+position': {'col': 2, 'type': 'button', 'varName': 'savePosition'},
-            'Reset to default window size/position': {'col': 2, 'type': 'button', 'varName': 'resetPosition'},
+            'Save current window position': {'col': 2, 'type': 'button', 'var_name': 'savePositionOnly'},
+            'Save current window size+position': {'col': 2, 'type': 'button', 'var_name': 'savePosition'},
+            'Reset to default window size/position': {'col': 2, 'type': 'button', 'var_name': 'resetPosition'},
         }
-        self.createItemBlock(settingsTopMiddleRightFrame, theme=settingsTheme)
+        self.create_item_block(settingsTopMiddleRightFrame, theme=settingsTheme)
 
         settingsMaintenance = {
             'Maintenance (auto-saved):'             : { 'col' : 1, 'type': 'title'},
-            'Open Log'                              : { 'col' : 2, 'type' : 'button', 'varName' : 'openLog' },
+            'Open Log'                              : { 'col' : 2, 'type' : 'button', 'var_name' : 'openLog' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
-            'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'forceJsonLoad', 'boolean' : True},
-            'Disabled precache at startup'          : { 'col' : 2, 'type' : 'menu', 'varName' : 'noPreCache', 'boolean' : True},
-            'Use faction-specific icons (experimental)' : { 'col' : 2, 'type' : 'menu', 'varName' : 'useFactionSpecificIcons', 'boolean' : True },
+            'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'var_name' : 'forceJsonLoad', 'boolean' : True},
+            'Disabled precache at startup'          : { 'col' : 2, 'type' : 'menu', 'var_name' : 'noPreCache', 'boolean' : True},
+            'Use faction-specific icons (experimental)' : { 'col' : 2, 'type' : 'menu', 'var_name' : 'useFactionSpecificIcons', 'boolean' : True },
             'blank2'                                : { 'col' : 1, 'type' : 'blank' },
-            'Create SETS manual settings file': { 'col' : 2, 'type' : 'button', 'varName' : 'exportConfigFile' },
-            'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'varName' : 'backupCache' },
-            'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
+            'Create SETS manual settings file': { 'col' : 2, 'type' : 'button', 'var_name' : 'exportConfigFile' },
+            'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'var_name' : 'backupCache' },
+            'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearcache' },
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
-            'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'varName' : 'clearfactionImages' },
-            'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'varName' : 'clearmemcache' },
-            'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearimages' },
-            'Download ship images (VERY SLOW!)'     : { 'col' : 2, 'type' : 'button', 'varName' : 'predownloadShipImages' },
-#            'Download gear images (VERY SLOW!)'     : { 'col' : 2, 'type' : 'button', 'varName' : 'predownloadGearImages' },
-#            'Save cache binaries (TEST)'            : { 'col' : 2, 'type' : 'button', 'varName' : 'cacheSave' },
+            'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearfactionImages' },
+            'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearmemcache' },
+            'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearimages' },
+            'Download ship images (VERY SLOW!)'     : { 'col' : 2, 'type' : 'button', 'var_name' : 'predownloadShipImages' },
+#            'Download gear images (VERY SLOW!)'     : { 'col' : 2, 'type' : 'button', 'var_name' : 'predownloadGearImages' },
+#            'Save cache binaries (TEST)'            : { 'col' : 2, 'type' : 'button', 'var_name' : 'cacheSave' },
 
 
         }
-        self.createItemBlock(settingsTopRightFrame, theme=settingsMaintenance)
+        self.create_item_block(settingsTopRightFrame, theme=settingsMaintenance)
 
-    def persistentSet(self, choice, varName, isBoolean=False):
-        if varName is None or varName == '':
+    def persistentSet(self, choice, var_name, isBoolean=False):
+        if var_name is None or var_name == '':
             return
-        self.logWrite('==={} = {} [{}]'.format(varName, choice, isBoolean), 3)
-        if isBoolean: self.persistent[varName] = 1 if choice=='Yes' else 0
-        elif varName == 'uiScale': self.persistent[varName] = float(choice)
-        else: self.persistent[varName] = choice
+        self.logWrite('==={} = {} [{}]'.format(var_name, choice, isBoolean), 3)
+        if isBoolean: self.persistent[var_name] = 1 if choice=='Yes' else 0
+        elif var_name == 'uiScale': self.persistent[var_name] = float(choice)
+        else: self.persistent[var_name] = choice
 
-        self.logWriteSimple("self.persistent", varName, 2, [choice, self.persistent[varName]])
+        self.logWriteSimple("self.persistent", var_name, 2, [choice, self.persistent[var_name]])
         self.stateSave()
 
-        if varName == 'consoleSort':
+        if var_name == 'consoleSort':
             # Need to hook the ship frame to take sub-frame updates
             pass
-        elif varName == 'boffSort' or varName == 'boffSort2': self.setupBoffFrame('space', self.backend['shipHtml'])
-        elif varName == 'uiScale':
+        elif var_name == 'boffSort' or var_name == 'boffSort2': self.setupBoffFrame('space', self.backend['shipHtml'])
+        elif var_name == 'uiScale':
             # Need to hook rescaling
             pass
 
-    def createItemBlock(self, parentFrame, theme=None, shape='col', elements=2, callback=None, row=0, col=0, padx=2, pady=2, fg='#b3b3b3', bg='#3a3a3a', sticky=None, fontDefault=None, rowWeight=None, colWeight=None, store=None):
+    def create_item_block(self, parent_frame, theme=None, shape='col', elements=2, callback=None, row=0, col=0, pad_x=2, pad_y=2, fg='#b3b3b3', bg='#3a3a3a', sticky=None, font_default=None, row_weight=None, col_weight=None, store=None):
         if theme is None or not len(theme): return
 
-        i = 0 # count of keys processed
+        i = -1  # count of keys processed
         for title in theme.keys():
-            type = theme[title]['type'] if 'type' in theme[title] else ''
+            i += 1
+            element_type = theme[title]['type'] if 'type' in theme[title] else ''
             tag = theme[title]['tag'] if 'tag' in theme[title] else ''
-            isButton = True if type == 'button' or type == 'buttonblock' else False
+            is_button = True if element_type == 'button' or element_type == 'button_block' else False
 
-            varName = theme[title]['varName'] if 'varName' in theme[title] else ''
-            varSubName = theme[title]['varSubName'] if 'varSubName' in theme[title] else ''
-            isBoolean = True if 'boolean' in theme[title] and theme[title]['boolean'] else False
+            var_name = theme[title]['var_name'] if 'var_name' in theme[title] else ''
+            var_sub_name = theme[title]['var_sub_name'] if 'var_sub_name' in theme[title] else ''
+            is_boolean = True if 'boolean' in theme[title] and theme[title]['boolean'] else False
             callback = theme[title]['callback'] if 'callback' in theme[title] else callback
             if store == 'backend':
-                storageDict = self.backend
+                storage_dict = self.backend
             else:
-                storageDict = self.persistent
+                storage_dict = self.persistent
 
             columns = theme[title]['col'] if 'col' in theme[title] else 1
-            if 'fg' in theme[title]: fg=theme[title]['fg']
-            if 'bg' in theme[title]: bg=theme[title]['bg']
+            if 'fg' in theme[title]:
+                fg=theme[title]['fg']
+            if 'bg' in theme[title]:
+                bg=theme[title]['bg']
             labelfg=theme[title]['labelfg'] if 'labelfg' in theme[title] else '#3a3a3a'
             labelbg=theme[title]['labelbg'] if 'labelbg' in theme[title] else '#b3b3b3'
-            colOption = 0 if isButton else 1
-            spanOption = elements if isButton else 1
-            stickyOption = 'nw'
-            if type == 'button': stickyOption = 'nwe'
-            if type == 'buttonblock':
-                stickyOption = 'nsew'
-                padx = 0
-                pady = 0
-                rowWeight = 1
-                colWeight = 1
-            if sticky is not None: stickyOption = sticky
-            if 'sticky' in theme[title]: stickyOption = theme[title]['sticky']
-            if 'padx' in theme[title]: padx=theme[title]['padx']
-            if 'pady' in theme[title]: pady=theme[title]['pady']
-            if 'rowWeight' in theme[title]: rowWeight=theme[title]['rowWeight']
-            if 'colWeight' in theme[title]: colWeight=theme[title]['colWeight']
+            col_option = 0 if is_button else 1
+            span_option = elements if is_button else 1
+            sticky_option = 'nw'
+            if element_type == 'button':
+                sticky_option = 'nwe'
+            if element_type == 'button_block':
+                sticky_option = 'nsew'
+                pad_x = 0
+                pad_y = 0
+                row_weight = 1
+                col_weight = 1
+            if sticky is not None:
+                sticky_option = sticky
+            if 'sticky' in theme[title]:
+                sticky_option = theme[title]['sticky']
+            if 'padx' in theme[title]:
+                pad_x=theme[title]['padx']
+            if 'pady' in theme[title]:
+                pad_y=theme[title]['pady']
+            if 'rowWeight' in theme[title]:
+                row_weight=theme[title]['rowWeight']
+            if 'colWeight' in theme[title]:
+                col_weight=theme[title]['colWeight']
 
-            fontData = { 'family' : 'Helvetica', 'size' : 10, 'weight' : ''}
-            fontLabel = { 'family' : 'Helvetica', 'size' : 12, 'weight' : ''}
-            if type == 'title': fontLabel.update({'size': 14, 'weight': 'bold'})
-            if fontDefault is not None: fontData.update(fontDefault)
+            font_data = { 'family': 'Helvetica', 'size': 10, 'weight': ''}
+            font_label = { 'family': 'Helvetica', 'size': 12, 'weight': ''}
+            if element_type == 'title':
+                font_label.update({'size': 14, 'weight': 'bold'})
+            if font_default is not None:
+                font_data.update(font_default)
 
-            f = font.Font(family=fontLabel['family'], size=fontLabel['size'], weight=fontLabel['weight']) if fontLabel['weight'] else font.Font(family=fontLabel['family'], size=fontLabel['size'])
-            f2 = font.Font(family=fontData['family'], size=fontData['size'], weight=fontData['weight']) if fontData['weight'] else font.Font(family=fontData['family'], size=fontData['size'])
+            f = font.Font(family=font_label['family'], size=font_label['size'], weight=font_label['weight']) if font_label['weight'] \
+                else font.Font(family=font_label['family'], size=font_label['size'])
+            f2 = font.Font(family=font_data['family'], size=font_data['size'], weight=font_data['weight']) if font_data['weight'] \
+                else font.Font(family=font_data['family'], size=font_data['size'])
 
-            if columns > 1 and varName == '': continue
-            #self.logWrite("==={}: {}/{}".format(title, varName, type), 2)
-            rowCurrent = (i * elements) if shape == 'col' else 0
-            rowCurrent += row
-            colStart = (i * elements) if shape == 'row' else 0
-            colStart += col
-            useLabel = True if type == 'label' or type == 'blank' or type == 'title' or (not isButton and columns > 1) else False
+            if columns > 1 and var_name == '':
+                continue
+            # self.logWrite("==={}: {}/{}".format(title, var_name, type), 2)
+            row_current = (i * elements) if shape == 'col' else 0
+            row_current += row
+            col_start = (i * elements) if shape == 'row' else 0
+            col_start += col
+            use_label = True if element_type == 'label' or element_type == 'blank' or element_type == 'title' or (not is_button and columns > 1) else False
 
-            if useLabel:
-                spanLabel = 1 + (elements - columns)
-                stickyLabel = 'ew' if spanLabel > 1 else 'e'
-                if type == 'title': stickylabel = 'n'
-                label = Label(parentFrame, text='' if type == 'blank' else title, fg=labelfg, bg=labelbg, font=f)
-                label.grid(row=rowCurrent, column=colStart, columnspan=spanLabel, sticky=stickyLabel, pady=pady, padx=padx)
+            if use_label:
+                span_label = 1 + (elements - columns)
+                sticky_label = 'ew' if span_label > 1 else 'e'
+                if element_type == 'title':
+                    sticky_label = 'n'
+                label = Label(parent_frame, text='' if element_type == 'blank' else title, fg=labelfg, bg=labelbg, font=f)
+                label.grid(row=row_current, column=col_start, columnspan=span_label, sticky=sticky_label, pady=pad_y, padx=pad_x)
 
-            if type == 'menu':
-                if isBoolean:  settingVar = StringVar(value='Yes' if storageDict[varName] else 'No')
-                else: settingVar = StringVar(value=storageDict[varName] if varName in storageDict else '')
+            if element_type == 'menu':
+                if is_boolean:
+                    setting_var = StringVar(value='Yes' if storage_dict[var_name] else 'No')
+                else:
+                    setting_var = StringVar(value=storage_dict[var_name] if var_name in storage_dict else '')
 
-                settingOptions = self.yesNo
-                if 'settingOptions' in theme[title]:
-                        settingOptions = theme[title]['settingOptions']
+                setting_options = self.yesNo
+                if 'setting_options' in theme[title]:
+                    setting_options = theme[title]['setting_options']
 
-                if callback is None: optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName,isBoolean=isBoolean:self.persistentSet(choice, varName=varName, isBoolean=isBoolean))
-                else: optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=callback)
-            elif type == 'scale':
-                settingVar = DoubleVar(value=storageDict[varName] if varName in storageDict else 1)
-                if varName == 'uiScale': self.uiScaleSetting = settingVar
-                if callback is None: optionFrame = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=settingVar, command=lambda choice,varName=varName:self.persistentSet(choice, varName=varName))
-                else: optionFrame = Scale(parentFrame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=settingVar, command=callback)
-            elif isButton:
-                if callback is None: optionFrame = Button(parentFrame, text=title, fg=fg, bg=bg, command=lambda varName=varName:self.settingsButtonCallback(type=varName))
-                else: optionFrame = Button(parentFrame, text=title, fg=fg, bg=bg, command=callback)
+                if callback is None:
+                    option_frame = OptionMenu(parent_frame, setting_var, *setting_options, command=lambda choice, var_name=var_name, isBoolean=is_boolean:self.persistentSet(choice, var_name=var_name, isBoolean=isBoolean))
+                else:
+                    option_frame = OptionMenu(parent_frame, setting_var, *setting_options, command=callback)
+            elif element_type == 'scale':
+                setting_var = DoubleVar(value=storage_dict[var_name] if var_name in storage_dict else 1)
+                if var_name == 'uiScale': self.uiScaleSetting = setting_var
+                if callback is None:
+                    option_frame = Scale(parent_frame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=setting_var, command=lambda choice, var_name=var_name:self.persistentSet(choice, var_name=var_name))
+                else:
+                    option_frame = Scale(parent_frame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=setting_var, command=callback)
+            elif is_button:
+                if callback is None:
+                    option_frame = Button(parent_frame, text=title, fg=fg, bg=bg, command=lambda var_name=var_name:self.settingsButtonCallback(type=var_name))
+                else:
+                    option_frame = Button(parent_frame, text=title, fg=fg, bg=bg, command=callback)
             else:
-                type = 'blank'
+                option_frame = None
+                element_type = 'blank'
 
-            if type != 'blank':
-                if type == 'buttonblock': optionFrame.configure(bg=bg,fg=fg,font=f2)
-                else: optionFrame.configure(bg=bg,fg=fg, borderwidth=0, highlightthickness=0, width=9)
-                optionFrame.grid(row=rowCurrent, column=colStart+colOption, columnspan=spanOption, sticky=stickyOption, pady=pady, padx=padx)
-                if rowWeight is not None: parentFrame.grid_rowconfigure(rowCurrent, weight=rowWeight)
-                if colWeight is not None: parentFrame.grid_columnconfigure(colStart+colOption, weight=colWeight)
-
-            i += 1
+            if element_type != 'blank':
+                if element_type == 'button_block':
+                    option_frame.configure(bg=bg,fg=fg,font=f2)
+                else:
+                    option_frame.configure(bg=bg,fg=fg, borderwidth=0, highlightthickness=0, width=9)
+                option_frame.grid(row=row_current, column=col_start+col_option, columnspan=span_option, sticky=sticky_option, pady=pad_y, padx=pad_x)
+                if row_weight is not None:
+                    parent_frame.grid_rowconfigure(row_current, weight=row_weight)
+                if col_weight is not None:
+                    parent_frame.grid_columnconfigure(col_start + col_option, weight=col_weight)
 
     def setupUIScaling(self,event=None):
         # Partially effect, some errors in the log formatting
