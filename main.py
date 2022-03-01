@@ -3765,9 +3765,9 @@ class SETS():
 
         settingsDefaults = {
             'Defaults (auto-saved):'     : { 'col' : 1, 'type': 'title'},
-            'Mark'                       : { 'col' : 2, 'type' : 'menu', 'varName' : 'markDefault' },
-            'Rarity'                     : { 'col' : 2, 'type' : 'menu', 'varName' : 'rarityDefault' },
-            'Faction'                    : { 'col' : 2, 'type' : 'menu', 'varName' : 'factionDefault' },
+            'Mark'                       : { 'col' : 2, 'type' : 'menu', 'varName' : 'markDefault', 'settingOptions': self.marks},
+            'Rarity'                     : { 'col' : 2, 'type' : 'menu', 'varName' : 'rarityDefault', 'settingOptions': [''] + self.rarities},
+            'Faction'                    : { 'col' : 2, 'type' : 'menu', 'varName' : 'factionDefault', 'settingOptions': self.factionNames},
 
         }
         self.createItemBlock(settingsTopMiddleLeftFrame, theme=settingsDefaults)
@@ -3778,15 +3778,15 @@ class SETS():
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
             'Use experimental tooltips'             : { 'col' : 2, 'type' : 'menu', 'varName' : 'useExperimentalTooltip', 'boolean' : True },
             'blank2'                                : { 'col' : 1, 'type' : 'blank' },
-            'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault' },
+            'Export default'                        : { 'col' : 2, 'type' : 'menu', 'varName' : 'exportDefault', 'settingOptions': self.exportOptions },
             'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'varName' : 'pickerSpawnUnderMouse', 'boolean' : True },
             'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipClear', 'boolean' : True },
             'Keep build when changing ships'        : { 'col' : 2, 'type' : 'menu', 'varName' : 'keepTemplateOnShipChange', 'boolean' : True },
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Sort Options:'                         : { 'col' : 1 },
-            'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort' },
-            'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort2' },
-            'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort' },
+            'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort', 'settingOptions': self.boffSortOptions },
+            'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'menu', 'varName' : 'boffSort2', 'settingOptions': self.boffSortOptions },
+            'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'varName' : 'consoleSort', 'settingOptions': self.consoleSortOptions },
             'blank4': {'col': 1, 'type': 'blank'},
             'Save current window position': {'col': 2, 'type': 'button', 'varName': 'savePositionOnly'},
             'Save current window size+position': {'col': 2, 'type': 'button', 'varName': 'savePosition'},
@@ -3802,7 +3802,7 @@ class SETS():
             'Disabled precache at startup'          : { 'col' : 2, 'type' : 'menu', 'varName' : 'noPreCache', 'boolean' : True},
             'Use faction-specific icons (experimental)' : { 'col' : 2, 'type' : 'menu', 'varName' : 'useFactionSpecificIcons', 'boolean' : True },
             'blank2'                                : { 'col' : 1, 'type' : 'blank' },
-#            'Export SETS manual settings'           : { 'col' : 2, 'type' : 'button', 'varName' : 'exportConfigFile' },
+            'Create SETS manual settings file': { 'col' : 2, 'type' : 'button', 'varName' : 'exportConfigFile' },
             'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'varName' : 'backupCache' },
             'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'varName' : 'clearcache' },
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
@@ -3897,15 +3897,10 @@ class SETS():
             if type == 'menu':
                 if isBoolean:  settingVar = StringVar(value='Yes' if self.persistent[varName] else 'No')
                 else: settingVar = StringVar(value=self.persistent[varName] if varName in self.persistent else '')
-                # Integrate these into the theme, or *assignment in if phase
-                if varName == 'markDefault': settingOptions = self.marks
-                elif varName == 'rarityDefault': settingOptions = ['']+self.rarities
-                elif varName == 'factionDefault': settingOptions = self.factionNames
-                elif varName == 'boffSort': settingOptions = self.boffSortOptions
-                elif varName == 'boffSort2': settingOptions = self.boffSortOptions
-                elif varName == 'consoleSort': settingOptions = self.consoleSortOptions
-                elif varName == 'exportDefault': settingOptions = self.exportOptions
-                elif isBoolean: settingOptions = self.yesNo
+
+                settingOptions = self.yesNo
+                if 'settingOptions' in theme[title]:
+                        settingOptions = theme[title]['settingOptions']
 
                 if callback is None: optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=lambda choice,varName=varName,isBoolean=isBoolean:self.persistentSet(choice, varName=varName, isBoolean=isBoolean))
                 else: optionFrame = OptionMenu(parentFrame, settingVar, *settingOptions, command=callback)
