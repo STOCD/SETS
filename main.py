@@ -1700,7 +1700,7 @@ class SETS():
         column1 = []
         for groundboff in self.build['boffs'].keys():
             if "groundboff" in groundboff.lower():
-                column0 = column0 + self.makeRedditColumn(["#"+str(int(groundboff[-1])+1)+": "+self.build['boffseats']['ground'][int(groundboff[-1])]+" / "+self.build['boffseats']['ground_spec'][int(groundboff[-1])]], len(self.build['boffs'][groundboff]))
+                column0 = column0 + self.makeRedditColumn(["#{}: {} / {}".format(str(int(groundboff[-1])+1), self.build['boffseats']['ground'][int(groundboff[-1])],self.build['boffseats']['ground_spec'][int(groundboff[-1])])], len(self.build['boffs'][groundboff]))
                 column1 = column1 + self.makeRedditColumn(self.build['boffs'][groundboff], len(self.build['boffs'][groundboff]))
         redditString = redditString + self.makeRedditTable(['**Profession**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
         textframe.delete("1.0",END)
