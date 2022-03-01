@@ -6,7 +6,7 @@ from tkinter.ttk import Progressbar
 # from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab  # , PngImagePlugin
-import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, platform
+import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, platform, uuid
 import numpy as np
 
 CLEANR = re.compile('<.*?>')
@@ -794,6 +794,7 @@ class SETS():
             'forceJsonLoad': 0,
             'noPreCache': 0,
             'uiScale': 1,
+            'tooltipDelay': 33,
             'imagesFactionAliases': dict(),
             'imagesFail': dict(),
             'markDefault': '',
@@ -1170,7 +1171,7 @@ class SETS():
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
-        items_list = self.restrictItemsList(items_list) # Most restrictions should come from the ship
+        items_list = self.restrictItemsList(items_list)  # Most restrictions should come from the ship
         item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame], self.window.winfo_pointerx(), self.window.winfo_pointery())
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
@@ -1180,6 +1181,8 @@ class SETS():
                 self.build[key][i] = item
                 self.backend['images'][key][i] = [self.emptyImage, self.emptyImage]
             else:
+                backendKey = item['item']
+                tooltip_uuid = self.uuid_assign_for_tooltip()
                 if 'rarity' in self.cache['equipment'][args[0]][item['item']]:
                     rarityDefaultItem = self.cache['equipment'][args[0]][item['item']]['rarity']
                 else:
@@ -1192,7 +1195,8 @@ class SETS():
                 environment = 'space'
                 if len(args) >= 4:
                     environment = args[3]
-                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrameSplitter(item, args[0], environment))
+                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, args[0], environment))
+                canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
                 self.build[key][i] = item
                 self.backend['images'][key][i] = [item['image'], image1]
                 item.pop('image')
@@ -1224,13 +1228,16 @@ class SETS():
                 canvas.itemconfig(img[0],image=self.emptyImage)
                 self.build[key][i] = item
             else:
-                if item['item']+str(i) not in self.backend['images']:
-                    self.backend['images'][item['item']+str(i)] = item['image']
-                canvas.itemconfig(img[0],image=self.backend['images'][item['item']+str(i)])
+                backend_key = item['item']+str(i)
+                tooltip_uuid = self.uuid_assign_for_tooltip()
+                if backend_key not in self.backend['images']:
+                    self.backend['images'][backend_key] = item['image']
+                canvas.itemconfig(img[0],image=self.backend['images'][backend_key])
                 environment = 'space'
                 if len(args) >= 4:
                     environment = args[3]
-                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrameSplitter(item, '', environment))
+                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, '', environment))
+                canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
                 item.pop('image')
                 self.build[key][i] = item
 
@@ -1339,13 +1346,17 @@ class SETS():
                 canvas.itemconfig(img,image=self.emptyImage)
                 self.build['boffs'][key][i] = item
             else:
+                tooltip_uuid = self.uuid_assign_for_tooltip()
                 #if item['item']+str(i) not in self.backend['images']:
                 self.backend['images'][backendKey] = item['image']
                 canvas.itemconfig(img,image=self.backend['images'][item['item']+str(i)])
-                canvas.bind('<Enter>', lambda e,item=item:self.setupInfoboxFrameSplitter(item, '', environment))
+                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, '', environment))
+                canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
                 self.build['boffs'][key][i] = item['item']
 
         # ground used +'_'+str(i)
+    def uuid_assign_for_tooltip(self):
+        return str(uuid.uuid4())
 
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
@@ -2013,11 +2024,13 @@ class SETS():
             canvas.itemconfig(img0, state=DISABLED)
             canvas.itemconfig(img1, state=DISABLED)
         else:
+            tooltip_uuid = self.uuid_assign_for_tooltip()
             environment = args[3] if args is not None and len(args) >= 4 else 'space'
             internalKey = args[0] if args is not None and type(args[0]) is str else ''
             if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
             if name != 'blank':
-                canvas.bind('<Enter>', lambda e,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrameSplitter(item, internalKey, environment, tooltip))
+                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, internalKey, environment, tooltip))
+                canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
 
         return canvas, img0, img1
 
@@ -2456,6 +2469,7 @@ class SETS():
                     self.logWrite('--- {} {}{}{}->{}{}{}'.format('boff seat change error: ', boffExistingLen, '+' if changeCount > 0 else '', changeCount, rank, '!=' , str(len(self.build['boffs'][boffSan]))), 1)
 
             for j in range(rank):
+                tooltip_uuid = self.uuid_assign_for_tooltip()
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
                     image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], faction = 1)
                     self.backend['images'][boffSan][j] = image
@@ -2475,8 +2489,8 @@ class SETS():
                     canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
                     img0 = canvas.create_image(0,0, anchor="nw",image=image)
                     canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i, environment]))
-                    canvas.bind('<Enter>', lambda e,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrameSplitter(item, '', environment))
-
+                    canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, '', environment))
+                    canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
 
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
@@ -2527,11 +2541,30 @@ class SETS():
         return self.wikihttp + name
 
     def clearInfoboxFrame(self, environment):
-        self.setupInfoboxFrameSplitter(self.getEmptyItem(), '', environment)
+        """Empty the tooltip"""
+        self.setupInfoboxFrameTooltipDraw(None, self.getEmptyItem(), '', environment)
 
-    def setupInfoboxFrameSplitter(self, item, key, environment='space', tooltip=None):
-        if self.persistent['useExperimentalTooltip']: self.setupInfoboxFrame(item, key, environment, tooltip)
-        else: self.setupInfoboxFrameStatic(item, key, environment, tooltip)
+    def setupInfoboxFrameTooltipDraw(self, ui_key, item, key, environment='space', tooltip=None):
+        """Tooltip mouse-enter -- initiate the delayed call"""
+        #self.logWriteSimple('Tooltip', 'enter', 2, [ui_key, 'key', key, 'environment', environment, tooltip])
+        if ui_key:
+            self.tooltip_tracking[ui_key] = True
+            #self.setupInfoboxFrameMaster(ui_key, item, key, environment, tooltip)
+            self.window.after(self.persistent['tooltipDelay'], lambda item=item, key=key, environment=environment, tooltip=tooltip: self.setupInfoboxFrameMaster(ui_key, item, key, environment, tooltip))
+        else:
+            # No ui_key is instant tooltip update
+            self.setupInfoboxFrameMaster(None, item, key, environment, tooltip)
+
+    def setupInfoboxFrameMaster(self, ui_key, item, key, environment, tooltip):
+        """Actually draw the tooltip if ui_key is None or still true"""
+        if ui_key is None or ( ui_key in self.tooltip_tracking and self.tooltip_tracking[ui_key]):
+            if self.persistent['useExperimentalTooltip']: self.setupInfoboxFrame(item, key, environment, tooltip)
+            else: self.setupInfoboxFrameStatic(item, key, environment, tooltip)
+
+    def setupInfoboxFrameLeave(self, ui_key):
+        """Tooltip mouse-exit -- deactivate any pending tooltip"""
+        #self.logWriteSimple('Tooltip', 'exit', 2, [ui_key])
+        self.tooltip_tracking[ui_key] = False
 
     def getDisplayedTextHeight(self, width, pString: str, pfamily, psize, pweight, identifier=""):
         """{ Call as self.getDH(Parameters) }
@@ -4268,6 +4301,8 @@ class SETS():
         self.log = StringVar()
         self.logmini = StringVar()
         self.logFull = StringVar()
+
+        self.tooltip_tracking = dict()
 
         self.resetPersistent()
         self.resetSettings()
