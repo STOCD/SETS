@@ -20,6 +20,7 @@ if sys.platform.startswith('win'):
 
 class SETS():
     """Main App Class"""
+    version = '20220228_beta'
 
     itemBoxX = 32 #25
     itemBoxY = 42 #33
@@ -794,7 +795,7 @@ class SETS():
             'forceJsonLoad': 0,
             'noPreCache': 0,
             'uiScale': 1,
-            'tooltipDelay': 15,
+            'tooltipDelay': 5,
             'imagesFactionAliases': dict(),
             'imagesFail': dict(),
             'markDefault': '',
@@ -833,7 +834,7 @@ class SETS():
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
         self.versionJSONminimum = 0
-        self.versionJSON = 2022020203
+        self.versionJSON = 2022022811
         self.clearing = False
         self.shipImageResizeCount = 0
         self.build = {
@@ -862,6 +863,7 @@ class SETS():
             'species': '',
             'ship': '',
             'specPrimary': '',
+            'playerHandle': '',
             'playerShipName': '',
             'playerShipDesc': '',
             'playerDesc': '',
@@ -922,6 +924,7 @@ class SETS():
                 'captain': {'faction' : StringVar(self.window)},
                 'career': StringVar(self.window),
                 'species': StringVar(self.window),
+                'playerHandle': StringVar(self.window),
                 'playerName': StringVar(self.window),
                 'specPrimary': StringVar(self.window),
                 'specSecondary': StringVar(self.window),
@@ -942,6 +945,7 @@ class SETS():
         self.hookBackend()
 
     def hookBackend(self):
+        self.backend['playerHandle'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerHandle'))
         self.backend['playerShipName'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerShipName'))
         self.backend['captain']['faction'].trace_add('write', lambda v,i,m:self.captainFactionCallback())
         self.backend['career'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('career'))
@@ -1754,6 +1758,7 @@ class SETS():
             pass
 
     def buildToBackendSeries(self):
+        self.copyBuildToBackend('playerHandle')
         self.copyBuildToBackend('playerShipName')
         self.copyBuildToBackend('playerShipDesc')
         self.copyBuildToBackend('playerDesc')
@@ -1875,6 +1880,8 @@ class SETS():
 
         self.currentFrame.pack(fill=BOTH, expand=True, padx=15)
         #self.currentFrame.place(height = self.framePriorheight) # Supposed to maintain frame height, may need grid
+        if not init:
+            self.clearInfoboxFrame(type)
 
         if type == 'skill': self.setupCurrentSkillBuildFrames('space')
 
@@ -2852,10 +2859,11 @@ class SETS():
         elif isinstance(item, str):
             name = item
         else:
-            self.logWriteSimple('InfoboxFail', environment, 4, tags=["NO NAME", key])
+            self.logWriteSimple('InfoboxFail', environment, 3, tags=["NO NAME", key])
             return
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
-        if self.displayedInfoboxItem == name:
+        if name != '' and self.displayedInfoboxItem == name:
+            self.logWriteSimple('Infobox', 'displayed', 2, [environment])
             return
         self.displayedInfoboxItem = name
 
@@ -2919,6 +2927,8 @@ class SETS():
         mtfr.columnconfigure(1, weight=1)
 
         printed = bool(False)
+        if name == '':
+                return
 
         if key in self.cache['equipment'] and name in self.cache['equipment'][key]:
             text.insert(END, name, 'name')
@@ -3573,6 +3583,15 @@ class SETS():
         if row == 0: self.clearFrame(parentFrame)
         parentFrame.grid_columnconfigure(0, weight=1)
 
+        frame = Frame(parentFrame, bg='#b3b3b3')
+        frame.grid(row=0, column=0, sticky='nsew')
+        frame.columnconfigure(1, weight=1)
+        label = Label(frame, text="Player Handle: ", fg='#3a3a3a', bg='#b3b3b3')
+        label.grid(row=0, column=0, sticky='w')
+        entry = Entry(frame, textvariable=self.backend['playerHandle'], fg='#3a3a3a', bg='#b3b3b3', font=('Helvetica', 10, 'bold'))
+        entry.grid(row=0, column=1, sticky='nsew',ipady=5, pady=5)
+        row += 1
+
         label = Label(parentFrame, text="Build Description ({}):".format(environment.title()), fg='#3a3a3a', bg='#b3b3b3')
         label.grid(row=row, column=0, sticky='nw')
         # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
@@ -3680,8 +3699,8 @@ class SETS():
         descFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3')
         descFrame.pack(fill=X, expand=False, side=BOTTOM)
 
-        infoboxFrame = Frame(infoBoxOuterFrame, bg='#b3b3b3', highlightbackground="grey", highlightthickness=1)
-        infoboxFrame.pack(fill=BOTH, expand=False, side=TOP)
+        infoboxFrame = Frame(infoBoxOuterFrame, bg='#090b0d', highlightbackground="grey", highlightthickness=1)
+        infoboxFrame.pack(fill=BOTH, expand=True, side=TOP)
 
         if environment == 'skill':
             self.skillInfoFrame = infoFrame
@@ -3906,7 +3925,7 @@ class SETS():
         self.window.call('tk', 'scaling', factor)
         self.itemBoxX = self.itemBoxX * scale
         self.itemBoxY = self.itemBoxY * scale
-        self.logminiWrite('{} {} | {:>4}dpi (x{:>0.2}) '.format(platform.system(), platform.release(), self.dpi, (factor * scale)))
+        self.logminiWrite('{} | {} {} | {}x{} | {:>4}dpi (x{:>0.2}) '.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.dpi, (factor * scale)))
 
 
     def logDisplayUpdate(self):
@@ -4050,7 +4069,7 @@ class SETS():
             self.resetBuildFrames()
 
         self.updateImageLabelSize(source='setupUIFrames')
-
+        self.containerFrame.pack_propagate(False)
         #if self.args.startuptab is not None: self.focusFrameCallback(self.args.startuptab)
 
     def argParserSetup(self):
