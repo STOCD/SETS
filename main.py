@@ -388,7 +388,11 @@ class SETS():
         # clean up wikitext
         textBlock = textBlock.replace('\x7f', '')
         # \u007f'&quot;`UNIQ--nowiki-00000000-QINU`&quot;'\u007f
-        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', '\*', textBlock)
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000000.-QINU`"\'', '*', textBlock)
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000001.-QINU`"\'', '*', textBlock)
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000002.-QINU`"\'', '*', textBlock)
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000003.-QINU`"\'', '*', textBlock)
+        textBlock = re.sub('\'"`UNIQ--nowiki-0000004.-QINU`"\'', '*', textBlock)
         if "[[" and "|" in textBlock:
             while "[[" and "|" in textBlock:
                 start = textBlock.find("[[")
@@ -2695,13 +2699,17 @@ class SETS():
                 elif "\n" in ptext[:occs[0]-1]:
                     end = ptext.find("\n")
                 else:
-                    for j in range(0, len(occs)):
-                        if "\n" in ptext[:occs[j]+1].replace("\n:",""):
-                            end = ptext.find("\n", occs[j]+1)
-                            break
+                    if len(occs)==1:
+                        if "\n" in ptext[:occs[0]]:
+                            end=ptext.find("\n")
+                    else:
+                        for j in range(0, len(occs)-1):
+                            if "\n" in ptext[occs[j]+1:occs[j+1]].replace("\n:",""):
+                                end = ptext.find("\n", occs[j]+1,occs[j+1])
+                                break
                     if end==0:
                         if "\n" in ptext.replace("\n:","").strip():
-                            end = ptext.find("\n", occs[len(occs)-1]+1)
+                            end = ptext.find("\n", occs[len(occs)-1]+1 if occs != [] else 0)
                         else:
                             end=-2
                 if end == -2:
@@ -2794,13 +2802,17 @@ class SETS():
                 elif "\n" in ptext[:occs[0]-1] :
                     end = ptext.find("\n")
                 else:
-                    for j in range(0, len(occs)-1):
-                        if "\n" in ptext[occs[j]+1:occs[j+1]].replace("\n*",""):
-                            end = ptext.find("\n", occs[j]+1, occs[j+1])
-                            break
+                    if len(occs)==1:
+                        if "\n" in ptext[:occs[0]]:
+                            end=ptext.find("\n")
+                    else:
+                        for j in range(0, len(occs)-1):
+                            if "\n" in ptext[occs[j]+1:occs[j+1]].replace("\n*",""):
+                                end = ptext.find("\n", occs[j]+1, occs[j+1])
+                                break
                     if end==0:
                         if "\n" in ptext.replace("\n*",""):
-                            end = ptext.find("\n", occs[len(occs)-1]+1 if occs != [] else len(ptext)-1)
+                            end = ptext.find("\n", occs[len(occs)-1]+1 if occs != [] else 0)
                         else:
                             end=-2
                 if end == -2:
