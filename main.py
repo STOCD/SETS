@@ -3424,17 +3424,18 @@ class SETS():
         count = 0 
         for t in values:
             itemframe = Frame(topframe, highlightthickness=0, bg=bg)
-            itemframe.grid(row=insertrow, column=insertcolumn, padx=16)
+            if orientation==HORIZONTAL: 
+                topframe.columnconfigure(insertcolumn, weight=1)
+                itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="n")
+                insertcolumn +=1
+            elif orientation==VERTICAL: 
+                topframe.rowconfigure(insertrow, weight=1)
+                itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="w")
+                insertrow +=1
             v = IntVar(window, value=values[t])
             Checkbutton(itemframe, bg=bg, fg = "#000000", variable=v, activebackground=bg).pack(side=LEFT, ipadx=1, padx=0)
             v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key, m=masterkey: self.checkbuttonVarUpdateCallback(var.get(), m, k, text))
             Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
-            if orientation==HORIZONTAL: 
-                topframe.columnconfigure(insertcolumn, weight=1)
-                insertcolumn +=1
-            elif orientation==VERTICAL: 
-                topframe.rowconfigure(insertrow, weight=1)
-                insertrow +=1
             count +=1
         return count
         
