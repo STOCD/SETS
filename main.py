@@ -112,9 +112,27 @@ class SETS():
                 'weight': 'bold',
             },
         },
+        'text_highlight': {
+            'font': {  # self.theme['text_highlight']['font_object']
+                'size': 10,
+                'weight': 'bold',
+            },
+        },
         'text_small': {
             'font': {  # self.theme['text_small']['font_object']
                 'size': 9,
+            },
+        },
+        'text_tiny': {
+            'font': {  # self.theme['text_small']['font_object']
+                'size': 8,
+                'weight': 'bold',
+            },
+        },
+        'text_log': {
+            'font': {  # self.theme['text_small']['font_object']
+                'family': 'Courier',
+                'size': 10,
             },
         },
         'entry': {  # Entry and Text widgets
@@ -136,6 +154,34 @@ class SETS():
             'subhead': {'fg':  '#f4f400'},  # self.theme['tooltip']['subhead']['fg']
             'who': {'fg':  '#ff6347'},  # self.theme['tooltip']['who']['fg']
             'distance': {'fg':  '#000000'},  # self.theme['tooltip']['distance']['fg']
+        },
+        'tooltip_head': {
+            'font': {  # self.theme['tooltip_head']['font_object']
+                'size': 12,
+                'weight': 'bold',
+            },
+        },
+        'tooltip_subhead': {
+            'font': {  # self.theme['tooltip_subhead']['font_object']
+                'size': 10,
+                'weight': 'bold',
+            },
+        },
+        'tooltip_name': {
+            'font': {  # self.theme['tooltip_name']['font_object']
+                'size': 15,
+                'weight': 'bold',
+            },
+        },
+        'tooltip_body': {
+            'font': {  # self.theme['tooltip_body']['font_object']
+                'size': 10,
+            },
+        },
+        'tooltip_distance': {
+            'font': {  # self.theme['tooltip_distance']['font_object']
+                'size': 4,
+            },
         },
         'icon_off': {
             'bg': 'grey',  # self.theme['icon_off']['bg']
@@ -1273,7 +1319,7 @@ class SETS():
         if type == 'log':
             scrollbar = Scrollbar(mainFrame)
             scrollbar.pack(side=RIGHT, fill=Y)
-            self.logDisplay = Text(mainFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], wrap=WORD, height=30, width=110, font=('TkFixedFont', 10))
+            self.logDisplay = Text(mainFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], wrap=WORD, height=30, width=110, font=self.font_tuple_create('text_log'))
             self.logDisplay.pack(side=LEFT, fill=BOTH, expand=True)
             self.logDisplay.insert('0.0', self.logFull.get())
             scrollbar.config(command=self.logDisplay.yview)
@@ -1360,6 +1406,12 @@ class SETS():
                 item.pop('image')
                 self.build[key][i] = item
 
+    def font_tuple_create(self, name):
+        font_family = self.theme[name]['font']['family'] if 'family' in self.theme[name]['font'] else self.theme['app']['font']['family']
+        font_size = self.theme[name]['font']['size'] if 'size' in self.theme[name]['font'] else self.theme['app']['font']['size']
+        font_weight = self.theme[name]['font']['weight'] if 'weight' in self.theme[name]['font'] else self.theme['app']['font']['weight']
+        return (font_family, font_size, font_weight)
+
     def precache_theme_fonts(self):
         i = 0
         for key in self.theme:
@@ -1367,13 +1419,8 @@ class SETS():
                 continue
             else:
                 i += 1
-                font_family = self.theme[key]['font']['family'] if 'family' in self.theme[key]['font'] else self.theme['app']['font']['family']
-                font_size = self.theme[key]['font']['size'] if 'size' in self.theme[key]['font'] else self.theme['app']['font']['size']
-                font_weight = self.theme[key]['font']['weight'] if 'weight' in self.theme[key]['font'] else self.theme['app']['font']['weight']
-                if font_weight:
-                    self.theme[key]['font_object'] = font.Font(family=font_family, size=font_size, weight=font_weight)
-                else:
-                    self.theme[key]['font_object'] = font.Font(family=font_family, size=font_size)
+                font_tuple = self.font_tuple_create(key)
+                self.theme[key]['font_object'] = font.Font(font=font_tuple)
 
         self.logWriteCounter('precache_theme_fonts', '(json)', i, [self.theme['name']])
 
@@ -1826,13 +1873,12 @@ class SETS():
         textframe.insert(END, redditString)
 
     def exportRedditCallback(self, event=None):
-        phi = self.theme['button_heavy']['font_object']
         redditWindow = Toplevel(self.window)
         redditText = Text(redditWindow)
         btfr = Frame(redditWindow)
         btfr.pack(side='top', fill='x')
-        redditbtspace = Button(btfr,text="SPACE", font=phi,  bg=self.theme['button_heavy']['bg'],fg=self.theme['button_heavy']['fg'],command=lambda: self.redditExportDisplaySpace(redditText))
-        redditbtground = Button(btfr, text="GROUND", font =phi, bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'],command=lambda: self.redditExportDisplayGround(redditText))
+        redditbtspace = Button(btfr,text="SPACE", font=self.theme['button_heavy']['font_object'],  bg=self.theme['button_heavy']['bg'],fg=self.theme['button_heavy']['fg'],command=lambda: self.redditExportDisplaySpace(redditText))
+        redditbtground = Button(btfr, text="GROUND", font =self.theme['button_heavy']['font_object'], bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'],command=lambda: self.redditExportDisplayGround(redditText))
         redditbtspace.grid(row=0,column=0,sticky="nsew")
         redditbtground.grid(row=0,column=1,sticky="nsew")
         btfr.grid_columnconfigure(0,weight=1)
@@ -2113,7 +2159,7 @@ class SETS():
 
         lFrame = Frame(cFrame, bg=self.theme['frame']['bg'])
         lFrame.pack(fill=BOTH, expand=True)
-        label =  Label(lFrame, text=name, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=('Helvetica', 8))
+        label =  Label(lFrame, text=name, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=self.font_tuple_create('text_small'))
         label.pack(side='left')
         iFrame = Frame(cFrame, bg=self.theme['frame']['bg'])
         iFrame.pack(fill=BOTH, expand=True)
@@ -2596,7 +2642,7 @@ class SETS():
             else:
                 specLabel0 = OptionMenu(bSubFrame0, v, 'Tactical', 'Engineering', 'Science')
                 specLabel0.configure(pady=2)
-            specLabel0.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=('Helvetica', 10), highlightthickness=0)
+            specLabel0.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], highlightthickness=0)
             specLabel0.pack(side='left')
 
             if environment == 'ground' or (sspec is not None and sspec != ''):
@@ -2605,7 +2651,7 @@ class SETS():
                     specLabel1.configure(pady=2)
                 else:
                     specLabel1 = Label(bSubFrame0, text='/  '+sspec)
-                specLabel1.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=('Helvetica', 10), highlightthickness=0)
+                specLabel1.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], highlightthickness=0)
                 specLabel1.pack(side='left')
 
             bSubFrame1 = Frame(bFrame, bg=self.theme['frame']['bg'])
@@ -3063,15 +3109,15 @@ class SETS():
         Label(frame, text="Stats & Other Info", highlightbackground=self.theme['tooltip']['bg'], highlightthickness=1).pack(fill=X, expand=False, side=TOP)
         mtfr = Frame(frame, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
         mtfr.pack(fill="both",expand=False,side=TOP)
-        text = Text(mtfr, font=('Helvetica', 10), bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=3.5)
+        text = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=3.5)
 
-        text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], font=('Helvetica', 12, 'bold' ))
-        text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
-        text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
-        text.tag_configure('subhead', foreground=self.theme['tooltip']['subhead']['fg'], font=('Helvetica', 10, 'bold' ))
-        text.tag_configure('starshipTraitHead', foreground=self.theme['tooltip']['head1']['fg'], font=('Helvetica', 15, 'bold' ))
-        text.tag_configure('skillhead', foreground=skillcolor, font=('Helvetica', 15, 'bold'))
-        text.tag_configure('skillsub', foreground=skillcolor, font=('Helvetica', 12, 'normal'))
+        text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], font=self.font_tuple_create('tooltip_head'))
+        text.tag_configure('name', foreground=raritycolor, font=self.font_tuple_create('tooltip_name'))
+        text.tag_configure('rarity', foreground=raritycolor, font=self.font_tuple_create('tooltip_body'))
+        text.tag_configure('subhead', foreground=self.theme['tooltip']['subhead']['fg'], font=self.font_tuple_create('tooltip_subhead'))
+        text.tag_configure('starshipTraitHead', foreground=self.theme['tooltip']['head1']['fg'], font=self.font_tuple_create('tooltip_head'))
+        text.tag_configure('skillhead', foreground=skillcolor, font=self.font_tuple_create('tooltip_name'))
+        text.tag_configure('skillsub', foreground=skillcolor, font=self.font_tuple_create('tooltip_head'))
 
 
         text.grid(row=0, column=0)
@@ -3113,7 +3159,7 @@ class SETS():
                     text.insert(END, html['type'], 'rarity')
             if html['who'] != "":
                 mtfr.update()
-                whotext = Text(mtfr, font=('Helvetica', 10), bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['who']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=self.getDH(mtfr.winfo_width(), html['who'], "Helvetica", 10, "normal"))
+                whotext = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['who']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=self.getDH(mtfr.winfo_width(), html['who'], "Helvetica", 10, "normal"))
                 whotext.grid(row=1, column=0)
                 whotext.insert(END, html["who"])
                 whotext.configure(state=DISABLED)
@@ -3270,13 +3316,13 @@ class SETS():
         if environment == 'skill': height -= 5
 
         Label(frame, text="Stats & Other Info", highlightbackground=self.theme['frame_medium']['hlbg'], highlightthickness=self.theme['frame_medium']['hlthick']).pack(fill=X, expand=False, side=TOP)
-        text = Text(frame, height=height, width=width, font=('Helvetica', 10), bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD)
-        text.tag_configure('name', foreground=raritycolor, font=('Helvetica', 15, 'bold'))
-        text.tag_configure('rarity', foreground=raritycolor, font=('Helvetica', 10))
-        text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], font=('Helvetica', 12, 'bold' ))
-        text.tag_configure('subhead', foreground=self.theme['tooltip']['subhead']['fg'], font=('Helvetica', 10, 'bold' ))
-        text.tag_configure('who', foreground=self.theme['tooltip']['who']['fg'], font=('Helvetica', 10, 'bold' ))
-        text.tag_configure('distance', foreground=self.theme['tooltip']['distance']['fg'], font=('Helvetica', 4))
+        text = Text(frame, height=height, width=width, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD)
+        text.tag_configure('name', foreground=raritycolor, font=self.font_tuple_create('tooltip_name'))
+        text.tag_configure('rarity', foreground=raritycolor, font=self.font_tuple_create('tooltip_body'))
+        text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], font=self.font_tuple_create('tooltip_head'))
+        text.tag_configure('subhead', foreground=self.theme['tooltip']['subhead']['fg'], font=self.font_tuple_create('tooltip_subhead'))
+        text.tag_configure('who', foreground=self.theme['tooltip']['who']['fg'], font=self.font_tuple_create('tooltip_subhead'))
+        text.tag_configure('distance', foreground=self.theme['tooltip']['distance']['fg'], font=self.font_tuple_create('tooltip_distance'))
         text.pack(fill="both", expand=True, padx=2, pady=2, side=BOTTOM)
         if name is None or name == '':
             return
@@ -3455,12 +3501,10 @@ class SETS():
     def setupFooterFrame(self):
         self.footerFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'], height=20)
         self.footerFrame.pack(fill='both', side='bottom', expand=False)
-        f = font=('Helvetica', 9)
-        f2 = font=('Helvetica', 10, 'bold')
 
         self.footerFrameL = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameL.grid(row=0, column=0, sticky='w')
-        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='w', font=f)
+        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='w', font=self.font_tuple_create('text_small'))
         footerLabelL.grid(row=0, column=0, sticky='w')
 
         self.footerFrameM = Frame(self.footerFrame, bg=self.theme['app']['bg'])
@@ -3471,7 +3515,7 @@ class SETS():
 
         self.footerFrameR = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameR.grid(row=0, column=2, sticky='e')
-        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='e', font=f2)
+        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='e', font=self.font_tuple_create('text_highlight'))
         footerLabelR.grid(row=0, column=0, sticky='e')
 
         self.footerFrame.grid_columnconfigure(0, weight=2, uniform="footerlabel")
@@ -3758,7 +3802,7 @@ class SETS():
                 row += 1
 
             Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(row=row, column=0, sticky='w')
-            Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=('Helvetica', 10, 'bold')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
+            Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.font_tuple_create('text_highlight')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
             row += 1
             # end of not-skill items
 
@@ -3803,14 +3847,14 @@ class SETS():
         frame.columnconfigure(1, weight=1)
         label = Label(frame, text="Player Handle: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
         label.grid(row=0, column=0, sticky='w')
-        entry = Entry(frame, textvariable=self.backend['playerHandle'], fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=('Helvetica', 10, 'bold'))
+        entry = Entry(frame, textvariable=self.backend['playerHandle'], fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=self.font_tuple_create('text_highlight'))
         entry.grid(row=0, column=1, sticky='nsew',ipady=5, pady=5)
         row += 1
 
         label = Label(parentFrame, text="Build Description ({}):".format(environment.title()), fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
         label.grid(row=row, column=0, sticky='nw')
         # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
-        descText = Text(parentFrame, height=3, width=20, wrap=WORD, fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=('Helvetica', 8, 'bold'))
+        descText = Text(parentFrame, height=3, width=20, wrap=WORD, fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=self.font_tuple_create('text_tiny'))
         descText.grid(row=row+1, column=0, sticky='nsew', padx=5, pady=2)
 
         if destination is None:
