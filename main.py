@@ -20,7 +20,7 @@ if sys.platform.startswith('win'):
 
 class SETS():
     """Main App Class"""
-    version = '20220228_beta'
+    version = '20220301_beta'
 
     itemBoxX = 32 #25
     itemBoxY = 42 #33
