@@ -1498,41 +1498,42 @@ class SETS():
     def boffLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for boff labels"""
         self.precacheBoffAbilities()
+
+
+        spec = self.boffTitleToSpec(args[0].get()) if args[0] else ''
+        spec2 = args[1].get() if args[1] else ''
+        # args[2] is the same as i
         environment = args[3] if args is not None and len(args) >= 4 else 'space'
 
         items_list = []
         rank = i + 1
 
-        logNote = args[0]
-        if args[1]:
-            logNote = logNote + ', '+args[1]
-        self.logWriteSimple('spaceBoffLabel', 'Callback', 3, tags=[environment, logNote, str(args[2])])
+        self.logWriteSimple('spaceBoffLabel', 'Callback', 3, tags=[environment, spec, spec2, i, key])
 
-        if args[0] == 'universal':
+        if spec == 'universal':
             for specType in self.universalTypes:
                 items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][specType][rank]
         else:
-            items_list = self.cache['boffAbilitiesWithImages'][environment][args[0]][rank]
-        if args[1] is not None and args[1] != '':
-            items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][args[1]][rank]
+            items_list = self.cache['boffAbilitiesWithImages'][environment][spec][rank]
+        if spec2 is not None and spec2 != '':
+            items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][spec2][rank]
 
         items_list = self.restrictItemsList(items_list) # need to send boffseat spec/spec2
 
         itemVar = self.getEmptyItem()
         item = self.pickerGui('Pick Ability', itemVar, items_list, [self.setupSearchFrame])
-        backendKey = item['item']+str(i)
+        backendKey = key
         if not backendKey in self.backend['images']: self.backend['images'][backendKey] = None
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
                 item['item'] = ''
-                self.backend['images'][backendKey] = self.emptyImage
-                canvas.itemconfig(img,image=self.emptyImage)
+                #self.backend['images'][backendKey][i][0] = self.emptyImage
+                canvas.itemconfig(img[0],image=self.emptyImage)
                 self.build['boffs'][key][i] = item
             else:
                 tooltip_uuid = self.uuid_assign_for_tooltip()
-                #if item['item']+str(i) not in self.backend['images']:
-                self.backend['images'][backendKey] = item['image']
-                canvas.itemconfig(img,image=self.backend['images'][item['item']+str(i)])
+                self.backend['images'][backendKey][i][0] = item['image']
+                canvas.itemconfig(img[0],image=item['image'])
                 canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, '', environment))
                 canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
                 self.build['boffs'][key][i] = item['item']
@@ -1697,7 +1698,7 @@ class SETS():
         # col is the position-in-chain
 
         #if environment == 'ground': return True
-        self.logWriteSimple('skillAllowed', environment, 3, [name])
+        self.logWriteSimple('skillAllowed', environment, 3, [name, self.backend['skillCount'][environment]])
         if not name in self.build['skilltree'][environment]: self.build['skilltree'][environment][name] = False
         enabled = self.build['skilltree'][environment][name]
         child = self.build['skilltree'][environment][plusOne] if plusOne and col < 2 else False
@@ -1965,6 +1966,8 @@ class SETS():
         self.clearBuild()
         self.clearing = 1
         self.buildToBackendSeries()
+        self.skillCount('space')
+        self.skillCount('ground')
 
         #self.backend['tier'].set('')
         self.backend['shipHtml'] = None
@@ -2180,30 +2183,45 @@ class SETS():
         # args [array] contains variable infomation used for callback updating
         # internalKey is the cache sub-group (for equipment cache sub-groups)
 
-        if width is None: width = self.itemBoxX
-        if height is None: height = self.itemBoxY
+        if width is None:
+            width = self.itemBoxX
+        if height is None:
+            height = self.itemBoxY
 
         buildSubKey = name if name is not None else i
         backendKey = name if name is not None else key
 
-        if name is not None: item = name
-        elif groupKey is not None: name = item = self.build[groupKey][key][buildSubKey]
-        else: item = self.build[key][buildSubKey]
+        if name is not None:
+            item = name
+        elif groupKey is not None:
+            item = self.build[groupKey][key][buildSubKey]
+        else:
+            item = self.build[key][buildSubKey]
 
         self.logWriteSimple('createButton', '', 4, [name, key, buildSubKey, backendKey, i, row, column])
 
         if type(item) is dict and item is not None:
-            if image0Name is None and 'item' in item: image0Name = item['item']
-            else: image0Name = item
-            if image1Name is None and 'rarity' in item: image1Name = item['rarity']
+            if image0Name is None and 'item' in item:
+                image0Name = item['item']
+            else:
+                image0Name = item
+            if image1Name is None and 'rarity' in item:
+                image1Name = item['rarity']
 
         if not disabled:
-            if image0 is None: image0=self.imageFromInfoboxName(image0Name, suffix=suffix, faction=faction) if image0Name is not None else self.emptyImage
-            if image1 is None: image1=self.imageFromInfoboxName(image1Name, suffix=suffix, faction=faction) if image1Name is not None else self.emptyImage
-            if not backendKey in self.backend['images']: self.backend['images'][backendKey] = [None, None]
-            if name == 'blank': pass  # no backend/image
-            elif name: self.backend['images'][name] = [image0, image1]
-            else: self.backend['images'][backendKey][i] = [image0, image1]
+            if image0 is None:
+                image0=self.imageFromInfoboxName(image0Name, suffix=suffix, faction=faction) if image0Name is not None else self.emptyImage
+            if image1 is None:
+                image1=self.imageFromInfoboxName(image1Name, suffix=suffix, faction=faction) if image1Name is not None else self.emptyImage
+
+            if name == 'blank':
+                pass  # no backend/image
+            elif name:
+                self.backend['images'][name] = [image0, image1]
+            else:
+                if not backendKey in self.backend['images']:
+                    self.backend['images'][backendKey] = [None] * 4
+                self.backend['images'][backendKey][i] = [image0, image1]
         else:
             image0 = image0 if image0 is not None else self.emptyImage
             image1 = image1 if image1 is not None else self.emptyImage
@@ -2222,7 +2240,8 @@ class SETS():
             tooltip_uuid = self.uuid_assign_for_tooltip()
             environment = args[3] if args is not None and len(args) >= 4 else 'space'
             internalKey = args[0] if args is not None and type(args[0]) is str else ''
-            if callback is not None: canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
+            if callback is not None:
+                canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
             if name != 'blank':
                 canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, internalKey, environment, tooltip))
                 canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
@@ -2678,20 +2697,8 @@ class SETS():
                     image=self.emptyImage
                     self.build['boffs'][boffSan] = [None] * rank
 
-                if 0: # migration to createButton
-                    row=1
-                    #anchor="nw"
-                    args = [ self.boffTitleToSpec(v.get()), v2.get(), i, environment ]
-                    key = boffSan
-
-                    canvas, img0, img1 = self.createButton(bSubFrame1, row=row, column=j, groupKey='boffs', key=key, i=j, callback=self.boffLabelCallback, args=args, faction = 1, suffix=False)
-                else: # prune once above stable
-                    canvas = Canvas(bSubFrame1, highlightthickness=0, borderwidth=0, width=self.itemBoxX, height=self.itemBoxY, bg='gray')
-                    canvas.grid(row=1, column=j, sticky='ns', padx=2, pady=2)
-                    img0 = canvas.create_image(0,0, anchor="nw",image=image)
-                    canvas.bind('<Button-1>', lambda e,canvas=canvas,img=img0,i=j,key=boffSan,environment=environment,v=v,v2=v2,callback=self.boffLabelCallback:callback(e,canvas,img,i,key,[self.boffTitleToSpec(v.get()), v2.get(), i, environment]))
-                    canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=self.build['boffs'][boffSan][j],environment=environment:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, '', environment))
-                    canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
+                args = [v, v2, i, environment]
+                canvas, img0, img1 = self.createButton(bSubFrame1, key=boffSan, row=1, column=j, groupKey='boffs', i=j, callback=self.boffLabelCallback, args=args, faction=True, suffix=False, image0=self.backend['images'][boffSan][j])
 
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
