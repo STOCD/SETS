@@ -1413,6 +1413,15 @@ class SETS():
         font_weight = self.theme[name]['font']['weight'] if 'weight' in self.theme[name]['font'] else self.theme['app']['font']['weight']
         return (font_family, font_size, font_weight)
 
+    def font_tuple_merge(self, name, family=None, size=None, weight=None):
+        tuple_build = self.font.tuple.create(name)
+        if family is not None:
+            tuple_build[0] = family
+        if size is not None:
+            tuple_build[1] = size
+        if weight is not None:
+            tuple_build[2] = weight
+
     def precache_theme_fonts(self):
         i = 0
         for key in self.theme:
