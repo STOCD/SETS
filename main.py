@@ -1344,7 +1344,7 @@ class SETS():
                 item['item'] = ''
                 canvas.itemconfig(img[0],image=self.emptyImage)
                 canvas.itemconfig(img[1],image=self.emptyImage)
-                self.build[key][i] = item
+                self.build[key][i] = None
                 self.backend['images'][key][i] = [self.emptyImage, self.emptyImage]
             else:
                 backendKey = item['item']
@@ -1369,7 +1369,7 @@ class SETS():
 
     def traitLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for all trait labels"""
-        items_list=[]
+        items_list=None
         if args[2]:
             self.precacheShipTraits()
             items_list = self.cache['shipTraitsWithImages']['cache']
@@ -1383,22 +1383,23 @@ class SETS():
             items_list = self.cache['traitsWithImages'][traitType][args[3]]
             self.logWriteSimple('traitLabelCallback', '', 4, tags=[traitType, args[3], str(len(items_list))])
 
-        items_list = self.restrictItemsList(items_list) # What restrictions exist for traits?
+        items_list = self.restrictItemsList(items_list)  # What restrictions exist for traits?
+        self.picker_getresult(canvas, img, i, key, args, items_list, title='Pick trait')
 
-        itemVar = self.getEmptyItem()
-        item = self.pickerGui("Pick trait", itemVar, items_list, [self.setupSearchFrame])
+    def picker_getresult(self, canvas, img, i, key, args, items_list, title='Pick'):
+        item_var = self.getEmptyItem()
+        item = self.pickerGui(title, item_var, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':
                 item['item'] = ''
-                self.backend['images'][item['item']+str(i)] = self.emptyImage
                 canvas.itemconfig(img[0],image=self.emptyImage)
-                self.build[key][i] = item
+                self.build[key][i] = None
             else:
                 backend_key = item['item']+str(i)
                 tooltip_uuid = self.uuid_assign_for_tooltip()
                 if backend_key not in self.backend['images']:
                     self.backend['images'][backend_key] = item['image']
-                canvas.itemconfig(img[0],image=self.backend['images'][backend_key])
+                canvas.itemconfig(img[0], image=self.backend['images'][backend_key])
                 environment = 'space'
                 if len(args) >= 4:
                     environment = args[3]
@@ -1530,7 +1531,7 @@ class SETS():
                 item['item'] = ''
                 #self.backend['images'][backendKey][i][0] = self.emptyImage
                 canvas.itemconfig(img[0],image=self.emptyImage)
-                self.build['boffs'][key][i] = item
+                self.build['boffs'][key][i] = ''
             else:
                 tooltip_uuid = self.uuid_assign_for_tooltip()
                 self.backend['images'][backendKey][i][0] = item['image']
@@ -1539,7 +1540,7 @@ class SETS():
                 canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
                 self.build['boffs'][key][i] = item['item']
 
-        # ground used +'_'+str(i)
+
     def uuid_assign_for_tooltip(self):
         return str(uuid.uuid4())
 
