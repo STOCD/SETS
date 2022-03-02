@@ -985,7 +985,21 @@ class SETS():
             'groundDevices': [None] * 5,
             'eliteCaptain': False,
             'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
-            'tags': dict(),
+            'tags': {
+                'maindamage':{
+                    'energy':0, 'kinetic':0, 'exotic':0, 'drain':0
+                }, 
+                'energytype':{
+                    'phaser':0, 'disruptor':0, 'plasma':0, 'polaron':0, 'Tetryon':0, 'antiproton':0
+                },
+                'weapontype':{
+                    'cannon':0, 'beam':0, 'mine':0, 'torpedo':0, 'sia':0, 'dsd':0, 'consolespam':0
+                },
+                'state':0,
+                'role':{
+                    'dps':0, 'heavytank':0, 'debufftank':0, 'nanny':0, 'off-meta':0, 'theme':0
+                }
+            },
             'skilltree': { 'space': dict(), 'ground': dict() },
         }
 
@@ -3317,6 +3331,59 @@ class SETS():
 
         text.configure(state=DISABLED)
 
+    def checkbuttonBuildBlock(self, window, frame: Frame, key: str, values, bg, fg, rowoffset):
+        i = 0
+        for t in values:
+            itemframe = Frame(frame, highlightthickness=0, bg=bg)
+            itemframe.grid(row=rowoffset, column=i, padx=16)
+            v = IntVar(window, value=values[t])
+            Checkbutton(itemframe, bg=bg, fg = "#000000", variable=v, activebackground=bg).pack(side=LEFT, ipadx=1, padx=0)
+            v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key: self.tagUpdateCallback(var.get(), k, text))
+            frame.columnconfigure(i, weight=1)
+            Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
+            i = i+1
+
+    def tagUpdateCallback(self, var, key, text):
+        self.build['tags'][key][text] = var
+        #print(self.build['tags'])
+        
+
+    def buildTagCallback(self):
+        tagwindow = Toplevel(self.window, bg=self.theme['app']["bg"])
+        tagwindow.title("Build Tags")
+        #tagwindow.minsize(500, 800)
+        cfr = Frame(tagwindow, bg=self.theme['app']["fg"])
+        cfr.pack(expand=True, padx=10, pady=10, fill=BOTH)
+        roleframe = Frame(cfr, highlightthickness=2, highlightbackground="#000000", bg=self.theme['app']["fg"])
+        roleframe.grid(row=0, column=0, columnspan=4, sticky="nsew")
+        Label(roleframe, text="Role:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'], font=("Helvetica", self.theme['button_heavy']['font']['size'], self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=6, sticky="new")
+        self.checkbuttonBuildBlock(tagwindow, roleframe, "role", self.build['tags']['role'], self.theme['app']['fg'], "#ffffff", 1)
+        """i = 0
+        for t in self.build['tags']['role']:
+            v = IntVar(tagwindow, value=self.build['tags']['role'][t])
+            Checkbutton(roleframe, text=t.capitalize(), bg=self.theme['app']['fg'],fg ="white", variable=v, activebackground=self.theme['app']['fg'], activeforeground=self.theme['label']['bg']).grid(row=1, column=i)
+            v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k="role": self.tagUpdateCallback(var.get(), k, text))
+            roleframe.columnconfigure(i, weight=1)
+            i = i+1"""
+        Frame(cfr, highlightthickness=0).grid(row=1, column=0, columnspan=4)
+        cfr.rowconfigure(1, minsize=12)   
+        mdmgfr = Frame(cfr, highlightthickness=2, highlightbackground="#000000", bg=self.theme['app']["fg"])
+        mdmgfr.grid(row=2, column=0, sticky="nsew", columnspan=4)
+        Frame(cfr, highlightthickness=0).grid(row=3, column=0, columnspan=4)
+        cfr.rowconfigure(3, minsize=12)
+        Label(mdmgfr, text="Main Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=5, sticky="new")
+        self.checkbuttonBuildBlock(tagwindow, mdmgfr, "maindamage", self.build['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", 1)
+
+        """i = 0
+        for t in self.build['tags']['maindamage']:
+            v = IntVar(tagwindow, value=self.build['tags']['maindamage'][t])
+            Checkbutton(mdmgfr, text=t.capitalize(), bg=self.theme['app']['fg'], fg=self.theme['label']['bg'], variable=v, activebackground=self.theme['app']['fg'], activeforeground=self.theme['label']['bg']).grid(row=1, column=i)
+            v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k="maindamage": self.tagUpdateCallback(var.get(), k, text))
+            mdmgfr.columnconfigure(i, weight=1)
+            i=i+1"""
+        
+        tagwindow.mainloop()
+
     def setupDoffListFrame(self, frame, environment='space'):
         doffEnvironment = environment.title()
         isSpace = False if environment == 'ground' else True
@@ -3514,7 +3581,8 @@ class SETS():
         if environment != 'ground':
             self.shipTierFrame = Frame(buildTagFrame)
             self.shipTierFrame.pack(fill=X, expand=False)
-
+        Button(buildTagFrame, text="Build Tags", fg=self.theme['button_heavy']['fg'], bg=self.theme['button_heavy']['bg'], font=(self.theme['app']['font']['family'], self.theme['button_heavy']['font']['size'], self.theme['button_heavy']['font']['weight']), command=lambda: self.buildTagCallback()).pack(fill=X, side=TOP)
+        
         #Label(buildTagFrame, text="BUILD TAGS", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).pack(fill=X, expand=False)
         for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
             tagFrame = Frame(buildTagFrame, bg=self.theme['frame_medium']['bg'])
