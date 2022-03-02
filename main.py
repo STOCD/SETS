@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import filedialog
 from tkinter import font
 from tkinter.ttk import Progressbar
+from xml.dom.expatbuilder import InternalSubsetExtractor
 # from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab  # , PngImagePlugin
@@ -3384,21 +3385,58 @@ class SETS():
 
         text.configure(state=DISABLED)
 
-    def checkbuttonBuildBlock(self, window, frame: Frame, key: str, values, bg, fg, rowoffset):
-        i = 0
+    def checkbuttonVarUpdateCallback(self, var, masterkey, key="", text=""):
+        """Updates self.build[masterkey][key][text] to var; masterkey, key and text determine the level and identifier the var is inserted, allowing for 3-level depth at maximum. key and text can be left empty is not needed"""
+        if masterkey not in self.build:
+            return
+        if key != "":
+            if text != "":
+                self.build[masterkey][key][text] = var
+            else:
+                self.build[masterkey][key] = var
+        else:
+            self.build[masterkey] = var
+    
+    def checkbuttonBuildBlock(self, window, frame: Frame, values, bg, fg, masterkey: str, key = str(""), geomanager="grid", orientation=HORIZONTAL, rowoffset=0, columnoffset=0,  alignment=TOP):
+        """Inserts a series of Checkbuttons either horizontally or vertically, either row for row in the grid of the parent frame or packed into the parent
+        frame on the given side. Parameters:
+        window: Toplevel or Tkinter window mainlooping; 
+        frame: the parent frame that the checkboxes get inserted to (must be managed by the geomanager stated in parameter geomanager); 
+        values: list or dictionary containing the individual checkbuttons texts, each entry has to have a correspondence inside the dictionary the checkbuttons values will be saved to; 
+        bg: background for text and checkboxes; fg: text color; masterkey: first-level identifier of the corresponding dictionary; 
+        key: second-level identifier of the corresponding dictionary; 
+        geomanager: which geomanager manages frame; 
+        orientation: orientation of checkbutton sequence; 
+        rowoffset / columnoffset: if frame is managed by grid, then they determine the cell the first checkbutton will be inserted, subsequent Checkbuttons will be insertet left / below it; 
+        alignment: if frame is managed by pack, then the Checkbuttons will be aligned at that side inside the frame
+        
+        The method returns the number of checkbuttons inserted"""
+        if geomanager == "grid":
+            topframe = frame
+            insertrow = rowoffset
+            insertcolumn = columnoffset
+        elif geomanager == "pack":
+            topframe = Frame(frame, bg=bg, highlightthickness=0)
+            topframe.pack(side=alignment, fill=BOTH)
+            insertrow = 0
+            insertcolumn = 0
+        else: return
+        count = 0 
         for t in values:
-            itemframe = Frame(frame, highlightthickness=0, bg=bg)
-            itemframe.grid(row=rowoffset, column=i, padx=16)
+            itemframe = Frame(topframe, highlightthickness=0, bg=bg)
+            itemframe.grid(row=insertrow, column=insertcolumn, padx=16)
             v = IntVar(window, value=values[t])
             Checkbutton(itemframe, bg=bg, fg = "#000000", variable=v, activebackground=bg).pack(side=LEFT, ipadx=1, padx=0)
-            v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key: self.tagUpdateCallback(var.get(), k, text))
-            frame.columnconfigure(i, weight=1)
+            v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key, m=masterkey: self.checkbuttonVarUpdateCallback(var.get(), m, k, text))
             Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
-            i = i+1
-
-    def tagUpdateCallback(self, var, key, text):
-        self.build['tags'][key][text] = var
-        #print(self.build['tags'])
+            if orientation==HORIZONTAL: 
+                topframe.columnconfigure(insertcolumn, weight=1)
+                insertcolumn +=1
+            elif orientation==VERTICAL: 
+                topframe.rowconfigure(insertrow, weight=1)
+                insertrow +=1
+            count +=1
+        return count
         
 
     def buildTagCallback(self):
@@ -3410,31 +3448,15 @@ class SETS():
         roleframe = Frame(cfr, highlightthickness=2, highlightbackground="#000000", bg=self.theme['app']["fg"])
         roleframe.grid(row=0, column=0, columnspan=4, sticky="nsew")
         Label(roleframe, text="Role:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'], font=("Helvetica", self.theme['button_heavy']['font']['size'], self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=6, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, roleframe, "role", self.build['tags']['role'], self.theme['app']['fg'], "#ffffff", 1)
-        """i = 0
-        for t in self.build['tags']['role']:
-            v = IntVar(tagwindow, value=self.build['tags']['role'][t])
-            Checkbutton(roleframe, text=t.capitalize(), bg=self.theme['app']['fg'],fg ="white", variable=v, activebackground=self.theme['app']['fg'], activeforeground=self.theme['label']['bg']).grid(row=1, column=i)
-            v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k="role": self.tagUpdateCallback(var.get(), k, text))
-            roleframe.columnconfigure(i, weight=1)
-            i = i+1"""
-        Frame(cfr, highlightthickness=0).grid(row=1, column=0, columnspan=4)
+        self.checkbuttonBuildBlock(tagwindow, roleframe, self.build['tags']['role'], self.theme['app']['fg'], "#ffffff", "tags", "role", "grid", HORIZONTAL, 1)
+        Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=1, column=0, columnspan=4)
         cfr.rowconfigure(1, minsize=12)   
         mdmgfr = Frame(cfr, highlightthickness=2, highlightbackground="#000000", bg=self.theme['app']["fg"])
         mdmgfr.grid(row=2, column=0, sticky="nsew", columnspan=4)
-        Frame(cfr, highlightthickness=0).grid(row=3, column=0, columnspan=4)
+        Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=3, column=0, columnspan=4)
         cfr.rowconfigure(3, minsize=12)
         Label(mdmgfr, text="Main Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=5, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, mdmgfr, "maindamage", self.build['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", 1)
-
-        """i = 0
-        for t in self.build['tags']['maindamage']:
-            v = IntVar(tagwindow, value=self.build['tags']['maindamage'][t])
-            Checkbutton(mdmgfr, text=t.capitalize(), bg=self.theme['app']['fg'], fg=self.theme['label']['bg'], variable=v, activebackground=self.theme['app']['fg'], activeforeground=self.theme['label']['bg']).grid(row=1, column=i)
-            v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k="maindamage": self.tagUpdateCallback(var.get(), k, text))
-            mdmgfr.columnconfigure(i, weight=1)
-            i=i+1"""
-        
+        self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.build['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", "tags", "maindamage", "grid", HORIZONTAL, 1)
         tagwindow.mainloop()
 
     def setupDoffListFrame(self, frame, environment='space'):
