@@ -21,7 +21,7 @@ if sys.platform.startswith('win'):
 
 class SETS():
     """Main App Class"""
-    version = '20220301_beta'
+    version = '20220302_beta'
 
     itemBoxX = 32 #25
     itemBoxY = 42 #33
@@ -1338,34 +1338,9 @@ class SETS():
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
         items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
         items_list = self.restrictItemsList(items_list)  # Most restrictions should come from the ship
-        item = self.pickerGui(args[1], itemVar, items_list, [self.setupSearchFrame, self.setupRarityFrame], self.window.winfo_pointerx(), self.window.winfo_pointery())
-        if 'item' in item and len(item['item']):
-            if item['item'] == 'X':
-                item['item'] = ''
-                canvas.itemconfig(img[0],image=self.emptyImage)
-                canvas.itemconfig(img[1],image=self.emptyImage)
-                self.build[key][i] = None
-                self.backend['images'][key][i] = [self.emptyImage, self.emptyImage]
-            else:
-                backendKey = item['item']
-                tooltip_uuid = self.uuid_assign_for_tooltip()
-                if 'rarity' in self.cache['equipment'][args[0]][item['item']]:
-                    rarityDefaultItem = self.cache['equipment'][args[0]][item['item']]['rarity']
-                else:
-                    rarityDefaultItem = self.rarities[0]
-                if 'rarity' not in item or item['item']=='' or item['rarity']=='':
-                    item['rarity'] = rarityDefaultItem
-                image1 = self.imageFromInfoboxName(item['rarity'])
-                canvas.itemconfig(img[0],image=item['image'])
-                canvas.itemconfig(img[1],image=image1)
-                environment = 'space'
-                if len(args) >= 4:
-                    environment = args[3]
-                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, args[0], environment))
-                canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
-                self.build[key][i] = item
-                self.backend['images'][key][i] = [item['image'], image1]
-                item.pop('image')
+
+        self.picker_getresult(canvas, img, i, key, args, items_list, item_initial=itemVar, type='item', title='Pick', extra_frames=[self.setupRarityFrame])
+
 
     def traitLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for all trait labels"""
@@ -1384,29 +1359,53 @@ class SETS():
             self.logWriteSimple('traitLabelCallback', '', 4, tags=[traitType, args[3], str(len(items_list))])
 
         items_list = self.restrictItemsList(items_list)  # What restrictions exist for traits?
-        self.picker_getresult(canvas, img, i, key, args, items_list, title='Pick trait')
+        self.picker_getresult(canvas, img, i, key, args, items_list, type='trait', title='Pick trait')
 
-    def picker_getresult(self, canvas, img, i, key, args, items_list, title='Pick'):
-        item_var = self.getEmptyItem()
-        item = self.pickerGui(title, item_var, items_list, [self.setupSearchFrame])
+    def picker_getresult(self, canvas, img, i, key, args, items_list, item_initial=None, type=None, title='Pick', extra_frames=None):
+        item_var = item_initial if item_initial is not None else self.getEmptyItem()
+        additional = [self.setupSearchFrame]
+        if extra_frames:
+            additional += extra_frames
+        item = self.pickerGui(title, item_var, items_list, additional)
         if 'item' in item and len(item['item']):
-            if item['item'] == 'X':
-                item['item'] = ''
+            name = item['item']
+            if name == 'X':  # Clear slot
                 canvas.itemconfig(img[0],image=self.emptyImage)
-                self.build[key][i] = None
+                canvas.itemconfig(img[1],image=self.emptyImage)
+                if type == 'boffs':
+                    self.build['boffs'][key][i] = ''
+                else:
+                    self.build[key][i] = None
             else:
-                backend_key = item['item']+str(i)
                 tooltip_uuid = self.uuid_assign_for_tooltip()
-                if backend_key not in self.backend['images']:
-                    self.backend['images'][backend_key] = item['image']
-                canvas.itemconfig(img[0], image=self.backend['images'][backend_key])
-                environment = 'space'
-                if len(args) >= 4:
-                    environment = args[3]
-                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, '', environment))
+                backend_key = '{}_{}'.format(name, i)
+                self.backend['images'][backend_key] = item['image']  # index needed for item duplicate display
+                canvas.itemconfig(img[0], image=item['image'])
+
+                if type == 'item':
+                    group_key = args[0]
+                    if 'rarity' in self.cache['equipment'][group_key][name]:
+                        rarityDefaultItem = self.cache['equipment'][group_key][name]['rarity']
+                    else:
+                        rarityDefaultItem = self.rarities[0]
+
+                    if 'rarity' not in item or item['item'] == '' or item['rarity'] == '':
+                        item['rarity'] = rarityDefaultItem
+
+                    image1 = self.imageFromInfoboxName(item['rarity'])
+                    self.backend['images'][backend_key+item['rarity']] = image1
+                    canvas.itemconfig(img[1], image=image1)
+                else:
+                    group_key = ''
+
+                environment = args[3] if args is not None and len(args) >= 4 else 'space'
+                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, group_key, environment))
                 canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
                 item.pop('image')
-                self.build[key][i] = item
+                if type == 'boffs':
+                    self.build['boffs'][key][i] = name
+                else:
+                    self.build[key][i] = item
 
     def font_tuple_create(self, name):
         font_family = self.theme[name]['font']['family'] if 'family' in self.theme[name]['font'] else self.theme['app']['font']['family']
@@ -1521,24 +1520,7 @@ class SETS():
             items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][spec2][rank]
 
         items_list = self.restrictItemsList(items_list) # need to send boffseat spec/spec2
-
-        itemVar = self.getEmptyItem()
-        item = self.pickerGui('Pick Ability', itemVar, items_list, [self.setupSearchFrame])
-        backendKey = key
-        if not backendKey in self.backend['images']: self.backend['images'][backendKey] = None
-        if 'item' in item and len(item['item']):
-            if item['item'] == 'X':
-                item['item'] = ''
-                #self.backend['images'][backendKey][i][0] = self.emptyImage
-                canvas.itemconfig(img[0],image=self.emptyImage)
-                self.build['boffs'][key][i] = ''
-            else:
-                tooltip_uuid = self.uuid_assign_for_tooltip()
-                self.backend['images'][backendKey][i][0] = item['image']
-                canvas.itemconfig(img[0],image=item['image'])
-                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, '', environment))
-                canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
-                self.build['boffs'][key][i] = item['item']
+        self.picker_getresult(canvas, img, i, key, args, items_list, type='boffs', title='Pick ability')
 
 
     def uuid_assign_for_tooltip(self):
