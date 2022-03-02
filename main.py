@@ -59,10 +59,16 @@ class SETS():
     displayedInfoboxItem = str()
 
     # Needs fonts, padx, pady, possibly others
-    theme = {
+    theme = theme_default = {
+        'name': 'SETS_default',
         'app': {
             'bg': '#c59129',  # self.theme['app']['bg']
             'fg': '#3a3a3a',  # self.theme['app']['fg']
+            'font': {  # self.theme['app']['font_object']
+                'family': 'Helvetica',
+                'size': 10,
+                'weight': '',
+            },
         },
         'frame': {
             'bg': '#3a3a3a',  # self.theme['frame']['bg']
@@ -81,6 +87,10 @@ class SETS():
         'button_heavy': {
             'bg': '#6b6b6b',  # self.theme['button_heavy']['bg']
             'fg': '#ffffff',  # self.theme['button_heavy']['fg']
+            'font': {  # self.theme['button_heavy']['font_object']
+                'size': 12,
+                'weight': 'bold',
+            },
         },
         'button': {
             'bg': '#3a3a3a',  # self.theme['button']['bg']
@@ -89,6 +99,23 @@ class SETS():
         'label': {
             'bg': '#b3b3b3',  # self.theme['label']['bg']
             'fg': '#3a3a3a',  # self.theme['label']['fg']
+        },
+        'title1': {
+            'font': {  # self.theme['title1']['font_object']
+                'size': 14,
+                'weight': 'bold',
+            },
+        },
+        'title2': {
+            'font': {  # self.theme['title2']['font_object']
+                'size': 12,
+                'weight': 'bold',
+            },
+        },
+        'text_small': {
+            'font': {  # self.theme['text_small']['font_object']
+                'size': 9,
+            },
         },
         'entry': {  # Entry and Text widgets
             'bg': '#b3b3b3',  # self.theme['entry']['bg']
@@ -1319,6 +1346,23 @@ class SETS():
                 item.pop('image')
                 self.build[key][i] = item
 
+    def precache_theme_fonts(self):
+        i = 0
+        for key in self.theme:
+            if not 'font' in self.theme[key]:
+                continue
+            else:
+                i += 1
+                font_family = self.theme[key]['font']['family'] if 'family' in self.theme[key]['font'] else self.theme['app']['font']['family']
+                font_size = self.theme[key]['font']['size'] if 'size' in self.theme[key]['font'] else self.theme['app']['font']['size']
+                font_weight = self.theme[key]['font']['weight'] if 'weight' in self.theme[key]['font'] else self.theme['app']['font']['weight']
+                if font_weight:
+                    self.theme[key]['font_object'] = font.Font(family=font_family, size=font_size, weight=font_weight)
+                else:
+                    self.theme[key]['font_object'] = font.Font(family=font_family, size=font_size)
+
+        self.logWriteCounter('precache_theme_fonts', '(json)', i, [self.theme['name']])
+
     def precacheBoffAbilitiesSingle(self, name, environment, type, category, desc):
         # category is Tactical, Science, Engineer, Specs
         # type is the boff ability rank
@@ -1768,7 +1812,7 @@ class SETS():
         textframe.insert(END, redditString)
 
     def exportRedditCallback(self, event=None):
-        phi = font.Font(family='Helvetica', size=12, weight='bold')
+        phi = self.theme['button_heavy']['font_object']
         redditWindow = Toplevel(self.window)
         redditText = Text(redditWindow)
         btfr = Frame(redditWindow)
@@ -2308,7 +2352,7 @@ class SETS():
                 rank += 1
                 dependencySplit = self.skillSpaceGetFieldSkill(rankName, row, 0, type='linear')
                 if row == 0:
-                    l = Label(frame, text=rankName.title().replace(' ', '\n'), bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=font.Font(family='Helvetica', size=12, weight='bold'))
+                    l = Label(frame, text=rankName.title().replace(' ', '\n'), bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=self.theme['title2']['font_object'])
                     l.grid(row=row, column=rank*rankColumns, columnspan=3, sticky='s', pady=1)
                 for col in range(rankColumns):
                     rowspan = 2
@@ -3286,7 +3330,6 @@ class SETS():
         DoffLabel = Label(DoffFrame, text=environment.upper()+" DUTY OFFICERS", bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], width=60)
         DoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
 
-        f = font.Font(family='Helvetica', size=9)
         for i in range(6):
             v0 = StringVar(self.window)
             v1 = StringVar(self.window)
@@ -3299,7 +3342,7 @@ class SETS():
             m.configure(bg=self.theme['frame_light']['bg'],fg=self.theme['frame_light']['fg'], borderwidth=0, highlightthickness=0, width=23)
             m = OptionMenu(DoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
-            m.configure(bg=self.theme['frame_light']['bg'],fg=self.theme['frame_light']['fg'], borderwidth=0, highlightthickness=0,font=f, wraplength=340)
+            m.configure(bg=self.theme['frame_light']['bg'],fg=self.theme['frame_light']['fg'], borderwidth=0, highlightthickness=0,font=self.theme['text_small']['font_object'], wraplength=340)
 
             if self.build['doffs'][environment][i] is not None:
                 v0.set(self.build['doffs'][environment][i]['name'])
@@ -3450,13 +3493,12 @@ class SETS():
 
 
     def setupTierFrame(self, tier):
-        f = font.Font(family='Helvetica', size=9)
-        l = Label(self.shipTierFrame, text="Tier:", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=f)
+        l = Label(self.shipTierFrame, text="Tier:", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.theme['text_small']['font_object'])
         l.grid(row=0, column=0, sticky='nsew')
         l.configure(borderwidth=0, highlightthickness=0)
         m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
         m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
-        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, font=f)
+        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, font=self.theme['text_small']['font_object'])
 
 
     def setupShipImageFrame(self):
@@ -3971,8 +4013,9 @@ class SETS():
             if 'colWeight' in theme[title]:
                 col_weight=theme[title]['colWeight']
 
-            font_data = { 'family': 'Helvetica', 'size': 10, 'weight': ''}
-            font_label = { 'family': 'Helvetica', 'size': 12, 'weight': ''}
+            # Update to use pre-built fonts if available
+            font_data = {**self.theme['app']['font']}
+            font_label = {**self.theme['app']['font'], 'size': 12}
             if element_type == 'title':
                 font_label.update({'size': 14, 'weight': 'bold'})
             if font_default is not None:
@@ -4157,7 +4200,7 @@ class SETS():
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
-        defaultFont.configure(family='Helvetica', size=10)
+        defaultFont.configure(family=self.theme['app']['font']['family'], size=self.theme['app']['font']['size'])
         self.footerProgressBarUpdates = 0
         self.dpi = round(self.window.winfo_fpixels('1i'), 0)
         self.setupUIScaling()
@@ -4504,8 +4547,8 @@ class SETS():
 
     def __init__(self) -> None:
         """Main setup function"""
-
         self.window = Tk()
+
         # Debug, CLI args, and config file loading
         self.initSettings()
         self.argParserSetup()
@@ -4513,13 +4556,16 @@ class SETS():
         self.stateSave()
         self.configFileLoad()
 
-        self.setupGeometry()
-        self.windowUpdate = dict()
-        self.requestWindowUpdateHold(0)
-        self.updateWindowSize()
+        self.precache_theme_fonts()
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
+        self.setupGeometry()
+        self.windowUpdate = dict()
+
+        self.requestWindowUpdateHold(0)
+        self.updateWindowSize()
         self.session = HTMLSession()
+
         self.clearBuild()
         self.resetCache()
         self.resetBackend()
