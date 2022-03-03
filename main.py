@@ -25,16 +25,15 @@ class SETS():
 
     itemBoxX = 32 #25
     itemBoxY = 42 #33
-    imageBoxX = 260
-    imageBoxY = 146
     windowX = 100  # Window top left corner
     windowY = 100
-    windowHeightDefault = 840
-    windowActiveHeightDefault = 659 #634
-    windowWidthDefault = 1920
-    windowActiveHeight = windowActiveHeightDefault
-    windowWidth = windowWidthDefault
     logoHeight = 134
+    windowHeightDefault = 840
+    windowActiveHeight = windowActiveHeightDefault = 659
+    windowWidth = windowWidthDefault = 1920
+    window_outside_frame_minimum = int((windowWidthDefault - 100) / 5)
+    imageBoxX = window_outside_frame_minimum
+    imageBoxY = int(window_outside_frame_minimum * 7 / 10)
     daysDelayBeforeReattempt = 7
 
     #base URI
@@ -655,7 +654,8 @@ class SETS():
         if 'Hangar' in keyPhrase:
             self.cache['equipment'][keyPhrase] = {key:self.cache['equipment'][keyPhrase][key] for key in self.cache['equipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
         """
-        self.logWriteCounter('Equipment', '(json)', len(self.cache['equipment'][keyPhrase]), [keyPhrase])
+
+        self.logWriteCounter('Equipment', '(json)', len(self.cache['equipment'][keyPhrase]) if keyPhrase in self.cache['equipment'] else 0, [keyPhrase])
         self.progressBarStop()
 
     def searchHtmlTable(self, html, field, phrases):
@@ -694,7 +694,7 @@ class SETS():
 
     def predownloadShipImages(self):
         for e in self.ships:
-            self.fetchOrRequestImage(self.wikiImages+e['image'].replace(' ','_'), e['Page'], self.shipImageWidth, self.shipImageHeight)
+            self.fetchOrRequestImage(self.wikiImages+e['image'].replace(' ','_'), e['Page'], self.imageBoxX, self.imageBoxY)
 
     def precacheSpaceSkills(self):
         if 'spaceSkills' in self.cache and len(self.cache['spaceSkills']) > 0:
@@ -965,6 +965,7 @@ class SETS():
             'pickerSpawnUnderMouse': 1,
             'useFactionSpecificIcons': 0,
             'useExperimentalTooltip': 0,
+            'perf': dict(),
             'tags': {
                 'maindamage':{
                     'energy':0, 'kinetic':0, 'exotic':0, 'drain':0
@@ -3681,7 +3682,7 @@ class SETS():
         try:
             self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
             ship_image = self.backend['shipHtml']['image'].replace(' ','_')
-            self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image, self.build['ship'], self.shipImageWidth, self.shipImageHeight)
+            self.shipImg = self.fetchOrRequestImage(self.wikiImages+ship_image, self.build['ship'], self.imageBoxX, self.imageBoxY)
         except:
             self.shipImg = self.getEmptyFactionImage()
         self.setShipImage(self.shipImg)
@@ -3768,29 +3769,7 @@ class SETS():
         self.windowYCache = self.window.winfo_y()
 
     def updateImageLabelSize(self, frame=None, source=''):
-        if frame is None:
-            try:
-                frame = self.shipImageLabel
-            except:
-                pass
-        if frame is not None:
-            frame.update()
-            width = frame.winfo_width()
-            height = frame.winfo_height()
-            if width > self.imageBoxX and height > self.imageBoxY:
-                resizeShip = True if width > (self.shipImageWidth + 20) or height > self.shipImageHeight + 20 else False
-
-                self.shipImageWidth  = width-1
-                self.shipImageHeight = height-7
-                if resizeShip and self.shipImageResizeCount < 3:
-                    self.setupShipImageFrame()
-                    self.shipImageResizeCount += 1
-        else:
-            self.shipImageWidth  = self.imageBoxX
-            self.shipImageHeight = self.imageBoxY
-        self.logWriteSimple('ImageLabel', 'size', 3, ['{}x{}'.format(self.shipImageWidth,self.shipImageHeight), source] )
-        #if source == 'focusSpaceBuildFrameCallback':
-            #self.logWriteSimple('ImageLabel-ground', 'size', 3, ['{}x{}'.format(self.charImageLabel.winfo_width(),self.charImageLabel.winfo_height())])
+        self.logWriteSimple('ImageLabel', 'size', 3, ['{}x{}'.format(self.imageBoxX, self.imageBoxY), source])
 
     def setShipImage(self, suppliedImage=None):
         if suppliedImage is None: suppliedImage = self.getEmptyFactionImage()
@@ -3834,18 +3813,19 @@ class SETS():
         LabelFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         LabelFrame.pack(fill=BOTH, expand=True, side=TOP)
         if 1:
-            imageLabel = Label(LabelFrame, fg=self.theme['button']['fg'], bg=self.theme['button']['bg'], highlightbackground="black", highlightthickness=1)
+            imageLabel = Label(LabelFrame, fg=self.theme['button']['fg'], bg=self.theme['button']['bg'], borderwidth=0, highlightthickness=0, padx=0, pady=0)
             if environment == 'ground': self.charImageLabel = imageLabel
             elif environment == 'skill': self.skillImageLabel = imageLabel
             else: self.shipImageLabel = imageLabel
-            imageLabel.pack(fill=BOTH, expand=True)
+            #imageLabel.pack(fill=BOTH, expand=True)
+            imageLabel.grid(row=0, column=0, sticky='nsew')
+            LabelFrame.grid_columnconfigure(0, weight=1, minsize=self.imageBoxX)
+            LabelFrame.grid_rowconfigure(0, weight=1, minsize=self.imageBoxY)
             imageLabel.configure(image=self.getEmptyFactionImage())
         else:  #canvas conversion tests
-            imageCanvas = Canvas(LabelFrame, highlightthickness=1, borderwidth=0, bg=self.theme['button']['bg'], highlightbackground="black")
-            imageCanvas.grid(row=0, column=0, sticky='nse')
-            LabelFrame.grid_columnconfigure(0, weight=1)
-            img0 = imageCanvas.create_image(imageCanvas.winfo_width() / 2,imageCanvas.winfo_height() / 2, anchor="center",image=self.getEmptyFactionImage())
-            img1 = imageCanvas.create_image(0,0, anchor="nw",image=self.emptyImage)
+            imageCanvas = Canvas(LabelFrame, borderwidth=0, bg=self.theme['button']['bg'], highlightthickness=0, padx=0, pady=0)
+            img0 = imageCanvas.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.getEmptyFactionImage())
+            img1 = imageCanvas.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.emptyImage)
             if environment == 'ground':
                 self.charImagecanvas = imageCanvas
                 self.charImage0 = img0
@@ -3987,7 +3967,10 @@ class SETS():
         parentFrame.grid_propagate(False)
         parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
         for i in range(5):
-            parentFrame.grid_columnconfigure(i, weight=5, uniform="mainCol"+environment)
+            if i == 0:
+                parentFrame.grid_columnconfigure(i, weight=0, minsize=self.window_outside_frame_minimum)
+            else:
+                parentFrame.grid_columnconfigure(i, weight=5, uniform="mainCol"+environment)
 
         infoFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'], highlightbackground=self.theme['frame_medium']['hlbg'], highlightthickness=self.theme['frame_medium']['hlthick'])
         infoFrame.grid(row=0,column=0,sticky='nsew', padx=(2,0), pady=(2,2))
@@ -4387,7 +4370,7 @@ class SETS():
         self.menuFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'])
         self.menuFrame.pack(fill=X, padx=15)
         self.verticalFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'], height=self.windowActiveHeightDefault)
-        self.verticalFrame.pack(fill='none', side='left')
+        self.verticalFrame.pack(fill='none', side='left')  # Minimum height frame
         self.spaceBuildFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
         self.groundBuildFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
         self.skillTreeFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
@@ -4692,11 +4675,11 @@ class SETS():
         self.emptyImageFaction = dict()
         self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
         self.epicImage = self.fetchOrRequestImage(self.wikiImages+"Epic.png", "Epic")
-        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", self.shipImageWidth, self.shipImageHeight)
-        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", self.shipImageWidth, self.shipImageHeight)
+        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", self.imageBoxX, self.imageBoxY)
+        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", self.imageBoxX, self.imageBoxY)
+        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", self.imageBoxX, self.imageBoxY)
+        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", self.imageBoxX, self.imageBoxY)
+        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", self.imageBoxX, self.imageBoxY)
 
     def precacheDownloads(self):
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
