@@ -604,6 +604,7 @@ class SETS():
             self.precacheFactions()
             self.precacheSkills()
             self.precacheSpaceSkills()
+            # Add the known equipment series [optional?]
         self.logWriteBreak('precachePreload END')
 
     def precacheIconCleanup(self):
@@ -1221,12 +1222,12 @@ class SETS():
 
         canvas = Canvas(container)
         scrollable_frame = self.windowAddScrollbar(container, canvas)
-        """
+
         try:
             items_list.sort()
         except:
             self.logWriteSimple('pickerGUI', 'TRY_EXCEPT', 1, tags=['item_list.sort() failed in '+title])
-        """
+
         i = 0
         clearSlotButton = Button(scrollable_frame, text='Clear Slot', padx=5, bg=self.theme['button']['bg'],fg=self.theme['button']['fg'])
         clearSlotButton.grid(row=0, column=0, sticky='nsew')
