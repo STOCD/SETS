@@ -1422,6 +1422,8 @@ class SETS():
         if weight is not None:
             tuple_build[2] = weight
 
+        return (family, size, weight)
+
     def precache_theme_fonts(self):
         i = 0
         for key in self.theme:
@@ -2764,8 +2766,10 @@ class SETS():
         if ui_key is None or (ui_key in self.tooltip_tracking and self.tooltip_tracking[ui_key]):
             self.tooltip_tracking[ui_key] = False
             self.tooltip_tracking['hold'] = True
-            if self.persistent['useExperimentalTooltip']: self.setupInfoboxFrame(item, key, environment, tooltip)
-            else: self.setupInfoboxFrameStatic(item, key, environment, tooltip)
+            if self.persistent['useExperimentalTooltip']:
+                self.setupInfoboxFrame(item, key, environment, tooltip)
+            else:
+                self.setupInfoboxFrameStatic(item, key, environment, tooltip)
             self.tooltip_tracking['hold'] = False
 
     def setupInfoboxFrameLeave(self, ui_key):
@@ -4073,8 +4077,6 @@ class SETS():
             'Download ship images (VERY SLOW!)'     : { 'col' : 2, 'type' : 'button', 'var_name' : 'predownloadShipImages' },
 #            'Download gear images (VERY SLOW!)'     : { 'col' : 2, 'type' : 'button', 'var_name' : 'predownloadGearImages' },
 #            'Save cache binaries (TEST)'            : { 'col' : 2, 'type' : 'button', 'var_name' : 'cacheSave' },
-
-
         }
         self.create_item_block(settingsTopRightFrame, theme=settingsMaintenance)
 
