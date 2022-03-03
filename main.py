@@ -355,22 +355,6 @@ class SETS():
     def lowerCaseRegexpText(self, matchobj):
         return matchobj.group(0).lower()
 
-    def imageResizeDimensions(self, imagewidth, imageheight, width, height):
-        #deprecated
-        aspectOld = round(imagewidth / imageheight, 2)
-        aspectNew = round(width / height, 2)
-
-        if width <= 100 or height <= 100:
-            # Don't alter small icons
-            pass
-        elif aspectOld != aspectNew:
-            newWidth = int(imagewidth / (imageheight / height))
-        else:
-            # matching aspects
-            pass
-
-        if width >= 100: self.logWrite("==={:4}->{:4} x {:4}->{:4} [{:4}->{:4}=={:4}]".format(imagewidth, width, imageheight, height, aspectOld, aspectNew, round(width / height, 2)), 2)
-        return (width, height)
 
     def progressBarUpdate(self, weight=1):
         # weight denotes how much progress that item is
@@ -628,6 +612,22 @@ class SETS():
         boffIcons = self.cache['boffTooltips']['space'].keys()
         boffIcons += self.cache['boffTooltips']['ground'].keys()
 
+
+    def precacheEquipmentSingle(self, name, keyPhrase, item):
+        name = self.sanitizeEquipmentName(name)
+        if 'Hangar - Advanced' in name or 'Hangar - Elite' in name:
+            return
+
+        if not keyPhrase in self.cache['equipment']:
+            self.cache['equipment'][keyPhrase] = {}
+            self.cache['equipmentWithImages'][keyPhrase] = []
+
+        if not name in self.cache['equipment'][keyPhrase]:
+            self.cache['equipment'][keyPhrase][name] = item
+            self.cache['equipmentWithImages'][keyPhrase].append((name, self.imageFromInfoboxName(name)))
+            self.logWriteSimple('equipmentWithImages', '', 2, tags=[name])
+
+
     def precacheEquipment(self, keyPhrase):
         """Populate in-memory cache of ship equipment lists for faster loading"""
         if not keyPhrase or keyPhrase in self.cache['equipment']:
@@ -645,11 +645,15 @@ class SETS():
         else:
             equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
 
+        for item in range(len(equipment)):
+            self.precacheEquipmentSingle(equipment[item]['name'], keyPhrase, equipment[item])
+
+        """ Prune below when precacheEquipmentSingle is stable
         self.cache['equipment'][keyPhrase] = {self.sanitizeEquipmentName(equipment[item]["name"]): equipment[item] for item in range(len(equipment))}
 
         if 'Hangar' in keyPhrase:
             self.cache['equipment'][keyPhrase] = {key:self.cache['equipment'][keyPhrase][key] for key in self.cache['equipment'][keyPhrase] if 'Hangar - Advanced' not in key and 'Hangar - Elite' not in key}
-
+        """
         self.logWriteCounter('Equipment', '(json)', len(self.cache['equipment'][keyPhrase]), [keyPhrase])
         self.progressBarStop()
 
@@ -862,12 +866,14 @@ class SETS():
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
 
-        #Aeon timeships provide list to name var -- try/except until time to fix
         try:
             image = self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction, forceAspect=forceAspect)
-            if image is None: self.logWrite("==={} NONE".format(name), 4)
-            elif image == self.emptyImage: self.logWrite("==={} EMPTY".format(name), 4)
-            else: self.logWrite("==={} {}x{}".format(name, image.width(), image.height()), 4)
+            if image is None:
+                self.logWriteSimple('fromInfoboxName', 'NONE', 4)
+            elif image == self.emptyImage:
+                self.logWriteSimple('fromInfoboxName', 'EMPTY', 4)
+            else:
+                self.logWriteSimple('fromInfoboxName', name, 4, [image.width(), image.height()])
             return image
         except:
             return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
@@ -1076,6 +1082,8 @@ class SETS():
                 'groundSkills': dict(),
                 'factions': dict(),
                 'modifiers': None,
+                'equipment': dict(),
+                'equipmentWithImages': dict(),
             }
 
     def resetBackend(self, rebuild=False):
@@ -1214,12 +1222,12 @@ class SETS():
 
         canvas = Canvas(container)
         scrollable_frame = self.windowAddScrollbar(container, canvas)
-
+        """
         try:
             items_list.sort()
         except:
             self.logWriteSimple('pickerGUI', 'TRY_EXCEPT', 1, tags=['item_list.sort() failed in '+title])
-
+        """
         i = 0
         clearSlotButton = Button(scrollable_frame, text='Clear Slot', padx=5, bg=self.theme['button']['bg'],fg=self.theme['button']['fg'])
         clearSlotButton.grid(row=0, column=0, sticky='nsew')
@@ -1336,7 +1344,9 @@ class SETS():
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
-        items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
+
+        # items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
+        items_list = self.cache['equipmentWithImages'][args[0]]
         items_list = self.restrictItemsList(items_list)  # Most restrictions should come from the ship
 
         self.picker_getresult(canvas, img, i, key, args, items_list, item_initial=itemVar, type='item', title='Pick', extra_frames=[self.setupRarityFrame])
@@ -2193,7 +2203,7 @@ class SETS():
         else:
             item = self.build[key][buildSubKey]
 
-        self.logWriteSimple('createButton', '', 4, [name, key, buildSubKey, backendKey, i, row, column])
+        self.logWriteSimple('createButton', '', 5, [name, key, buildSubKey, backendKey, i, row, column])
 
         if type(item) is dict and item is not None:
             if image0Name is None and 'item' in item:
@@ -4164,7 +4174,7 @@ class SETS():
 
             if columns > 1 and var_name == '':
                 continue
-            # self.logWrite("==={}: {}/{}".format(title, var_name, type), 2)
+
             row_current = (i * elements) if shape == 'col' else 0
             row_current += row
             col_start = (i * elements) if shape == 'row' else 0
