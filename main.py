@@ -1065,6 +1065,7 @@ class SETS():
         else:
             self.cache = {
                 'equipment': dict(),
+                'equipmentWithImages': dict(),
                 'doffs': dict(),
                 'doffNames': dict(),
                 'shipTraits': dict(),
@@ -1082,8 +1083,6 @@ class SETS():
                 'groundSkills': dict(),
                 'factions': dict(),
                 'modifiers': None,
-                'equipment': dict(),
-                'equipmentWithImages': dict(),
             }
 
     def resetBackend(self, rebuild=False):
