@@ -965,6 +965,21 @@ class SETS():
             'pickerSpawnUnderMouse': 1,
             'useFactionSpecificIcons': 0,
             'useExperimentalTooltip': 0,
+            'tags': {
+                'maindamage':{
+                    'energy':0, 'kinetic':0, 'exotic':0, 'drain':0
+                }, 
+                'energytype':{
+                    'phaser':0, 'disruptor':0, 'plasma':0, 'polaron':0, 'Tetryon':0, 'antiproton':0
+                },
+                'weapontype':{
+                    'cannon':0, 'beam':0, 'mine':0, 'torpedo':0, 'SIA':0, 'DSD':0, 'Console-Spam':0
+                },
+                'state':0,
+                'role':{
+                    'dps':0, 'heavytank':0, 'debufftank':0, 'nanny':0, 'off-meta':0, 'theme':0
+                }
+            }
         }
 
     def resetSettings(self):
@@ -1039,21 +1054,7 @@ class SETS():
             'groundDevices': [None] * 5,
             'eliteCaptain': False,
             'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
-            'tags': {
-                'maindamage':{
-                    'energy':0, 'kinetic':0, 'exotic':0, 'drain':0
-                }, 
-                'energytype':{
-                    'phaser':0, 'disruptor':0, 'plasma':0, 'polaron':0, 'Tetryon':0, 'antiproton':0
-                },
-                'weapontype':{
-                    'cannon':0, 'beam':0, 'mine':0, 'torpedo':0, 'sia':0, 'dsd':0, 'consolespam':0
-                },
-                'state':0,
-                'role':{
-                    'dps':0, 'heavytank':0, 'debufftank':0, 'nanny':0, 'off-meta':0, 'theme':0
-                }
-            },
+            'tags': dict(),
             'skilltree': { 'space': dict(), 'ground': dict() },
         }
 
@@ -3395,12 +3396,11 @@ class SETS():
         """Updates self.build[masterkey][key][text] to var; masterkey, key and text determine the level and identifier the var is inserted, allowing for 3-level depth at maximum. key and text can be left empty is not needed"""
         if masterkey not in self.build:
             return
-        if key != "":
-            if text != "":
-                self.build[masterkey][key][text] = var
-            else:
-                self.build[masterkey][key] = var
-        else:
+        if key != "" and text !="":
+            self.build[masterkey][key+"|"+text] = var
+        elif key != "" and text=="":
+            self.build[masterkey][key] = var
+        elif key == "" and text == "":
             self.build[masterkey] = var
     
     def checkbuttonBuildBlock(self, window, frame: Frame, values, bg, fg, masterkey: str, key = str(""), geomanager="grid", orientation=HORIZONTAL, rowoffset=0, columnoffset=0,  alignment=TOP):
@@ -3438,7 +3438,7 @@ class SETS():
                 topframe.rowconfigure(insertrow, weight=1)
                 itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="w")
                 insertrow +=1
-            v = IntVar(window, value=values[t])
+            v = IntVar(window, value=0)
             Checkbutton(itemframe, bg=bg, fg = "#000000", variable=v, activebackground=bg).pack(side=LEFT, ipadx=1, padx=0)
             v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key, m=masterkey: self.checkbuttonVarUpdateCallback(var.get(), m, k, text))
             Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
@@ -3449,21 +3449,50 @@ class SETS():
     def buildTagCallback(self):
         tagwindow = Toplevel(self.window, bg=self.theme['app']["bg"])
         tagwindow.title("Build Tags")
-        #tagwindow.minsize(500, 800)
         cfr = Frame(tagwindow, bg=self.theme['app']["fg"])
-        cfr.pack(expand=True, padx=10, pady=10, fill=BOTH)
-        roleframe = Frame(cfr, highlightthickness=2, highlightbackground="#000000", bg=self.theme['app']["fg"])
+        cfr.pack(expand=True, padx=15, pady=15, fill=BOTH)
+
+        roleframe = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
         roleframe.grid(row=0, column=0, columnspan=4, sticky="nsew")
         Label(roleframe, text="Role:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'], font=("Helvetica", self.theme['button_heavy']['font']['size'], self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=6, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, roleframe, self.build['tags']['role'], self.theme['app']['fg'], "#ffffff", "tags", "role", "grid", HORIZONTAL, 1)
+        self.checkbuttonBuildBlock(tagwindow, roleframe, self.persistent['tags']['role'], self.theme['app']['fg'], "#ffffff", "tags", "role", "grid", HORIZONTAL, 1)
         Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=1, column=0, columnspan=4)
-        cfr.rowconfigure(1, minsize=12)   
-        mdmgfr = Frame(cfr, highlightthickness=2, highlightbackground="#000000", bg=self.theme['app']["fg"])
+        cfr.rowconfigure(1, minsize=12)
+
+        mdmgfr = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
         mdmgfr.grid(row=2, column=0, sticky="nsew", columnspan=4)
         Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=3, column=0, columnspan=4)
         cfr.rowconfigure(3, minsize=12)
         Label(mdmgfr, text="Main Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=5, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.build['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", "tags", "maindamage", "grid", HORIZONTAL, 1)
+        self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.persistent['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", "tags", "maindamage", "grid", HORIZONTAL, 1)
+        
+        etypefr = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
+        etypefr.grid(row=4, column=0, sticky="n")
+        cfr.columnconfigure(0, weight=1)
+        Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=5, column=0, columnspan=4)
+        cfr.rowconfigure(5, minsize=12)
+        Label(etypefr, text="Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
+        self.checkbuttonBuildBlock(tagwindow, etypefr, self.persistent['tags']['energytype'], self.theme['app']['fg'], "#ffffff", "tags", "energytype", "grid", VERTICAL, 1)
+        
+        wtypefr = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
+        wtypefr.grid(row=4, column=1, sticky="n")
+        cfr.columnconfigure(1, weight=1)
+        Label(wtypefr, text="Weapons Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
+        self.checkbuttonBuildBlock(tagwindow, wtypefr, self.persistent['tags']['weapontype'], self.theme['app']['fg'], "#ffffff", "tags", "energytype", "grid", VERTICAL, 1)
+
+        stypefr = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
+        stypefr.grid(row=4, column=2, sticky="n")
+        cfr.columnconfigure(2, weight=1)
+        Label(stypefr, text="State of the Build", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
+        i = 1
+        tagvar = IntVar(tagwindow, value=0)
+        for tag in ["Concept", "First Tests", "Optimization Phase", "Finished Build"]:
+            itemframe = Frame(stypefr, highlightthickness=0, bg=self.theme['app']['fg'])
+            itemframe.grid(row=i, column=0, padx=16, sticky="w")
+            Radiobutton(itemframe, bg=self.theme['app']['fg'], fg = "#000000", variable=tagvar, value=i-1, activebackground=self.theme['app']['fg']).pack(side=LEFT, ipadx=1, padx=0)
+            Label(itemframe, fg="#ffffff", bg=self.theme['app']['fg'], text=tag, font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
+            i += 1
+        tagvar.trace_add("write", lambda c1, c2, c3, var=tagvar, k="state", m="tags": self.checkbuttonVarUpdateCallback(var.get(), m, k))
         tagwindow.mainloop()
 
     def setupDoffListFrame(self, frame, environment='space'):
