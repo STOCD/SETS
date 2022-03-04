@@ -974,7 +974,7 @@ class SETS():
                     'phaser':0, 'disruptor':0, 'plasma':0, 'polaron':0, 'Tetryon':0, 'antiproton':0
                 },
                 'weapontype':{
-                    'cannon':0, 'beam':0, 'mine':0, 'torpedo':0, 'SIA':0, 'DSD':0, 'Console-Spam':0
+                    'cannon':0, 'beam':0, 'mine':0, 'torpedo':0, 'sia':0, 'dsd':0, 'console-spam':0
                 },
                 'state':0,
                 'role':{
@@ -1111,6 +1111,7 @@ class SETS():
                 'skillLabels': dict(),
                 'skillNames': [[], [], [], [], []],
                 'skillCount': { 'space': 0, 'ground': 0 },
+                'tags': dict()
             }
         self.persistentToBackend()
         if rebuild: self.buildToBackendSeries()
@@ -2716,12 +2717,11 @@ class SETS():
             self.setupBoffFrame('space', self.backend['shipHtml'])
             self.setupSpaceTraitFrame()
         else:
-            self.clearFrame(self.shipEquipmentFrame)
-            self.clearFrame(self.shipConsoleFrame)
-            self.clearFrame(self.shipBoffFrame)
-            self.clearFrame(self.shipTierFrame)
-            self.clearFrame(self.shipDoffFrame)
-            self.clearFrame(self.shipTraitFrame)
+            try:
+                for fr in [self.shipEquipmentFrame, self.shipConsoleFrame, self.shipBoffFrame, self.shipTierFrame, self.shipDoffFrame, self.shipTraitFrame]:
+                    self.clearFrame(fr)
+            except AttributeError:
+                pass
 
         self.clearInfoboxFrame('space')
         self.requestWindowUpdate('force')
@@ -3439,7 +3439,15 @@ class SETS():
                 topframe.rowconfigure(insertrow, weight=1)
                 itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="w")
                 insertrow +=1
-            v = IntVar(window, value=0)
+            lvar = -1
+            if key != "":
+                if key+"|"+t.lower() in self.build[masterkey]:
+                    lvar = self.build[masterkey][key+"|"+t.lower()]
+            elif key == "":
+                if t.lower() in self.build[masterkey]:
+                    lvar = self.build[masterkey][t.lower()]
+            if lvar == -1: lvar = 0
+            v = IntVar(window, value=lvar)
             Checkbutton(itemframe, bg=bg, fg = "#000000", variable=v, activebackground=bg).pack(side=LEFT, ipadx=1, padx=0)
             v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key, m=masterkey: self.checkbuttonVarUpdateCallback(var.get(), m, k, text))
             Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
@@ -3479,14 +3487,18 @@ class SETS():
         wtypefr.grid(row=4, column=1, sticky="n")
         cfr.columnconfigure(1, weight=1)
         Label(wtypefr, text="Weapons Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, wtypefr, self.persistent['tags']['weapontype'], self.theme['app']['fg'], "#ffffff", "tags", "energytype", "grid", VERTICAL, 1)
+        self.checkbuttonBuildBlock(tagwindow, wtypefr, self.persistent['tags']['weapontype'], self.theme['app']['fg'], "#ffffff", "tags", "weapontype", "grid", VERTICAL, 1)
 
         stypefr = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
         stypefr.grid(row=4, column=2, sticky="n")
         cfr.columnconfigure(2, weight=1)
         Label(stypefr, text="State of the Build", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
         i = 1
-        tagvar = IntVar(tagwindow, value=0)
+        if "state" in self.build["tags"]:
+            lvar = self.build["tags"]["state"]
+        else:
+            lvar = 0
+        tagvar = IntVar(tagwindow, value=lvar)
         for tag in ["Concept", "First Tests", "Optimization Phase", "Finished Build"]:
             itemframe = Frame(stypefr, highlightthickness=0, bg=self.theme['app']['fg'])
             itemframe.grid(row=i, column=0, padx=16, sticky="w")
