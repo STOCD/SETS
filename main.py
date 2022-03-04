@@ -21,7 +21,7 @@ if sys.platform.startswith('win'):
 
 class SETS():
     """Main App Class"""
-    version = '20220302_beta'
+    version = '20220304_beta'
 
     itemBoxX = 32 #25
     itemBoxY = 42 #33
@@ -3543,10 +3543,10 @@ class SETS():
         doff_list = sorted([self.deWikify(item) for item in list(self.cache['doffNames'][doffEnvironment].keys())])
 
         DoffFrame = Frame(frame, bg=self.theme['frame_light']['bg'], padx=5, pady=3)
-        DoffFrame.pack(side='left' if environment == 'ground' else 'left', fill=Y, expand=True)
+        DoffFrame.pack(side=LEFT, fill=Y, expand=True)
         DoffFrame.grid_columnconfigure(2, weight=1, uniform=environment+'ColDoffList')
 
-        DoffLabel = Label(DoffFrame, text=environment.upper()+" DUTY OFFICERS", bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], width=60)
+        DoffLabel = Label(DoffFrame, text=environment.title()+" Duty Officers", bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], width=60)
         DoffLabel.grid(row=0, column=0, columnspan=3, sticky='nsew')
 
         for i in range(6):
@@ -3588,10 +3588,8 @@ class SETS():
         mainFrame.pack(side='bottom', fill=BOTH, expand=True, pady=(5,0))
 
         self.setupDoffListFrame(mainFrame, 'space')
-        DoffBreak = Frame(mainFrame, bg=self.theme['frame']['bg'], width=10)
+        DoffBreak = Frame(mainFrame, bg=self.theme['entry_dark']['bg'], width=10)
         DoffBreak.pack(side='left')
-        DoffBreakLabel = Label(DoffBreak, text='', bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'])
-        DoffBreakLabel.grid(row=0, column=0, sticky='nsew')
         self.setupDoffListFrame(mainFrame, 'ground')
 
     def setupLogoFrame(self):
@@ -4007,7 +4005,7 @@ class SETS():
         middleFrameLower.grid(row=1,column=0,columnspan=3,sticky='nsew')
         middleFrameLower.grid_columnconfigure(0, weight=1, uniform="secCol2"+environment)
         doffFrame = Frame(middleFrameLower, bg=self.theme['frame']['bg'])
-        doffFrame.pack(fill=BOTH, expand=True, padx=15, side=BOTTOM)
+        doffFrame.pack(fill=BOTH, expand=False, padx=15, side=BOTTOM)
 
         if environment == 'ground':
             self.groundEquipmentFrame = equipmentFrame
@@ -4312,12 +4310,15 @@ class SETS():
         if 'uiScale' in self.persistent:
             scale = float(self.persistent['uiScale'])
 
-         # pixel correction
-        factor = ( self.dpi / 96 ) * scale
-        self.window.call('tk', 'scaling', factor)
-        self.itemBoxX = self.itemBoxX * scale
-        self.itemBoxY = self.itemBoxY * scale
-        self.logminiWrite('{} | {} {} | {}x{} | {:>4}dpi (x{:>0.2}) '.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.dpi, (factor * scale)))
+        self.factor = ( self.dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
+        if self.factor != 1:  # If the framing gets fixed at /72, this should be remove-able
+            self.window.call('tk', 'scaling', scale * self.factor)  # Should already be factor modified, so we have to keep the factor
+        else:
+            # If dpi / framing are adjusted, this should happen with a scaling adjustment
+            self.itemBoxX = self.itemBoxX * scale
+            self.itemBoxY = self.itemBoxY * scale
+
+        self.logminiWrite('{} | {} {} | {}x{} |x{:>0.2}s x{:>0.2}f {:>4}dpi'.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), scale, self.factor, self.dpi))
 
 
     def logDisplayUpdate(self):
@@ -4766,6 +4767,13 @@ class SETS():
 
     def setupGeometry(self, default=False):
         # Check that it's not off-screen?
+        screen_width = self.window.winfo_screenwidth()
+        screen_height = self.window.winfo_screenheight()
+        if self.windowWidthDefault + self.windowX > screen_width:
+            self.windowX = 0
+        if self.windowHeightDefault + self.windowY > screen_height:
+            self.windowY = 0
+
         if not default and 'geometry' in self.persistent and self.persistent['geometry']:
                 self.window.geometry(self.persistent['geometry'])
         else:
