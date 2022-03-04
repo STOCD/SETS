@@ -3098,6 +3098,9 @@ class SETS():
                             skillcolor = "#c59129"
                         elif self.cache['spaceSkills'][key][i]['career'] == "sci":
                             skillcolor = "#1265a3"
+            else:
+                skillcolor = self.theme['tooltip']['subhead']['fg']
+
         elif environment == 'ground':
             frame = self.groundInfoboxFrame
         else:
@@ -3238,51 +3241,76 @@ class SETS():
 
         if environment == "skill":
             skillnode = None
-            for j in range(0,6):
-                skillname = self.cache['spaceSkills'][key][j]['skill']
-                if isinstance(skillname, str) and skillname == name[:-2]:
-                    skillnode = self.cache['spaceSkills'][key][j]
-                    break
-                elif isinstance(skillname, list) and (name in skillname or name[:-2] in skillname):
-                    skillnode = self.cache['spaceSkills'][key][j]
-                    for k in range(0, len(skillnode['skill'])):
-                        if skillnode['skill'][k]==name or skillnode['skill'][k]==name[:-2]:
-                            skillindex=k
-                            break
-            if skillnode['career']=="tac": skillprofession = "Tactical "
-            elif skillnode['career']=="eng": skillprofession = "Engineering "
-            elif skillnode['career']=="sci": skillprofession = "Science "
-            if skillnode['linear']==0:
-                if int(name[-1])==1: lev=""
-                elif int(name[-1])==2: lev="Improved "
-                elif int(name[-1])==3: lev="Advanced "
-                text.insert(END, lev+name[:-2], 'skillhead')
-            elif skillnode['linear']==1:
-                if skillindex==1: text.insert(END, name, 'skillhead')
-                elif int(name[-1])==1: text.insert(END, name[:-2], 'skillhead')
-                elif int(name[-1])==2: text.insert(END, "Improved "+name[:-2], 'skillhead')
-            elif skillnode['linear']==2:
-                text.insert(END, name, 'skillhead')
-            text.insert(END, "\n"+skillprofession+"Space Skill\n"+key.title(), 'skillsub')
-            text.update()
-            if self.build['skilltree']["space"][name]:
-                text.insert(END, "\nSkill is active!", "subhead")
-                text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill")+1)
+            if key not in self.cache['spaceSkills']:
+                pass
+                """for jg in range(0, 10):
+                    skillname = self.cache['groundSkills']['content'][jg]['skill']
+                    if skillname[0] == name:
+                        skillnode = self.cache['groundSkills']['content'][jg]
+                        skillindex = 0
+                    elif skillname[1] == name:
+                        skillnode = self.cache['groundSkills']['content'][jg]
+                        skillindex = 1
+                text.insert(END, name.title(), 'skillhead')
+                text.insert(END, '\nGround Skill'.title(), 'skillsub')
+                text.update()
+                if self.build['skilltree']['ground'][name]:
+                    text.insert(END, "\nSkill is active!", "subhead")
+                    text.configure(height=self.getDH(text.winfo_width(),name.title(), "Helvetica", 15, "bold","skill")+1)
+                else:
+                    text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
+                contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
+                contentframe.grid(row=2, column=0, sticky="nsew")
+                contentframe.grid_propagate(False)
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString((skillnode["gdesc"]+"<hr>"+skillnode["desc"][skillindex]).strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+                contentframe.grid_propagate(True)
+                printed=True"""
             else:
-                text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
-            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-            contentframe.grid(row=2, column=0, sticky="nsew")
-            contentframe.grid_propagate(False)
-            if skillnode['linear']==0:
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc']+"<hr>"+skillnode['nodes'][int(name[-1])-1]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-            elif skillnode['linear']==1 and skillindex==0:
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][int(name[-1])-1]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-            elif skillnode['linear']==1 and skillindex==1:
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][2]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-            elif skillnode['linear']==2:
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][skillindex]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-            contentframe.grid_propagate(True)
-            printed=True
+                for j in range(0,6):
+                    skillname = self.cache['spaceSkills'][key][j]['skill']
+                    if isinstance(skillname, str) and skillname == name[:-2]:
+                        skillnode = self.cache['spaceSkills'][key][j]
+                        break
+                    elif isinstance(skillname, list) and (name in skillname or name[:-2] in skillname):
+                        skillnode = self.cache['spaceSkills'][key][j]
+                        for k in range(0, len(skillnode['skill'])):
+                            if skillnode['skill'][k]==name or skillnode['skill'][k]==name[:-2]:
+                                skillindex=k
+                                break
+                if skillnode['career']=="tac": skillprofession = "Tactical "
+                elif skillnode['career']=="eng": skillprofession = "Engineering "
+                elif skillnode['career']=="sci": skillprofession = "Science "
+                if skillnode['linear']==0:
+                    if int(name[-1])==1: lev=""
+                    elif int(name[-1])==2: lev="Improved "
+                    elif int(name[-1])==3: lev="Advanced "
+                    text.insert(END, lev+name[:-2], 'skillhead')
+                elif skillnode['linear']==1:
+                    if skillindex==1: text.insert(END, name, 'skillhead')
+                    elif int(name[-1])==1: text.insert(END, name[:-2], 'skillhead')
+                    elif int(name[-1])==2: text.insert(END, "Improved "+name[:-2], 'skillhead')
+                elif skillnode['linear']==2:
+                    text.insert(END, name, 'skillhead')
+                text.insert(END, "\n"+skillprofession+"Space Skill\n"+key.title(), 'skillsub')
+                text.update()
+                if self.build['skilltree']["space"][name]:
+                    text.insert(END, "\nSkill is active!", "subhead")
+                    text.configure(height=self.getDH(text.winfo_width(),name.title(), "Helvetica", 15, "bold","skill")+1)
+                else:
+                    text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
+                contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
+                contentframe.grid(row=2, column=0, sticky="nsew")
+                contentframe.grid_propagate(False)
+                if skillnode['linear']==0:
+                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc']+"<hr>"+skillnode['nodes'][int(name[-1])-1]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+                elif skillnode['linear']==1 and skillindex==0:
+                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][int(name[-1])-1]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+                elif skillnode['linear']==1 and skillindex==1:
+                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][2]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+                elif skillnode['linear']==2:
+                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][skillindex]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+                contentframe.grid_propagate(True)
+                printed=True
 
 
         text.configure(state=DISABLED)
