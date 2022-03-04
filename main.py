@@ -3286,7 +3286,7 @@ class SETS():
 
 
         text.configure(state=DISABLED)
-        frame.pack_propagate(True)
+        #frame.pack_propagate(True) Preset width means we don't need to turn this back on
 
 
     def setupInfoboxFrameStatic(self, item, key, environment='space', tooltip=None):
@@ -3688,9 +3688,6 @@ class SETS():
         self.setShipImage(self.shipImg)
 
     def setupTagsFrame(self, buildTagFrame, environment='space'):
-        if environment != 'ground':
-            self.shipTierFrame = Frame(buildTagFrame)
-            self.shipTierFrame.pack(fill=X, expand=False)
         Button(buildTagFrame, text="Build Tags", fg=self.theme['button_heavy']['fg'], bg=self.theme['button_heavy']['bg'], font=(self.theme['app']['font']['family'], self.theme['button_heavy']['font']['size'], self.theme['button_heavy']['font']['weight']), command=lambda: self.buildTagCallback()).pack(fill=X, side=TOP)
         
         #Label(buildTagFrame, text="BUILD TAGS", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).pack(fill=X, expand=False)
@@ -3806,71 +3803,93 @@ class SETS():
 
         self.clearFrame(parentFrame)
 
-        #exportImportFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
-        #exportImportFrame.pack(fill=X, expand=True)
-        #self.setupButtonExportImportFrame(exportImportFrame)
-
         LabelFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
-        LabelFrame.pack(fill=BOTH, expand=True, side=TOP)
-        if 1:
-            imageLabel = Label(LabelFrame, fg=self.theme['button']['fg'], bg=self.theme['button']['bg'], borderwidth=0, highlightthickness=0, padx=0, pady=0)
-            if environment == 'ground': self.charImageLabel = imageLabel
-            elif environment == 'skill': self.skillImageLabel = imageLabel
-            else: self.shipImageLabel = imageLabel
-            #imageLabel.pack(fill=BOTH, expand=True)
-            imageLabel.grid(row=0, column=0, sticky='nsew')
-            LabelFrame.grid_columnconfigure(0, weight=1, minsize=self.imageBoxX)
-            LabelFrame.grid_rowconfigure(0, weight=1, minsize=self.imageBoxY)
-            imageLabel.configure(image=self.getEmptyFactionImage())
-        else:  #canvas conversion tests
-            imageCanvas = Canvas(LabelFrame, borderwidth=0, bg=self.theme['button']['bg'], highlightthickness=0, padx=0, pady=0)
-            img0 = imageCanvas.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.getEmptyFactionImage())
-            img1 = imageCanvas.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.emptyImage)
-            if environment == 'ground':
-                self.charImagecanvas = imageCanvas
-                self.charImage0 = img0
-                self.charImage1 = img1
-            else:
-                self.shipImagecanvas = imageCanvas
-                self.shipImage0 = img0
-                self.shipImage1 = img1
+        LabelFrame.pack(fill=X, expand=False, anchor="n", side=TOP)
+
+        imageLabel = Label(LabelFrame, fg=self.theme['button']['fg'], bg=self.theme['button']['bg'], borderwidth=0, highlightbackground='black', highlightthickness=3, padx=0, pady=0)
+        imageLabel.configure(image=self.getEmptyFactionImage())
+        """  #canvas conversion tests
+        imageLabel = Canvas(LabelFrame, borderwidth=0, bg=self.theme['button']['bg'], highlightthickness=0, padx=0, pady=0)
+        img0 = imageLabel.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.getEmptyFactionImage())
+        img1 = imageLabel.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.emptyImage)
+        if environment == 'ground':
+            self.charImagecanvas = imageLabel
+            self.charImage0 = img0
+            self.charImage1 = img1
+        else:
+            self.shipImagecanvas = imageLabel
+            self.shipImage0 = img0
+            self.shipImage1 = img1
+        """
+        if environment == 'ground':
+            self.charImageLabel = imageLabel
+        elif environment == 'skill':
+            self.skillImageLabel = imageLabel
+        else:
+            self.shipImageLabel = imageLabel
+        imageLabel.grid(row=0, column=0, sticky='nsew')
+        LabelFrame.grid_columnconfigure(0, weight=0, minsize=self.imageBoxX)
+        LabelFrame.grid_rowconfigure(0, weight=0, minsize=self.imageBoxY)
 
         if environment != 'skill':
             NameFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
+            NameFrame.pack(fill=X, expand=False, padx=(0, 5), pady=(5, 0), side=TOP)
             NameFrame.grid_columnconfigure(1, weight=1)
 
             row = 0
             if environment == 'space':
-                Label(NameFrame, text="Ship: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(column=0, row = row, sticky='w')
+                labelFrame = Label(NameFrame, text="Ship: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
+                labelFrame.grid(column=0, row = row, sticky='w')
                 self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg=self.theme['frame_medium']['bg'], wraplength=270)
                 self.shipButton.grid(column=1, row=row, sticky='nwse')
                 row += 1
 
-            Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(row=row, column=0, sticky='w')
-            Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.font_tuple_create('text_highlight')).grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
+            labelFrame = Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
+            labelFrame.grid(row=row, column=0, sticky='w')
+            entryFrame = Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.font_tuple_create('text_highlight'))
+            entryFrame.grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
             row += 1
             # end of not-skill items
 
+
         ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
-        ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=BOTTOM)
+        ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=TOP)
+        descFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
+        descFrame.pack(fill=BOTH, expand=True, side=TOP)
+        ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
+        ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=TOP)
+
+        ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
+        ExtraFrame.pack(fill=X, expand=False, padx=0, pady=0, side=BOTTOM)
         CharFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
         CharFrame.pack(fill=X, expand=False, padx=2, side=BOTTOM)
         CharFrame.grid_columnconfigure(0, weight=1)
         charInfoFrame = Frame(CharFrame, bg=self.theme['frame_medium']['bg'])
         charInfoFrame.grid(row=0, column=0, columnspan=2, sticky='ew')
         self.setupCaptainFrame(CharFrame, environment)
+
+
+
         if environment == 'skill':
-            ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
-            ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=BOTTOM)
-
-        if environment != 'skill': NameFrame.pack(fill=X, expand=False, padx=(0,5), pady=(5,0), side=BOTTOM)
-
-        if environment == 'space':
+            self.skillDescFrame = descFrame
+        elif environment == 'ground':
+            self.groundDescFrame = descFrame
+        elif environment == 'space':
+            self.shipDescFrame = descFrame
             if self.build['ship'] is not None: self.shipButton.configure(text=self.build['ship'])
             if 'tier' in self.build and len(self.build['tier']) > 1:
                 self.setupTierFrame(int(self.build['tier'][1]))
                 self.setupShipImageFrame()
                 pass
+
+    def setupHandleFrame(self, environment='space'):
+        if environment == 'skill':
+                self.setupPlayerHandleFrame(self.skillHandleFrame)
+        elif environment == 'ground':
+            self.setupPlayerHandleFrame(self.groundHandleFrame)
+        else:
+            self.setupPlayerHandleFrame(self.shipHandleFrame)
+
 
     def setupDescFrame(self, environment='space'):
         if environment == 'skill':
@@ -3878,13 +3897,7 @@ class SETS():
             self.setupDescEnvironmentFrame(environment='ground', destination='skill', row=2)
         else: self.setupDescEnvironmentFrame(environment=environment)
 
-    def setupDescEnvironmentFrame(self, environment='space', destination=None, row=0):
-        if destination is not None: parentFrame = self.skillDescFrame
-        elif environment == 'space': parentFrame = self.shipDescFrame
-        elif environment == 'ground': parentFrame = self.groundDescFrame
-        else: return
-
-        if row == 0: self.clearFrame(parentFrame)
+    def setupPlayerHandleFrame(self, parentFrame, row=0):
         parentFrame.grid_columnconfigure(0, weight=1)
 
         frame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
@@ -3895,6 +3908,16 @@ class SETS():
         entry = Entry(frame, textvariable=self.backend['playerHandle'], fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=self.font_tuple_create('text_highlight'))
         entry.grid(row=0, column=1, sticky='nsew',ipady=5, pady=5)
         row += 1
+
+
+    def setupDescEnvironmentFrame(self, environment='space', destination=None, row=0):
+        if destination is not None: parentFrame = self.skillDescFrame
+        elif environment == 'space': parentFrame = self.shipDescFrame
+        elif environment == 'ground': parentFrame = self.groundDescFrame
+        else: return
+
+        if row == 0: self.clearFrame(parentFrame)
+        parentFrame.grid_columnconfigure(0, weight=1)
 
         label = Label(parentFrame, text="Build Description ({}):".format(environment.title()), fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
         label.grid(row=row, column=0, sticky='nw')
@@ -3967,7 +3990,7 @@ class SETS():
         parentFrame.grid_propagate(False)
         parentFrame.grid_rowconfigure(0, weight=1, uniform="mainRow"+environment)
         for i in range(5):
-            if i == 0:
+            if i == 0 or i == 4:
                 parentFrame.grid_columnconfigure(i, weight=0, minsize=self.window_outside_frame_minimum)
             else:
                 parentFrame.grid_columnconfigure(i, weight=5, uniform="mainCol"+environment)
@@ -4002,8 +4025,9 @@ class SETS():
         buildTagFrame = Frame(infoBoxOuterFrame, bg=self.theme['frame_medium']['bg'])
         buildTagFrame.pack(fill=X, expand=False, side=BOTTOM)
 
-        descFrame = Frame(infoBoxOuterFrame, bg=self.theme['frame_medium']['bg'])
-        descFrame.pack(fill=X, expand=False, side=BOTTOM)
+        handleFrame = Frame(infoBoxOuterFrame, bg=self.theme['frame_medium']['bg'])
+        handleFrame.pack(fill=X, expand=False, side=BOTTOM)
+        self.setupPlayerHandleFrame(handleFrame)
 
         infoboxFrame = Frame(infoBoxOuterFrame, bg=self.theme['tooltip']['bg'])
         infoboxFrame.pack(fill=BOTH, expand=True, side=TOP)
@@ -4011,17 +4035,17 @@ class SETS():
         if environment == 'skill':
             self.skillInfoFrame = infoFrame
             self.skillInfoboxFrame = infoboxFrame
-            self.skillDescFrame = descFrame
+            self.skillHandleFrame = handleFrame
             self.skillImg = self.getEmptyFactionImage()
         elif environment == 'ground':
             self.groundInfoFrame = infoFrame
             self.groundInfoboxFrame = infoboxFrame
-            self.groundDescFrame = descFrame
+            self.groundHandleFrame = handleFrame
             self.groundImg = self.getEmptyFactionImage()
         else:
             self.shipInfoFrame = infoFrame
             self.shipInfoboxFrame = infoboxFrame
-            self.shipDescFrame = descFrame
+            self.shipHandleFrame = handleFrame
             self.shipImg = self.getEmptyFactionImage()
 
         self.setupTagsFrame(buildTagFrame, environment)
@@ -4355,6 +4379,7 @@ class SETS():
         for type in types:
             self.setupInfoFrame(type)
             self.setupDescFrame(type)
+            self.setupHandleFrame(type)
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
@@ -4675,11 +4700,14 @@ class SETS():
         self.emptyImageFaction = dict()
         self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
         self.epicImage = self.fetchOrRequestImage(self.wikiImages+"Epic.png", "Epic")
-        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", self.imageBoxX, self.imageBoxY)
-        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", self.imageBoxX, self.imageBoxY)
-        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", self.imageBoxX, self.imageBoxY)
-        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", self.imageBoxX, self.imageBoxY)
-        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", self.imageBoxX, self.imageBoxY)
+
+        width = self.imageBoxX * 2 / 3
+        height = self.imageBoxY * 2 / 3
+        self.emptyImageFaction['federation'] = self.fetchOrRequestImage(self.wikiImages+"Federation_Emblem.png", "federation_emblem", width, height)
+        self.emptyImageFaction['tos federation'] = self.fetchOrRequestImage(self.wikiImages+"TOS_Federation_Emblem.png", "tos_federation_emblem", width, height)
+        self.emptyImageFaction['klingon'] = self.fetchOrRequestImage(self.wikiImages+"Klingon_Empire_Emblem.png", "klingon_emblem", width, height)
+        self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", width, height)
+        self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", width, height)
 
     def precacheDownloads(self):
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
