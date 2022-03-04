@@ -1374,6 +1374,7 @@ class SETS():
         self.picker_getresult(canvas, img, i, key, args, items_list, type='trait', title='Pick trait')
 
     def picker_getresult(self, canvas, img, i, key, args, items_list, item_initial=None, type=None, title='Pick', extra_frames=None):
+        tooltip_uuid = self.uuid_assign_for_tooltip()
         item_var = item_initial if item_initial is not None else self.getEmptyItem()
         additional = [self.setupSearchFrame]
         if extra_frames:
@@ -1389,7 +1390,6 @@ class SETS():
                 else:
                     self.build[key][i] = None
             else:
-                tooltip_uuid = self.uuid_assign_for_tooltip()
                 backend_key = '{}_{}'.format(name, i)
                 self.backend['images'][backend_key] = item['image']  # index needed for item duplicate display
                 canvas.itemconfig(img[0], image=item['image'])
@@ -4026,7 +4026,7 @@ class SETS():
         buildTagFrame.pack(fill=X, expand=False, side=BOTTOM)
 
         handleFrame = Frame(infoBoxOuterFrame, bg=self.theme['frame_medium']['bg'])
-        handleFrame.pack(fill=X, expand=False, side=BOTTOM)
+        handleFrame.pack(fill=X, expand=False, side=TOP)
         self.setupPlayerHandleFrame(handleFrame)
 
         infoboxFrame = Frame(infoBoxOuterFrame, bg=self.theme['tooltip']['bg'])
