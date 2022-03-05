@@ -2,6 +2,7 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import font
+import tkinter
 from tkinter.ttk import Progressbar
 from xml.dom.expatbuilder import InternalSubsetExtractor
 # from requests.models import requote_uri
@@ -2873,9 +2874,169 @@ class SETS():
         text = text.replace(' <li>', '\n*')
         text = text.replace('<li>', '\n*')
         text = text.replace(" *", "*")
+        text = text.replace("<small>", "")
+        text = text.replace("</small>", "")
+        text = text.replace("<sub>", "")
+        text = text.replace("</sub>", "")
+        color = list()
+        t=text
+        while '<font color=' in t:
+            if len(color) > 0:
+                color.append(text.find('<font color=', color[-1]+7))
+                color.append(text.find("</font>", color[-1]))
+            else:
+                color.append(text.find("<font color="))
+                color.append(text.find("</font>"))
+            t = t[color[-1]:]
+        while len(color)>0:
+            try: 
+                text = text[:color[-1]]+text[color[-1]+7:]
+            except IndexError:
+                text = text[:color[-1]]
+            try:
+                text = text[:color[-2]]+text[text.find(">", color[-2])+1:]
+            except IndexError:
+                text = text[:color[-2]]
+            try:
+                del color[-1]
+                del color[-1]
+            except IndexError:
+                pass
+
         return text
 
-    def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, framewidth): #returns text string that has to be placed a level above (for recursion)
+    def formattedInsert(self, ptext: str, pfamily, psize, pweight):
+        if not "''" in ptext and not "<" in ptext:
+            self.insert(END, ptext)
+            return
+
+        def subtr(li: list, index):
+            try:
+                del li[0]
+                del li[0]
+            except:
+                return list()
+            for element in range(0, len(li)):
+                li[element] = li[element]-index
+            return li
+
+        t = ptext
+        bolditalic = list()
+        while "'''''" in t:
+            if len(bolditalic) > 0:
+                bolditalic.append(ptext.find("'''''", bolditalic[-1]+5))
+            else:
+                bolditalic.append(ptext.find("'''''"))
+            t = t[bolditalic[-1]+5:]
+        t = ptext.replace("'''''", "|||||")
+        bold = list()
+        while "'''" in t:
+            if len(bold) > 0:
+                bold.append(ptext.replace("'''''", "|||||").find("'''", bold[-1]+3))
+            else:
+                bold.append(ptext.replace("'''''", "|||||").find("'''"))
+            t = t[bold[-1]+3:]
+        t = ptext.replace("'''''", "|||||").replace("'''","|||")
+        italic = list()
+        while "''" in t:
+            if len(italic) > 0:
+                italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''", italic[-1]+2))
+            else:
+                italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''"))
+            t = t[italic[-1]+2:]
+        bold2 = list()
+        t = ptext
+        while "<b>" in t:
+            if len(bold2) > 0:
+                bold2.append(ptext.find("<b>", bold2[-1]+4))
+                bold2.append(ptext.find("</b>", bold2[-1]))
+            else:
+                bold2.append(ptext.find("<b>"))
+                bold2.append(ptext.find("</b>"))
+            t = t[bold2[-1]+4:]
+        underlined = list()
+        t = ptext
+        while "<u>" in t:
+            if len(underlined) > 0:
+                underlined.append(ptext.find("<u>", underlined[-1]+4))
+                underlined.append(ptext.find("</u>", underlined[-1]))
+            else:
+                underlined.append(ptext.find("<u>"))
+                underlined.append(ptext.find("</u>"))
+            t = t[underlined[-1]+4:]
+        l = bolditalic + bold + italic + bold2 + underlined 
+        l.sort()
+        self.tag_configure('bolditalic', font=(pfamily, psize, "bold", "italic"))
+        self.tag_configure('bold', font=(pfamily, psize, "bold"))
+        self.tag_configure('italic', font=(pfamily, psize, pweight, "italic"))
+        self.tag_configure('underlined', underline=True, font=(pfamily, psize, pweight))
+        if len(l) > 0:
+            passtext = ptext
+            while len(l)>0:
+                i1 = l[0]
+                i2: int
+                if len(bolditalic) > 0 and i1 == bolditalic[0]:
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+5:i2], "bolditalic")
+                    passtext = passtext[i2+5:]
+                    l = subtr(l, i2+5)
+                    bolditalic = subtr(bolditalic, i2+5)
+                    bold = subtr(bold, i2+5)
+                    italic = subtr(italic, i2+5)
+                    bold2 = subtr(bold2, i2+5)
+                    underlined = subtr(underlined, i2+5)
+                elif len(bold) > 0 and i1 == bold[0]:
+                    i2 = bold[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+3:i2], "bold")
+                    passtext = passtext[i2+3:]
+                    l = subtr(l, i2+3)
+                    bolditalic = subtr(bolditalic, i2+3)
+                    bold = subtr(bold, i2+3)
+                    italic = subtr(italic, i2+3)
+                    bold2 = subtr(bold2, i2+3)
+                    underlined = subtr(underlined, i2+3)
+                elif len(italic) > 0 and i1 == italic[0] :
+                    i2 = italic[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+2:i2], "italic")
+                    passtext = passtext[i2+2:]
+                    l = subtr(l, i2+2)
+                    bolditalic = subtr(bolditalic, i2+2)
+                    bold = subtr(bold, i2+2)
+                    italic = subtr(italic, i2+2)
+                    bold2 = subtr(bold2, i2+2)
+                    underlined = subtr(underlined, i2+2)
+                elif len(bold2) > 0 and i1 == bold2[0]:
+                    i2 = bold2[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+3:i2], "bold")
+                    passtext = passtext[i2+4:]
+                    l = subtr(l, i2+4)
+                    bolditalic = subtr(bolditalic, i2+4)
+                    bold = subtr(bold, i2+4)
+                    italic = subtr(italic, i2+4)
+                    bold2 = subtr(bold2, i2+4)
+                    underlined = subtr(underlined, i2+4)
+                elif len(underlined) > 0 and i1 == underlined[0] :
+                    i2 = underlined[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+3:i2], "underlined")
+                    passtext = passtext[i2+4:]
+                    l = subtr(l, i2+4)
+                    bolditalic = subtr(bolditalic, i2+4)
+                    bold = subtr(bold, i2+4)
+                    italic = subtr(italic, i2+4)
+                    bold2 = subtr(bold2, i2+4)
+                    underlined = subtr(underlined, i2+4)
+            self.insert(END, passtext)
+        else:
+            self.insert(END, ptext)
+            
+    
+    tkinter.Text.formattedInsert = formattedInsert
+
+    def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, framewidth):
         """Inserts Infobox paragraph into a frame"""
         mainframe = Frame(inframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
         mainframe.grid(row=gridrow,column=0, sticky="nsew")
@@ -3048,7 +3209,7 @@ class SETS():
             inframe.update()
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
-            maintext.insert(END, inserttext1)
+            maintext.formattedInsert(inserttext1, pfamily, psize, pweight)
             maintext.configure(state=DISABLED)
             rowinsert = rowinsert+1
         if not passtext == "":
