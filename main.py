@@ -3773,13 +3773,10 @@ class SETS():
         self.precacheFactions()
         self.precacheReputations()
         row = 0
-        Label(charInfoFrame, text="Elite Captain", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(column=0, row = row, sticky='e')
+        Label(charInfoFrame, text="Elite Captain", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(column=1, row = row, sticky='e')
         m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], command=self.eliteCaptainCallback)
-        m.grid(column=1, row=row, sticky='w', pady=2, padx=2)
+        m.grid(column=2, row=row, sticky='w', pady=2, padx=2)
         m.configure(fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], borderwidth=0, highlightthickness=0)
-        if environment == 'space':
-            self.shipTierFrame = Frame(charInfoFrame, bg=self.theme['frame_medium']['bg'])
-            self.shipTierFrame.grid(column=3, row=row, columnspan=1, sticky='swe')
         row += 1
         """
         captainSettingsDefaults = {
@@ -3880,11 +3877,14 @@ class SETS():
 
         if environment != 'skill':
             NameFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
-            NameFrame.pack(fill=X, expand=False, padx=(0, 5), pady=(5, 0), side=TOP)
+            NameFrame.pack(fill=X, expand=False, padx=(0, 5), pady=(0, 0), side=TOP)
             NameFrame.grid_columnconfigure(1, weight=1)
 
             row = 0
             if environment == 'space':
+                self.shipTierFrame = Frame(NameFrame, bg=self.theme['frame_medium']['bg'])
+                self.shipTierFrame.grid(column=1, row=row, columnspan=1, sticky='e')
+                row += 1
                 labelFrame = Label(NameFrame, text="Ship: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
                 labelFrame.grid(column=0, row = row, sticky='w')
                 self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg=self.theme['frame_medium']['bg'], wraplength=270)
