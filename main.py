@@ -2,6 +2,7 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import font
+import tkinter
 from tkinter.ttk import Progressbar
 from xml.dom.expatbuilder import InternalSubsetExtractor
 # from requests.models import requote_uri
@@ -2875,7 +2876,100 @@ class SETS():
         text = text.replace(" *", "*")
         return text
 
-    def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, framewidth): #returns text string that has to be placed a level above (for recursion)
+    def formattedInsert(self, ptext: str, obj):
+        if not "''" in ptext:
+            self.insert(END, ptext)
+            return
+
+        def subtr(li: list, index):
+            try:
+                del li[0]
+                del li[1]
+            except:
+                return list()
+            k = 0
+            for element in li:
+                li[k] = element-index
+            return li
+
+        t = ptext
+        bolditalic = list()
+        while "'''''" in t:
+            if len(bolditalic) > 0:
+                try:
+                    bolditalic.append(ptext.find("'''''", bolditalic[-1]+5))
+                except IndexError:
+                    bolditalic.append(len(ptext)-5)
+            else:
+                bolditalic.append(ptext.find("'''''"))
+            t = t[bolditalic[-1]+5:]
+        t = ptext.replace("'''''", "|||||")
+        bold = list()
+        while "'''" in t:
+            if len(bold) > 0:
+                try:
+                    bold.append(ptext.replace("'''''", "|||||").find("'''", bold[-1]+3))
+                except IndexError:
+                    bold.append(len(ptext)-3)
+            else:
+                bold.append(ptext.replace("'''''", "|||||").find("'''"))
+            t = t[bold[-1]+3:]
+        t = ptext.replace("'''''", "|||||").replace("'''","|||")
+        italic = list()
+        while "''" in t:
+            if len(italic) > 0:
+                try:
+                    italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''", italic[-1]+2))
+                except IndexError:
+                    italic.append(len(ptext)-2)
+            else:
+                italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''"))
+            t = t[italic[-1]+2:]
+        l = bolditalic + bold + italic
+        l.sort()
+        self.tag_configure('bolditalic', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "bold", "italic"))
+        self.tag_configure('bold', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "bold"))
+        self.tag_configure('italic', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "normal", "italic"))
+        if len(l) > 0:
+            passtext = ptext
+            while len(l)>0:
+                i1 = l[0]
+                i2: int
+                if len(bolditalic) > 0 and i1 == bolditalic[0]:
+                    i2 = bolditalic[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+5:i2], "bolditalic")
+                    passtext = passtext[i2+5:]
+                    l = subtr(l, i2+5)
+                    bolditalic = subtr(bolditalic, i2+5)
+                    bold = subtr(bold, i2+5)
+                    italic = subtr(italic, i2+5)
+                elif len(bold) > 0 and i1 == bold[0]:
+                    i2 = bold[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+3:i2], "bold")
+                    passtext = passtext[i2+3:]
+                    l = subtr(l, i2+3)
+                    bolditalic = subtr(bolditalic, i2+3)
+                    bold = subtr(bold, i2+3)
+                    italic = subtr(italic, i2+3)
+                elif len(italic) > 0 and i1 == italic[0] :
+                    i2 = italic[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+2:i2], "italic")
+                    passtext = passtext[i2+2:]
+                    l = subtr(l, i2+2)
+                    bolditalic = subtr(bolditalic, i2+2)
+                    bold = subtr(bold, i2+2)
+                    italic = subtr(italic, i2+2)
+            self.insert(END, passtext)
+        else:
+            self.insert(END, ptext)
+            
+    
+    tkinter.Text.formattedInsert = formattedInsert
+
+    def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, framewidth):
         """Inserts Infobox paragraph into a frame"""
         mainframe = Frame(inframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
         mainframe.grid(row=gridrow,column=0, sticky="nsew")
@@ -3048,7 +3142,7 @@ class SETS():
             inframe.update()
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
-            maintext.insert(END, inserttext1)
+            maintext.formattedInsert(inserttext1, self)
             maintext.configure(state=DISABLED)
             rowinsert = rowinsert+1
         if not passtext == "":
