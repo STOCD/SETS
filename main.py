@@ -906,6 +906,7 @@ class SETS():
         self.exportOptions = [ 'PNG', 'Json' ]
         self.boffSortOptions = [ 'release', 'ranks', 'spec', 'spec2' ]
         self.consoleSortOptions = [ 'tesu', 'uets', 'utse', 'uest' ]
+        self.options_tags = ["Concept", "First Tests", "Optimization Phase", "Finished Build"]
 
         # self.persistent will be auto-saved and auto-loaded for persistent state data
         self.persistent = {
@@ -2095,11 +2096,24 @@ class SETS():
 
         self.setupCurrentSkillBuildFrames(type) #here or in the main button callback?
 
+    def setupCurrentBuildTagFrames(self, environment=None):
+        if not self.clearing:
+            if environment == 'space' or environment is None:
+                self.updateTagsFrame('space')
+            if environment == 'ground' or environment is None:
+                self.updateTagsFrame('ground')
+            if environment == 'skill' or environment is None:
+                self.updateTagsFrame('skill')
+
     def setupCurrentBuildFrames(self, environment=None):
         if not self.clearing:
-            if environment == 'space' or environment is None: self.setupSpaceBuildFrames()
-            if environment == 'ground' or environment is None: self.setupGroundBuildFrames()
-            if environment == 'skill' or environment is None: self.setupCurrentSkillBuildFrames()
+            self.setupCurrentBuildTagFrames(environment)
+            if environment == 'space' or environment is None:
+                self.setupSpaceBuildFrames()
+            if environment == 'ground' or environment is None:
+                self.setupGroundBuildFrames()
+            if environment == 'skill' or environment is None:
+                self.setupCurrentSkillBuildFrames()
 
     def setupCurrentSkillBuildFrames(self, environment=None):
         if not self.clearing:
@@ -3418,6 +3432,7 @@ class SETS():
             self.build[masterkey][key] = var
         elif key == "" and text == "":
             self.build[masterkey] = var
+        self.setupCurrentBuildTagFrames()
     
     def checkbuttonBuildBlock(self, window, frame: Frame, values, bg, fg, masterkey: str, key = str(""), geomanager="grid", orientation=HORIZONTAL, rowoffset=0, columnoffset=0,  alignment=TOP):
         """Inserts a series of Checkbuttons either horizontally or vertically, either row for row in the grid of the parent frame or packed into the parent
@@ -3514,7 +3529,8 @@ class SETS():
         else:
             lvar = 0
         tagvar = IntVar(tagwindow, value=lvar)
-        for tag in ["Concept", "First Tests", "Optimization Phase", "Finished Build"]:
+
+        for tag in self.options_tags:
             itemframe = Frame(stypefr, highlightthickness=0, bg=self.theme['app']['fg'])
             itemframe.grid(row=i, column=0, padx=16, sticky="w")
             Radiobutton(itemframe, bg=self.theme['app']['fg'], fg = "#000000", variable=tagvar, value=i-1, activebackground=self.theme['app']['fg']).pack(side=LEFT, ipadx=1, padx=0)
@@ -3522,6 +3538,7 @@ class SETS():
             i += 1
         tagvar.trace_add("write", lambda c1, c2, c3, var=tagvar, k="state", m="tags": self.checkbuttonVarUpdateCallback(var.get(), m, k))
         tagwindow.mainloop()
+
 
     def setupDoffListFrame(self, frame, environment='space'):
         doffEnvironment = environment.title()
@@ -3691,9 +3708,14 @@ class SETS():
         l = Label(self.shipTierFrame, text="Tier:", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.theme['text_small']['font_object'])
         l.grid(row=0, column=0, sticky='nsew')
         l.configure(borderwidth=0, highlightthickness=0)
-        m = OptionMenu(self.shipTierFrame, self.backend["tier"], *self.getTierOptions(tier))
+        tier_list = self.getTierOptions(tier)
+        if len(tier_list) > 1:
+            m = OptionMenu(self.shipTierFrame, self.backend["tier"], *tier_list)
+        else:
+            m = Label(self.shipTierFrame, text=tier_list[0], justify=LEFT)
+
         m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
-        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, font=self.theme['text_small']['font_object'])
+        m.configure(width=10, height=1, bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, font=self.theme['text_small']['font_object'])
 
 
     def setupShipImageFrame(self):
@@ -3705,17 +3727,47 @@ class SETS():
             self.shipImg = self.getEmptyFactionImage()
         self.setShipImage(self.shipImg)
 
-    def setupTagsFrame(self, buildTagFrame, environment='space'):
-        Button(buildTagFrame, text="Build Tags", fg=self.theme['button_heavy']['fg'], bg=self.theme['button_heavy']['bg'], font=(self.theme['app']['font']['family'], self.theme['button_heavy']['font']['size'], self.theme['button_heavy']['font']['weight']), command=lambda: self.buildTagCallback()).pack(fill=X, side=TOP)
-        
-        #Label(buildTagFrame, text="BUILD TAGS", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).pack(fill=X, expand=False)
-        for tag in ["DEW", "KINETIC", "EPG", "DEWSCI", "THEME"]:
-            tagFrame = Frame(buildTagFrame, bg=self.theme['frame_medium']['bg'])
-            tagFrame.pack(fill=X, expand=False)
-            v = IntVar(self.window, value=(1 if tag in self.build['tags'] and self.build['tags'][tag] == 1 else 0))
-            Checkbutton(tagFrame, variable=v, fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(row=0,column=0)
-            v.trace_add("write", lambda v,i,m,var=v,text=tag:self.tagBoxCallback(var,text))
-            Label(tagFrame, text=tag, fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(row=0,column=1)
+    def setupTagsFrame(self, parent_frame, environment='space'):
+        b = Button(parent_frame, text="Build Tags", fg=self.theme['button_heavy']['fg'], bg=self.theme['button_heavy']['bg'], font=self.font_tuple_create('button_heavy'), command=lambda: self.buildTagCallback())
+        b.pack(fill=X, side=TOP)
+        f = Frame(parent_frame, bg=self.theme['frame']['bg'])
+        f.pack(fill=BOTH, side=TOP)
+
+        if environment == 'skill':
+            self.skillBuildTagFrame = f
+        elif environment == 'ground':
+            self.groundBuildTagFrame = f
+        else:
+            self.shipBuildTagFrame = f
+
+        self.updateTagsFrame(environment)
+
+
+    def updateTagsFrame(self, environment='space'):
+        if environment == 'skill':
+            parent_frame = self.skillBuildTagFrame
+        elif environment == 'ground':
+            parent_frame = self.groundBuildTagFrame
+        else:
+            parent_frame = self.shipBuildTagFrame
+
+        self.clearFrame(parent_frame)
+        for i in range(4):
+            parent_frame.grid_columnconfigure(i, weight=1, uniform='tagViewCol')
+
+        item = -1
+        for tag in sorted(self.build['tags'], reverse=True):
+            if not self.build['tags'][tag]:
+                continue
+            item += 1
+            row = int(item / 4)
+            column = int(item % 4)
+            tags = tag.split('|')
+            display_tag = tags[-1].title() if tag != 'state' else self.options_tags[self.build['tags'][tag]]
+            display_tag = display_tag.replace(' Phase', '')
+            l = Label(parent_frame, text=display_tag, fg=self.theme['frame']['fg'], bg=self.theme['frame']['bg'])
+            l.grid(row=row, column=column)
+
 
     def setupCaptainFrame(self, charInfoFrame, environment='space'):
         self.precacheFactions()
@@ -4324,8 +4376,6 @@ class SETS():
 
         if count == 0:
             self.updateOnStep = 1
-            if 'updates' in self.windowUpdate:
-                self.logWrite('=== hold ended @ {}'.format(str(self.windowUpdate['updates'])), 2)
         else:
             self.updateOnStep = self.updateOnHeavyStep
         self.windowUpdate['hold'] = count
