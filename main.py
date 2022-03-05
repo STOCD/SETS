@@ -113,7 +113,7 @@ class SETS():
         },
         'text_small': {
             'font': {  # self.theme['text_small']['font_object']
-                'size': 9,
+                'size': 8,
             },
         },
         'text_tiny': {
@@ -1263,14 +1263,19 @@ class SETS():
 
     def subWindowLocationCentered(self, x, y, type=None):
         self_bar_height = self.windowBarHeight if type != 'splash' else 0
-        splash_adjust_x = 9 if type == 'splash' else 0
-        splash_adjust_y = 5 if type == 'splash' else 0
+        if self.factor != 1:
+            splash_adjust_x = 8 if type == 'splash' else 0
+            splash_adjust_y = 3 if type == 'splash' else 0
+        else:
+            splash_adjust_x = 6 if type == 'splash' else 0
+            splash_adjust_y = -5 if type == 'splash' else 0
+
         if x is None:
             x = self.window_topleft_x + splash_adjust_x
         if y is None:
             y = self.window_topleft_y + self.windowBarHeight + self.logoHeight + splash_adjust_y
 
-        sizeWindow = '{}x{}'.format(self.windowWidth, self.windowHeight - (self_bar_height + self.logoHeight))
+        sizeWindow = '{}x{}'.format(self.windowWidth+3, self.windowHeight - 20 - (self_bar_height + self.logoHeight))
         positionWindow = '+{}+{}'.format(x, y)
 
         self.logWrite("subWindow position: {}".format(sizeWindow+positionWindow), 2)
@@ -1940,7 +1945,8 @@ class SETS():
         elif type == 'cacheSave': self.cacheSave()
         elif type == 'openLog': self.logWindowCreate()
         elif type == 'openSplash':
-                self.makeSplashWindow(close=True)
+            self.updateWindowSize()
+            self.makeSplashWindow(close=True)
         elif type == 'predownloadShipImages': self.predownloadShipImages()
         elif type == 'predownloadGearImages': self.predownloadGearImages()
         elif type == 'savePositionOnly':
@@ -3629,8 +3635,8 @@ class SETS():
 
     def setFooterFrame(self, leftnote, rightnote=None):
         """Set up footer frame with given item"""
-        leftnote = leftnote[:150]
-        rightnote = rightnote[:60]
+        leftnote = leftnote[:200]
+        rightnote = rightnote[:150]
 
         if not len(leftnote):
             self.log.set(self.log.get())
@@ -4832,16 +4838,17 @@ class SETS():
     def setupUIScaling(self,event=None):
         scale = float(self.persistent['uiScale']) if 'uiScale' in self.persistent else 1.0
         dpi = round(self.window.winfo_fpixels('1i'), 0)
-        factor = ( dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
+        self.factor = ( dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
 
-        if factor != 1:  # If the framing gets fixed at /72, this should be remove-able
-            self.window.call('tk', 'scaling', scale * factor)  # Should already be factor modified, so we have to keep the factor
+        if self.factor != 1:  # If the framing gets fixed at /72, this should be remove-able
+            scale *= self.factor
+            self.window.call('tk', 'scaling', scale)  # Should already be factor modified, so we have to keep the factor
         else:
             # If dpi / framing are adjusted, this should happen with a scaling adjustment
             self.itemBoxX = self.itemBoxX_default * scale
             self.itemBoxY = self.itemBoxY_default * scale
 
-        self.logminiWrite('{} | {} {} | {}x{} |x{:>0.2}s x{:>0.2}f {:>4}dpi'.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), scale, factor, dpi))
+        self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, scale, dpi))
 
 
     def updateWindowSize(self, caller='', init=False):
