@@ -4402,7 +4402,6 @@ class SETS():
             self.windowUpdate['hold'] -= 1
             return
         elif(type == "footerProgressBar"):
-            # not certain this is any different from self.window.update()
             self.splashProgressBar.update()
         elif not type:
             self.window.update()
@@ -4863,6 +4862,7 @@ class SETS():
             self.otherHeight = 13  # button bar, anything else?
             self.windowWidth = self.windowWidthDefault = 1920
             self.windowHeight = self.windowHeightDefault = 840
+            self.window.minsize(int(self.windowWidth * 2 / 3),int(self.windowHeight * 2 / 3))
         else:
             previous_width = self.windowWidth
             previous_height = self.windowHeight
