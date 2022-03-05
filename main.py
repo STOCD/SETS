@@ -344,27 +344,6 @@ class SETS():
         return matchobj.group(0).lower()
 
 
-    def progressBarUpdate(self, weight=1):
-        # weight denotes how much progress that item is
-        try:
-            self.footerProgressBarUpdates += weight
-            self.footerProgressBar.step()
-            # modulo to reduce time / flashing UI spent on updating
-            if self.footerProgressBarUpdates % self.updateOnStep == 0 or self.footerProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
-                self.requestWindowUpdate('footerProgressBar')
-        except:
-            # Can have no footer yet in some early states
-            pass
-
-    def progressBarStop(self):
-        self.footerProgressBarUpdates = 0
-        self.footerProgressBar.stop()
-        #self.requestWindowUpdate('footerProgressBar')
-
-    def progressBarStart(self):
-        self.footerProgressBarUpdates = 0
-        self.footerProgressBar.start()
-
     def iconNameCleanup(self, text):
         text = text.replace('Q%27s_Ornament%3A_', '')
         # Much of this can be removed if the wiki templates have their lowercase forces removed
@@ -621,7 +600,6 @@ class SETS():
         """Populate in-memory cache of ship equipment lists for faster loading"""
         if not keyPhrase or keyPhrase in self.cache['equipment']:
             return
-        self.progressBarStart()
 
         additionalPhrases = []
         if 'Weapon' in keyPhrase and 'Ship' in keyPhrase: additionalPhrases = ['Ship Weapon']
@@ -645,7 +623,6 @@ class SETS():
         """
 
         self.logWriteCounter('Equipment', '(json)', len(self.cache['equipment'][keyPhrase]) if keyPhrase in self.cache['equipment'] else 0, [keyPhrase])
-        self.progressBarStop()
 
     def searchHtmlTable(self, html, field, phrases):
         """Return HTML table elements containing 1 or more phrases"""
@@ -752,7 +729,6 @@ class SETS():
     def precacheReputations(self):
         if 'specsPrimary' in self.cache and len(self.cache['specsPrimary']) > 0:
             return
-        self.progressBarStart()
 
         for item in list(self.reputations):
             name = self.deWikify(item['name']) if 'name' in item and item['name'] else ''
@@ -775,7 +751,6 @@ class SETS():
         self.logWriteCounter('Specs', '(json)', len(self.cache['specsPrimary']))
         self.logWriteCounter('Specs2', '(json)', len(self.cache['specsSecondary']))
         self.logWriteCounter('Specs-Ground', '(json)', len(self.cache['specsGroundBoff']))
-        self.progressBarStop()
 
     def precacheShipTraitSingle(self, name, desc):
         name = self.deWikify(name)
@@ -791,7 +766,6 @@ class SETS():
         """Populate in-memory cache of ship traits for faster loading"""
         if 'shipTraits' in self.cache and len(self.cache['shipTraits']) > 0:
             return self.cache['shipTraits']
-        self.progressBarStart()
 
         for item in list(self.shiptraits):
             if 'trait' in item and len(item['trait']):
@@ -808,7 +782,6 @@ class SETS():
                 self.precacheShipTraitSingle(item['name'], item['description'])
 
         self.logWriteCounter('Ship Trait', '(json)', len(self.cache['shipTraits']), ['space'])
-        self.progressBarStop()
 
     def precacheTraitSingle(self, name, desc, environment, type):
         name = self.deWikify(name)
@@ -835,7 +808,6 @@ class SETS():
         """Populate in-memory cache of traits for faster loading"""
         if 'traits' in self.cache and 'space' in self.cache['traits']:
             return self.cache['traits']
-        self.progressBarStart()
 
         for item in list(self.traits):
             if not 'chartype' in item or item['chartype'] != 'char':
@@ -846,7 +818,6 @@ class SETS():
         for type in self.cache['traitsWithImages']:
             for environment in self.cache['traitsWithImages'][type]:
                 self.logWriteCounter('Trait', '(json)', len(self.cache['traitsWithImages'][type][environment]), [environment, type])
-        self.progressBarStop()
 
     def setListIndex(self, list, index, value):
         list[index] = value
@@ -1357,8 +1328,8 @@ class SETS():
         imageLabel.create_image(self.splash_image_w / 2, self.splash_image_h / 2, anchor="center", image=self.images['splash_image'])
         imageLabel.grid(row=0, column=0, sticky='nsew', padx=0, pady=0)
 
-        self.footerProgressBar = Progressbar(OuterFrame, orient='horizontal', mode='indeterminate', length=self.splash_image_w)
-        self.footerProgressBar.grid(row=0, column=0, sticky='sw')
+        self.splashProgressBar = Progressbar(OuterFrame, orient='horizontal', mode='indeterminate', length=self.splash_image_w)
+        self.splashProgressBar.grid(row=0, column=0, sticky='sw')
 
 
     def itemLabelCallback(self, e, canvas, img, i, key, args):
@@ -1500,7 +1471,6 @@ class SETS():
         """Common callback for boff labels"""
         if 'boffAbilities' in self.cache and 'space' in self.cache['boffAbilities'] and 'ground' in self.cache['boffAbilities']:
             return
-        self.progressBarStart()
 
         # Categories beyond tac/eng/sci should come from a json load when capt specs are converted
         boffCategories = ['Tactical', 'Engineering', 'Science', 'Intelligence', 'Command', 'Pilot', 'Temporal', 'Miracle Worker']
@@ -1536,7 +1506,6 @@ class SETS():
 
         self.logWriteCounter('Boff ability', '(json)', len(self.cache['boffTooltips']['space']), ['space'])
         self.logWriteCounter('Boff ability', '(json)', len(self.cache['boffTooltips']['ground']), ['ground'])
-        self.progressBarStop()
 
     def boffLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for boff labels"""
@@ -4309,23 +4278,6 @@ class SETS():
                 if col_weight is not None:
                     parent_frame.grid_columnconfigure(col_start + col_option, weight=col_weight)
 
-    def setupUIScaling(self,event=None):
-        # Partially effect, some errors in the log formatting
-        scale = 1.0
-        if 'uiScale' in self.persistent:
-            scale = float(self.persistent['uiScale'])
-
-        self.factor = ( self.dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
-        if self.factor != 1:  # If the framing gets fixed at /72, this should be remove-able
-            self.window.call('tk', 'scaling', scale * self.factor)  # Should already be factor modified, so we have to keep the factor
-        else:
-            # If dpi / framing are adjusted, this should happen with a scaling adjustment
-            self.itemBoxX = self.itemBoxX * scale
-            self.itemBoxY = self.itemBoxY * scale
-
-        self.logminiWrite('{} | {} {} | {}x{} |x{:>0.2}s x{:>0.2}f {:>4}dpi'.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), scale, self.factor, self.dpi))
-
-
     def logDisplayUpdate(self):
         self.logDisplay.delete('0.0', END)
         self.logDisplay.insert('0.0', self.logFull.get())
@@ -4396,11 +4348,10 @@ class SETS():
     def requestWindowUpdate(self, type=''):
         if not 'updates' in self.windowUpdate:
             self.windowUpdate = { 'updates': 0, 'lastupdate': 0, 'hold': 0 }
-
         self.windowUpdate['updates'] += 1
 
         # runaway check
-        if self.windowUpdate['updates'] % 1000 == 0:
+        if self.windowUpdate['updates'] % 100 == 0:
             self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 1)
 
         if type == 'force':
@@ -4411,13 +4362,11 @@ class SETS():
             return
         elif(type == "footerProgressBar"):
             # not certain this is any different from self.window.update()
-            self.footerProgressBar.update()
+            self.splashProgressBar.update()
         elif not type:
             self.window.update()
         else:
             return
-
-        self.updateWindowSize(caller=type)
 
     def resetBuildFrames(self, types=None):
         if types is None:
@@ -4430,9 +4379,6 @@ class SETS():
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family=self.theme['app']['font']['family'], size=self.theme['app']['font']['size'])
-        self.footerProgressBarUpdates = 0
-        self.dpi = round(self.window.winfo_fpixels('1i'), 0)
-        self.setupUIScaling()
 
         self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'])
         self.containerFrame.pack(fill=BOTH, expand=True)
@@ -4784,6 +4730,27 @@ class SETS():
         else:
                 self.window.geometry("{}x{}+{}+{}".format(self.windowWidth, self.windowHeight, self.window_topleft_x, self.window_topleft_y))
 
+    def perf(self, name, type='start'):
+        now = datetime.datetime.now()
+        if not name in self.persistent['perf']:
+            self.persistent['perf'][name] = dict()
+
+        self.persistent['perf'][name][type] = now
+
+        if type == 'stop':
+            if not 'start' in self.persistent['perf'][name]:
+                self.persistent['perf'][name]['start'] = now
+
+            start = self.persistent['perf'][name]['start']
+            run = now - start
+            self.persistent['perf'][name]['run'] = run
+            self.logWriteSimple('=== Splash', type, 2, [now, run])
+            return run
+        else:
+            self.logWriteSimple('=== Splash', type, 2, [now])
+            return now
+
+
     def initSplashWindow(self):
         self.splashWindow = None
         self.images['splash_image'] = self.loadLocalImage('sets_loading.PNG', width=self.splashBoxX, height=self.splashBoxY)
@@ -4794,24 +4761,59 @@ class SETS():
         if self.splashWindow is not None:
             try:
                 self.splashWindow.focus_set()
+                return
             except:
                 self.splashWindow = None
 
-        if not close:
-            self.requestWindowUpdateHold(0)
         if self.splashWindow is None:
             self.splashWindow = self.makeSubWindow('Sets ({})'.format(self.version), 'splash', close=close)
+
+        if not close:
+            self.perf('splash')
+            self.requestWindowUpdateHold(0)
+            self.splashProgressBarUpdates = 0
+            self.splashProgressBar.start()
 
 
     def removeSplashWindow(self):
         if self.splashWindow is not None:
             self.splashWindow.destroy()
-            
+            self.perf('splash', 'stop')
+            self.splashWindow = None
+
+
+    def progressBarUpdate(self, weight=1):
+        # weight denotes how much progress that item is
+        try:
+            self.splashProgressBarUpdates += weight
+            self.splashProgressBar.step()
+            # modulo to reduce time / flashing UI spent on updating
+            # if 1 or self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
+            self.requestWindowUpdate('footerProgressBar')
+        except:
+            # Can have no footer yet in some early states
+            pass
+
+
+    def setupUIScaling(self,event=None):
+        scale = float(self.persistent['uiScale']) if 'uiScale' in self.persistent else 1.0
+        dpi = round(self.window.winfo_fpixels('1i'), 0)
+        factor = ( dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
+
+        if factor != 1:  # If the framing gets fixed at /72, this should be remove-able
+            self.window.call('tk', 'scaling', scale * factor)  # Should already be factor modified, so we have to keep the factor
+        else:
+            # If dpi / framing are adjusted, this should happen with a scaling adjustment
+            self.itemBoxX = self.itemBoxX_default * scale
+            self.itemBoxY = self.itemBoxY_default * scale
+
+        self.logminiWrite('{} | {} {} | {}x{} |x{:>0.2}s x{:>0.2}f {:>4}dpi'.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), scale, factor, dpi))
+
 
     def updateWindowSize(self, caller='', init=False):
         if init:
-            self.itemBoxX = 32  # 25
-            self.itemBoxY = 42  # 33
+            self.itemBoxX = self.itemBoxX_default = 32
+            self.itemBoxY = self.itemBoxY_default = 42
             self.window_topleft_x = self.window_topleft_x_default = 100  # Window top left corner
             self.window_topleft_y = self.window_topleft_y_default = 100
 
@@ -4839,6 +4841,8 @@ class SETS():
         self.splashBoxX = self.windowWidth * 2 / 3
         self.splashBoxY = self.windowActiveHeight * 2 / 3
 
+        self.setupUIScaling()
+
         if init:
             return
 
@@ -4852,7 +4856,6 @@ class SETS():
 
     def __init__(self) -> None:
         """Main setup function"""
-        self.updateWindowSize(caller='init0', init=True)
         self.window = Tk()
         self.session = HTMLSession()
 
@@ -4863,6 +4866,7 @@ class SETS():
         self.stateSave()
         self.configFileLoad()
 
+        self.updateWindowSize(caller='init0', init=True)
         self.precache_theme_fonts()
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
