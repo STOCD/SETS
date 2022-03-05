@@ -2877,29 +2877,25 @@ class SETS():
         return text
 
     def formattedInsert(self, ptext: str, obj):
-        if not "''" in ptext:
+        if not "''" in ptext and not "<" in ptext:
             self.insert(END, ptext)
             return
 
         def subtr(li: list, index):
             try:
                 del li[0]
-                del li[1]
+                del li[0]
             except:
                 return list()
-            k = 0
-            for element in li:
-                li[k] = element-index
+            for element in range(0, len(li)):
+                li[element] = li[element]-index
             return li
 
         t = ptext
         bolditalic = list()
         while "'''''" in t:
             if len(bolditalic) > 0:
-                try:
-                    bolditalic.append(ptext.find("'''''", bolditalic[-1]+5))
-                except IndexError:
-                    bolditalic.append(len(ptext)-5)
+                bolditalic.append(ptext.find("'''''", bolditalic[-1]+5))
             else:
                 bolditalic.append(ptext.find("'''''"))
             t = t[bolditalic[-1]+5:]
@@ -2907,10 +2903,7 @@ class SETS():
         bold = list()
         while "'''" in t:
             if len(bold) > 0:
-                try:
-                    bold.append(ptext.replace("'''''", "|||||").find("'''", bold[-1]+3))
-                except IndexError:
-                    bold.append(len(ptext)-3)
+                bold.append(ptext.replace("'''''", "|||||").find("'''", bold[-1]+3))
             else:
                 bold.append(ptext.replace("'''''", "|||||").find("'''"))
             t = t[bold[-1]+3:]
@@ -2918,25 +2911,42 @@ class SETS():
         italic = list()
         while "''" in t:
             if len(italic) > 0:
-                try:
-                    italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''", italic[-1]+2))
-                except IndexError:
-                    italic.append(len(ptext)-2)
+                italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''", italic[-1]+2))
             else:
                 italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''"))
             t = t[italic[-1]+2:]
-        l = bolditalic + bold + italic
+        bold2 = list()
+        t = ptext
+        while "<b>" in t:
+            if len(bold2) > 0:
+                bold2.append(ptext.find("<b>", bold2[-1]+4))
+                bold2.append(ptext.find("</b>", bold2[-1]))
+            else:
+                bold2.append(ptext.find("<b>"))
+                bold2.append(ptext.find("</b>"))
+            t = t[bold2[-1]+4:]
+        underlined = list()
+        t = ptext
+        while "<u>" in t:
+            if len(underlined) > 0:
+                underlined.append(ptext.find("<u>", underlined[-1]+4))
+                underlined.append(ptext.find("</u>", underlined[-1]))
+            else:
+                underlined.append(ptext.find("<u>"))
+                underlined.append(ptext.find("</u>"))
+            t = t[underlined[-1]+4:]
+        l = bolditalic + bold + italic + bold2 + underlined
         l.sort()
         self.tag_configure('bolditalic', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "bold", "italic"))
         self.tag_configure('bold', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "bold"))
         self.tag_configure('italic', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "normal", "italic"))
+        self.tag_configure('underlined', underline=True)
         if len(l) > 0:
             passtext = ptext
             while len(l)>0:
                 i1 = l[0]
                 i2: int
                 if len(bolditalic) > 0 and i1 == bolditalic[0]:
-                    i2 = bolditalic[1]
                     self.insert(END, passtext[:i1])
                     self.insert(END, passtext[i1+5:i2], "bolditalic")
                     passtext = passtext[i2+5:]
@@ -2944,6 +2954,8 @@ class SETS():
                     bolditalic = subtr(bolditalic, i2+5)
                     bold = subtr(bold, i2+5)
                     italic = subtr(italic, i2+5)
+                    bold2 = subtr(bold2, i2+5)
+                    underlined = subtr(underlined, i2+5)
                 elif len(bold) > 0 and i1 == bold[0]:
                     i2 = bold[1]
                     self.insert(END, passtext[:i1])
@@ -2953,6 +2965,8 @@ class SETS():
                     bolditalic = subtr(bolditalic, i2+3)
                     bold = subtr(bold, i2+3)
                     italic = subtr(italic, i2+3)
+                    bold2 = subtr(bold2, i2+3)
+                    underlined = subtr(underlined, i2+3)
                 elif len(italic) > 0 and i1 == italic[0] :
                     i2 = italic[1]
                     self.insert(END, passtext[:i1])
@@ -2962,6 +2976,30 @@ class SETS():
                     bolditalic = subtr(bolditalic, i2+2)
                     bold = subtr(bold, i2+2)
                     italic = subtr(italic, i2+2)
+                    bold2 = subtr(bold2, i2+2)
+                    underlined = subtr(underlined, i2+2)
+                elif len(bold2) > 0 and i1 == bold2[0]:
+                    i2 = bold2[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+3:i2], "bold")
+                    passtext = passtext[i2+4:]
+                    l = subtr(l, i2+4)
+                    bolditalic = subtr(bolditalic, i2+4)
+                    bold = subtr(bold, i2+4)
+                    italic = subtr(italic, i2+4)
+                    bold2 = subtr(bold2, i2+4)
+                    underlined = subtr(underlined, i2+4)
+                elif len(underlined) > 0 and i1 == underlined[0] :
+                    i2 = underlined[1]
+                    self.insert(END, passtext[:i1])
+                    self.insert(END, passtext[i1+3:i2], "underlined")
+                    passtext = passtext[i2+4:]
+                    l = subtr(l, i2+4)
+                    bolditalic = subtr(bolditalic, i2+4)
+                    bold = subtr(bold, i2+4)
+                    italic = subtr(italic, i2+4)
+                    bold2 = subtr(bold2, i2+4)
+                    underlined = subtr(underlined, i2+4)
             self.insert(END, passtext)
         else:
             self.insert(END, ptext)
