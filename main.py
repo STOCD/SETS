@@ -2874,9 +2874,38 @@ class SETS():
         text = text.replace(' <li>', '\n*')
         text = text.replace('<li>', '\n*')
         text = text.replace(" *", "*")
+        text = text.replace("<small>", "")
+        text = text.replace("</small>", "")
+        text = text.replace("<sub>", "")
+        text = text.replace("</sub>", "")
+        color = list()
+        t=text
+        while '<font color=' in t:
+            if len(color) > 0:
+                color.append(text.find('<font color=', color[-1]+7))
+                color.append(text.find("</font>", color[-1]))
+            else:
+                color.append(text.find("<font color="))
+                color.append(text.find("</font>"))
+            t = t[color[-1]:]
+        while len(color)>0:
+            try: 
+                text = text[:color[-1]]+text[color[-1]+7:]
+            except IndexError:
+                text = text[:color[-1]]
+            try:
+                text = text[:color[-2]]+text[text.find(">", color[-2])+1:]
+            except IndexError:
+                text = text[:color[-2]]
+            try:
+                del color[-1]
+                del color[-1]
+            except IndexError:
+                pass
+
         return text
 
-    def formattedInsert(self, ptext: str, obj):
+    def formattedInsert(self, ptext: str, pfamily, psize, pweight):
         if not "''" in ptext and not "<" in ptext:
             self.insert(END, ptext)
             return
@@ -2935,12 +2964,12 @@ class SETS():
                 underlined.append(ptext.find("<u>"))
                 underlined.append(ptext.find("</u>"))
             t = t[underlined[-1]+4:]
-        l = bolditalic + bold + italic + bold2 + underlined
+        l = bolditalic + bold + italic + bold2 + underlined 
         l.sort()
-        self.tag_configure('bolditalic', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "bold", "italic"))
-        self.tag_configure('bold', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "bold"))
-        self.tag_configure('italic', font=(obj.theme["app"]["font"]["family"], obj.theme["app"]["font"]["size"], "normal", "italic"))
-        self.tag_configure('underlined', underline=True)
+        self.tag_configure('bolditalic', font=(pfamily, psize, "bold", "italic"))
+        self.tag_configure('bold', font=(pfamily, psize, "bold"))
+        self.tag_configure('italic', font=(pfamily, psize, pweight, "italic"))
+        self.tag_configure('underlined', underline=True, font=(pfamily, psize, pweight))
         if len(l) > 0:
             passtext = ptext
             while len(l)>0:
@@ -3180,7 +3209,7 @@ class SETS():
             inframe.update()
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
-            maintext.formattedInsert(inserttext1, self)
+            maintext.formattedInsert(inserttext1, pfamily, psize, pweight)
             maintext.configure(state=DISABLED)
             rowinsert = rowinsert+1
         if not passtext == "":
