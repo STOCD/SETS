@@ -23,17 +23,6 @@ class SETS():
     """Main App Class"""
     version = '20220304_beta'
 
-    itemBoxX = 32 #25
-    itemBoxY = 42 #33
-    windowX = 100  # Window top left corner
-    windowY = 100
-    logoHeight = 134
-    windowHeightDefault = 840
-    windowActiveHeight = windowActiveHeightDefault = 659
-    windowWidth = windowWidthDefault = 1920
-    window_outside_frame_minimum = int((windowWidthDefault - 100) / 5)
-    imageBoxX = window_outside_frame_minimum
-    imageBoxY = int(window_outside_frame_minimum * 7 / 10)
     daysDelayBeforeReattempt = 7
 
     #base URI
@@ -370,7 +359,7 @@ class SETS():
     def progressBarStop(self):
         self.footerProgressBarUpdates = 0
         self.footerProgressBar.stop()
-        self.requestWindowUpdate('footerProgressBar')
+        #self.requestWindowUpdate('footerProgressBar')
 
     def progressBarStart(self):
         self.footerProgressBarUpdates = 0
@@ -1172,8 +1161,8 @@ class SETS():
         if self.persistent['pickerSpawnUnderMouse'] and x is not None and y is not None:
             self.logWrite("pickerGUI position update: x{},y{}".format(str(x), str(y)), 2)
         else:
-            x = self.windowXCache
-            y = self.windowYCache
+            x = self.window_topleft_x
+            y = self.window_topleft_y
 
         if height < screen_height and (y + height) > screen_height:
             y = screen_height - height
@@ -1270,7 +1259,6 @@ class SETS():
     def windowCloseCallback(self, window):
         try:
             window.destroy()
-            pass
         except:
             pass
 
@@ -1284,64 +1272,94 @@ class SETS():
 
         return (windowwidth,windowheight)
 
-    def windowLocationCentered(self, x, y):
-        #positionWindow = '+{}+{}'.format(self.windowXCache, self.windowYCache)
+    def subWindowLocationCentered(self, x, y, type=None):
+        self_bar_height = self.windowBarHeight if type != 'splash' else 0
+        splash_adjust_x = 9 if type == 'splash' else 0
+        splash_adjust_y = 5 if type == 'splash' else 0
+        if x is None:
+            x = self.window_topleft_x + splash_adjust_x
+        if y is None:
+            y = self.window_topleft_y + self.windowBarHeight + self.logoHeight + splash_adjust_y
 
-        if x is not None and y is not None:
-            positionWindow = '+{}+{}'.format(x, y)
-        else:
-            positionWindow = '+{}+{}'.format(self.windowXCache, self.windowYCache + self.logoHeight + 35 )
-            self.logWrite("subWindow position update: x{},y{}".format(str(x), str(y)), 2)
+        sizeWindow = '{}x{}'.format(self.windowWidth, self.windowHeight - (self_bar_height + self.logoHeight))
+        positionWindow = '+{}+{}'.format(x, y)
 
-        return positionWindow
+        self.logWrite("subWindow position: {}".format(sizeWindow+positionWindow), 2)
+        return sizeWindow+positionWindow
 
-    def makeSubWindow(self, title, type, x=None, y=None, windowWidth=None, noclose=False):
+    def makeSubWindow(self, title, type, x=None, y=None, windowWidth=None, close=True):
         """Open a new window"""
         self.requestWindowUpdate()
-        if windowWidth is None: windowWidth = self.windowWidth
+        if windowWidth is None:
+            windowWidth = self.windowWidth
+
         subWindow = Toplevel(self.window)
-        if noclose:
-            subWindow.overrideredirect(True) #no window elements, must implement close window in window first
+        subWindow.configure(bg=self.theme['frame']['bg'])
+        subWindow.title(title)
+        if type == 'splash':
+            subWindow.overrideredirect(True)  # No window elements, must implement close window or bring it down manually
         else:
             subWindow.resizable(False,False)
             subWindow.transient(self.window)
-
-        subWindow.title(title)
-
-        (windowwidth,windowheight) = self.windowDimensions()
-        sizeWindow = '{}x{}'.format(windowwidth, windowheight)
-        subWindow.geometry(sizeWindow+self.windowLocationCentered(x, y))
+        subWindow.geometry(self.subWindowLocationCentered(x, y, type))
 
         subWindow.protocol('WM_DELETE_WINDOW', lambda:self.windowCloseCallback(subWindow))
-
-        container = Frame(subWindow)
-        container.configure(bg=self.theme['frame']['bg'])
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
-        topFrame = Frame(subWindow, width=windowWidth)
+        subWindow.grid_columnconfigure(0, weight=1)
+        topFrame = Frame(subWindow, width=windowWidth, bg=self.theme['frame']['bg'])
         topFrame.grid(row=0, column=0, sticky='nsew', padx=1, pady=1)
-        mainFrame = Frame(subWindow)
-        mainFrame.grid(row=1, column=0, sticky='nsew', padx=1, pady=1)
-
-        if noclose:
+        if close and type == 'splash':
             optionFrame = Button(topFrame, text='Close', command=lambda:self.windowCloseCallback(subWindow))
-            optionFrame.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, width=10)
-            optionFrame.grid(row=0, column=0, sticky='e')
+            optionFrame.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, width=10)
+            optionFrame.grid(row=0, column=0, sticky='ew')
+            topFrame.grid_rowconfigure(0, minsize=10)
+            topFrame.grid_columnconfigure(0, weight=1)
+        mainFrame = Frame(subWindow, bg=self.theme['frame']['bg'])
+        mainFrame.grid(row=1, column=0, sticky='nsew', padx=1, pady=1)
+        subWindow.grid_rowconfigure(1, weight=1)
 
+        if type == 'splash':
+            self.splash_window_interior(mainFrame)
         if type == 'log':
-            scrollbar = Scrollbar(mainFrame)
-            scrollbar.pack(side=RIGHT, fill=Y)
-            self.logDisplay = Text(mainFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], wrap=WORD, height=30, width=110, font=self.font_tuple_create('text_log'))
-            self.logDisplay.pack(side=LEFT, fill=BOTH, expand=True)
-            self.logDisplay.insert('0.0', self.logFull.get())
-            scrollbar.config(command=self.logDisplay.yview)
-            self.logDisplay.config(yscrollcommand=scrollbar.set)
-            self.logDisplayUpdate()
+            self.log_window_interior(mainFrame)
 
         subWindow.title('{}'.format(title))
         subWindow.wait_visibility()    #Implemented for Linux
         subWindow.grab_set()
-        subWindow.wait_window()
+        subWindow.update()
+        if not type == 'splash' or close:
+            subWindow.wait_window()
+
+        return subWindow
+
+
+    def log_window_interior(self, parentFrame):
+        scrollbar = Scrollbar(parentFrame)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        self.logDisplay = Text(parentFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'],
+                               wrap=WORD, height=30, width=110, font=self.font_tuple_create('text_log'))
+        self.logDisplay.pack(side=LEFT, fill=BOTH, expand=True)
+        self.logDisplay.insert('0.0', self.logFull.get())
+        scrollbar.config(command=self.logDisplay.yview)
+        self.logDisplay.config(yscrollcommand=scrollbar.set)
+        self.logDisplayUpdate()
+
+
+    def splash_window_interior(self, parentFrame):
+        OuterFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
+        OuterFrame.grid(row=0, column=0)
+        parentFrame.grid_rowconfigure(0, weight=1)
+        parentFrame.grid_columnconfigure(0, weight=1)
+        OuterFrame.grid_columnconfigure(0, weight=0, minsize=self.splash_image_w)
+        OuterFrame.grid_rowconfigure(0, weight=0, minsize=self.splash_image_h+25)
+
+        imageLabel = Canvas(OuterFrame, bg=self.theme['button']['bg'])
+        imageLabel.configure(borderwidth=0, highlightthickness=0)
+        imageLabel.create_image(self.splash_image_w / 2, self.splash_image_h / 2, anchor="center", image=self.images['splash_image'])
+        imageLabel.grid(row=0, column=0, sticky='nsew', padx=0, pady=0)
+
+        self.footerProgressBar = Progressbar(OuterFrame, orient='horizontal', mode='indeterminate', length=self.splash_image_w)
+        self.footerProgressBar.grid(row=0, column=0, sticky='sw')
+
 
     def itemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
@@ -1593,7 +1611,7 @@ class SETS():
     def importByFilename(self, inFilename, force=False):
         if not inFilename: return
 
-        self.requestWindowUpdateHold(30) # Still requires tuning
+        self.makeSplashWindow()
         if inFilename.lower().endswith('.png'):
             # image = Image.open(inFilename)
             # self.build = json.loads(image.text['build'])
@@ -1609,35 +1627,32 @@ class SETS():
                 except:
                     self.logWriteTransaction('Template File', 'load complaint', '', inFilename, 0)
 
-        if 'versionJSON' not in self.buildImport and not force:
+        if not force and 'versionJSON' not in self.buildImport:
+            result = False
             self.logWriteTransaction('Template File', 'version missing', '', inFilename, 0)
-            if self.persistent['forceJsonLoad']:
-                return self.importByFilename(inFilename, True)
-        elif self.buildImport['versionJSON'] >= self.versionJSONminimum or force:
+        elif not force and self.buildImport['versionJSON'] < self.versionJSONminimum:
+            result = False
+            self.logWriteTransaction('Template File', 'version mismatch', '', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
+        else:
+            result = True
             self.logWriteBreak('IMPORT PROCESSING START')
-            logNote = ' (fields:['+str(len(self.buildImport))+'=>'+str(len(self.build))+']='
+            logNote = '{} (fields:[{}=>{}]='.format(' (FORCE LOAD)' if force else '', len(self.buildImport), len(self.build))
             self.build.update(self.buildImport)
-            logNote = logNote+str(len(self.build))+' merged)'
+            logNote = logNote+'{} merged'.format(len(self.build))
 
             self.resetBackend(rebuild=True)
             self.resetBuildFrames()
-
             self.setupCurrentBuildFrames()
-
-            if force:
-                logNote=' (FORCE LOAD)'+logNote
+            self.resetAfterImport()
 
             self.logWriteTransaction('Template File', 'loaded', '', inFilename, 0, [logNote])
-
-            self.resetAfterImport()
             self.logWriteBreak('IMPORT PROCESSING END')
-            return True
+
+        self.removeSplashWindow()
+        if not result and self.persistent['forceJsonLoad']:
+            return self.importByFilename(inFilename, True)
         else:
-            self.logWriteTransaction('Template File', 'version mismatch', '', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
-            if self.persistent['forceJsonLoad']:
-                return self.importByFilename(inFilename, True)
-            else:
-                return False
+            return result
 
     def filenameDefault(self):
         name = self.build['playerShipName'] if 'playerShipName' in self.build else ''
@@ -1935,6 +1950,8 @@ class SETS():
             self.precachePreload()
         elif type == 'cacheSave': self.cacheSave()
         elif type == 'openLog': self.logWindowCreate()
+        elif type == 'openSplash':
+                self.makeSplashWindow(close=True)
         elif type == 'predownloadShipImages': self.predownloadShipImages()
         elif type == 'predownloadGearImages': self.predownloadGearImages()
         elif type == 'savePositionOnly':
@@ -2386,8 +2403,6 @@ class SETS():
     def setupSkillBuildFrames(self, environment=None):
         self.precacheSkills()
         if not 'content' in self.cache['skills']: return
-
-        self.requestWindowUpdateHold(30) # Still requires tuning
 
         if environment is None or environment == 'space':
             parentFrame = self.skillSpaceBuildFrame
@@ -3598,7 +3613,7 @@ class SETS():
         #maxWidth = self.window.winfo_screenwidth()
         #if maxWidth > self.windowWidth:
             #maxWidth = self.windowWidth
-        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", width=self.windowWidthDefault, height=self.logoHeight)
+        self.images['logoImage'] = self.loadLocalImage("logo_bar.png", width=self.windowWidth, height=self.logoHeight)
 
         Label(self.logoFrame, image=self.images['logoImage'], borderwidth=0, highlightthickness=0).pack()
 
@@ -3611,20 +3626,13 @@ class SETS():
         footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='w', font=self.font_tuple_create('text_small'))
         footerLabelL.grid(row=0, column=0, sticky='w')
 
-        self.footerFrameM = Frame(self.footerFrame, bg=self.theme['app']['bg'])
-        self.footerFrameM.grid(row=0, column=1, sticky='ew')
-        self.footerFrameM.grid_columnconfigure(0, weight=1, uniform="footerlabel")
-        self.footerProgressBar = Progressbar(self.footerFrameM, orient='horizontal', mode='indeterminate', length=120)
-        self.footerProgressBar.grid(row=0, column=0, sticky='ew')
-
         self.footerFrameR = Frame(self.footerFrame, bg=self.theme['app']['bg'])
-        self.footerFrameR.grid(row=0, column=2, sticky='e')
+        self.footerFrameR.grid(row=0, column=1, sticky='e')
         footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='e', font=self.font_tuple_create('text_highlight'))
         footerLabelR.grid(row=0, column=0, sticky='e')
 
         self.footerFrame.grid_columnconfigure(0, weight=2, uniform="footerlabel")
-        self.footerFrame.grid_columnconfigure(1, weight=1, uniform="footerlabel")
-        self.footerFrame.grid_columnconfigure(2, weight=2, uniform="footerlabel")
+        self.footerFrame.grid_columnconfigure(1, weight=2, uniform="footerlabel")
 
 
     def lineTruncate(self, content, length=500):
@@ -3797,14 +3805,9 @@ class SETS():
     def updatePlayerDesc(self, event):
         self.build['playerDesc'] = self.charDescText.get("1.0", END)
 
-    def updateWindowSize(self):
-        self.windowWidth = self.window.winfo_width()
-        self.windowActiveHeight = self.window.winfo_height()
-        self.windowXCache = self.window.winfo_x()
-        self.windowYCache = self.window.winfo_y()
 
     def updateImageLabelSize(self, frame=None, source=''):
-        self.logWriteSimple('ImageLabel', 'size', 3, ['{}x{}'.format(self.imageBoxX, self.imageBoxY), source])
+        self.logWriteSimple('ImageLabel', 'size', 5, ['{}x{}'.format(self.imageBoxX, self.imageBoxY), source])
 
     def setShipImage(self, suppliedImage=None):
         if suppliedImage is None: suppliedImage = self.getEmptyFactionImage()
@@ -4146,6 +4149,7 @@ class SETS():
         settingsMaintenance = {
             'Maintenance (auto-saved):'             : { 'col' : 1, 'type': 'title'},
             'Open Log'                              : { 'col' : 2, 'type' : 'button', 'var_name' : 'openLog' },
+            'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
             'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'var_name' : 'forceJsonLoad', 'boolean' : True},
             'Disabled precache at startup'          : { 'col' : 2, 'type' : 'menu', 'var_name' : 'noPreCache', 'boolean' : True},
@@ -4153,8 +4157,9 @@ class SETS():
             'blank2'                                : { 'col' : 1, 'type' : 'blank' },
             'Create SETS manual settings file': { 'col' : 2, 'type' : 'button', 'var_name' : 'exportConfigFile' },
             'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'var_name' : 'backupCache' },
+            'blank3': {'col': 1, 'type': 'blank'},
             'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearcache' },
-            'blank3'                                : { 'col' : 1, 'type' : 'blank' },
+            'blank4'                                : { 'col' : 1, 'type' : 'blank' },
             'Check for new faction icons (Slow)'    : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearfactionImages' },
             'Reset memory cache (Slow)'             : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearmemcache' },
             'Clear image cache (VERY SLOW!)'        : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearimages' },
@@ -4412,7 +4417,7 @@ class SETS():
         else:
             return
 
-        self.updateWindowSize()
+        self.updateWindowSize(caller=type)
 
     def resetBuildFrames(self, types=None):
         if types is None:
@@ -4435,7 +4440,7 @@ class SETS():
         self.logoFrame.pack(fill=X)
         self.menuFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'])
         self.menuFrame.pack(fill=X, padx=15)
-        self.verticalFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'], height=self.windowActiveHeightDefault)
+        self.verticalFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'], height=self.windowActiveHeight)
         self.verticalFrame.pack(fill='none', side='left')  # Minimum height frame
         self.spaceBuildFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
         self.groundBuildFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
@@ -4769,19 +4774,87 @@ class SETS():
         # Check that it's not off-screen?
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
-        if self.windowWidthDefault + self.windowX > screen_width:
-            self.windowX = 0
-        if self.windowHeightDefault + self.windowY > screen_height:
-            self.windowY = 0
+        if self.windowWidth + self.window_topleft_x > screen_width:
+            self.window_topleft_x = 0
+        if self.windowHeight + self.window_topleft_y > screen_height:
+            self.window_topleft_y = 0
 
         if not default and 'geometry' in self.persistent and self.persistent['geometry']:
                 self.window.geometry(self.persistent['geometry'])
         else:
-                self.window.geometry("{}x{}+{}+{}".format(self.windowWidthDefault, self.windowHeightDefault, self.windowX, self.windowY))
+                self.window.geometry("{}x{}+{}+{}".format(self.windowWidth, self.windowHeight, self.window_topleft_x, self.window_topleft_y))
+
+    def initSplashWindow(self):
+        self.splashWindow = None
+        self.images['splash_image'] = self.loadLocalImage('sets_loading.PNG', width=self.splashBoxX, height=self.splashBoxY)
+        self.splash_image_w = self.images['splash_image'].width()
+        self.splash_image_h = self.images['splash_image'].height()
+
+    def makeSplashWindow(self, close=False):
+        if self.splashWindow is not None:
+            try:
+                self.splashWindow.focus_set()
+            except:
+                self.splashWindow = None
+
+        if not close:
+            self.requestWindowUpdateHold(0)
+        if self.splashWindow is None:
+            self.splashWindow = self.makeSubWindow('Sets ({})'.format(self.version), 'splash', close=close)
+
+
+    def removeSplashWindow(self):
+        if self.splashWindow is not None:
+            self.splashWindow.destroy()
+            
+
+    def updateWindowSize(self, caller='', init=False):
+        if init:
+            self.itemBoxX = 32  # 25
+            self.itemBoxY = 42  # 33
+            self.window_topleft_x = self.window_topleft_x_default = 100  # Window top left corner
+            self.window_topleft_y = self.window_topleft_y_default = 100
+
+            self.windowBarHeight = 34
+            self.logoHeight = 134
+            self.otherHeight = 13  # button bar, anything else?
+            self.windowWidth = self.windowWidthDefault = 1920
+            self.windowHeight = self.windowHeightDefault = 840
+        else:
+            previous_width = self.windowWidth
+            previous_height = self.windowHeight
+            previous_active_height = self.windowActiveHeight
+            previous_x = self.window_topleft_x
+            previous_y = self.window_topleft_y
+            self.windowWidth = self.window.winfo_width()
+            self.windowHeight = self.window.winfo_height()
+            self.window_topleft_x = self.window.winfo_x()
+            self.window_topleft_y = self.window.winfo_y()
+
+        self.windowActiveHeight = self.windowHeight - (self.windowBarHeight + self.logoHeight + self.otherHeight)
+        self.window_outside_frame_minimum = int((self.windowWidth - 100) / 5)
+        self.imageBoxX = self.window_outside_frame_minimum
+        self.imageBoxY = int(self.window_outside_frame_minimum * 7 / 10)
+
+        self.splashBoxX = self.windowWidth * 2 / 3
+        self.splashBoxY = self.windowActiveHeight * 2 / 3
+
+        if init:
+            return
+
+        if previous_width != self.windowWidth or \
+                previous_height != self.windowHeight or \
+                previous_active_height != self.windowActiveHeight or \
+                previous_x != self.window_topleft_x or \
+                previous_y != self.window_topleft_y:
+             self.logWriteSimple('***WINDOW CHANGE', '{}x{}'.format(self.windowWidth, self.windowHeight), 2,
+                        [self.windowActiveHeight, self.window_topleft_x, self.window_topleft_y, caller])
 
     def __init__(self) -> None:
         """Main setup function"""
+        self.updateWindowSize(caller='init0', init=True)
         self.window = Tk()
+        self.session = HTMLSession()
 
         # Debug, CLI args, and config file loading
         self.initSettings()
@@ -4796,18 +4869,17 @@ class SETS():
         self.setupGeometry()
         self.windowUpdate = dict()
 
-        self.requestWindowUpdateHold(0)
-        self.updateWindowSize()
-        self.session = HTMLSession()
-
         self.clearBuild()
         self.resetCache()
         self.resetBackend()
         self.images = dict()
         self.setupEmptyImages()
-        self.precacheDownloads()
 
+        self.initSplashWindow()
+        self.makeSplashWindow()
+        self.precacheDownloads()
         self.setupUIFrames()
+        self.removeSplashWindow()
 
     def run(self):
         self.window.mainloop()
