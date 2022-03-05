@@ -593,7 +593,6 @@ class SETS():
         if not name in self.cache['equipment'][keyPhrase]:
             self.cache['equipment'][keyPhrase][name] = item
             self.cache['equipmentWithImages'][keyPhrase].append((name, self.imageFromInfoboxName(name)))
-            self.logWriteSimple('equipmentWithImages', '', 2, tags=[name])
 
 
     def precacheEquipment(self, keyPhrase):
@@ -943,6 +942,22 @@ class SETS():
             }
         }
 
+
+    def resetInternals(self):
+        self.fileDebug = '.debug'
+        self.debugDefault = 1 if os.path.exists(self.fileDebug) else 0
+
+        # log and logmini are the bottom text, logFull provides a history
+        self.log = StringVar()
+        self.logmini = StringVar()
+        self.logFull = StringVar()
+
+        self.perf_store = dict()
+        self.windowUpdate = dict()
+        self.tooltip_tracking = dict()
+        self.images = dict()
+
+
     def resetSettings(self):
         # self.settings are optionally loaded from config, but manually edited or saved
         self.settings = {
@@ -961,7 +976,7 @@ class SETS():
             }
         }
 
-    def clearBuild(self):
+    def resetBuild(self):
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
         self.versionJSONminimum = 0
@@ -1050,7 +1065,6 @@ class SETS():
 
     def resetBackend(self, rebuild=False):
         self.logWriteBreak('clearBackend')
-        self.updateImageLabelSize(source='clearBackend')
         self.backend = {
                 'images': dict(),
                 'captain': {'faction' : StringVar(self.window)},
@@ -1073,7 +1087,6 @@ class SETS():
                 'skillCount': { 'space': 0, 'ground': 0 },
                 'tags': dict()
             }
-        self.persistentToBackend()
         if rebuild: self.buildToBackendSeries()
         self.hookBackend()
 
@@ -1953,11 +1966,10 @@ class SETS():
         self.copyBuildToBackend('ship')
         self.copyBuildToBackend('tier')
         self.copyBuildToBackendBoolean('eliteCaptain')
-        self.persistentToBackend()
 
     def clearBuildCallback(self, event=None):
         """Callback for the clear build button"""
-        self.clearBuild()
+        self.resetBuild()
         self.clearing = 1
         self.buildToBackendSeries()
         self.skillCount('space')
@@ -2047,8 +2059,6 @@ class SETS():
 
     def focusFrameCallback(self, type='space', init=False):
         if type is None: type = 'space'
-        if type == 'ground' or type == 'space':
-            self.updateImageLabelSize(source='focus'+type.title()+'BuildFrameCallback')
 
         if type == 'ground': self.currentFrameUpdateTo(self.groundBuildFrame)
         elif type == 'skill': self.currentFrameUpdateTo(self.skillTreeFrame)
@@ -3775,9 +3785,6 @@ class SETS():
         self.build['playerDesc'] = self.charDescText.get("1.0", END)
 
 
-    def updateImageLabelSize(self, frame=None, source=''):
-        self.logWriteSimple('ImageLabel', 'size', 5, ['{}x{}'.format(self.imageBoxX, self.imageBoxY), source])
-
     def setShipImage(self, suppliedImage=None):
         if suppliedImage is None: suppliedImage = self.getEmptyFactionImage()
         if suppliedImage == self.getEmptyFactionImage(): bgColor = '#3a3a3a'
@@ -4394,14 +4401,12 @@ class SETS():
         self.libraryFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
         self.settingsFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
 
-        #self.spaceBuildFrame.pack(fill=BOTH, expand=True, padx=15)
         self.focusFrameCallback(type=self.args.startuptab, init=True)
 
         self.setupFooterFrame()
         self.setupLogoFrame()
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
-        #self.currentFrameUpdateTo(self.spaceBuildFrame, first=True)
         self.precachePreload(limited=(self.args.nocache or self.persistent['noPreCache']))
 
         self.setupLibraryFrame()
@@ -4413,7 +4418,6 @@ class SETS():
             self.setupCurrentBuildFrames()
             self.resetBuildFrames()
 
-        self.updateImageLabelSize(source='setupUIFrames')
         self.containerFrame.pack_propagate(False)
         #if self.args.startuptab is not None: self.focusFrameCallback(self.args.startuptab)
 
@@ -4576,7 +4580,7 @@ class SETS():
         else:
             self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, 0)
 
-    def stateFileLoad(self):
+    def stateFileLoad(self, init=False):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
         configFile = self.stateFileLocation()
         if not os.path.exists(configFile):
@@ -4596,6 +4600,9 @@ class SETS():
                 self.logWriteTransaction('State File', 'loaded', '', configFile, 0, [logNote])
         else:
             self.logWriteTransaction('State File', 'not found', '', configFile, 1)
+
+        if init:
+            self.stateSave()
 
     def skillFileLoad(self):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
@@ -4618,9 +4625,6 @@ class SETS():
         else:
             self.logWriteTransaction('State File', 'not found', '', configFile, 1)
 
-    def persistentToBackend(self):
-        # Nothing yet
-        return
 
     def stateSave(self, quiet=False):
         configFile = self.stateFileLocation()
@@ -4662,23 +4666,20 @@ class SETS():
             self.logWriteTransaction('Template File', 'not found', '', configFile, 0)
         return False
 
-    def initSettings(self):
+    def init_settings(self):
         """Initialize session settings state"""
-        self.fileDebug = '.debug'
-        self.debugDefault = 1 if os.path.exists(self.fileDebug) else 0
-
-        # log and logmini are the bottom text, logFull provides a history
-        self.log = StringVar()
-        self.logmini = StringVar()
-        self.logFull = StringVar()
-
-        self.tooltip_tracking = dict()
-
-        self.resetPersistent()
+        self.session = HTMLSession()
+        self.resetInternals()
         self.resetSettings()
 
         self.logWriteBreak("logStart")
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
+
+        self.resetPersistent()
+        self.resetBuild()
+        self.resetCache()
+        self.resetBackend()
+
 
     def exportSettings(self):
         try:
@@ -4716,6 +4717,7 @@ class SETS():
         #r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
         #self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
 
+
     def setupGeometry(self, default=False):
         # Check that it's not off-screen?
         screen_width = self.window.winfo_screenwidth()
@@ -4730,20 +4732,24 @@ class SETS():
         else:
                 self.window.geometry("{}x{}+{}+{}".format(self.windowWidth, self.windowHeight, self.window_topleft_x, self.window_topleft_y))
 
+
     def perf(self, name, type='start'):
         now = datetime.datetime.now()
+        if not name in self.perf_store:
+            self.perf_store[name] = dict()
+
         if not name in self.persistent['perf']:
             self.persistent['perf'][name] = dict()
 
-        self.persistent['perf'][name][type] = now
+        self.perf_store[name][type] = now
 
         if type == 'stop':
-            if not 'start' in self.persistent['perf'][name]:
-                self.persistent['perf'][name]['start'] = now
-
-            start = self.persistent['perf'][name]['start']
+            if not 'start' in self.perf_store[name]:
+                self.perf_store[name]['start'] = now
+            start = self.perf_store[name]['start']
             run = now - start
-            self.persistent['perf'][name]['run'] = run
+            self.persistent['perf'][name]['run'] = '{}'.format(run)
+
             self.logWriteSimple('=== Splash', type, 2, [now, run])
             return run
         else:
@@ -4753,9 +4759,11 @@ class SETS():
 
     def initSplashWindow(self):
         self.splashWindow = None
+        self.splashProgressBar = None
         self.images['splash_image'] = self.loadLocalImage('sets_loading.PNG', width=self.splashBoxX, height=self.splashBoxY)
         self.splash_image_w = self.images['splash_image'].width()
         self.splash_image_h = self.images['splash_image'].height()
+
 
     def makeSplashWindow(self, close=False):
         if self.splashWindow is not None:
@@ -4780,20 +4788,19 @@ class SETS():
             self.splashWindow.destroy()
             self.perf('splash', 'stop')
             self.splashWindow = None
+            self.splashProgressBar = None
 
 
     def progressBarUpdate(self, weight=1):
         # weight denotes how much progress that item is
-        try:
-            self.splashProgressBarUpdates += weight
-            self.splashProgressBar.step()
-            # modulo to reduce time / flashing UI spent on updating
-            # if 1 or self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
-            self.requestWindowUpdate('footerProgressBar')
-        except:
-            # Can have no footer yet in some early states
-            pass
+        if self.splashProgressBar is None:
+            return
 
+        self.splashProgressBarUpdates += weight
+        self.splashProgressBar.step()
+        # modulo to reduce time / flashing UI spent on updating
+        # if 1 or self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
+        self.requestWindowUpdate('footerProgressBar')
 
     def setupUIScaling(self,event=None):
         scale = float(self.persistent['uiScale']) if 'uiScale' in self.persistent else 1.0
@@ -4842,6 +4849,7 @@ class SETS():
         self.splashBoxY = self.windowActiveHeight * 2 / 3
 
         self.setupUIScaling()
+        self.setupGeometry()
 
         if init:
             return
@@ -4854,33 +4862,25 @@ class SETS():
              self.logWriteSimple('***WINDOW CHANGE', '{}x{}'.format(self.windowWidth, self.windowHeight), 2,
                         [self.windowActiveHeight, self.window_topleft_x, self.window_topleft_y, caller])
 
-    def __init__(self) -> None:
-        """Main setup function"""
+    def init_window(self):
         self.window = Tk()
-        self.session = HTMLSession()
-
-        # Debug, CLI args, and config file loading
-        self.initSettings()
-        self.argParserSetup()
-        self.stateFileLoad()
-        self.stateSave()
-        self.configFileLoad()
-
-        self.updateWindowSize(caller='init0', init=True)
-        self.precache_theme_fonts()
         self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
         self.window.title("STO Equipment and Trait Selector")
-        self.setupGeometry()
-        self.windowUpdate = dict()
 
-        self.clearBuild()
-        self.resetCache()
-        self.resetBackend()
-        self.images = dict()
-        self.setupEmptyImages()
+    def __init__(self) -> None:
+        """Main setup function"""
+        self.init_window()
+        self.init_settings()
 
+        self.argParserSetup()  # First for location overrides
+        self.stateFileLoad(init=True)
+        self.configFileLoad()  # Third to override persistent
+        self.precache_theme_fonts()  # Fourth in case of new theme from configs
+        self.updateWindowSize(init=True)
         self.initSplashWindow()
+
         self.makeSplashWindow()
+        self.setupEmptyImages()
         self.precacheDownloads()
         self.setupUIFrames()
         self.removeSplashWindow()
