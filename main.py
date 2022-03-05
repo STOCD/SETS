@@ -89,6 +89,10 @@ class SETS():
             'bg': '#b3b3b3',  # self.theme['label']['bg']
             'fg': '#3a3a3a',  # self.theme['label']['fg']
         },
+        'space': {
+            'bg': '#000000',  # self.theme['label']['bg']
+            'fg': '#3a3a3a',  # self.theme['label']['fg']
+        },
         'title1': {
             'font': {  # self.theme['title1']['font_object']
                 'size': 14,
@@ -909,7 +913,7 @@ class SETS():
             'noPreCache': 0,
             'uiScale': 1,
             'geometry': '',
-            'tooltipDelay': 5,
+            'tooltipDelay': 2,
             'imagesFactionAliases': dict(),
             'imagesFail': dict(),
             'markDefault': '',
@@ -1382,7 +1386,9 @@ class SETS():
         additional = [self.setupSearchFrame]
         if extra_frames:
             additional += extra_frames
+        self.tooltip_tracking['X'] = True
         item = self.pickerGui(title, item_var, items_list, additional)
+        self.tooltip_tracking['X'] = False
         if 'item' in item and len(item['item']):
             name = item['item']
             if name == 'X':  # Clear slot
@@ -2040,22 +2046,8 @@ class SETS():
 
 
     def currentFrameUpdateTo(self, frame=None, first=False):
-        try:
-            preHeight = self.currentFrame.winfo_height()
-            preWidth = self.currentFrame.winfo_width()
-        except:
-            preHeight = 0
-            preWidth = 0
         self.currentFrame = frame
-        postHeight = self.currentFrame.winfo_height()
-        postWidth = self.currentFrame.winfo_width()
 
-        self.framePriorheight = postHeight if first else preHeight
-        self.framePriorwidth = postWidth if first else preWidth
-
-        logNote1 = 'Height Change: {:>4}->{:>4}'.format(preHeight, postHeight) if postHeight != preHeight else ''
-        logNote2 = 'Width Change: {:>4}->{:>4}'.format(preWidth, postWidth) if postWidth != preWidth else ''
-        if logNote1 or logNote2: self.logWrite('FRAME {:>26}{:>26}'.format(logNote1, logNote2), 3)
 
     def focusFrameCallback(self, type='space', init=False):
         if type is None: type = 'space'
@@ -2166,7 +2158,7 @@ class SETS():
 
         lFrame = Frame(cFrame, bg=self.theme['frame']['bg'])
         lFrame.pack(fill=BOTH, expand=True)
-        label =  Label(lFrame, text=name, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=self.font_tuple_create('text_small'))
+        label =  Label(lFrame, text=name, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'])
         label.pack(side='left')
         iFrame = Frame(cFrame, bg=self.theme['frame']['bg'])
         iFrame.pack(fill=BOTH, expand=True)
@@ -2766,7 +2758,8 @@ class SETS():
 
     def setupInfoboxFrameMaster(self, ui_key, item, key, environment, tooltip):
         """Actually draw the tooltip if ui_key is None or still true"""
-        if 'hold' in self.tooltip_tracking and self.tooltip_tracking['hold']:
+        if ('X' in self.tooltip_tracking and self.tooltip_tracking['X']) or\
+                ('hold' in self.tooltip_tracking and self.tooltip_tracking['hold']):
                 # Would it be good to re-initiate a .after call?
                 return
         if ui_key is None or (ui_key in self.tooltip_tracking and self.tooltip_tracking[ui_key]):
@@ -3787,31 +3780,24 @@ class SETS():
 
     def setShipImage(self, suppliedImage=None):
         if suppliedImage is None: suppliedImage = self.getEmptyFactionImage()
-        if suppliedImage == self.getEmptyFactionImage(): bgColor = '#3a3a3a'
-        else: bgColor = '#000000'
+        if suppliedImage == self.getEmptyFactionImage(): bgColor = self.theme['button']['bg']
+        else: bgColor = self.theme['space']['bg']
 
-        if 1:
-            self.shipImageLabel.configure(image=suppliedImage, bg=bgColor)
-        else:
-            # future canvas conversion
-            image1 = self.imageFromInfoboxName('Epic') if 'tier' in self.build and self.build['tier'] == "T6-X" else self.emptyImage
-            self.shipImagecanvas.itemconfig(self.shipImage0,image=suppliedImage)
-            self.shipImagecanvas.itemconfig(self.shipImage1,image=image1)
-            self.shipImagecanvas.configure(bg=bgColor, highlightthickness=0)
+        image1 = self.imageFromInfoboxName('Epic') if 'tier' in self.build and self.build['tier'] == "T6-X" else self.emptyImage
+
+        self.ship_image_canvas.itemconfig(self.ship_image,image=suppliedImage)
+        self.ship_image_canvas.configure(bg=bgColor)
 
     def setCharImage(self, suppliedImage=None):
         if suppliedImage is None: suppliedImage = self.getEmptyFactionImage()
-        if suppliedImage == self.getEmptyFactionImage(): bgColor = '#3a3a3a'
-        else: bgColor = '#000000'
+        if suppliedImage == self.getEmptyFactionImage(): bgColor = self.theme['button']['bg']
+        else: bgColor = self.theme['space']['bg']
 
-        if 1:
-            self.charImageLabel.configure(image=suppliedImage, bg=bgColor)
-        else:
-            # future canvas conversion
-            image1 = self.imageFromInfoboxName('Epic') if 'eliteCaptain' in self.build and self.build['eliteCaptain'] else self.emptyImage
-            self.charImagecanvas.itemconfig(self.charImage0,image=suppliedImage)
-            self.charImagecanvas.itemconfig(self.charImage0,image=image1)
-            self.charImagecanvas.configure(bg=bgColor, highlightthickness=0)
+        self.ground_image_canvas.itemconfig(self.ground_image,image=suppliedImage)
+        self.ground_image_canvas.configure(bg=bgColor)
+
+        self.skill_image_canvas.itemconfig(self.skill_image,image=suppliedImage)
+        self.skill_image_canvas.configure(bg=bgColor)
 
     def setupInfoFrame(self, environment='space'):
         if environment == 'ground': parentFrame = self.groundInfoFrame
@@ -3823,27 +3809,19 @@ class SETS():
         LabelFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         LabelFrame.pack(fill=X, expand=False, anchor="n", side=TOP)
 
-        imageLabel = Label(LabelFrame, fg=self.theme['button']['fg'], bg=self.theme['button']['bg'], borderwidth=0, highlightbackground='black', highlightthickness=3, padx=0, pady=0)
-        imageLabel.configure(image=self.getEmptyFactionImage())
-        """  #canvas conversion tests
-        imageLabel = Canvas(LabelFrame, borderwidth=0, bg=self.theme['button']['bg'], highlightthickness=0, padx=0, pady=0)
-        img0 = imageLabel.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.getEmptyFactionImage())
-        img1 = imageLabel.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.emptyImage)
+        imageLabel = Canvas(LabelFrame, bg=self.theme['button']['bg'], borderwidth=0, highlightbackground='black', highlightthickness=3)
+        img0 = imageLabel.create_image(self.imageBoxX / 2, self.imageBoxY / 2, anchor="center", image=self.getEmptyFactionImage())
+        #img1 = imageLabel.create_image(imageBoxX / 2, imageBoxY / 2, anchor="center", image=self.emptyImage)
         if environment == 'ground':
-            self.charImagecanvas = imageLabel
-            self.charImage0 = img0
-            self.charImage1 = img1
-        else:
-            self.shipImagecanvas = imageLabel
-            self.shipImage0 = img0
-            self.shipImage1 = img1
-        """
-        if environment == 'ground':
-            self.charImageLabel = imageLabel
+            self.ground_image_canvas = imageLabel
+            self.ground_image = img0
         elif environment == 'skill':
-            self.skillImageLabel = imageLabel
+            self.skill_image_canvas = imageLabel
+            self.skill_image = img0
         else:
-            self.shipImageLabel = imageLabel
+            self.ship_image_canvas = imageLabel
+            self.ship_image = img0
+
         imageLabel.grid(row=0, column=0, sticky='nsew')
         LabelFrame.grid_columnconfigure(0, weight=0, minsize=self.imageBoxX)
         LabelFrame.grid_rowconfigure(0, weight=0, minsize=self.imageBoxY)
@@ -4358,7 +4336,7 @@ class SETS():
         self.windowUpdate['updates'] += 1
 
         # runaway check
-        if self.windowUpdate['updates'] % 100 == 0:
+        if self.windowUpdate['updates'] % 500 == 0:
             self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 1)
 
         if type == 'force':
@@ -4419,7 +4397,6 @@ class SETS():
             self.resetBuildFrames()
 
         self.containerFrame.pack_propagate(False)
-        #if self.args.startuptab is not None: self.focusFrameCallback(self.args.startuptab)
 
     def argParserSetup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
