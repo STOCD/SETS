@@ -3886,7 +3886,7 @@ class SETS():
                 self.shipTierFrame.grid(column=1, row=row, columnspan=1, sticky='e')
                 row += 1
                 labelFrame = Label(NameFrame, text="Ship: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
-                labelFrame.grid(column=0, row = row, sticky='w')
+                labelFrame.grid(column=0, row = row, sticky='w', pady=(1,0))
                 self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg=self.theme['frame_medium']['bg'], wraplength=270)
                 self.shipButton.grid(column=1, row=row, sticky='nwse')
                 row += 1
