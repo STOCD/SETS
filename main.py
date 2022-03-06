@@ -1108,8 +1108,13 @@ class SETS():
         self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
         self.backend['specSecondary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specSecondary'))
         self.backend['tier'].trace_add('write', lambda v,i,m:self.setupCurrentBuildFrames('space'))
-        self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.setupCurrentBuildFrames())
+        self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.clean_backend_elitecaptain())
         self.backend['ship'].trace_add('write', self.shipMenuCallback)
+
+
+    def clean_backend_elitecaptain(self):
+        pass
+
 
     def captainFactionCallback(self):
         self.copyBackendToBuild('captain', 'faction')
@@ -2050,8 +2055,9 @@ class SETS():
     def tagBoxCallback(self, var, text):
         self.build['tags'][text] = var.get()
 
-    def eliteCaptainCallback(self):
+    def eliteCaptainCallback(self, event=None):
         self.build['eliteCaptain'] = bool(self.backend['eliteCaptain'].get())
+        self.setupCurrentBuildFrames()
 
     def markBoxCallback(self, itemVar, value):
         itemVar['mark'] = value
@@ -2358,13 +2364,13 @@ class SETS():
         parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
-        self.labelBuildBlock(parentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 6 if self.backend['eliteCaptain'].get() else 5, self.itemLabelCallback, ["Kit Module", "Pick Module", "", 'ground'])
+        self.labelBuildBlock(parentFrame, "Kit Modules", 0, 0, 5, 'groundKitModules', 6 if self.build['eliteCaptain'] else 5, self.itemLabelCallback, ["Kit Module", "Pick Module", "", 'ground'])
         self.labelBuildBlock(parentFrame, "Kit Frame", 0, 5, 1, 'groundKit', 1, self.itemLabelCallback, ["Kit Frame", "Pick Kit", "", 'ground'])
         self.labelBuildBlock(parentFrame, "Armor", 1, 0, 1, 'groundArmor', 1, self.itemLabelCallback, ["Body Armor", "Pick Armor", "", 'ground'])
         self.labelBuildBlock(parentFrame, "EV Suit", 1, 1, 1, 'groundEV', 1, self.itemLabelCallback, ["EV Suit", "Pick EV Suit", "", 'ground'])
         self.labelBuildBlock(parentFrame, "Shield", 2, 0, 1, 'groundShield', 1, self.itemLabelCallback, ["Personal Shield", "Pick Shield (G)", "", 'ground'])
         self.labelBuildBlock(parentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", "", 'ground'])
-        self.labelBuildBlock(parentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.backend['eliteCaptain'].get() else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
+        self.labelBuildBlock(parentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.build['eliteCaptain'] else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
 
     def skillGetGroundNode(self, rank, row, col, type='name'):
         if 'content' in self.cache['skills']:
@@ -2538,7 +2544,7 @@ class SETS():
         parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
-        traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
+        traitEliteCaptain = 1 if self.build['eliteCaptain'] else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
         self.labelBuildBlock(parentFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "space"])
         self.labelBuildBlock(parentFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.traitLabelCallback, [False, False, False, "space"], 1 if not traitAlien else 0)
@@ -2556,7 +2562,7 @@ class SETS():
         parentFrame = Frame(outerFrame, bg=self.theme['frame']['bg'])
         parentFrame.grid(row=0, column=0, sticky='', padx=1, pady=1)
 
-        traitEliteCaptain = 1 if self.backend['eliteCaptain'].get() else 0
+        traitEliteCaptain = 1 if self.build['eliteCaptain'] else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
         self.labelBuildBlock(parentFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.traitLabelCallback, [False, False, False, "ground"])
         self.labelBuildBlock(parentFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.traitLabelCallback, [False, False, False, "ground"], 1 if not traitAlien else 0)
@@ -3934,50 +3940,23 @@ class SETS():
         self.precacheFactions()
         self.precacheReputations()
         row = 0
-        Label(charInfoFrame, text="Elite Captain", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(column=1, row = row, sticky='e')
+
+        Label(charInfoFrame, text="Elite Captain", fg=self.theme['label']['fg'], bg=self.theme['label']['bg']).grid(column=0, row = row, sticky='e')
         m = Checkbutton(charInfoFrame, variable=self.backend["eliteCaptain"], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], command=self.eliteCaptainCallback)
-        m.grid(column=2, row=row, sticky='w', pady=2, padx=2)
+        m.grid(column=1, row=row, sticky='w', pady=2, padx=2)
         m.configure(fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], borderwidth=0, highlightthickness=0)
         row += 1
-        """
+
         captainSettingsDefaults = {
+            'default': {'store': 'backend', 'sticky': 'nsew'},
+            # 'Elite Captain': {'col': 2, 'type': 'menu', 'var_name': 'eliteCaptain', 'boolean': True, 'callback': self.eliteCaptainCallback},
             'Captain Career': {'col': 2, 'type': 'menu', 'var_name': 'career', 'setting_options': ['', 'Tactical', 'Engineering', 'Science']},
-            'Faction': {'col': 2, 'type': 'menu', 'var_name': 'captain', 'varSubName': 'faction', 'setting_options': self.factionNames},
+            'Faction': {'col': 2, 'type': 'menu', 'var_name': 'captain', 'var_sub_name': 'faction', 'setting_options': self.factionNames},
             'Species': {'col': 2, 'type': 'menu', 'var_name': 'species', 'setting_options': self.speciesNames['all']},
             'Primary Spec': {'col': 2, 'type': 'menu', 'var_name': 'specPrimary', 'setting_options': sorted(self.cache['specsPrimary'])},
             'Secondary Spec': {'col': 2, 'type': 'menu', 'var_name': 'specSecondary', 'setting_options': sorted(self.cache['specsSecondary'])},
         }
-        self.createItemBlock(charInfoFrame, theme=captainSettingsDefaults, row=row, store='backend')
-        """
-        Label(charInfoFrame, text="Captain Career", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["career"], "", "Tactical", "Engineering", "Science")
-        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
-
-        row += 1
-        myFactionNames = self.factionNames
-        Label(charInfoFrame, text="Faction", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend['captain']['faction'], *myFactionNames)
-        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
-
-        row += 1
-        Label(charInfoFrame, text="Species", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["species"], *self.speciesNames['all'])
-        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
-
-        row += 1
-        Label(charInfoFrame, text="Primary Spec", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specPrimary"], '', *sorted(self.cache['specsPrimary']))
-        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
-
-        row += 1
-        Label(charInfoFrame, text="Secondary Spec", fg=self.theme['frame_medium']['fg'], bg=self.theme['frame_medium']['bg']).grid(column=0, row = row, sticky='e')
-        m = OptionMenu(charInfoFrame, self.backend["specSecondary"], '', *sorted(self.cache['specsSecondary']))
-        m.grid(column=1, row=row, columnspan=3,  sticky='swe', pady=2, padx=2)
-        m.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0)
+        self.create_item_block(charInfoFrame, theme=captainSettingsDefaults, row=row)
 
         charInfoFrame.grid_columnconfigure(1, weight=1, uniform="captColSpace")
 
@@ -4314,16 +4293,16 @@ class SETS():
         self.create_item_block(settingsTopMiddleRightFrame, theme=settingsTheme)
 
         settingsMaintenance = {
-            'Maintenance (auto-saved):'             : { 'col' : 1, 'type': 'title'},
-            'Open Log'                              : { 'col' : 2, 'type' : 'button', 'var_name' : 'openLog' },
+            'Maintenance (auto-saved):'             : {'col': 1, 'type': 'title'},
+            'Open Log'                              : {'col': 2, 'type': 'button', 'var_name': 'openLog'},
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
-            'blank1'                                : { 'col' : 1, 'type' : 'blank' },
-            'Force out of date JSON loading'        : { 'col' : 2, 'type' : 'menu', 'var_name' : 'forceJsonLoad', 'boolean' : True},
-            'Disabled precache at startup'          : { 'col' : 2, 'type' : 'menu', 'var_name' : 'noPreCache', 'boolean' : True},
-            'Use faction-specific icons (experimental)' : { 'col' : 2, 'type' : 'menu', 'var_name' : 'useFactionSpecificIcons', 'boolean' : True },
-            'blank2'                                : { 'col' : 1, 'type' : 'blank' },
-            'Create SETS manual settings file': { 'col' : 2, 'type' : 'button', 'var_name' : 'exportConfigFile' },
-            'Backup current caches/settings'        : { 'col' : 2, 'type' : 'button', 'var_name' : 'backupCache' },
+            'blank1'                                : {'col': 1, 'type': 'blank'},
+            'Force out of date JSON loading'        : {'col': 2, 'type': 'menu', 'var_name': 'forceJsonLoad', 'boolean': True},
+            'Disabled precache at startup'          : {'col': 2, 'type': 'menu', 'var_name': 'noPreCache', 'boolean': True},
+            'Use faction-specific icons (experimental)': {'col': 2, 'type': 'menu', 'var_name': 'useFactionSpecificIcons', 'boolean': True},
+            'blank2'                                : {'col': 1, 'type': 'blank'},
+            'Create SETS manual settings file': {'col' : 2, 'type': 'button', 'var_name': 'exportConfigFile'},
+            'Backup current caches/settings'        : {'col': 2, 'type': 'button', 'var_name': 'backupCache'},
             'blank3': {'col': 1, 'type': 'blank'},
             'Clear data cache folder (Fast)'        : { 'col' : 2, 'type' : 'button', 'var_name' : 'clearcache' },
             'blank4'                                : { 'col' : 1, 'type' : 'blank' },
@@ -4375,9 +4354,16 @@ class SETS():
         return default
 
 
-    def create_item_set_var(self, data, var_name, store='persistent', boolean=False):
-        if store == 'build' and var_name in self.build:
-            self.build[var_name].set(data)
+    def create_item_set_var(self, data, var_name, var_sub_name=None, store='persistent', boolean=False):
+        self.logWriteSimple('create_item_set_var', '', 2, [data, var_name, var_sub_name, store, boolean])
+        if store == 'backend':
+            data = True if data else False
+            if var_name in self.backend:
+                if var_sub_name is not None:
+                    if var_sub_name in self.backend[var_name]:
+                        self.backend[var_name][var_sub_name].set(data)
+                else:
+                    self.backend[var_name].set(data)
         else:
             self.persistentSet(data, var_name=var_name, isBoolean=boolean)
 
@@ -4401,6 +4387,7 @@ class SETS():
             'col': 1,
             'type': 'blank',
             'var_name': None,
+            'var_sub_name': None,
             'setting_options': self.yesNo,
             'boolean': False,
             'callback': None,
@@ -4435,7 +4422,7 @@ class SETS():
                 if is_button:
                     item_theme['callback'] = lambda var_name=item_theme['var_name']: self.settingsButtonCallback(type=var_name)
                 elif item_theme['type'] == 'menu' or item_theme['type'] == 'scale':
-                    item_theme['callback'] = lambda choice, var_name=item_theme['var_name'], isBoolean=item_theme['boolean'], store=item_theme['store']:self.create_item_set_var(choice, var_name=var_name, store=store, boolean=isBoolean)
+                    item_theme['callback'] = lambda choice, var_name=item_theme['var_name'], var_sub_name = item_theme['var_sub_name'], isBoolean=item_theme['boolean'], store=item_theme['store']:self.create_item_set_var(choice, var_name=var_name, var_sub_name=var_sub_name, store=store, boolean=isBoolean)
 
             row_current = (i * elements) + row if shape == 'col' else row
             col_start = (i * elements) + col if shape == 'row' else col
@@ -4450,11 +4437,22 @@ class SETS():
                 label.grid(row=row_current, column=col_start, columnspan=span_label, sticky=sticky_label, pady=item_theme['pad_y'], padx=item_theme['pad_x'])
 
             if item_theme['type'] == 'menu':
-                if item_theme['boolean']:
-                    setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback=False, boolean=True, boolean_options=['No', 'Yes'])
+                if item_theme['store'] == 'backend':
+                    if item_theme['var_sub_name']:
+                        setting_var = self.backend[item_theme['var_name']][item_theme['var_sub_name']]
+                    else:
+                        setting_var = self.backend[item_theme['var_name']]
+                    if item_theme['boolean']:
+                        current_as_boolean = bool(setting_var.get())
+                        if setting_var.get() != current_as_boolean:
+                            setting_var.set(current_as_boolean)
                 else:
-                    setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback='')
-                setting_var = StringVar(value=setting_data)
+                    if item_theme['boolean']:
+                        setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback=False, boolean=True, boolean_options=['No', 'Yes'])
+                    else:
+                        setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback='')
+
+                    setting_var = StringVar(value=setting_data)
                 option_frame = OptionMenu(parent_frame, setting_var, *item_theme['setting_options'], command=item_theme['callback'])
             elif item_theme['type'] == 'scale':
                 setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback=1.0)
