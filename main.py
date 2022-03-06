@@ -4339,32 +4339,60 @@ class SETS():
     def persistentSet(self, choice, var_name, isBoolean=False):
         if var_name is None or var_name == '':
             return
-        self.logWrite('==={} = {} [{}]'.format(var_name, choice, isBoolean), 3)
-        if isBoolean: self.persistent[var_name] = 1 if choice=='Yes' else 0
-        elif var_name == 'uiScale': self.persistent[var_name] = float(choice)
-        else: self.persistent[var_name] = choice
 
-        self.logWriteSimple("self.persistent", var_name, 2, [choice, self.persistent[var_name]])
+        self.logWriteSimple("self.persistent", '', 2,
+                            [var_name, '{}->{}'.format(self.persistent[var_name], choice, 'bool' if isBoolean else '')])
+
+        if isBoolean:
+            self.persistent[var_name] = True if choice and choice != 'No' else False
+        elif var_name == 'uiScale':
+            self.persistent[var_name] = float(choice)
+        else:
+            self.persistent[var_name] = choice
+
         self.stateSave()
 
         if var_name == 'consoleSort':
             # Need to hook the ship frame to take sub-frame updates
             pass
-        elif var_name == 'boffSort' or var_name == 'boffSort2': self.setupBoffFrame('space', self.backend['shipHtml'])
+        elif var_name == 'boffSort' or var_name == 'boffSort2':
+            self.setupBoffFrame('space', self.backend['shipHtml'])
         elif var_name == 'uiScale':
-            # Need to hook rescaling
+            self.updateWindowSize(caller='persistentSet-uiScale')
             pass
 
-    def create_item_block(self, parent_frame, theme=None, shape='col', elements=2, row=0, col=0, store='persistent'):
-        if theme is None or not len(theme): return
+
+    def create_item_get_var(self, var_name, store='persistent', fallback=None, boolean=False, boolean_options=None):
+        if store == 'build':
+            default = self.build[var_name].get() if var_name in self.build else fallback
+        else:
+            default = self.persistent[var_name] if var_name in self.persistent else fallback
+        if boolean:
+            if boolean_options is None:
+                default = True if default else False
+            else:
+                default = boolean_options[1] if default else boolean_options[0]
+        return default
+
+
+    def create_item_set_var(self, data, var_name, store='persistent', boolean=False):
+        if store == 'build' and var_name in self.build:
+            self.build[var_name].set(data)
+        else:
+            self.persistentSet(data, var_name=var_name, isBoolean=boolean)
+
+
+    def create_item_block(self, parent_frame, theme=None, shape='col', elements=2, row=0, col=0):
+        if theme is None or not len(theme):
+            return
 
         item_block_default = {
             'fg': self.theme['button']['fg'],
-            'labelfg': self.theme['label']['fg'],
+            'label_fg': self.theme['label']['fg'],
             'bg': self.theme['button']['bg'],
-            'labelbg': self.theme['label']['bg'],
-            'padx': 2,
-            'pady': 2,
+            'label_bg': self.theme['label']['bg'],
+            'pad_x': 2,
+            'pad_y': 2,
             'sticky': 'nw',
             'font_data': self.font_tuple_create('app'),
             'font_label': self.font_tuple_create('label'),
@@ -4376,82 +4404,79 @@ class SETS():
             'setting_options': self.yesNo,
             'boolean': False,
             'callback': None,
+            'store': 'persistent',
         }
-
         default = {**item_block_default, **theme['default']} if 'default' in theme else {**item_block_default}
 
         i = -1  # count of keys processed
         for title in theme.keys():
-            if title == 'default':
-                continue
-            i += 1
             item_theme = {**default, **theme[title]}
-            storage_dict = self.backend if store == 'backend' else self.persistent
+            if title == 'default' or \
+                    (item_theme['col'] > 1 and not item_theme['var_name']):
+                continue
 
+            i += 1
             is_button = True if item_theme['type'] == 'button' or item_theme['type'] == 'button_block' else False
-            use_label = True if item_theme['type'] == 'label' or item_theme['type'] == 'blank' or item_theme['type'] == 'title' or (not is_button and item_theme['col'] > 1) else False
-            col_option = 0 if is_button else 1
-            span_option = elements if is_button else 1
+            is_label = True if item_theme['type'] == 'label' or item_theme['type'] == 'blank' or item_theme['type'] == 'title' else False
+            create_label = True if is_label or (not is_button and item_theme['col'] > 1) else False
+
+            if item_theme['type'] == 'title':
+                item_theme['font_label'] = self.font_tuple_create('title1')
             if item_theme['type'] == 'button':
                 item_theme['sticky'] = theme[title]['sticky'] if 'sticky' in theme[title] else 'nwe'
             if item_theme['type'] == 'button_block':
                 item_theme['sticky'] = theme[title]['sticky'] if 'sticky' in theme[title] else 'nsew'
-                item_theme['padx'] = theme[title]['padx'] if 'padx' in theme[title] else 0
-                item_theme['pady'] = theme[title]['pady'] if 'pady' in theme[title] else 0
+                item_theme['pad_x'] = theme[title]['pad_x'] if 'pad_x' in theme[title] else 0
+                item_theme['pad_y'] = theme[title]['pad_y'] if 'pad_y' in theme[title] else 0
                 item_theme['row_weight'] = theme[title]['row_weight'] if 'row_weight' in theme[title] else 1
                 item_theme['col_weight'] = theme[title]['col_weight'] if 'col_weight' in theme[title] else 1
 
-            if item_theme['type'] == 'title':
-                item_theme['font_label'] = self.font_tuple_create('title1')
+            if item_theme['callback'] is None:
+                if is_button:
+                    item_theme['callback'] = lambda var_name=item_theme['var_name']: self.settingsButtonCallback(type=var_name)
+                elif item_theme['type'] == 'menu' or item_theme['type'] == 'scale':
+                    item_theme['callback'] = lambda choice, var_name=item_theme['var_name'], isBoolean=item_theme['boolean'], store=item_theme['store']:self.create_item_set_var(choice, var_name=var_name, store=store, boolean=isBoolean)
 
-            if item_theme['col'] > 1 and not item_theme['var_name']:
-                continue
+            row_current = (i * elements) + row if shape == 'col' else row
+            col_start = (i * elements) + col if shape == 'row' else col
 
-            row_current = (i * elements) if shape == 'col' else 0
-            row_current += row
-            col_start = (i * elements) if shape == 'row' else 0
-            col_start += col
-            self.logWriteSimple('create_item_block', title, 2, [row_current, col_start])
-            if use_label:
+            if create_label:
                 span_label = 1 + (elements - item_theme['col'])
                 sticky_label = 'ew' if span_label > 1 else 'e'
                 if item_theme['type'] == 'title':
                     sticky_label = 'n'
-                label = Label(parent_frame, text='' if item_theme['type'] == 'blank' else title, fg=item_theme['labelfg'], bg=item_theme['labelbg'], font=font.Font(font=item_theme['font_label']))
-                label.grid(row=row_current, column=col_start, columnspan=span_label, sticky=sticky_label, pady=item_theme['pady'], padx=item_theme['padx'])
+                label = Label(parent_frame, text='' if item_theme['type'] == 'blank' else title)
+                label.configure(fg=item_theme['label_fg'], bg=item_theme['label_bg'], font=font.Font(font=item_theme['font_label']))
+                label.grid(row=row_current, column=col_start, columnspan=span_label, sticky=sticky_label, pady=item_theme['pad_y'], padx=item_theme['pad_x'])
 
             if item_theme['type'] == 'menu':
                 if item_theme['boolean']:
-                    setting_var = StringVar(value='Yes' if storage_dict[item_theme['var_name']] else 'No')
+                    setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback=False, boolean=True, boolean_options=['No', 'Yes'])
                 else:
-                    setting_var = StringVar(value=storage_dict[item_theme['var_name']] if item_theme['var_name'] in storage_dict else '')
-
-                if item_theme['callback'] is None:
-                    item_theme['callback'] = lambda choice, var_name=item_theme['var_name'], isBoolean=item_theme['boolean']:self.persistentSet(choice, var_name=var_name, isBoolean=isBoolean)
+                    setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback='')
+                setting_var = StringVar(value=setting_data)
                 option_frame = OptionMenu(parent_frame, setting_var, *item_theme['setting_options'], command=item_theme['callback'])
             elif item_theme['type'] == 'scale':
-                setting_var = DoubleVar(value=storage_dict[item_theme['var_name']] if item_theme['var_name'] in storage_dict else 1.0)
-                if item_theme['callback'] is None:
-                    item_theme['callback'] = lambda choice, var_name=item_theme['var_name']:self.persistentSet(choice, var_name=var_name)
-                option_frame = Scale(parent_frame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=setting_var, command=item_theme['callback'])
+                setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback=1.0)
+                setting_var = DoubleVar(value=setting_data)
+                option_frame = Scale(parent_frame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=setting_var)
+                option_frame.configure(command=item_theme['callback'])
             elif is_button:
-                if item_theme['callback'] is None:
-                    item_theme['callback'] = lambda var_name=item_theme['var_name']: self.settingsButtonCallback(type=var_name)
-                option_frame = Button(parent_frame, text=title, fg=item_theme['fg'], bg=item_theme['bg'], command=item_theme['callback'])
+                option_frame = Button(parent_frame, text=title, fg=item_theme['fg'], bg=item_theme['bg'])
+                option_frame.configure(command=item_theme['callback'])
             else:
-                option_frame = None
-                item_theme['type'] = 'blank'
+                continue
 
-            if item_theme['type'] == 'scale' and item_theme['var_name'] == 'uiScale':
-                # This should have some form of remote call setup
-                self.uiScaleSetting = setting_var
             if item_theme['type'] != 'blank':
                 option_frame.configure(bg=item_theme['bg'], fg=item_theme['fg'])
                 if item_theme['type'] == 'button_block':
                     option_frame.configure(font=font.Font(font=item_theme['font_data']))
                 else:
                     option_frame.configure(borderwidth=0, highlightthickness=0, width=9)
-                option_frame.grid(row=row_current, column=col_start+col_option, columnspan=span_option, sticky=item_theme['sticky'], pady=item_theme['pady'], padx=item_theme['padx'])
+
+                col_option = 0 if is_button else 1
+                span_option = elements if is_button else 1
+                option_frame.grid(row=row_current, column=col_start+col_option, columnspan=span_option, sticky=item_theme['sticky'], pady=item_theme['pad_y'], padx=item_theme['pad_x'])
                 parent_frame.grid_rowconfigure(row_current, weight=item_theme['row_weight'])
                 parent_frame.grid_columnconfigure(col_start + col_option, weight=item_theme['col_weight'])
 
