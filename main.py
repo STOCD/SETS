@@ -1222,7 +1222,7 @@ class SETS():
         scroll_frame_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-        canvas.bind('<Configure>', lambda e: self.updateScrollFrame(e, canvas, scroll_frame_window, pickWindow))
+        #canvas.bind('<Configure>', lambda e: self.updateScrollFrame(e, canvas, scroll_frame_window, pickWindow))
         startY = canvas.yview()[0]
         parentFrame.bind("<<ResetScroll>>", lambda event: canvas.yview_moveto(startY))
 
@@ -1242,8 +1242,8 @@ class SETS():
 
         (windowwidth,windowheight) = self.pickerDimensions()
         sizeWindow = '{}x{}'.format(windowwidth, windowheight)
-        pickWindow.geometry(self.pickerLocation(windowheight))
-        pickWindow.minsize(windowwidth, windowheight)
+        pickWindow.geometry(sizeWindow+self.pickerLocation(windowheight))
+        #pickWindow.minsize(windowwidth, windowheight)
 
         origVar = dict()
         for key in itemVar:
@@ -1275,7 +1275,7 @@ class SETS():
                     if col == 0:
                         subFrame = Label(frame, image=image)
                     else:
-                        subFrame = Label(frame, text=name, justify=LEFT)
+                        subFrame = Label(frame, text=name, justify=LEFT, wraplength=255)
                     subFrame.grid(row=0, column=col, sticky='nsew')
                 else:
                     frame.grid(row=i, column=0, sticky='nsew', padx=(2,5))
@@ -2208,7 +2208,7 @@ class SETS():
         searchText = StringVar()
         Label(topbarFrame, text="Search:").grid(row=0, column=0, sticky='w', padx=(25,2))
         searchEntry = Entry(topbarFrame, textvariable=searchText)
-        searchEntry.grid(row=0, column=1, columnspan=5, sticky='nsew', padx=(2,40))
+        searchEntry.grid(row=0, column=1, columnspan=5, sticky='nsew', padx=(2,40), ipady=3, pady=(5,2))
         topbarFrame.grid_columnconfigure(1, weight=1)
         searchEntry.focus_set()
         searchText.trace_add('write', lambda v,i,m,content=content,frame=frame:self.applyContentFilter(frame, content, searchText.get()))
