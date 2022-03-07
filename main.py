@@ -568,14 +568,24 @@ class SETS():
         v['image'] = image
         win.destroy()
 
-    def makeRedditTable(self, c0, c1, c2):
+    def makeRedditTable(self, c0, c1, c2, c3:list = [], alignment:list = [":---", ":---", ":---"]):
+        if c3 != []:
+            result = '**{0}** | **{1}** | **{2}** | **{3}**\n'.format(c0[0],c1[0],c2[0],c3[0])
+            result = result + "{0} | {1} | {2} | {3}\n".format(alignment[0], alignment[1], alignment[2], alignment[3])
+            for i in range(1,len(c0)):
+                c0[i] = c0[i] if c0[i] is not None else '&nbsp;'
+                c1[i] = c1[i] if c1[i] is not None else '&nbsp;'
+                c2[i] = c2[i] if c2[i] is not None else '&nbsp;'
+                c3[i] = c3[i] if c3[i] is not None else '&nbsp;'
+                result = result + "{0} | {1} | {2} | {3}\n".format(c0[i],c1[i],c2[i],c3[i])
+            return result
         result = '**{0}** | **{1}** | **{2}**\n'.format(c0[0],c1[0],c2[0])
-        result = result + ":--- | :--- | :---\n"
+        result = result + "{1} | {1} | {2}\n".format(alignment[0], alignment[1], alignment[2])
         for i in range(1,len(c0)):
             c0[i] = c0[i] if c0[i] is not None else '&nbsp;'
             c1[i] = c1[i] if c1[i] is not None else '&nbsp;'
             c2[i] = c2[i] if c2[i] is not None else '&nbsp;'
-            result = result + "{0} | {1}| {2}\n".format(c0[i],c1[i],c2[i])
+            result = result + "{0} | {1} | {2}\n".format(c0[i],c1[i],c2[i])
         return result
 
     def makeRedditColumn(self, c0, length):
@@ -1834,7 +1844,73 @@ class SETS():
 
         return
 
-    def redditExportDisplayGround(self, textframe):
+    def getSkillnodeByName(self, name: str, environment: str, pkey=""):
+        if environment == "space":
+            skillnode = None
+            skillindex = -1
+            if pkey == "": keylist = ["lieutenant", "lieutenant commander", "commander", "captain", "admiral"]
+            else: keylist = [pkey]
+            for key in keylist:
+                for j in range(0,6):
+                    skillname = self.cache['spaceSkills'][key][j]['skill']
+                    if isinstance(skillname, str) and skillname == name[:-2]:
+                        skillnode = self.cache['spaceSkills'][key][j]
+                        break
+                    elif isinstance(skillname, list) and (name in skillname or name[:-2] in skillname):
+                        skillnode = self.cache['spaceSkills'][key][j]
+                        for k in range(0, len(skillnode['skill'])):
+                            if skillnode['skill'][k]==name or skillnode['skill'][k]==name[:-2]:
+                                skillindex=k
+                                break
+                if skillnode != None:
+                    break
+            return [skillnode, skillindex]
+
+    def redditExportDisplayGroundSkills(self, textframe: Text):
+        textframe.configure(state=NORMAL)
+        textframe.delete("1.0", END)
+        textframe.insert(END, "TBD")
+        textframe.configure(state=DISABLED)
+
+    def redditExportDisplaySpaceSkills(self, textframe: Text):
+        if not len(self.build["skilltree"]["space"]) == 90:
+            return
+        redditstring = "## **<u>Space Skills</u>**\n\n"
+        column0 = list()
+        column1 = list()
+        column2 = list()
+        column3 = list()
+        for rank in self.cache["spaceSkills"]:
+            for skill in self.cache["spaceSkills"][rank]:
+                if skill["linear"] == 0:
+                    column0 = column0 + self.makeRedditColumn(["[**{0}**]({1})".format(skill["skill"], skill["link"])], 1)
+                    column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"]+" 1"]==True else [None], 1)
+                    column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"]+" 2"]==True else [None], 1)
+                    column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"]+" 3"]==True else [None], 1)
+                else:
+                    column0 = column0 + ["&nbsp;"]
+                    column0 = column0 + self.makeRedditColumn(["[**{0}**]({1})".format(skill["skill"][0], skill["link"] if isinstance(skill["link"], str) else skill["link"][0])], 1)
+                    if skill["linear"] == 1:
+                        column1 = column1 + ["[{0}]({1})".format(skill["skill"][0], skill["link"][0])]
+                        column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]+" 1"]==True else [None], 1)
+                        column2 = column2 + ["[{0}]({1})".format("Improved "+skill["skill"][0], skill["link"][0])]
+                        column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]+" 2"]==True else [None], 1)
+                        column3 = column3 + ["[{0}]({1})".format(skill["skill"][1], skill["link"][1])]
+                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][1]]==True else [None], 1)
+                    elif skill["linear"] ==2:
+                        column1 = column1 + ["[{0}]({1})".format(skill["skill"][0], skill["link"])]
+                        column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]]==True else [None], 1)
+                        column2 = column2 + ["[{0}]({1})".format(skill["skill"][1], skill["link"])]
+                        column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][1]]==True else [None], 1)
+                        column3 = column3 + ["[{0}]({1})".format(skill["skill"][2], skill["link"])]
+                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][2]]==True else [None], 1) 
+        redditstring = redditstring + self.makeRedditTable(['&nbsp;']+column0, ['**Base:**']+column1, ['**Improved:**']+column2, ['**Advanced:**']+column3, [":---",":-:",":-:",":-:"])
+        textframe.configure(state=NORMAL)
+        textframe.delete("1.0", END)
+        textframe.insert(END, redditstring)
+        textframe.configure(state=DISABLED)
+
+    def redditExportDisplayGround(self, textframe:Text):
         if not self.build['eliteCaptain']:
             elite = 'No'
         elif self.build['eliteCaptain']:
@@ -1883,10 +1959,12 @@ class SETS():
                 column0 = column0 + self.makeRedditColumn(["#{}: {} / {}".format(str(int(groundboff[-1])+1), self.build['boffseats']['ground'][int(groundboff[-1])],self.build['boffseats']['ground_spec'][int(groundboff[-1])])], len(self.build['boffs'][groundboff]))
                 column1 = column1 + self.makeRedditColumn(self.build['boffs'][groundboff], len(self.build['boffs'][groundboff]))
         redditString = redditString + self.makeRedditTable(['**Profession**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
+        textframe.configure(state=NORMAL)
         textframe.delete("1.0",END)
         textframe.insert(END, redditString)
+        textframe.configure(state=DISABLED)
 
-    def redditExportDisplaySpace(self, textframe):
+    def redditExportDisplaySpace(self, textframe: Text):
         if not self.build['eliteCaptain']:
             elite = 'No'
         elif self.build['eliteCaptain']:
@@ -1944,22 +2022,31 @@ class SETS():
         redditString = redditString + "\n\n"
         column0 = self.makeRedditColumn([trait['item'] for trait in self.build['activeRepTrait'] if trait is not None], 5)
         redditString = redditString + self.makeRedditTable(['**Active Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        textframe.configure(state=NORMAL)
         textframe.delete('1.0',END)
         textframe.insert(END, redditString)
+        textframe.configure(state=DISABLED)
 
     def exportRedditCallback(self, event=None):
-        redditWindow = Toplevel(self.window)
-        redditText = Text(redditWindow)
-        btfr = Frame(redditWindow)
+        redditWindow = Toplevel(self.window, bg=self.theme["app"]["bg"])
+        borderframe = Frame(redditWindow, bg=self.theme["app"]["fg"])
+        borderframe.pack(fill=BOTH, expand=True, padx=15, pady=15)
+        redditText = Text(borderframe, bg=self.theme["app"]["fg"], fg="#ffffff", relief="flat")
+        btfr = Frame(borderframe)
         btfr.pack(side='top', fill='x')
-        redditbtspace = Button(btfr,text="SPACE", font=self.theme['button_heavy']['font_object'],  bg=self.theme['button_heavy']['bg'],fg=self.theme['button_heavy']['fg'],command=lambda: self.redditExportDisplaySpace(redditText))
-        redditbtground = Button(btfr, text="GROUND", font =self.theme['button_heavy']['font_object'], bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'],command=lambda: self.redditExportDisplayGround(redditText))
+        redditbtspace = Button(btfr,text="SPACE", font=self.theme['button_heavy']['font_object'],  bg=self.theme['button_heavy']['bg'],fg=self.theme['button_heavy']['fg'], padx = 0, command=lambda: self.redditExportDisplaySpace(redditText))
+        redditbtground = Button(btfr, text="GROUND", font =self.theme['button_heavy']['font_object'], bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'],padx = 0, command=lambda: self.redditExportDisplayGround(redditText))
+        redditbtsskill = Button(btfr, text="SPACE SKILLS", font =self.theme['button_heavy']['font_object'], bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'],padx = 0, command=lambda: self.redditExportDisplaySpaceSkills(redditText))
+        redditbtgskill = Button(btfr, text="GROUND SKILLS", font =self.theme['button_heavy']['font_object'], bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'], padx= 0, command=lambda: self.redditExportDisplayGroundSkills(redditText))
         redditbtspace.grid(row=0,column=0,sticky="nsew")
         redditbtground.grid(row=0,column=1,sticky="nsew")
-        btfr.grid_columnconfigure(0,weight=1)
-        btfr.grid_columnconfigure(1,weight=1)
+        redditbtsskill.grid(row=0, column=2, sticky="nsew")
+        redditbtgskill.grid(row=0, column=3, sticky="nsew")
+        for i in range(0, 4):
+            btfr.grid_columnconfigure(i,weight=1)
         redditText.pack(fill=BOTH, expand=True)
         self.redditExportDisplaySpace(redditText)
+        redditWindow.title("Reddit Export")
         redditWindow.mainloop()
 
     def clearCacheFolder(self, file=None):
@@ -2946,6 +3033,8 @@ class SETS():
         text = text.replace("</small>", "")
         text = text.replace("<sub>", "")
         text = text.replace("</sub>", "")
+        text = text.replace("<sup>", "")
+        text = text.replace("</sup>", "")
         color = list()
         t=text
         while '<font color=' in t:
@@ -3502,17 +3591,7 @@ class SETS():
                 contentframe.grid_propagate(True)
                 printed=True"""
             else:
-                for j in range(0,6):
-                    skillname = self.cache['spaceSkills'][key][j]['skill']
-                    if isinstance(skillname, str) and skillname == name[:-2]:
-                        skillnode = self.cache['spaceSkills'][key][j]
-                        break
-                    elif isinstance(skillname, list) and (name in skillname or name[:-2] in skillname):
-                        skillnode = self.cache['spaceSkills'][key][j]
-                        for k in range(0, len(skillnode['skill'])):
-                            if skillnode['skill'][k]==name or skillnode['skill'][k]==name[:-2]:
-                                skillindex=k
-                                break
+                skillnode, skillindex = self.getSkillnodeByName(name, "space", key)
                 if skillnode['career']=="tac": skillprofession = "Tactical "
                 elif skillnode['career']=="eng": skillprofession = "Engineering "
                 elif skillnode['career']=="sci": skillprofession = "Science "
