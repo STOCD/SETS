@@ -1141,28 +1141,36 @@ class SETS():
 
     def pickerDimensions(self):
         #self.window.update()
-        windowheight = self.windowActiveHeight
+        windowheight = self.windowHeight
         windowwidth = int(self.windowWidth / 6)
         if windowheight < 400: windowheight = 400
         if windowwidth < 240: windowwidth = 240
 
         return (windowwidth,windowheight)
 
-    def pickerLocation(self, x, y, height):
+    def pickerLocation(self, width=0, height=0, x=None, y=None, anchor="nw"):
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
 
-        if x is None or y is None:
-            x = self.window.winfo_pointerx()
-            y = self.window.winfo_pointery()
+        if x is not None and y is not None:
+            pass  # Leave manual locations
+        else :
+            if self.persistent['pickerSpawnUnderMouse'] and x is not None and y is not None:
+                x = self.window.winfo_pointerx()
+                y = self.window.winfo_pointery()
+                self.logWrite("Window position update: x{},y{}".format(str(x), str(y)), 2)
+            else:
+                if anchor == 'ne' or anchor == 'nw':
+                    y = self.window_topleft_y
+                if anchor == 'se' or anchor == 'sw':
+                    y = self.window_topleft_y + self.windowHeight - height
+                if anchor == 'nw' or anchor == 'sw':
+                    x = self.window_topleft_x
+                if anchor == 'ne' or anchor == 'se':
+                    x = self.window_topleft_x + self.windowWidth - width
 
-        if self.persistent['pickerSpawnUnderMouse'] and x is not None and y is not None:
-            self.logWrite("pickerGUI position update: x{},y{}".format(str(x), str(y)), 2)
-        else:
-            x = self.window_topleft_x
-            y = self.window_topleft_y
 
-        if height < screen_height and (y + height) > screen_height:
+        if height is not None and height < screen_height and (y + height) > screen_height:
             y = screen_height - height
         positionWindow = "+"+str(x)+"+"+str(y)
 
@@ -1197,7 +1205,7 @@ class SETS():
 
         (windowwidth,windowheight) = self.pickerDimensions()
         sizeWindow = '{}x{}'.format(windowwidth, windowheight)
-        pickWindow.geometry(sizeWindow+self.pickerLocation(x, y, windowheight))
+        pickWindow.geometry(sizeWindow+self.pickerLocation(windowheight))
 
         origVar = dict()
         for key in itemVar:
@@ -3667,7 +3675,11 @@ class SETS():
 
     def buildTagCallback(self):
         tagwindow = Toplevel(self.window, bg=self.theme['app']["bg"])
+        tagwindow.resizable(False, False)
+        tagwindow.transient(self.window)
+        tagwindow.attributes('-topmost', 1)
         tagwindow.title("Build Tags")
+
         cfr = Frame(tagwindow, bg=self.theme['app']["fg"])
         cfr.pack(expand=True, padx=15, pady=15, fill=BOTH)
 
@@ -3717,7 +3729,12 @@ class SETS():
             Label(itemframe, fg="#ffffff", bg=self.theme['app']['fg'], text=tag, font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
             i += 1
         tagvar.trace_add("write", lambda c1, c2, c3, var=tagvar, k="state", m="tags": self.checkbuttonVarUpdateCallback(var.get(), m, k))
-        tagwindow.mainloop()
+
+        tagwindow.wait_visibility()
+        tagwindow.grab_set()
+        tagwindow.update()
+        tagwindow.geometry(self.pickerLocation(width=tagwindow.winfo_width(), height=tagwindow.winfo_height(), anchor='sw'))
+        tagwindow.wait_window()
 
 
     def setupDoffListFrame(self, frame, environment='space'):
@@ -3922,6 +3939,13 @@ class SETS():
         for i in range(4):
             parent_frame.grid_columnconfigure(i, weight=1, uniform='tagViewCol')
 
+        tag_group = {
+            'maindamage': 1,
+            'energytype': 3,
+            'weapontype': 2,
+            'state': 0,
+            'role': 0,
+        }
         item = -1
         for tag in sorted(self.build['tags'], reverse=True):
             if not self.build['tags'][tag]:
