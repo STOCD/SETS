@@ -72,7 +72,7 @@ class SETS():
         },
         'frame_light': {
             'bg': '#b3b3b3',  # self.theme['frame_light']['bg']
-            'fg': '#ffffff',  # self.theme['frame_light']['fg']
+            'fg': '#3a3a3a',  # self.theme['frame_light']['fg']
         },
         'button_heavy': {
             'bg': '#6b6b6b',  # self.theme['button_heavy']['bg']
@@ -3789,7 +3789,7 @@ class SETS():
             m = OptionMenu(DoffFrame, v2, 'EFFECT\nOTHER', '')
             m.grid(row=i+1, column=2, sticky='nsew')
             m.configure(bg=self.theme['frame_light']['bg'],fg=self.theme['frame_light']['fg'], borderwidth=0, highlightthickness=0,font=self.theme['text_small']['font_object'], wraplength=340)
-
+            #DoffFrame.grid_rowconfigure(i+1, weight=1, uniform='doffFrameListRow{}'.format(i+1))
             if self.build['doffs'][environment][i] is not None:
                 v0.set(self.build['doffs'][environment][i]['name'])
                 v1.set(self.build['doffs'][environment][i]['spec'])
@@ -4100,17 +4100,17 @@ class SETS():
             labelFrame = Label(NameFrame, text="{} Name:".format('Ship' if environment == 'space' else 'Toon'), fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
             labelFrame.grid(row=row, column=0, sticky='w')
             entryFrame = Entry(NameFrame, textvariable=self.backend['player{}Name'.format('Ship' if environment == 'space' else '')], fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.font_tuple_create('text_highlight'))
-            entryFrame.grid(row=row, column=1, sticky='nsew', ipady=5, pady=5)
+            entryFrame.grid(row=row, column=1, sticky='nsew', ipadx=2, ipady=5, pady=5)
             row += 1
             # end of not-skill items
 
 
-        ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
-        ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=TOP)
+        #ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
+        #ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=TOP)
         descFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
         descFrame.pack(fill=BOTH, expand=True, side=TOP)
-        ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
-        ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=TOP)
+        #ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
+        #ExtraFrame.pack(fill=X, expand=True, padx=0, pady=0, side=TOP)
 
         ExtraFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
         ExtraFrame.pack(fill=X, expand=False, padx=0, pady=0, side=BOTTOM)
@@ -4120,8 +4120,6 @@ class SETS():
         charInfoFrame = Frame(CharFrame, bg=self.theme['frame_medium']['bg'])
         charInfoFrame.grid(row=0, column=0, columnspan=2, sticky='ew')
         self.setupCaptainFrame(CharFrame, environment)
-
-
 
         if environment == 'skill':
             self.skillDescFrame = descFrame
@@ -4172,11 +4170,11 @@ class SETS():
         if row == 0: self.clearFrame(parentFrame)
         parentFrame.grid_columnconfigure(0, weight=1)
 
-        label = Label(parentFrame, text="Build Description ({}):".format(environment.title()), fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
-        label.grid(row=row, column=0, sticky='nw')
-        # Hardcoded width due to issues with expansion, this should become dynamic here and in ground at some point
+        label = Label(parentFrame, text="Description ({}):".format(environment.title()), fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
+        label.grid(row=row, column=0, sticky='nw', pady=(5,2))
         descText = Text(parentFrame, height=3, width=20, wrap=WORD, fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=self.font_tuple_create('text_tiny'))
-        descText.grid(row=row+1, column=0, sticky='nsew', padx=5, pady=2)
+        descText.grid(row=row+1, column=0, sticky='nsew', padx=(7,7), pady=(2,5))
+        parentFrame.grid_rowconfigure(row+1, weight=1)
 
         if destination is None:
             if environment != 'space': self.charDescText = descText
