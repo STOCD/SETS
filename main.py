@@ -115,6 +115,12 @@ class SETS():
                 'weight': 'bold',
             },
         },
+        'text_contrast': {
+            'font': {  # self.theme['text_contrast']['font_object']
+                'size': 10,
+                'weight': 'italic',
+            },
+        },
         'text_small': {
             'font': {  # self.theme['text_small']['font_object']
                 'size': 8,
@@ -3610,6 +3616,18 @@ class SETS():
 
         text.configure(state=DISABLED)
 
+
+    def radiobuttonVarUpdateCallbackToggle(self, varObj, choice):
+        """Insert the radio setting -- typically used from the frame to widen the click zone"""
+        varObj.set(choice)
+
+
+    def checkbuttonVarUpdateCallbackToggle(self, varObj):
+        """Toggle the checkbox setting -- typically used from the frame to widen the click zone"""
+        current = not(varObj.get())
+        varObj.set(current)
+
+
     def checkbuttonVarUpdateCallback(self, var, masterkey, key="", text=""):
         """Updates self.build[masterkey][key][text] to var; masterkey, key and text determine the level and identifier the var is inserted, allowing for 3-level depth at maximum. key and text can be left empty is not needed"""
         if masterkey not in self.build:
@@ -3621,6 +3639,7 @@ class SETS():
         elif key == "" and text == "":
             self.build[masterkey] = var
         self.setupCurrentBuildTagFrames()
+        self.logWriteSimple('checkbuttonCallback', var, 2, [masterkey, key, text])
     
     def checkbuttonBuildBlock(self, window, frame: Frame, values, bg, fg, masterkey: str, key = str(""), geomanager="grid", orientation=HORIZONTAL, rowoffset=0, columnoffset=0,  alignment=TOP):
         """Inserts a series of Checkbuttons either horizontally or vertically, either row for row in the grid of the parent frame or packed into the parent
@@ -3668,7 +3687,10 @@ class SETS():
             v = IntVar(window, value=lvar)
             Checkbutton(itemframe, bg=bg, fg = "#000000", variable=v, activebackground=bg).pack(side=LEFT, ipadx=1, padx=0)
             v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key, m=masterkey: self.checkbuttonVarUpdateCallback(var.get(), m, k, text))
-            Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
+            l = Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold"))
+            l.pack(side=LEFT, ipadx=0, padx=0)
+
+            l.bind("<Button-1>", lambda e, var=v: self.checkbuttonVarUpdateCallbackToggle(var))
             count +=1
         return count
         
@@ -3725,8 +3747,12 @@ class SETS():
         for tag in self.options_tags:
             itemframe = Frame(stypefr, highlightthickness=0, bg=self.theme['app']['fg'])
             itemframe.grid(row=i, column=0, padx=16, sticky="w")
-            Radiobutton(itemframe, bg=self.theme['app']['fg'], fg = "#000000", variable=tagvar, value=i-1, activebackground=self.theme['app']['fg']).pack(side=LEFT, ipadx=1, padx=0)
-            Label(itemframe, fg="#ffffff", bg=self.theme['app']['fg'], text=tag, font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold")).pack(side=LEFT, ipadx=0, padx=0)
+            selection_number = i-1
+            Radiobutton(itemframe, bg=self.theme['app']['fg'], fg = "#000000", variable=tagvar, value=selection_number, activebackground=self.theme['app']['fg']).pack(side=LEFT, ipadx=1, padx=0)
+            l = Label(itemframe, fg="#ffffff", bg=self.theme['app']['fg'], text=tag, font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold"))
+            l.pack(side=LEFT, ipadx=0, padx=0)
+            l.bind("<Button-1>", lambda e, var=tagvar,choice=selection_number: self.radiobuttonVarUpdateCallbackToggle(var, choice))
+
             i += 1
         tagvar.trace_add("write", lambda c1, c2, c3, var=tagvar, k="state", m="tags": self.checkbuttonVarUpdateCallback(var.get(), m, k))
 
@@ -3945,7 +3971,7 @@ class SETS():
             'maindamage': 1,
             'energytype': 3,
             'weapontype': 2,
-            'state': grid_width - 1,
+            'state': 0,
             'role': 0,
         }
 
@@ -3958,19 +3984,21 @@ class SETS():
             group_tag = tags[0].lower()
             group_col = tag_group[group_tag] if group_tag in tag_group else (grid_width - 1)
             if tag == 'state':
+                column = 0
                 row = 0
-                column = 1
-                columnspan = 2
+                columnspan = grid_width
                 pad_y = 5
+                font_theme = 'text_contrast'
             else:
-                row = tag_grid[group_col]; tag_grid[group_col] += 1
                 column = group_col
                 columnspan = 1
+                row = tag_grid[group_col]; tag_grid[group_col] += 1
                 pad_y = 0
+                font_theme = 'app'
 
             display_tag = tags[-1].title() if tag != 'state' else self.options_tags[self.build['tags'][tag]]
 
-            l = Label(parent_frame, text=display_tag, fg=self.theme['frame']['fg'], bg=self.theme['frame']['bg'])
+            l = Label(parent_frame, text=display_tag, fg=self.theme['frame']['fg'], bg=self.theme['frame']['bg'], font=self.font_tuple_create(font_theme))
             l.grid(row=row, column=column, columnspan=columnspan, pady=pad_y)
 
 
@@ -4055,7 +4083,7 @@ class SETS():
 
         if environment != 'skill':
             NameFrame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
-            NameFrame.pack(fill=X, expand=False, padx=(0, 5), pady=(0, 0), side=TOP)
+            NameFrame.pack(fill=X, expand=False, padx=(0, 5), pady=(5, 0), side=TOP)
             NameFrame.grid_columnconfigure(1, weight=1)
 
             row = 0
