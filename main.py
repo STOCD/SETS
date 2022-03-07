@@ -3889,16 +3889,16 @@ class SETS():
 
 
     def setupTierFrame(self, tier):
-        l = Label(self.shipTierFrame, text="Tier:", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.theme['text_small']['font_object'])
-        l.grid(row=0, column=0, sticky='nsew')
-        l.configure(borderwidth=0, highlightthickness=0)
+        #l = Label(self.shipTierFrame, text="Tier:", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.theme['text_small']['font_object'])
+        #l.grid(row=0, column=0, sticky='nsew')
+        #l.configure(borderwidth=0, highlightthickness=0)
         tier_list = self.getTierOptions(tier)
         if len(tier_list) > 1:
             m = OptionMenu(self.shipTierFrame, self.backend["tier"], *tier_list)
         else:
             m = Label(self.shipTierFrame, text=tier_list[0], justify=LEFT)
 
-        m.grid(column=1, row=0, sticky='swe', pady=2, padx=2)
+        m.grid(column=1, row=0, sticky='swe', pady=(1,0), padx=(1,0))
         m.configure(width=10, height=1, bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, font=self.theme['text_small']['font_object'])
 
 
@@ -4060,8 +4060,8 @@ class SETS():
 
             row = 0
             if environment == 'space':
-                self.shipTierFrame = Frame(NameFrame, bg=self.theme['frame_medium']['bg'])
-                self.shipTierFrame.grid(column=1, row=row, columnspan=1, sticky='e')
+                self.shipTierFrame = Frame(LabelFrame, bg=self.theme['frame_medium']['bg'])
+                self.shipTierFrame.grid(column=0, row=row, sticky='se')
                 row += 1
                 labelFrame = Label(NameFrame, text="Ship: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
                 labelFrame.grid(column=0, row = row, sticky='w', pady=(1,0))
