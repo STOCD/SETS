@@ -4421,7 +4421,8 @@ class SETS():
     def create_item_set_var(self, data, var_name, var_sub_name=None, store='persistent', boolean=False):
         self.logWriteSimple('create_item_set_var', '', 2, [data, var_name, var_sub_name, store, boolean])
         if store == 'backend':
-            data = True if data else False
+            if boolean:
+                data = True if data else False
             if var_name in self.backend:
                 if var_sub_name is not None:
                     if var_sub_name in self.backend[var_name]:
