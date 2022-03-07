@@ -3677,7 +3677,7 @@ class SETS():
         tagwindow = Toplevel(self.window, bg=self.theme['app']["bg"])
         tagwindow.resizable(False, False)
         tagwindow.transient(self.window)
-        tagwindow.attributes('-topmost', 1)
+        #tagwindow.attributes('-topmost', 1)
         tagwindow.title("Build Tags")
 
         cfr = Frame(tagwindow, bg=self.theme['app']["fg"])
@@ -3939,25 +3939,39 @@ class SETS():
         for i in range(4):
             parent_frame.grid_columnconfigure(i, weight=1, uniform='tagViewCol')
 
+        # Columns to gather in -- should be more programmatic
+        grid_width = 4
         tag_group = {
             'maindamage': 1,
             'energytype': 3,
             'weapontype': 2,
-            'state': 0,
+            'state': grid_width - 1,
             'role': 0,
         }
-        item = -1
-        for tag in sorted(self.build['tags'], reverse=True):
-            if not self.build['tags'][tag]:
+
+        tag_grid = [1] * grid_width
+        for tag in sorted(self.build['tags']):
+            if tag != 'state' and not self.build['tags'][tag]:
                 continue
-            item += 1
-            row = int(item / 4)
-            column = int(item % 4)
+
             tags = tag.split('|')
+            group_tag = tags[0].lower()
+            group_col = tag_group[group_tag] if group_tag in tag_group else (grid_width - 1)
+            if tag == 'state':
+                row = 0
+                column = 1
+                columnspan = 2
+                pad_y = 5
+            else:
+                row = tag_grid[group_col]; tag_grid[group_col] += 1
+                column = group_col
+                columnspan = 1
+                pad_y = 0
+
             display_tag = tags[-1].title() if tag != 'state' else self.options_tags[self.build['tags'][tag]]
-            display_tag = display_tag.replace(' Phase', '')
+
             l = Label(parent_frame, text=display_tag, fg=self.theme['frame']['fg'], bg=self.theme['frame']['bg'])
-            l.grid(row=row, column=column)
+            l.grid(row=row, column=column, columnspan=columnspan, pady=pad_y)
 
 
     def setupCaptainFrame(self, charInfoFrame, environment='space'):
