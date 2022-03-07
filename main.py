@@ -3899,7 +3899,7 @@ class SETS():
             m = Label(self.shipTierFrame, text=tier_list[0], justify=LEFT)
 
         m.grid(column=1, row=0, sticky='swe', pady=(1,0), padx=(1,0))
-        m.configure(width=10, height=1, bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, font=self.theme['text_small']['font_object'])
+        m.configure(width=6, height=1, bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, highlightthickness=0, font=self.theme['text_small']['font_object'])
 
 
     def setupShipImageFrame(self):
