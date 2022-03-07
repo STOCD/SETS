@@ -20,6 +20,19 @@ if sys.platform.startswith('win'):
     except:
         ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
 
+class HoverButton(tkinter.Button):
+    def __init__(self, master, **kw):
+        tkinter.Button.__init__(self,master=master,**kw)
+        self.defaultBackground = self["background"]
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+
+    def on_enter(self, e):
+        self['background'] = self['activebackground']
+
+    def on_leave(self, e):
+        self['background'] = self.defaultBackground
+
 class SETS():
     """Main App Class"""
     version = '20220304_beta'
@@ -54,6 +67,7 @@ class SETS():
         'app': {
             'bg': '#c59129',  # self.theme['app']['bg']
             'fg': '#3a3a3a',  # self.theme['app']['fg']
+            'hover': '#a3a3a3',  # self.theme['app']['hover']
             'font': {  # self.theme['app']['font_object']
                 'family': 'Helvetica',
                 'size': 10,
@@ -67,6 +81,7 @@ class SETS():
         'frame_medium': {
             'bg': '#b3b3b3',  # self.theme['frame_medium']['bg']
             'fg': '#3a3a3a',  # self.theme['frame_medium']['fg']
+            'hover': '#555555',  # self.theme['frame_medium']['hover']
             'hlbg': 'grey',  # self.theme['frame_medium']['hlbg']  # highlightbackground
             'hlthick': 1,  # self.theme['frame_medium']['hlthick']  # highlightthickness
         },
@@ -77,14 +92,23 @@ class SETS():
         'button_heavy': {
             'bg': '#6b6b6b',  # self.theme['button_heavy']['bg']
             'fg': '#ffffff',  # self.theme['button_heavy']['fg']
+            'hover': '#bbbbbb',  # self.theme['button_heavy']['hover']
             'font': {  # self.theme['button_heavy']['font_object']
                 'size': 12,
                 'weight': 'bold',
             },
         },
+        'button_medium': {
+            'bg': '#6b6b6b',  # self.theme['button_medium']['bg']
+            'fg': '#dddddd',  # self.theme['button_medium']['fg']
+            'hover': '#bbbbbb',  # self.theme['button_medium']['hover']
+            'font': {  # self.theme['button_medium']['font_object']
+            },
+        },
         'button': {
             'bg': '#3a3a3a',  # self.theme['button']['bg']
             'fg': '#b3b3b3',  # self.theme['button']['fg']
+            'hover': '#555555',    # self.theme['button']['hover']
         },
         'label': {
             'bg': '#b3b3b3',  # self.theme['label']['bg']
@@ -1255,7 +1279,9 @@ class SETS():
 
             content[name] = (frame, i, 0)
             i += 1
-
+        picker_column_width = scrollable_frame.winfo_width()
+        picker_column_height = scrollable_frame.winfo_height()
+        self.logWriteSimple('picker', 'window', 2, '{}x{}'.format(picker_column_width, picker_column_height))
         pickWindow.title('{} ({} options)'.format(title, i-1))
         pickWindow.wait_visibility()    #Implemented for Linux
         pickWindow.grab_set()
@@ -3884,9 +3910,10 @@ class SETS():
         exportImportFrame = Frame(self.menuFrame, bg=self.theme['frame']['bg'])
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         settingsMenuExport = {
-            'Export\nFull': {'type': 'button_block', 'var_name': 'exportFullButton', 'callback': self.exportCallback},
-            'Export\nreddit': { 'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.exportRedditCallback},
-            'Import': {'type': 'button_block', 'var_name': 'importButton', 'callback': self.importCallback},
+            'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
+            'Save...': {'type': 'button_block', 'var_name': 'exportFullButton', 'callback': self.exportCallback},
+            'Export reddit': { 'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.exportRedditCallback},
+            'Open...': {'type': 'button_block', 'var_name': 'importButton', 'callback': self.importCallback},
         }
         self.create_item_block(exportImportFrame, theme=settingsMenuExport, shape='row', elements=1)
         col += 1
@@ -3903,9 +3930,10 @@ class SETS():
         buttonSettings = Frame(self.menuFrame, bg=self.theme['frame']['bg'])
         buttonSettings.grid(row=0, column=col, sticky='nsew')
         settingsMenuSettings = {
+            'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Clear'     : { 'type' : 'button_block', 'var_name' : 'clearButton', 'callback' : self.clearBuildCallback},
-            'LIBRARY'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
-            'SETTINGS'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
+            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
+            'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
         }
         self.create_item_block(buttonSettings, theme=settingsMenuSettings, shape='row', elements=1)
         col += 1
@@ -3938,7 +3966,7 @@ class SETS():
         self.setShipImage(self.shipImg)
 
     def setupTagsFrame(self, parent_frame, environment='space'):
-        b = Button(parent_frame, text="Build Tags", fg=self.theme['button_heavy']['fg'], bg=self.theme['button_heavy']['bg'], font=self.font_tuple_create('button_heavy'), command=lambda: self.buildTagCallback())
+        b = HoverButton(parent_frame, text="Build Tags", fg=self.theme['button_heavy']['fg'], bg=self.theme['button_heavy']['bg'], activebackground=self.theme['button_heavy']['hover'], font=self.font_tuple_create('button_heavy'), command=lambda: self.buildTagCallback())
         b.pack(fill=X, side=TOP)
         f = Frame(parent_frame, bg=self.theme['frame']['bg'])
         f.pack(fill=BOTH, side=TOP)
@@ -4093,7 +4121,7 @@ class SETS():
                 row += 1
                 labelFrame = Label(NameFrame, text="Ship: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
                 labelFrame.grid(column=0, row = row, sticky='w', pady=(1,0))
-                self.shipButton = Button(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg=self.theme['frame_medium']['bg'], wraplength=270)
+                self.shipButton = HoverButton(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg=self.theme['frame_medium']['bg'], wraplength=270, activebackground=self.theme['frame_medium']['hover'])
                 self.shipButton.grid(column=1, row=row, sticky='nwse')
                 row += 1
 
@@ -4151,13 +4179,13 @@ class SETS():
     def setupPlayerHandleFrame(self, parentFrame, row=0):
         parentFrame.grid_columnconfigure(0, weight=1)
 
-        frame = Frame(parentFrame, bg=self.theme['frame_medium']['bg'])
+        frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=0, sticky='nsew')
         frame.columnconfigure(1, weight=1)
-        label = Label(frame, text="Player Handle: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
+        label = Label(frame, text="Player Handle: ", fg=self.theme['frame']['fg'], bg=self.theme['frame']['bg'])
         label.grid(row=0, column=0, sticky='w')
-        entry = Entry(frame, textvariable=self.backend['playerHandle'], fg=self.theme['entry']['fg'], bg=self.theme['entry']['bg'], font=self.font_tuple_create('text_highlight'))
-        entry.grid(row=0, column=1, sticky='nsew',ipady=5, pady=5)
+        entry = Entry(frame, textvariable=self.backend['playerHandle'], fg=self.theme['frame']['fg'], bg=self.theme['frame']['bg'], font=self.font_tuple_create('text_highlight'), justify='center')
+        entry.grid(row=0, column=1, sticky='nsew', ipady=5, pady=5, padx=5)
         row += 1
 
 
@@ -4276,7 +4304,7 @@ class SETS():
         buildTagFrame = Frame(infoBoxOuterFrame, bg=self.theme['frame_medium']['bg'])
         buildTagFrame.pack(fill=X, expand=False, side=BOTTOM)
 
-        handleFrame = Frame(infoBoxOuterFrame, bg=self.theme['frame_medium']['bg'])
+        handleFrame = Frame(infoBoxOuterFrame, bg=self.theme['button_heavy']['bg'])
         handleFrame.pack(fill=X, expand=False, side=TOP)
         self.setupPlayerHandleFrame(handleFrame)
 
@@ -4441,6 +4469,7 @@ class SETS():
             'fg': self.theme['button']['fg'],
             'label_fg': self.theme['label']['fg'],
             'bg': self.theme['button']['bg'],
+            'abg': self.theme['button']['hover'],
             'label_bg': self.theme['label']['bg'],
             'pad_x': 2,
             'pad_y': 2,
@@ -4525,7 +4554,7 @@ class SETS():
                 option_frame = Scale(parent_frame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=setting_var)
                 option_frame.configure(command=item_theme['callback'])
             elif is_button:
-                option_frame = Button(parent_frame, text=title, fg=item_theme['fg'], bg=item_theme['bg'])
+                option_frame = HoverButton(parent_frame, text=title, fg=item_theme['fg'], bg=item_theme['bg'], activebackground=item_theme['abg'])
                 option_frame.configure(command=item_theme['callback'])
             else:
                 continue
