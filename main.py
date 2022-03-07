@@ -1185,7 +1185,7 @@ class SETS():
         if x is not None and y is not None:
             pass  # Leave manual locations
         else :
-            if self.persistent['pickerSpawnUnderMouse'] and x is not None and y is not None:
+            if self.persistent['pickerSpawnUnderMouse']:
                 x = self.window.winfo_pointerx()
                 y = self.window.winfo_pointery()
                 self.logWrite("Window position update: x{},y{}".format(str(x), str(y)), 2)
@@ -1206,20 +1206,27 @@ class SETS():
 
         return positionWindow
 
-    def windowAddScrollbar(self, parentFrame, canvas):
+    def updateScrollFrame(self, event, canvas, scroll_frame_window, pickWindow):
+        canvas.itemconfig(scroll_frame_window, width=event.width)
+
+    def windowAddScrollbar(self, parentFrame, pickWindow):
+        canvas = Canvas(parentFrame)
+        canvas.grid(row=0, column=0, sticky='nsew')
+        parentFrame.grid_columnconfigure(0, weight=1)
+        parentFrame.grid_rowconfigure(0, weight=1)
         scrollbar = Scrollbar(parentFrame, orient=VERTICAL, command=canvas.yview)
+        scrollbar.grid(row=0, column=1, sticky='nsew')
+
         scrollable_frame = Frame(canvas)
         scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        scroll_frame_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+        canvas.bind('<Configure>', lambda e: self.updateScrollFrame(e, canvas, scroll_frame_window, pickWindow))
         startY = canvas.yview()[0]
         parentFrame.bind("<<ResetScroll>>", lambda event: canvas.yview_moveto(startY))
-        parentFrame.pack(fill=BOTH, expand=True)
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side=RIGHT,fill=Y)
 
-        return scrollable_frame
+        return (canvas, scrollable_frame)
 
     def restrictItemsList(self, items_list, tagsForRequirement = None):
         # Infobox 'who' denotes restrictions [for future imlementation]
@@ -1229,13 +1236,14 @@ class SETS():
     def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
         """Open a picker window"""
         pickWindow = Toplevel(self.window)
-        pickWindow.resizable(False,True) #vertical resize only
+        pickWindow.resizable(True,True) #vertical resize only
         pickWindow.transient(self.window)
         pickWindow.title(title)
 
         (windowwidth,windowheight) = self.pickerDimensions()
         sizeWindow = '{}x{}'.format(windowwidth, windowheight)
-        pickWindow.geometry(sizeWindow+self.pickerLocation(windowheight))
+        pickWindow.geometry(self.pickerLocation(windowheight))
+        pickWindow.minsize(windowwidth, windowheight)
 
         origVar = dict()
         for key in itemVar:
@@ -1247,9 +1255,12 @@ class SETS():
         if top_bar_functions is not None:
             for func in top_bar_functions:
                 func(container, itemVar, content)
+        self.setupClearSlotFrame(container, itemVar, pickWindow)
+        container.pack(fill=X, expand=False)
 
-        canvas = Canvas(container)
-        scrollable_frame = self.windowAddScrollbar(container, canvas)
+        container2 = Frame(pickWindow)
+        container2.pack(fill=BOTH, expand=True)
+        (canvas, scrollable_frame) = self.windowAddScrollbar(container2, pickWindow)
 
         try:
             items_list.sort()
@@ -1257,10 +1268,6 @@ class SETS():
             self.logWriteSimple('pickerGUI', 'TRY_EXCEPT', 1, tags=['item_list.sort() failed in '+title])
 
         i = 0
-        clearSlotButton = Button(scrollable_frame, text='Clear Slot', padx=5, bg=self.theme['button']['bg'],fg=self.theme['button']['fg'])
-        clearSlotButton.grid(row=0, column=0, sticky='nsew')
-        clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
-        i += 1
         for name,image in items_list:
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
             for col in range(3):
@@ -1268,20 +1275,17 @@ class SETS():
                     if col == 0:
                         subFrame = Label(frame, image=image)
                     else:
-                        subFrame = Label(frame, text=name, wraplength=windowwidth - 40, justify=LEFT)
+                        subFrame = Label(frame, text=name, justify=LEFT)
                     subFrame.grid(row=0, column=col, sticky='nsew')
                 else:
-                    subFrame = frame
-                    subFrame.grid(row=i, column=0, sticky='nsew')
+                    frame.grid(row=i, column=0, sticky='nsew', padx=(2,5))
 
                 subFrame.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
                 subFrame.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
 
             content[name] = (frame, i, 0)
             i += 1
-        picker_column_width = scrollable_frame.winfo_width()
-        picker_column_height = scrollable_frame.winfo_height()
-        self.logWriteSimple('picker', 'window', 2, '{}x{}'.format(picker_column_width, picker_column_height))
+
         pickWindow.title('{} ({} options)'.format(title, i-1))
         pickWindow.wait_visibility()    #Implemented for Linux
         pickWindow.grab_set()
@@ -2191,33 +2195,43 @@ class SETS():
         self.copyBackendToBuild('species')
         self.setupCurrentTraitFrame()
 
+    def setupClearSlotFrame(self, frame, itemVar, pickWindow):
+        topbarFrame = Frame(frame)
+        clearSlotButton = HoverButton(topbarFrame, text='Clear Slot', padx=5, bg=self.theme['button']['bg'], fg=self.theme['button']['fg'], activebackground=self.theme['button']['hover'])
+        clearSlotButton.grid(row=0, column=0, sticky='nsew', padx=(10,15), pady=5)
+        clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
+        topbarFrame.grid_columnconfigure(0, weight=1)
+        topbarFrame.pack(fill=X, expand=False, side=TOP)
+
     def setupSearchFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
         searchText = StringVar()
-        Label(topbarFrame, text="Search:").grid(row=0, column=0, sticky='nsew')
+        Label(topbarFrame, text="Search:").grid(row=0, column=0, sticky='w', padx=(25,2))
         searchEntry = Entry(topbarFrame, textvariable=searchText)
-        searchEntry.grid(row=0, column=1, columnspan=5, sticky='nsew')
+        searchEntry.grid(row=0, column=1, columnspan=5, sticky='nsew', padx=(2,40))
+        topbarFrame.grid_columnconfigure(1, weight=1)
         searchEntry.focus_set()
         searchText.trace_add('write', lambda v,i,m,content=content,frame=frame:self.applyContentFilter(frame, content, searchText.get()))
-
-        topbarFrame.pack()
+        topbarFrame.pack(fill=BOTH, expand=False, side=TOP)
 
     def setupRarityFrame(self,frame,itemVar,content):
         topbarFrame = Frame(frame)
         mark = StringVar()
         if 'markDefault' in self.persistent and self.persistent['markDefault'] is not None:
-            self.logWriteSimple('self.persistent', 'markDefault', 3, tags=[self.persistent['markDefault']])
             mark.set(self.persistent['markDefault'])
+        topbarFrame.grid_columnconfigure(0, weight=2, uniform='setupRarityFrameColumns')
+        topbarFrame.grid_columnconfigure(1, weight=1, uniform='setupRarityFrameColumns')
+        topbarFrame.grid_columnconfigure(2, weight=2, uniform='setupRarityFrameColumns')
         markOption = OptionMenu(topbarFrame, mark, *self.marks)
-        markOption.grid(row=0, column=0, sticky='nsw')
+        markOption.grid(row=0, column=0, sticky='nsew')
         rarity = StringVar(value=self.persistent['rarityDefault'])
         rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
-        rarityOption.grid(row=0, column=1, sticky='nsew')
+        rarityOption.grid(row=0, column=2, sticky='nsew')
         modFrame = Frame(topbarFrame)
-        modFrame.grid(row=1, column=0, columnspan=2, sticky='nsew')
+        modFrame.grid(row=1, column=0, columnspan=3, sticky='nsew')
         mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
         rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
-        topbarFrame.pack()
+        topbarFrame.pack(side=TOP)
         if 'rarity' in itemVar and itemVar['rarity']:
             self.setupModFrame(modFrame, rarity=itemVar['rarity'], itemVar=itemVar)
         elif 'rarityDefault' in self.persistent and self.persistent['rarityDefault']:
@@ -2810,7 +2824,8 @@ class SETS():
             if i < len(itemVar['modifiers']):
                 v.set(itemVar['modifiers'][i])
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
-            OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='n')
+            OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='new')
+            frame.grid_columnconfigure(i, weight=1, uniform='setupModFrame')
 
     def getURL(self, name):
         return self.wikihttp + name
