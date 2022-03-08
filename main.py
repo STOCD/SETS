@@ -4,10 +4,8 @@ from tkinter import filedialog
 from tkinter import font
 import tkinter
 from tkinter.ttk import Progressbar
-from xml.dom.expatbuilder import InternalSubsetExtractor
-# from requests.models import requote_uri
 from requests_html import Element, HTMLSession, HTML
-from PIL import Image, ImageTk, ImageGrab  # , PngImagePlugin
+from PIL import Image, ImageTk, ImageGrab
 import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, platform, uuid
 import numpy as np
 
