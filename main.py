@@ -3082,7 +3082,7 @@ class SETS():
                 bolditalic.append(ptext.find("'''''", bolditalic[-1]+5))
             else:
                 bolditalic.append(ptext.find("'''''"))
-            t = t[bolditalic[-1]+5:]
+            t = ptext[bolditalic[-1]+5:]
         t = ptext.replace("'''''", "|||||")
         bold = list()
         while "'''" in t:
@@ -3090,7 +3090,7 @@ class SETS():
                 bold.append(ptext.replace("'''''", "|||||").find("'''", bold[-1]+3))
             else:
                 bold.append(ptext.replace("'''''", "|||||").find("'''"))
-            t = t[bold[-1]+3:]
+            t = ptext[bold[-1]+3:].replace("'''''","|||||")
         t = ptext.replace("'''''", "|||||").replace("'''","|||")
         italic = list()
         while "''" in t:
@@ -3098,7 +3098,7 @@ class SETS():
                 italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''", italic[-1]+2))
             else:
                 italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''"))
-            t = t[italic[-1]+2:]
+            t = ptext[italic[-1]+2:].replace("'''''","|||||").replace("'''","|||")
         bold2 = list()
         t = ptext
         while "<b>" in t:
@@ -3108,7 +3108,7 @@ class SETS():
             else:
                 bold2.append(ptext.find("<b>"))
                 bold2.append(ptext.find("</b>"))
-            t = t[bold2[-1]+4:]
+            t = ptext[bold2[-1]+4:]
         underlined = list()
         t = ptext
         while "<u>" in t:
@@ -3118,7 +3118,7 @@ class SETS():
             else:
                 underlined.append(ptext.find("<u>"))
                 underlined.append(ptext.find("</u>"))
-            t = t[underlined[-1]+4:]
+            t = ptext[underlined[-1]+4:]
         l = bolditalic + bold + italic + bold2 + underlined 
         l.sort()
         self.tag_configure('bolditalic', font=(pfamily, psize, "bold", "italic"))
@@ -3131,6 +3131,7 @@ class SETS():
                 i1 = l[0]
                 i2: int
                 if len(bolditalic) > 0 and i1 == bolditalic[0]:
+                    i2 = bolditalic[1]
                     self.insert(END, passtext[:i1])
                     self.insert(END, passtext[i1+5:i2], "bolditalic")
                     passtext = passtext[i2+5:]
