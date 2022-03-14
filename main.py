@@ -722,11 +722,8 @@ class SETS():
         self.logWriteCounter('groundSkills', '(json)', len(self.cache['groundSkills']))
 
     def precacheSkills(self):
-        if 'skills' in self.cache and len(self.cache['skills']) > 0:
-            return
-
-        self.cache['skills'] = self.fetchOrRequestJson('', 'skills', local=True)
-        self.logWriteCounter('Skills', '(json)', len(self.cache['skills']['content']))
+        self.precacheSpaceSkills()
+        self.precacheGroundSkills()
 
     def precacheDoffs(self, keyPhrase):
         """Populate in-memory cache of doff lists for faster loading"""
@@ -2541,7 +2538,7 @@ class SETS():
         self.labelBuildBlock(parentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.build['eliteCaptain'] else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
 
     def skillGetGroundNode(self, rank, row, col, type='name'):
-        if 'content' in self.cache['skills']:
+        if 'content' in self.cache['groundSkills']:
             # needs to be smarter than 'try'
             try:
                 if type in self.cache['groundSkills']['content'][rank][row][col]:
@@ -2574,9 +2571,6 @@ class SETS():
         return result
 
     def setupSkillBuildFrames(self, environment=None):
-        self.precacheSkills()
-        if not 'content' in self.cache['skills']: return
-
         if environment is None or environment == 'space':
             parentFrame = self.skillSpaceBuildFrame
             self.clearFrame(parentFrame)
@@ -2593,6 +2587,9 @@ class SETS():
 
     def setupGroundSkillTreeFrame(self, parentFrame, environment='ground'):
         self.precacheGroundSkills()
+        if not self.cache['groundSkills']:
+            return
+        
         frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=0, sticky='n', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
@@ -2610,6 +2607,9 @@ class SETS():
 
     def setupSpaceSkillTreeFrame(self, parentFrame, environment='space'):
         self.precacheSpaceSkills()
+        if not self.cache['spaceSkills']:
+            return
+
         frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
