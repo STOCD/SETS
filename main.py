@@ -971,6 +971,7 @@ class SETS():
             'useExperimentalTooltip': 0,
             'autosave': 1,
             'autosave_delay': 750,  # ms
+            'versioning': 0,
             'perf': dict(),
             'tags': {
                 'maindamage':{
@@ -4515,6 +4516,7 @@ class SETS():
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : {'col': 1, 'type': 'blank'},
             'Auto-save build': {'col': 2, 'type': 'menu', 'var_name': 'autosave', 'boolean': True},
+            'In-file versions': {'col': 2, 'type': 'menu', 'var_name': 'versioning', 'boolean': True},
             'Force out of date JSON loading'        : {'col': 2, 'type': 'menu', 'var_name': 'forceJsonLoad', 'boolean': True},
             'Disabled precache at startup'          : {'col': 2, 'type': 'menu', 'var_name': 'noPreCache', 'boolean': True},
             'Use faction-specific icons (experimental)': {'col': 2, 'type': 'menu', 'var_name': 'useFactionSpecificIcons', 'boolean': True},
@@ -4585,7 +4587,7 @@ class SETS():
                     self.backend[var_name].set(data)
         else:
             self.persistentSet(data, var_name=var_name, isBoolean=boolean)
-        self.autosave_queue()
+        self.auto_save_queue()
 
 
     def create_item_block(self, parent_frame, theme=None, shape='col', elements=2, row=0, col=0):
