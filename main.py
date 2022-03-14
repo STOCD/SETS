@@ -1016,6 +1016,7 @@ class SETS():
             'autosave': '.autosave.json',
             'cache': '.cache_SETS.json',
             'skills':   'skills.json',
+            'perf_to_retain': 50,
             'folder': {
                 'config' : '.config',
                 'cache' : 'cache',
@@ -5130,7 +5131,9 @@ class SETS():
             self.perf_store[name] = dict()
 
         if not name in self.persistent['perf']:
-            self.persistent['perf'][name] = dict()
+            self.persistent['perf'][name] = []
+        if isinstance(self.persistent['perf'][name], dict):
+            self.persistent['perf'][name] = []
 
         self.perf_store[name][type] = now
 
@@ -5139,7 +5142,8 @@ class SETS():
                 self.perf_store[name]['start'] = now
             start = self.perf_store[name]['start']
             run = now - start
-            self.persistent['perf'][name]['run'] = '{}'.format(run)
+            perf_slice = slice(-1 * self.settings['perf_to_retain'], None)
+            self.persistent['perf'][name][perf_slice] += ['{}'.format(run)]
 
             self.logWriteSimple('=== Splash', type, 2, [now, run])
             return run
