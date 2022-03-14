@@ -2862,7 +2862,7 @@ class SETS():
 
             if environment == 'ground' or (sspec is not None and sspec != ''):
                 if environment == 'ground':
-                    specLabel1 = OptionMenu(bSubFrame0, v2, *sorted(self.cache['specsGroundBoff']))
+                    specLabel1 = OptionMenu(bSubFrame0, v2, *['']+sorted(self.cache['specsGroundBoff']))
                     specLabel1.configure(pady=2)
                 else:
                     specLabel1 = Label(bSubFrame0, text='/  '+sspec)
