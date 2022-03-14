@@ -898,6 +898,7 @@ class SETS():
             self.build[key] = self.backend[key].get()
         elif key2 in self.backend[key]:
             self.build[key][key2] = self.backend[key][key2].get()
+        self.auto_save_queue()
 
     def copyBuildToBackendBoolean(self, key, key2=None):
         """Helper function to copy build value to backend dict"""
@@ -969,7 +970,7 @@ class SETS():
             'useFactionSpecificIcons': 0,
             'useExperimentalTooltip': 0,
             'autosave': 1,
-            'autosave_delay': 250,  # ms
+            'autosave_delay': 750,  # ms
             'perf': dict(),
             'tags': {
                 'maindamage':{
@@ -1143,6 +1144,7 @@ class SETS():
     def hookBackend(self):
         self.backend['playerHandle'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerHandle'))
         self.backend['playerShipName'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerShipName'))
+        self.backend['playerName'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('playerName'))
         self.backend['captain']['faction'].trace_add('write', lambda v,i,m:self.captainFactionCallback())
         self.backend['career'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('career'))
         self.backend['species'].trace_add('write', lambda v,i,m:self.speciesUpdateCallback())
@@ -1159,11 +1161,11 @@ class SETS():
 
     def captainFactionCallback(self):
         self.copyBackendToBuild('captain', 'faction')
-        if not self.clearing:
-            self.resetCache('boffAbilities')
-            self.precacheBoffAbilities()
-        self.setupCurrentBuildFrames()
-        self.auto_save_queue()
+        if self.persistent['useFactionSpecificIcons']:
+            if not self.clearing:
+                self.resetCache('boffAbilities')
+                self.precacheBoffAbilities()
+            self.setupCurrentBuildFrames()
 
 
     def boffTitleToSpec(self, title):
@@ -2304,7 +2306,6 @@ class SETS():
     def speciesUpdateCallback(self):
         self.copyBackendToBuild('species')
         self.setupCurrentTraitFrame()
-        self.auto_save_queue()
 
     def setupClearSlotFrame(self, frame, itemVar, pickWindow):
         topbarFrame = Frame(frame)
@@ -2589,7 +2590,7 @@ class SETS():
         self.precacheGroundSkills()
         if not self.cache['groundSkills']:
             return
-        
+
         frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=0, sticky='n', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
@@ -4179,10 +4180,11 @@ class SETS():
 
     def updateShipDesc(self, event):
         self.build['playerShipDesc'] = self.shipDescText.get("1.0", END)
+        self.auto_save_queue()
 
     def updatePlayerDesc(self, event):
         self.build['playerDesc'] = self.charDescText.get("1.0", END)
-
+        self.auto_save_queue()
 
     def setShipImage(self, suppliedImage=None):
         if suppliedImage is None: suppliedImage = self.getEmptyFactionImage()
@@ -4583,6 +4585,7 @@ class SETS():
                     self.backend[var_name].set(data)
         else:
             self.persistentSet(data, var_name=var_name, isBoolean=boolean)
+        self.autosave_queue()
 
 
     def create_item_block(self, parent_frame, theme=None, shape='col', elements=2, row=0, col=0):
@@ -5019,12 +5022,14 @@ class SETS():
         self.window.after(self.persistent['autosave_delay'], self.auto_save, 'template')
 
     def auto_save(self, type='state', quiet=False):
+        self.autosaving = True
         if type == 'state' or type == 'all':
             self.save_json(self.getFileLocation('state'), self.persistent, 'State file', quiet)
 
         if self.persistent['autosave'] and \
                 (type == 'template' or type == 'all'):
             self.save_json(self.getFileLocation('autosave'), self.build, 'Auto save file', quiet)
+        self.autosaving = False
 
     def save_json(self, file, tree, title, quiet=False):
         try:
