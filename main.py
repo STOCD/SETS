@@ -408,7 +408,7 @@ class SETS():
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
             self.persistent['imagesFail'][url] = today.isoformat()
-            self.stateSave(quiet=True)
+            self.auto_save(quiet=True)
             return None
 
         return img_request.content
@@ -477,7 +477,7 @@ class SETS():
             self.progressBarUpdate(int(self.updateOnHeavyStep / 2))
             self.persistent['imagesFactionAliases'][filename] = filenameExisting
             self.logWriteTransaction('Image File', 'alias', '----', filename, 3, [filenameExisting])
-            self.stateSave(quiet=True)
+            self.auto_save(quiet=True)
             filename = filenameExisting
 
         if image_data is not None:
@@ -971,6 +971,8 @@ class SETS():
             'pickerSpawnUnderMouse': 1,
             'useFactionSpecificIcons': 0,
             'useExperimentalTooltip': 0,
+            'autosave': 1,
+            'autosave_delay': 250,  # ms
             'perf': dict(),
             'tags': {
                 'maindamage':{
@@ -999,6 +1001,8 @@ class SETS():
         self.logmini = StringVar()
         self.logFull = StringVar()
 
+        self.autosaving = False
+
         self.perf_store = dict()
         self.windowUpdate = dict()
         self.tooltip_tracking = dict()
@@ -1010,6 +1014,8 @@ class SETS():
         self.settings = {
             'debug': self.debugDefault,
             'template': '.template',
+            'autosave': '.autosave.json',
+            'cache': '.cache_SETS.json',
             'skills':   'skills.json',
             'folder': {
                 'config' : '.config',
@@ -1160,6 +1166,7 @@ class SETS():
             self.resetCache('boffAbilities')
             self.precacheBoffAbilities()
         self.setupCurrentBuildFrames()
+        self.auto_save_queue()
 
 
     def boffTitleToSpec(self, title):
@@ -1494,6 +1501,7 @@ class SETS():
                     self.build['boffs'][key][i] = name
                 else:
                     self.build[key][i] = item
+            self.auto_save_queue()
 
     def font_dict_create(self, name):
         (family, size, weight) = self.font_tuple_create(name)
@@ -1601,7 +1609,6 @@ class SETS():
         """Common callback for boff labels"""
         self.precacheBoffAbilities()
 
-
         spec = self.boffTitleToSpec(args[0].get()) if args[0] else ''
         spec2 = args[1].get() if args[1] else ''
         # args[2] is the same as i
@@ -1639,6 +1646,7 @@ class SETS():
         self.setupTierFrame(tier)
         self.setupShipImageFrame()
         self.backend['tier'].set(self.getTierOptions(tier)[0])
+        self.auto_save_queue()
 
     def shipPickButtonCallback(self, *args):
         """Callback for ship picker button"""
@@ -1660,6 +1668,7 @@ class SETS():
                 self.shipButton.configure(text=item['item'])
                 self.backend['ship'].set(item['item'])
                 self.setupBoffFrame('space', self.backend['shipHtml'])
+            self.auto_save_queue()
 
     def importCallback(self, event=None):
         """Callback for import button"""
@@ -1667,9 +1676,10 @@ class SETS():
         inFilename = filedialog.askopenfilename(filetypes=[('SETS files', '*.json *.png'),('JSON files', '*.json'),('PNG image','*.png'),('All Files','*.*')], initialdir=initialDir)
         self.importByFilename(inFilename)
 
-    def importByFilename(self, inFilename, force=False):
-        if not inFilename: return
+    def importByFilename(self, inFilename, force=False, autosave=False):
+        if not inFilename or not os.path.exists(inFilename) or not os.path.getsize(inFilename): return False
 
+        name = '{} file'.format('Autosave' if autosave else 'Template')
         self.makeSplashWindow()
         if inFilename.lower().endswith('.png'):
             # image = Image.open(inFilename)
@@ -1677,21 +1687,21 @@ class SETS():
             try:
                 self.buildImport = json.loads(self.decodeBuildFromImage(inFilename))
             except:
-                self.logWriteTransaction('Template File', 'PNG load error', '', inFilename, 0)
+                self.logWriteTransaction(name, 'PNG load error', '', inFilename, 0)
                 return
         else:
             with open(inFilename, 'r') as inFile:
                 try:
                     self.buildImport = json.load(inFile)
                 except:
-                    self.logWriteTransaction('Template File', 'load complaint', '', inFilename, 0)
+                    self.logWriteTransaction(name, 'load complaint', '', inFilename, 0)
 
         if not force and 'versionJSON' not in self.buildImport:
             result = False
-            self.logWriteTransaction('Template File', 'version missing', '', inFilename, 0)
+            self.logWriteTransaction(name, 'version missing', '', inFilename, 0)
         elif not force and self.buildImport['versionJSON'] < self.versionJSONminimum:
             result = False
-            self.logWriteTransaction('Template File', 'version mismatch', '', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
+            self.logWriteTransaction(name, 'version mismatch', '', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
         else:
             result = True
             self.logWriteBreak('IMPORT PROCESSING START')
@@ -1704,7 +1714,7 @@ class SETS():
             self.setupCurrentBuildFrames()
             self.resetAfterImport()
 
-            self.logWriteTransaction('Template File', 'loaded', '', inFilename, 0, [logNote])
+            self.logWriteTransaction(name, 'loaded', '', inFilename, 0, [logNote])
             self.logWriteBreak('IMPORT PROCESSING END')
 
         self.removeSplashWindow()
@@ -1836,6 +1846,7 @@ class SETS():
         canvas.itemconfig(img[1],image=image1)
 
         self.skillButtonChildUpdate(rank, row, col, environment)
+        self.auto_save_queue()
 
     def skillGroundLabelCallback(self, e, canvas, img, i, key, args, environment='ground'):
         self.skillLabelCallback(e, canvas, img, i, key, args, environment)
@@ -2075,22 +2086,28 @@ class SETS():
     def settingsButtonCallback(self, type):
         self.logWriteSimple("settingsButtonCallback", '', 2, [type])
 
-        if type == 'clearcache': self.clearCacheFolder()
-        elif type == 'clearimages': self.clearImagesFolder()
+        if type == 'clearcache':
+            self.clearCacheFolder()
+        elif type == 'clearimages':
+            self.clearImagesFolder()
         elif type == 'clearfactionImages':
             self.persistent['imagesFactionAliases'] = dict()
-            self.stateSave()
+            self.auto_save()
         elif type == 'clearmemcache':
             self.resetCache()
             self.requestWindowUpdateHold(0)
             self.precachePreload()
-        elif type == 'cacheSave': self.cacheSave()
-        elif type == 'openLog': self.logWindowCreate()
+        elif type == 'cacheSave':
+            self.save_json(self.getFileLocation('cache'), self.cache, 'Cache file', quiet=False)
+        elif type == 'openLog':
+            self.logWindowCreate()
         elif type == 'openSplash':
             self.updateWindowSize()
             self.makeSplashWindow(close=True)
-        elif type == 'predownloadShipImages': self.predownloadShipImages()
-        elif type == 'predownloadGearImages': self.predownloadGearImages()
+        elif type == 'predownloadShipImages':
+            self.predownloadShipImages()
+        elif type == 'predownloadGearImages':
+            self.predownloadGearImages()
         elif type == 'savePositionOnly' or type == 'savePosition':
             self.logWriteSimple(type, 'attributes', 2, [*self.window.attributes(), self.window.state()])
             if (self.window.attributes('-fullscreen')):
@@ -2101,10 +2118,10 @@ class SETS():
                 self.persistent['geometry'] = self.window.geometry()
             else:
                 self.persistent['geometry'] = '+{}+{}'.format(self.window.winfo_x(), self.window.winfo_y())
-            self.stateSave()
+            self.auto_save()
         elif type == 'resetPosition':
                 self.persistent['geometry'] = ''
-                self.stateSave()
+                self.auto_save()
                 self.setupGeometry()
         elif type == 'backupCache':
             # Backup state file
@@ -2146,6 +2163,7 @@ class SETS():
 
         self.clearing = 0
         self.setupCurrentBuildFrames()
+        self.auto_save_queue()
 
     def getEmptyFactionImage(self, faction=None):
         if faction is None:
@@ -2156,6 +2174,7 @@ class SETS():
 
     def boffUniversalCallback(self, v, idx, key):
         self.build['boffseats'][key][idx] = v.get()
+        self.auto_save_queue()
 
     def doffStripPrefix(self, textBlock, isSpace=True):
         textBlock = self.deWikify(textBlock)
@@ -2178,6 +2197,7 @@ class SETS():
 
         self.setupDoffFrame(self.shipDoffFrame)
         self.setupDoffFrame(self.groundDoffFrame)
+        self.auto_save_queue()
 
     def doffEffectCallback(self, om, v0, v1, row, isSpace=True):
         if self.cache['doffs'] is None:
@@ -2185,13 +2205,16 @@ class SETS():
         self.build['doffs']['space' if isSpace else 'ground'][row]['effect'] = v1.get()
         self.setupDoffFrame(self.shipDoffFrame)
         self.setupDoffFrame(self.groundDoffFrame)
+        self.auto_save_queue()
 
     def tagBoxCallback(self, var, text):
         self.build['tags'][text] = var.get()
+        self.auto_save_queue()
 
     def eliteCaptainCallback(self, event=None):
         self.build['eliteCaptain'] = bool(self.backend['eliteCaptain'].get())
         self.setupCurrentBuildFrames()
+        self.auto_save_queue()
 
     def markBoxCallback(self, itemVar, value):
         itemVar['mark'] = value
@@ -2284,6 +2307,7 @@ class SETS():
     def speciesUpdateCallback(self):
         self.copyBackendToBuild('species')
         self.setupCurrentTraitFrame()
+        self.auto_save_queue()
 
     def setupClearSlotFrame(self, frame, itemVar, pickWindow):
         topbarFrame = Frame(frame)
@@ -3764,6 +3788,7 @@ class SETS():
             self.build[masterkey] = var
         self.setupCurrentBuildTagFrames()
         self.logWriteSimple('checkbuttonCallback', var, 2, [masterkey, key, text])
+        self.auto_save_queue()
     
     def checkbuttonBuildBlock(self, window, frame: Frame, values, bg, fg, masterkey: str, key = str(""), geomanager="grid", orientation=HORIZONTAL, rowoffset=0, columnoffset=0,  alignment=TOP):
         """Inserts a series of Checkbuttons either horizontally or vertically, either row for row in the grid of the parent frame or packed into the parent
@@ -4487,6 +4512,7 @@ class SETS():
             'Open Log'                              : {'col': 2, 'type': 'button', 'var_name': 'openLog'},
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : {'col': 1, 'type': 'blank'},
+            'Auto-save build': {'col': 2, 'type': 'menu', 'var_name': 'autosave', 'boolean': True},
             'Force out of date JSON loading'        : {'col': 2, 'type': 'menu', 'var_name': 'forceJsonLoad', 'boolean': True},
             'Disabled precache at startup'          : {'col': 2, 'type': 'menu', 'var_name': 'noPreCache', 'boolean': True},
             'Use faction-specific icons (experimental)': {'col': 2, 'type': 'menu', 'var_name': 'useFactionSpecificIcons', 'boolean': True},
@@ -4519,7 +4545,7 @@ class SETS():
         else:
             self.persistent[var_name] = choice
 
-        self.stateSave()
+        self.auto_save()
 
         if var_name == 'consoleSort':
             # Need to hook the ship frame to take sub-frame updates
@@ -4797,7 +4823,7 @@ class SETS():
         for type in ['skill', 'ground', 'space']:
             self.setupInitialBuildFrames(type)
 
-        if not self.templateFileLoad():
+        if not self.build_auto_load():
             self.setupCurrentBuildFrames()
             self.resetBuildFrames()
 
@@ -4896,42 +4922,42 @@ class SETS():
 
         return filePath
 
-    def stateFileLocation(self):
-        filePath = self.configFolderLocation()
 
-        if os.path.exists(filePath):
-            fileName = os.path.join(filePath, self.fileStateName)
-            if not os.path.exists(fileName):
-                open(fileName, 'w').close()
+    def getFileLocation(self, type):
+        fileArgs = None
+        touch_on_access = False
+        filePath = self.configFolderLocation()
+        fileBase = self.settings[type] if type in self.settings else ''
+        if type == 'autosave':
+            filePath = self.getFolderLocation('library')
+            touch_on_access = True
+        elif type == 'state':
+            fileBase = self.fileStateName
+            touch_on_access = True
+        elif type == 'template':
+            fileArgs = self.args.file
+        elif type == 'cache':
+            touch_on_access = True
         else:
-            fileName = self.fileStateName
+            # Invalid option
+            return
+
+        if fileArgs is not None and os.path.exists(fileArgs):
+            fileName = fileArgs
+        else:
+            if os.path.exists(filePath):
+                fileName = os.path.join(filePath, fileBase)
+                if touch_on_access and not os.path.exists(fileName):
+                    open(fileName, 'w').close()
+
+            if not os.path.exists(filePath):
+                fileName = fileBase
+
+        if type == 'template':
+            fileName += '.png' if os.path.exists(fileName+'.png') else '.json'
 
         return fileName
 
-    def cacheFileLocation(self):
-        filePath = self.configFolderLocation()
-
-        if os.path.exists(filePath):
-            fileName = os.path.join(filePath, '.cache_SETS.json')
-            if not os.path.exists(fileName):
-                open(fileName, 'w').close()
-        else:
-            fileName = '.cache_SETS.json'
-
-        return fileName
-
-    def templateFileLocation(self):
-        filePath = self.configFolderLocation()
-
-        if os.path.exists(filePath):
-            fileName = os.path.join(filePath, self.settings['template'])
-        else:
-            fileName = self.settings['template']
-
-        if os.path.exists(fileName+'.json'): fileName += '.json'
-        else: fileName += '.png'
-
-        return fileName
 
     def configFileLoad(self):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
@@ -4964,9 +4990,7 @@ class SETS():
 
     def stateFileLoad(self, init=False):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
-        configFile = self.stateFileLocation()
-        if not os.path.exists(configFile):
-            configFile = self.fileStateName
+        configFile = self.getFileLocation('state')
 
         if os.path.exists(configFile):
             self.logWriteTransaction('State File', 'found', '', configFile, 1)
@@ -4984,69 +5008,40 @@ class SETS():
             self.logWriteTransaction('State File', 'not found', '', configFile, 1)
 
         if init:
-            self.stateSave()
+            self.auto_save()
 
-    def skillFileLoad(self):
-        # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
-        configFile = self.stateFileLocation()
-        if not os.path.exists(configFile):
-            configFile = self.fileStateName
+    def auto_save_queue(self):
+        if self.autosaving:
+            return
 
-        if os.path.exists(configFile):
-            self.logWriteTransaction('State File', 'found', '', configFile, 1)
-            with open(configFile, 'r') as inFile:
-                try:
-                    persistentNew = json.load(inFile)
-                except:
-                    self.logWriteTransaction('State File', 'load error', '', configFile, 1)
-                    return
-                logNote = ' (fields:['+str(len(persistentNew))+'=>'+str(len(self.persistent))+']='
-                self.persistent.update(persistentNew)
-                logNote = logNote + str(len(self.persistent)) + ')'
-                self.logWriteTransaction('State File', 'loaded', '', configFile, 0, [logNote])
-        else:
-            self.logWriteTransaction('State File', 'not found', '', configFile, 1)
+        self.autosaving = True
+        self.window.after(self.persistent['autosave_delay'], self.auto_save, 'template')
 
+    def auto_save(self, type='state', quiet=False):
+        if type == 'state' or type == 'all':
+            self.save_json(self.getFileLocation('state'), self.persistent, 'State file', quiet)
 
-    def stateSave(self, quiet=False):
-        configFile = self.stateFileLocation()
-        if not os.path.exists(configFile):
-            configFile = self.fileStateName
+        if self.persistent['autosave'] and \
+                (type == 'template' or type == 'all'):
+            self.save_json(self.getFileLocation('autosave'), self.build, 'Auto save file', quiet)
 
+    def save_json(self, file, tree, title, quiet=False):
         try:
-            with open(configFile, "w") as outFile:
-                json.dump(self.persistent, outFile)
-                self.logWriteTransaction('State File', 'saved', '', outFile.name, 5 if quiet else 1)
+            with open(file, "w") as outFile:
+                json.dump(tree, outFile)
+                self.logWriteTransaction(title, 'saved', '', outFile.name, 5 if quiet else 1)
         except AttributeError:
-            self.logWriteTransaction('State File', 'save error', '', outFile.name, 1)
+            self.logWriteTransaction(title, 'save error', '', outFile.name, 1)
             pass
 
-    def cacheSave(self, quiet=False):
-        configFile = self.cacheFileLocation()
-        if not os.path.exists(configFile):
-            configFile = self.fileStateName
+    def build_auto_load(self):
+        configFile = self.getFileLocation('autosave')
+        autosave_result = self.importByFilename(self.getFileLocation('autosave'), autosave=True)
+        if not autosave_result:
+            autosave_result = self.importByFilename(self.getFileLocation('template'))
 
-        try:
-            with open(configFile, "w") as outFile:
-                json.dump(self.cache, outFile)
-                self.logWriteTransaction('Cache File', 'saved', '', outFile.name, 5 if quiet else 1)
-        except AttributeError:
-            self.logWriteTransaction('Cache File', 'save error', '', outFile.name, 1)
-            pass
+        return autosave_result
 
-    def templateFileLoad(self):
-        configFile = self.templateFileLocation()
-        if not os.path.exists(configFile): configFile = self.settings['template']
-        if self.args.file is not None and os.path.exists(self.args.file): configFile = self.args.file
-
-        if os.path.exists(configFile):
-            self.logWriteTransaction('Template File', 'found', '', configFile, 1)
-            with open(configFile, 'r') as inFile:
-                return self.importByFilename(configFile)
-
-        else:
-            self.logWriteTransaction('Template File', 'not found', '', configFile, 0)
-        return False
 
     def init_settings(self):
         """Initialize session settings state"""
