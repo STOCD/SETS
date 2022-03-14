@@ -4935,6 +4935,7 @@ class SETS():
             fileBase = self.fileStateName
             touch_on_access = True
         elif type == 'template':
+            filePath = self.getFolderLocation('library')
             fileArgs = self.args.file
         elif type == 'cache':
             touch_on_access = True
