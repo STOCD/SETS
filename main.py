@@ -2589,7 +2589,7 @@ class SETS():
             self.setupGroundSkillTreeFrame(parentFrame, 'ground')
             self.setupSkillBonusFrame(parentFrame, 'ground')
 
-        #self.clearInfoboxFrame('skill')
+        # self.clearInfoboxFrame('skill')
 
     def setupGroundSkillTreeFrame(self, parentFrame, environment='ground'):
         self.precacheGroundSkills()
