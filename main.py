@@ -2091,11 +2091,16 @@ class SETS():
             self.makeSplashWindow(close=True)
         elif type == 'predownloadShipImages': self.predownloadShipImages()
         elif type == 'predownloadGearImages': self.predownloadGearImages()
-        elif type == 'savePositionOnly':
-            self.persistent['geometry'] = self.window.geometry()
-            self.stateSave()
-        elif type == 'savePosition':
-            self.persistent['geometry'] = '+{}+{}'.format(self.window.winfo_x(), self.window.winfo_y())
+        elif type == 'savePositionOnly' or type == 'savePosition':
+            self.logWriteSimple(type, 'attributes', 2, [*self.window.attributes(), self.window.state()])
+            if (self.window.attributes('-fullscreen')):
+                self.persistent['geometry'] = '-fullscreen'
+            elif (self.window.state() == 'zoomed'):
+                self.persistent['geometry'] = 'zoomed'
+            elif type == 'savePositionOnly':
+                self.persistent['geometry'] = self.window.geometry()
+            else:
+                self.persistent['geometry'] = '+{}+{}'.format(self.window.winfo_x(), self.window.winfo_y())
             self.stateSave()
         elif type == 'resetPosition':
                 self.persistent['geometry'] = ''
@@ -5105,7 +5110,13 @@ class SETS():
             self.window_topleft_y = 0
 
         if not default and 'geometry' in self.persistent and self.persistent['geometry']:
-                self.window.geometry(self.persistent['geometry'])
+                if self.persistent['geometry'] == '-fullscreen':
+                    self.window.attributes(self.persistent['geometry'], True)
+                    self.updateWindowSize(caller='setupGeometry', no_geometry=True)
+                elif self.persistent['geometry'] == 'zoomed':
+                    self.window.state(self.persistent['geometry'])
+                else:
+                    self.window.geometry(self.persistent['geometry'])
         else:
                 self.window.geometry("{}x{}+{}+{}".format(self.windowWidth, self.windowHeight, self.window_topleft_x, self.window_topleft_y))
 
@@ -5198,7 +5209,7 @@ class SETS():
         self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, scale, dpi))
 
 
-    def updateWindowSize(self, caller='', init=False):
+    def updateWindowSize(self, caller='', init=False, no_geometry=False):
         if init:
             self.itemBoxX = self.itemBoxX_default = 32
             self.itemBoxY = self.itemBoxY_default = 42
@@ -5231,7 +5242,8 @@ class SETS():
         self.splashBoxY = self.windowActiveHeight * 2 / 3
 
         self.setupUIScaling()
-        self.setupGeometry()
+        if not no_geometry:
+            self.setupGeometry()
 
         if init:
             return
