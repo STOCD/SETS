@@ -1780,6 +1780,7 @@ class SETS():
                 self.buildImport = json.loads(self.decodeBuildFromImage(inFilename))
             except:
                 self.logWriteTransaction(name, 'PNG load error', '', inFilename, 0)
+                self.removeSplashWindow()
                 return
         else:
             with open(inFilename, 'r') as inFile:
@@ -1788,17 +1789,25 @@ class SETS():
                 except:
                     self.logWriteTransaction(name, 'load complaint', '', inFilename, 0)
 
-        if not force and 'versionJSON' not in self.buildImport:
+        if self.persistent['versioning'] and isinstance(self.buildImport, dict):
+            self.buildImport = [self.buildImport]
+
+        if isinstance(self.buildImport, list) and self.buildImport:
+            buildRevisionCurrent = self.buildImport[-1]
+        else:
+            buildRevisionCurrent = self.buildImport
+
+        if not force and 'versionJSON' not in buildRevisionCurrent:
             result = False
             self.logWriteTransaction(name, 'version missing', '', inFilename, 0)
-        elif not force and self.buildImport['versionJSON'] < self.versionJSONminimum:
+        elif not force and buildRevisionCurrent['versionJSON'] < self.versionJSONminimum:
             result = False
-            self.logWriteTransaction(name, 'version mismatch', '', inFilename, 0, [str(self.buildImport['versionJSON'])+' < '+str(self.versionJSONminimum)])
+            self.logWriteTransaction(name, 'version mismatch', '', inFilename, 0, [str(buildRevisionCurrent['versionJSON'])+' < '+str(self.versionJSONminimum)])
         else:
             result = True
             self.logWriteBreak('IMPORT PROCESSING START')
-            logNote = '{} (fields:[{}=>{}]='.format(' (FORCE LOAD)' if force else '', len(self.buildImport), len(self.build))
-            self.build.update(self.buildImport)
+            logNote = '{} (fields:[{}=>{}]='.format(' (FORCE LOAD)' if force else '', len(buildRevisionCurrent), len(self.build))
+            self.build.update(buildRevisionCurrent)
             logNote = logNote+'{} merged'.format(len(self.build))
 
             self.resetBackend(rebuild=True)
@@ -1848,17 +1857,26 @@ class SETS():
         outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.filenameDefault(), initialdir=initialDir)
         if not outFilename: return
         justFile, chosenExtension = os.path.splitext(outFilename)
+        self.update_build_master()
         if chosenExtension.lower() == '.json':
             try:
                 outFile = open(outFilename, 'w')
-                json.dump(self.build, outFile)
+                json.dump(self.buildImport, outFile)
             except AttributeError:
                 pass
         else:
             image.save(outFilename, chosenExtension.strip('.'))
-            self.encodeBuildInImage(outFilename, json.dumps(self.build), outFilename)
+            self.encodeBuildInImage(outFilename, json.dumps(self.buildImport), outFilename)
 
         self.logWriteTransaction('Export build', chosenExtension, str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size) if chosenExtension.lower() == '.png' else None])
+
+    def update_build_master(self):
+        if self.persistent['versioning']:
+            if self.build != self.buildImport[-1]:
+                self.logWriteSimple('update_build_master', 'extend', 2, [len(self.buildImport)])
+                self.buildImport = self.buildImport[-5:] + [self.build]
+        else:
+            self.buildImport = self.build
 
     def skillAllowed(self, rank, row, col, environment):
         if environment == 'ground':
@@ -5141,7 +5159,15 @@ class SETS():
 
         if self.persistent['autosave'] and \
                 (type == 'template' or type == 'all'):
-            self.save_json(self.getFileLocation('autosave'), self.build, 'Auto save file', quiet)
+            # merge partially with update_build_master
+            if self.persistent['versioning']:
+                if self.buildImport[-1] == self.build:
+                    export = self.buildImport
+                else:
+                    export = self.buildImport + [self.build]
+            else:
+                export = self.build
+            self.save_json(self.getFileLocation('autosave'), export, 'Auto save file', quiet)
         self.autosaving = False
 
     def save_json(self, file, tree, title, quiet=False):
