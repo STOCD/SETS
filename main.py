@@ -1696,6 +1696,7 @@ class SETS():
     def get_display_window(self, title, text):
         w = Toplevel(self.window, bg=self.theme['app']['bg'])
         w.title(title)
+        w.geometry('{}x{}'.format(int(self.windowWidth / 2), self.windowHeight))
         f = Frame(w, bg=self.theme['app']['fg'])
         f.pack(fill=BOTH, expand=True, padx=15, pady=15)
         t = Text(f, bg=self.theme["app"]["fg"], fg="#ffffff", relief="flat")
@@ -1708,6 +1709,7 @@ class SETS():
         w.mainloop()
 
     def merge_file_create(self):
+        eol = '\r\n'
         name = 'Merge file'
         initialDir = self.getFolderLocation('library')
         inFilename = filedialog.askopenfilename(filetypes=[('SETS merge files', '*.txt'),('All Files','*.*')], initialdir=initialDir)
@@ -1715,37 +1717,55 @@ class SETS():
             return False
 
         self.makeSplashWindow()
-
         with open(inFilename, 'r') as inFile:
             self.logWriteTransaction(name, 'loaded', '', inFilename, 1)
             self.logWriteBreak('MERGE PROCESSING START')
             data = inFile.read()
-            # Clear file comments
-            data = re.sub('"""[^"]*"""', '', data)
-            eol = '\n'
-            for type in self.build:
-                full_list = ''
-                if isinstance(self.build[type], dict):
-                    for subtype in self.build[type]:
-                        item = self.build[type][subtype]
-                        data = data.replace('{{{{{}:{}}}}}'.format(type.upper(), subtype.upper()), '{}'.format(item))
-                        full_list += '{}:{}{}'.format(subtype, item, eol)
-                    data = data.replace('{{{{{}:*}}}}'.format(type.upper()), full_list)
-                elif isinstance(self.build[type], list):
-                    for i in range(len(self.build[type])):
-                        item = self.build[type][i]
-                        data = data.replace('{{{{{}:{}}}}}'.format(type.upper(), i), '{}'.format(item))
-                        full_list += '{}{}'.format(item, eol)
-                    data = data.replace('{{{{{}:*}}}}'.format(type.upper()), full_list)
-                else:
-                    data = data.replace('{{{{{}}}}}'.format(type.upper()), '{}'.format(self.build[type]))
-
+            data = re.sub('"""[^"]*"""', '', data) # Clear file comments
+            data = self.merge_walk(data, self.build)
+            data = re.sub('{{.[^}]*}}[\r\n]+', '', data, re.M)  # Clear unused merge entries
+            data = re.sub('{{.[^}]*}}', '', data)  # Clear unused merge entries
             self.logWriteBreak('MERGE PROCESSING END')
         self.removeSplashWindow()
 
         self.get_display_window('Merge export', data)
 
         return result
+
+    def merge_walk(self, data, tree, tag_pre=''):
+        self.logWriteSimple('merge', '', 2, [tag_pre])
+        eol = '\n'
+        full_list = ''
+        if isinstance(tree, dict):
+            for subtype in tree:
+                tag = '{}{}'.format(tag_pre, subtype.upper())
+                data = data.replace('{{{{{}}}}}'.format(tag), '{}'.format(tree[subtype]))
+                full_list_item = self.merge_list(tree[subtype])
+                full_list += '{}{}:{}'.format(eol if full_list else '', subtype, full_list_item) if full_list_item else ''
+                data = self.merge_walk(data, tree[subtype], tag + ':')
+            data = data.replace('{{{{{}*}}}}'.format(tag_pre, '*'), full_list)
+        elif isinstance(tree, list):
+            for i in range(len(tree)):
+                tag = '{}{}'.format(tag_pre, i)
+                data = data.replace('{{{{{}}}}}'.format(tag), '{}'.format(tree[i]))
+                full_list_item = self.merge_list(tree[i])
+                full_list += '{}{}:{}'.format(eol if full_list else '', i+1, full_list_item) if full_list_item else ''
+                data = self.merge_walk(data, tree[i], tag + ':')
+            data = data.replace('{{{{{}*}}}}'.format(tag_pre, '*'), full_list)
+        elif tag_pre:
+            tag = '{}'.format(tag_pre)
+            data = data.replace('{{{{{}}}}}'.format(tag), '{}'.format(tree))
+
+        return data
+
+    def merge_list(self, tree):
+        if isinstance(tree, dict) and 'item' in tree:
+            tree = tree['item']
+
+        if tree is None:
+            tree = ''
+
+        return '{}'.format(tree)
 
     def importByFilename(self, inFilename, force=False, autosave=False):
         if not inFilename or not os.path.exists(inFilename) or not os.path.getsize(inFilename):
