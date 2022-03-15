@@ -1693,8 +1693,63 @@ class SETS():
         inFilename = filedialog.askopenfilename(filetypes=[('SETS files', '*.json *.png'),('JSON files', '*.json'),('PNG image','*.png'),('All Files','*.*')], initialdir=initialDir)
         self.importByFilename(inFilename)
 
+    def get_display_window(self, title, text):
+        w = Toplevel(self.window, bg=self.theme['app']['bg'])
+        w.title(title)
+        f = Frame(w, bg=self.theme['app']['fg'])
+        f.pack(fill=BOTH, expand=True, padx=15, pady=15)
+        t = Text(f, bg=self.theme["app"]["fg"], fg="#ffffff", relief="flat")
+        t.pack(fill=BOTH, expand=True)
+
+        t.configure(state=NORMAL)
+        t.delete('1.0',END)
+        t.insert(END, text)
+        t.configure(state=DISABLED)
+        w.mainloop()
+
+    def merge_file_create(self):
+        name = 'Merge file'
+        initialDir = self.getFolderLocation('library')
+        inFilename = filedialog.askopenfilename(filetypes=[('SETS merge files', '*.txt'),('All Files','*.*')], initialdir=initialDir)
+        if not inFilename or not os.path.exists(inFilename) or not os.path.getsize(inFilename):
+            return False
+
+        self.makeSplashWindow()
+
+        with open(inFilename, 'r') as inFile:
+            self.logWriteTransaction(name, 'loaded', '', inFilename, 1)
+            self.logWriteBreak('MERGE PROCESSING START')
+            data = inFile.read()
+            # Clear file comments
+            data = re.sub('"""[^"]*"""', '', data)
+            eol = '\n'
+            for type in self.build:
+                full_list = ''
+                if isinstance(self.build[type], dict):
+                    for subtype in self.build[type]:
+                        item = self.build[type][subtype]
+                        data = data.replace('{{{{{}:{}}}}}'.format(type.upper(), subtype.upper()), '{}'.format(item))
+                        full_list += '{}:{}{}'.format(subtype, item, eol)
+                    data = data.replace('{{{{{}:*}}}}'.format(type.upper()), full_list)
+                elif isinstance(self.build[type], list):
+                    for i in range(len(self.build[type])):
+                        item = self.build[type][i]
+                        data = data.replace('{{{{{}:{}}}}}'.format(type.upper(), i), '{}'.format(item))
+                        full_list += '{}{}'.format(item, eol)
+                    data = data.replace('{{{{{}:*}}}}'.format(type.upper()), full_list)
+                else:
+                    data = data.replace('{{{{{}}}}}'.format(type.upper()), '{}'.format(self.build[type]))
+
+            self.logWriteBreak('MERGE PROCESSING END')
+        self.removeSplashWindow()
+
+        self.get_display_window('Merge export', data)
+
+        return result
+
     def importByFilename(self, inFilename, force=False, autosave=False):
-        if not inFilename or not os.path.exists(inFilename) or not os.path.getsize(inFilename): return False
+        if not inFilename or not os.path.exists(inFilename) or not os.path.getsize(inFilename):
+            return False
 
         name = '{} file'.format('Autosave' if autosave else 'Template')
         self.makeSplashWindow()
@@ -2147,6 +2202,8 @@ class SETS():
                 self.persistent['geometry'] = ''
                 self.auto_save()
                 self.setupGeometry()
+        elif type == 'merge_file_create':
+            self.merge_file_create()
         elif type == 'backupCache':
             # Backup state file
             # Backup caches (leave as current as well)
@@ -4509,6 +4566,8 @@ class SETS():
             'Mark'                       : { 'col' : 2, 'type' : 'menu', 'var_name' : 'markDefault', 'setting_options': self.marks},
             'Rarity'                     : { 'col' : 2, 'type' : 'menu', 'var_name' : 'rarityDefault', 'setting_options': [''] + self.rarities},
             'Faction'                    : { 'col' : 2, 'type' : 'menu', 'var_name' : 'factionDefault', 'setting_options': self.factionNames},
+            'blank1': {'col': 1, 'type': 'blank'},
+            'Merge Export': {'col': 2, 'type': 'button', 'var_name': 'merge_file_create'},
 
         }
         self.create_item_block(settingsTopMiddleLeftFrame, theme=settingsDefaults)
