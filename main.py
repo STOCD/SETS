@@ -1029,7 +1029,7 @@ class SETS():
             }
         }
 
-    def resetBuild(self):
+    def resetBuild(self, type=None):
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
         self.versionJSONminimum = 0
@@ -1084,8 +1084,24 @@ class SETS():
             'eliteCaptain': False,
             'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
             'tags': dict(),
-            'skilltree': { 'space': dict(), 'ground': dict() },
         }
+
+        self.reset_skill_build(init=True)
+
+
+    def reset_skill_build(self, init=False):
+        build_skill = {
+            'skilltree': {'space': dict(), 'ground': dict()},
+        }
+        if not init:
+            self.clearing = 1
+        self.build.update(build_skill)
+        if not init:
+            self.skillCount('space')
+            self.skillCount('ground')
+            self.clearing = 0
+            self.setupCurrentBuildFrames('skill')
+            self.auto_save_queue()
 
     def resetCache(self, text = None):
         if text is not None:
@@ -2044,10 +2060,10 @@ class SETS():
         redditText = Text(borderframe, bg=self.theme["app"]["fg"], fg="#ffffff", relief="flat")
         btfr = Frame(borderframe)
         btfr.pack(side='top', fill='x')
-        redditbtspace = Button(btfr,text="SPACE", font=self.theme['button_heavy']['font_object'],  bg=self.theme['button_heavy']['bg'],fg=self.theme['button_heavy']['fg'], padx = 0, command=lambda: self.redditExportDisplaySpace(redditText))
-        redditbtground = Button(btfr, text="GROUND", font =self.theme['button_heavy']['font_object'], bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'],padx = 0, command=lambda: self.redditExportDisplayGround(redditText))
-        redditbtsskill = Button(btfr, text="SPACE SKILLS", font =self.theme['button_heavy']['font_object'], bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'],padx = 0, command=lambda: self.redditExportDisplaySpaceSkills(redditText))
-        redditbtgskill = Button(btfr, text="GROUND SKILLS", font =self.theme['button_heavy']['font_object'], bg=self.theme['button_heavy']['bg'], fg=self.theme['button_heavy']['fg'], padx= 0, command=lambda: self.redditExportDisplayGroundSkills(redditText))
+        redditbtspace = HoverButton(btfr,text="SPACE", font=self.theme['button_medium']['font_object'],  bg=self.theme['button_medium']['bg'],fg=self.theme['button_medium']['fg'], activebackground=self.theme['button_medium']['hover'], padx = 0, command=lambda: self.redditExportDisplaySpace(redditText))
+        redditbtground = HoverButton(btfr, text="GROUND", font =self.theme['button_medium']['font_object'], bg=self.theme['button_medium']['bg'], fg=self.theme['button_medium']['fg'], activebackground=self.theme['button_medium']['hover'],padx = 0, command=lambda: self.redditExportDisplayGround(redditText))
+        redditbtsskill = HoverButton(btfr, text="SPACE SKILLS", font =self.theme['button_medium']['font_object'], bg=self.theme['button_medium']['bg'], fg=self.theme['button_medium']['fg'], activebackground=self.theme['button_medium']['hover'],padx = 0, command=lambda: self.redditExportDisplaySpaceSkills(redditText))
+        redditbtgskill = HoverButton(btfr, text="GROUND SKILLS", font =self.theme['button_medium']['font_object'], bg=self.theme['button_medium']['bg'], fg=self.theme['button_medium']['fg'], activebackground=self.theme['button_medium']['hover'], padx= 0, command=lambda: self.redditExportDisplayGroundSkills(redditText))
         redditbtspace.grid(row=0,column=0,sticky="nsew")
         redditbtground.grid(row=0,column=1,sticky="nsew")
         redditbtsskill.grid(row=0, column=2, sticky="nsew")
@@ -2083,6 +2099,13 @@ class SETS():
                 os.unlink(file_path)
             except Exception as e:
                 self.logWrite('Failed to delete %s. Reason: %s' % (file_path, e), 2)
+
+    def settingsMenuCallback(self, choice, type):
+        if type == 'clearButton':
+            if choice == 'Clear all':
+                self.clearBuildCallback()
+            elif choice == 'Clear skills':
+                self.reset_skill_build()
 
     def settingsButtonCallback(self, type):
         self.logWriteSimple("settingsButtonCallback", '', 2, [type])
@@ -2145,14 +2168,13 @@ class SETS():
         self.copyBuildToBackend('tier')
         self.copyBuildToBackendBoolean('eliteCaptain')
 
-    def clearBuildCallback(self, event=None):
+    def clearBuildCallback(self, event=None, type=None):
         """Callback for the clear build button"""
-        self.resetBuild()
+        self.resetBuild(type)
         self.clearing = 1
-        self.buildToBackendSeries()
-        self.skillCount('space')
-        self.skillCount('ground')
 
+        self.buildToBackendSeries()
+        #self.reset_skill_build(init=True)
         #self.backend['tier'].set('')
         self.backend['shipHtml'] = None
         self.shipImg = self.getEmptyFactionImage()
@@ -4057,10 +4079,12 @@ class SETS():
         buttonSettings.grid(row=0, column=col, sticky='nsew')
         settingsMenuSettings = {
             'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
-            'Clear'     : { 'type' : 'button_block', 'var_name' : 'clearButton', 'callback' : self.clearBuildCallback},
+            # 'Clear'     : { 'type' : 'button_block', 'var_name' : 'clearButton', 'callback' : self.clearBuildCallback},
+            'Clear': {'type': 'menu_block', 'var_name': 'clearButton', 'setting_options': ['Clear all', 'Clear skills']},
             'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
             'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
         }
+
         self.create_item_block(buttonSettings, theme=settingsMenuSettings, shape='row', elements=1)
         col += 1
 
@@ -4603,6 +4627,8 @@ class SETS():
             'label_bg': self.theme['label']['bg'],
             'pad_x': 2,
             'pad_y': 2,
+            'highlightthickness': 0,
+            'highlightbackground': self.theme['frame']['bg'],
             'sticky': 'nw',
             'font_data': self.font_tuple_create('app'),
             'font_label': self.font_tuple_create('label'),
@@ -4625,7 +4651,6 @@ class SETS():
             if title == 'default' or \
                     (item_theme['col'] > 1 and not item_theme['var_name']):
                 continue
-
             i += 1
             is_button = True if item_theme['type'] == 'button' or item_theme['type'] == 'button_block' else False
             is_label = True if item_theme['type'] == 'label' or item_theme['type'] == 'blank' or item_theme['type'] == 'title' else False
@@ -4635,7 +4660,7 @@ class SETS():
                 item_theme['font_label'] = self.font_tuple_create('title1')
             if item_theme['type'] == 'button':
                 item_theme['sticky'] = theme[title]['sticky'] if 'sticky' in theme[title] else 'nwe'
-            if item_theme['type'] == 'button_block':
+            if item_theme['type'] == 'button_block' or item_theme['type'] == 'menu_block':
                 item_theme['sticky'] = theme[title]['sticky'] if 'sticky' in theme[title] else 'nsew'
                 item_theme['pad_x'] = theme[title]['pad_x'] if 'pad_x' in theme[title] else 0
                 item_theme['pad_y'] = theme[title]['pad_y'] if 'pad_y' in theme[title] else 0
@@ -4645,6 +4670,8 @@ class SETS():
             if item_theme['callback'] is None:
                 if is_button:
                     item_theme['callback'] = lambda var_name=item_theme['var_name']: self.settingsButtonCallback(type=var_name)
+                elif item_theme['type'] == 'menu_block':
+                    item_theme['callback'] = lambda choice, var_name=item_theme['var_name']: self.settingsMenuCallback(choice, type=var_name)
                 elif item_theme['type'] == 'menu' or item_theme['type'] == 'scale':
                     item_theme['callback'] = lambda choice, var_name=item_theme['var_name'], var_sub_name = item_theme['var_sub_name'], isBoolean=item_theme['boolean'], store=item_theme['store']:self.create_item_set_var(choice, var_name=var_name, var_sub_name=var_sub_name, store=store, boolean=isBoolean)
 
@@ -4660,7 +4687,7 @@ class SETS():
                 label.configure(fg=item_theme['label_fg'], bg=item_theme['label_bg'], font=font.Font(font=item_theme['font_label']))
                 label.grid(row=row_current, column=col_start, columnspan=span_label, sticky=sticky_label, pady=item_theme['pad_y'], padx=item_theme['pad_x'])
 
-            if item_theme['type'] == 'menu':
+            if item_theme['type'] == 'menu' or item_theme['type'] == 'menu_block':
                 if item_theme['store'] == 'backend':
                     if item_theme['var_sub_name']:
                         setting_var = self.backend[item_theme['var_name']][item_theme['var_sub_name']]
@@ -4671,7 +4698,9 @@ class SETS():
                         if setting_var.get() != current_as_boolean:
                             setting_var.set(current_as_boolean)
                 else:
-                    if item_theme['boolean']:
+                    if item_theme['type'] == 'menu_block':
+                        setting_data = title
+                    elif item_theme['boolean']:
                         setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback=False, boolean=True, boolean_options=['No', 'Yes'])
                     else:
                         setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback='')
@@ -4691,16 +4720,18 @@ class SETS():
 
             if item_theme['type'] != 'blank':
                 option_frame.configure(bg=item_theme['bg'], fg=item_theme['fg'])
-                if item_theme['type'] == 'button_block':
+                if item_theme['type'] == 'button_block' or item_theme['type'] == 'menu_block':
                     option_frame.configure(font=font.Font(font=item_theme['font_data']))
                 else:
                     option_frame.configure(borderwidth=0, highlightthickness=0, width=9)
 
-                col_option = 0 if is_button else 1
+                col_option = 0 if is_button or item_theme['type'] == 'menu_block' else 1
                 span_option = elements if is_button else 1
                 option_frame.grid(row=row_current, column=col_start+col_option, columnspan=span_option, sticky=item_theme['sticky'], pady=item_theme['pad_y'], padx=item_theme['pad_x'])
+                option_frame.configure(highlightthickness=item_theme['highlightthickness'], highlightbackground=item_theme['highlightbackground'])
                 parent_frame.grid_rowconfigure(row_current, weight=item_theme['row_weight'])
                 parent_frame.grid_columnconfigure(col_start + col_option, weight=item_theme['col_weight'])
+                self.logWriteSimple('create', 'item', 5, [row_current, col_start+col_option, span_option, title, item_theme['var_name'], item_theme['type']])
 
 
     def logDisplayUpdate(self):
