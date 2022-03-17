@@ -2050,6 +2050,19 @@ class SETS():
 
         return
 
+    def get_theme_skill_icon(self, status):
+        # Image, bg, relief
+        if status:
+            return (self.epicImage,
+                    self.theme['icon_on']['bg'],
+                    self.theme['icon_on']['relief']
+                    )
+        else:
+            return (self.emptyImage,
+                    self.theme['icon_off']['bg'],
+                    self.theme['icon_off']['relief']
+                    )
+
     def skillLabelCallback(self, e, canvas, img, i, key, args, environment='space'):
         rank, row, col, drawEnvironment = args
         if environment == 'ground': name = self.skillGetGroundNode(rank, row, col, type='name')
@@ -2059,19 +2072,14 @@ class SETS():
         if not self.skillValidDeselect(name, environment, rank): return # Check whether deselecting the skill would cause the skill tree to be invalid
 
         self.build['skilltree'][environment][name] = not self.build['skilltree'][environment][name]
+        (image1, bg, relief) = self.get_theme_skill_icon(self.build['skilltree'][environment][name])
+        canvas.configure(bg=bg, relief=relief)
 
-        if self.build['skilltree'][environment][name]:
-            countChange = 1
-            image1 = self.epicImage
-            canvas.configure(bg=self.theme['icon_on']['bg'], relief=self.theme['icon_on']['relief'])
-        else:
-            countChange = -1
-            image1 = self.emptyImage
-            canvas.configure(bg=self.theme['icon_off']['bg'], relief=self.theme['icon_off']['relief'])
-
+        countChange = 1 if self.build['skilltree'][environment][name] else -1
         self.backend['skillCount'][environment]["sum"] += countChange
         if environment == "space":
             self.backend['skillCount'][environment][rank] += countChange
+
         self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
         canvas.itemconfig(img[1],image=image1)
 
@@ -2873,7 +2881,7 @@ class SETS():
             name = self.skillSpaceGetFieldNode(rankName, row, col, type='name')
         backendName = name
         args = [rankName if environment=='space' else rank, row, col, 'skill']
-        #self.logWriteSimple('SkillButton', 'create', 2, [rank, row, col, environment, name])
+        # self.logWriteSimple('SkillButton', 'create', 2, [rank, row, col, environment, name])
         if not environment in self.build['skilltree']: self.build['skilltree'][environment] = dict()
 
         if name and col != 3:
@@ -2891,14 +2899,8 @@ class SETS():
             if not backendName in self.backend['images']:
                 self.backend['images'][backendName] = [ ]
 
-            if self.build['skilltree'][environment][name]:
-                relief = self.theme['icon_off']['relief']
-                image1 = self.epicImage
-                bg = self.theme['icon_on']['bg']
-            else:
-                relief = self.theme['icon_on']['relief']
-                image1 = None
-                bg = self.theme['icon_off']['bg']
+            (image1, bg, relief) = self.get_theme_skill_icon(self.build['skilltree'][environment][name])
+
             self.createButton(frame, 'skilltree', callback=callback, row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky=sticky, relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
         else:
             self.createButton(frame, '', row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
