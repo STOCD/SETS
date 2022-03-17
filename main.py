@@ -2818,12 +2818,13 @@ class SETS():
 
         frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=0, sticky='n', padx=1, pady=1)
-        parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
-        parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullCol'+environment)
+        frame.configure(highlightthickness=1, highlightbackground='pink')
+        # parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
+        # parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullCol'+environment)
 
         rankColumns = 4
         for row in range(8):
-            frame.grid_rowconfigure(row, weight=1, uniform='skillFrameRow'+environment)
+            # frame.grid_rowconfigure(row, weight=1, uniform='skillFrameRow'+environment)
             for rank in range(rankColumns):
                 for col in range(4):
                     rowspan = 1
@@ -2840,7 +2841,6 @@ class SETS():
         frame.grid(row=0, column=0, sticky='ns', padx=1, pady=1)
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillFrameFullRow'+environment)
         parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullCol'+environment)
-
 
         rankColumns = 4
         frame.grid_rowconfigure(0, weight=0, uniform='skillFrameRow'+environment)
