@@ -1,8 +1,10 @@
 # from textwrap import fill
+from asyncio import subprocess
 from tkinter import *
 from tkinter import filedialog
 from tkinter import font
 import tkinter
+from tkinter import messagebox
 from tkinter.ttk import Progressbar
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab
@@ -280,6 +282,19 @@ class SETS():
             else:
                 message += chr(int(hidden_bits[i], 2))
         return message[:-5]
+
+    def openURL(self, url):
+        try:
+            if platform.system() == "Windows":
+                os.startfile(url)
+            elif platform.system() == "Darwin":
+                subprocess.Popen(['open', url])
+            elif platform.system() == "Linux":
+                subprocess.Popen(['xdg-open', url])
+            else:
+                messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)  
+        except:
+            messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
 
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
@@ -3683,7 +3698,8 @@ class SETS():
 
         self.clearFrame(frame)
 
-        Label(frame, text="Stats & Other Info", highlightbackground=self.theme['tooltip']['bg'], highlightthickness=1).pack(fill=X, expand=False, side=TOP)
+        mainbutton = Button(frame, text="Stats & Other Info", highlightbackground=self.theme['tooltip']['bg'], highlightthickness=1)
+        mainbutton.pack(fill=X, expand=False, side=TOP)
         mtfr = Frame(frame, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
         mtfr.pack(fill="both",expand=False,side=TOP)
         text = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=3.5)
@@ -3781,6 +3797,7 @@ class SETS():
             contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['shipTraits'][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
             contentframe.grid_propagate(True)
+            mainbutton.configure(command=lambda url = self.cache['shipTraitsFull'][name]['link']: self.openURL(url))
             printed = True
 
         if (environment in self.cache['traits'] and name in self.cache['traits'][environment]) and not printed:
@@ -3866,6 +3883,7 @@ class SETS():
                 elif skillnode['linear']==2:
                     self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][skillindex]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
                 contentframe.grid_propagate(True)
+                mainbutton.configure(command=lambda url = skillnode['link']: self.openURL(url))
                 printed=True
 
 
