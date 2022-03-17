@@ -3770,6 +3770,8 @@ class SETS():
                 obtaintext = "This Starship Trait can be obtained from the Captain Specialization system by completing the "+self.cache['shipTraitsFull'][name]["ship"]+" specialization."
             elif self.cache['shipTraitsFull'][name]["obtained"] == "recr":
                 obtaintext = 'This Starship Trait can be obtained from a "'+self.cache['shipTraitsFull'][name]["ship"]+'" character.'
+            else:
+                obtaintext = "This Starship Trait is obtained from a reward pack."
             text.insert(END, obtaintext, "subhead")
             text.update()
             text.configure(height=self.getDH(text.winfo_width(), name+"\n"+"StarshipTrait\n"+obtaintext, "Helvetica", 15, "bold", "traithead"))
