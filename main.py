@@ -59,6 +59,21 @@ class SETS():
     #to prevent Infobox from loading the same element twice in a row
     displayedInfoboxItem = str()
 
+    #available specializations and their respective starship traits
+    specializations = {"Constable": "Arrest",
+                       "Command Officer": "Command Frequency",
+                       "Commando": "Demolition Teams",
+                       "Miracle Worker": "Going the Extra Mile",
+                       "Temporal Operative": "Non-Linear Progression",
+                       "Pilot": "Pedal to the Metal",
+                       "Intelligence Officer": "Predictive Algorithms",
+                       "Strategist": "Unconventional Tactics"}
+    
+    #available recruits and their respective starship traits
+    recruits = {"Klingon Recruit": "Hunter's Instinct",
+                "Delta Recruit": "Temporal Insight",
+                "Temporal Agent": "Critical Systems"}
+
     # Needs fonts, padx, pady, possibly others
     theme = theme_default = {
         'name': 'SETS_default',
@@ -794,7 +809,7 @@ class SETS():
         self.logWriteCounter('Specs2', '(json)', len(self.cache['specsSecondary']))
         self.logWriteCounter('Specs-Ground', '(json)', len(self.cache['specsGroundBoff']))
 
-    def precacheShipTraitSingle(self, name, desc):
+    def precacheShipTraitSingle(self, name, desc, item):
         name = self.deWikify(name)
         if not 'cache' in self.cache['shipTraitsWithImages']:
             self.cache['shipTraitsWithImages']['cache'] = []
@@ -803,6 +818,29 @@ class SETS():
             self.cache['shipTraits'][name] = self.deWikify(desc, leaveHTML=True)
             self.cache['shipTraitsWithImages']['cache'].append((name,self.imageFromInfoboxName(name)))
             self.logWriteSimple('precacheShipTrait', '', 5, tags=[name])
+        
+        if not name in self.cache['shipTraitsFull']:
+            if "_pageName" in item:
+                obt = "T5" if item['traitdesc'] == desc or item['traitdesc2'] == desc or item['traitdesc3'] == desc else "T6"
+                self.cache['shipTraitsFull'][name] = {"ship":item["_pageName"], "desc": self.deWikify(desc, leaveHTML=True), "image": self.imageFromInfoboxName(name), "link": "https://sto.fandom.com/wiki/"+item["_pageName"].replace(" ", "_"), "obtained": obt }
+            elif "Page" in item and "name" in item:
+                if item["name"] in ["Arrest", "Command Frequency", "Demolition Teams", "Going the Extra Mile", "Non-Linear Progression", "Pedal to the Metal", "Predictive Algorithms", "Unconventional Tactics"]:
+                    obt = "spec"
+                    for spec in self.specializations:
+                        if self.specializations[spec] == item["name"]:
+                            nm = spec
+                            break
+                elif item["name"] in ["Critical Systems", "Hunter's Instinct", "Temporal Insight"]:
+                    obt = "recr"
+                    for recr in self.recruits:
+                        if self.recruits[recr] == item["name"]:
+                            nm = recr
+                            break
+                else:
+                    obt = "box"
+                    nm = ""
+                self.cache['shipTraitsFull'][name] = {"ship":nm, "desc": self.deWikify(desc, leaveHTML=True), "image": self.imageFromInfoboxName(name), "link": "https://sto.fandom.com/wiki/"+item["Page"].replace(" ", "_"), "obtained": obt }
+
 
     def precacheShipTraits(self):
         """Populate in-memory cache of ship traits for faster loading"""
@@ -811,17 +849,17 @@ class SETS():
 
         for item in list(self.shiptraits):
             if 'trait' in item and len(item['trait']):
-                self.precacheShipTraitSingle(item['trait'], item['traitdesc'])
+                self.precacheShipTraitSingle(item['trait'], item['traitdesc'], item)
             if 'trait2' in item and len(item['trait2']):
-                self.precacheShipTraitSingle(item['trait2'], item['traitdesc2'])
+                self.precacheShipTraitSingle(item['trait2'], item['traitdesc2'], item)
             if 'trait3' in item and len(item['trait3']):
-                self.precacheShipTraitSingle(item['trait3'], item['traitdesc3'])
+                self.precacheShipTraitSingle(item['trait3'], item['traitdesc3'], item)
             if 'acctrait' in item and len(item['acctrait']):
-                self.precacheShipTraitSingle(item['acctrait'], item['acctraitdesc'])
+                self.precacheShipTraitSingle(item['acctrait'], item['acctraitdesc'], item)
 
         for item in list(self.traits):
             if 'type' in item and item['type'].lower() == 'starship':
-                self.precacheShipTraitSingle(item['name'], item['description'])
+                self.precacheShipTraitSingle(item['name'], item['description'], item)
 
         self.logWriteCounter('Ship Trait', '(json)', len(self.cache['shipTraits']), ['space'])
 
@@ -885,12 +923,44 @@ class SETS():
         self.skillCount('space')
         self.skillCount('ground')
 
-        self.logWriteSimple('Skill count', 'import', 3, [self.backend['skillCount']['space'], self.backend['skillCount']['ground']])
+        self.logWriteSimple('Skill count', 'import', 3, [self.backend['skillCount']['space']['sum'], self.backend['skillCount']['ground']["sum"]])
+
+    def getSkillnodeByName(self, name: str, pkey=""):
+            skillnode = None
+            skillindex = -1
+            skillrank = ""
+            if pkey == "": keylist = ["lieutenant", "lieutenant commander", "commander", "captain", "admiral"]
+            else: keylist = [pkey]
+            for key in keylist:
+                for j in range(0,6):
+                    skillname = self.cache['spaceSkills'][key][j]['skill']
+                    if isinstance(skillname, str) and skillname == name[:-2]:
+                        skillnode = self.cache['spaceSkills'][key][j]
+                        skillrank = key
+                        break
+                    elif isinstance(skillname, list) and (name in skillname or name[:-2] in skillname):
+                        skillnode = self.cache['spaceSkills'][key][j]
+                        skillrank = key
+                        for k in range(0, len(skillnode['skill'])):
+                            if skillnode['skill'][k]==name or skillnode['skill'][k]==name[:-2]:
+                                skillindex=k
+                                break
+                if skillnode != None:
+                    break
+            return [skillnode, skillindex, skillrank]
 
     def skillCount(self, environment):
-        self.backend['skillCount'][environment] = 0
-        for name in self.build['skilltree'][environment]:
-            if self.build['skilltree'][environment][name]: self.backend['skillCount'][environment] += 1
+        self.backend['skillCount'][environment] = dict()
+        self.backend['skillCount'][environment]['sum'] = 0
+        lskills = self.build['skilltree'][environment]
+        for rank in ['lieutenant', 'lieutenant commander', 'commander', 'captain', 'admiral']:
+            self.backend['skillCount'][environment][rank] = 0
+            for name in lskills:
+                snode, sindex, srank = self.getSkillnodeByName(name, rank)
+                if self.build['skilltree'][environment][name] and snode != None: 
+                    self.backend['skillCount'][environment]["sum"] += 1
+                    if environment == "space":
+                        self.backend['skillCount'][environment][rank] +=1
 
     def copyBackendToBuild(self, key, key2=None):
         """Helper function to copy backend value to build dict"""
@@ -1117,6 +1187,7 @@ class SETS():
                 'doffNames': dict(),
                 'shipTraits': dict(),
                 'shipTraitsWithImages': dict(),
+                'shipTraitsFull': dict(),
                 'traits': dict(),
                 'traitsWithImages': dict(),
                 'boffAbilities': dict(),
@@ -1878,6 +1949,38 @@ class SETS():
         else:
             self.buildImport = self.build
 
+    def skillValidDeselect(self, name, environment, rank):
+        """Checks whether deselecting a skill would cause the skill tree to be invalid."""
+        """Note1: this list shows rank requirements 1 higher than in reality, because a category gets closed with one skill more than you need for unlocking it 
+           (you need 5 points to unlock LtCom skills, having spent 5 points means 0 points spent in higher categories, so deseleting a node is never a problem.
+           But with 6 skills selected and you want to deselect one, you have to check whether a skill is selected in a higher rank)"""
+        if name in self.build['skilltree'][environment] and self.build["skilltree"][environment][name]:
+            if environment == "space":
+                rankRequirements = { '1': 'lieutenant', '6' : 'lieutenant commander', '16' : 'commander', '26' : 'captain', '36' : 'admiral' }    # Note1
+                rankNumber = { 'lieutenant': 0, 'lieutenant commander': 1, 'commander': 2, 'captain': 3, 'admiral': 4 } 
+                if not str(self.backend['skillCount'][environment]["sum"]) in rankRequirements:
+                    return True
+                else:
+                    if rankNumber[rankRequirements[str(self.backend['skillCount'][environment]["sum"])]] > rankNumber[rank]:
+                        greaterRanks = list()
+                        for r in rankNumber:
+                            if rankNumber[r] > rankNumber[rank]:
+                                greaterRanks.append(r)
+                        greaterSkills = 0
+                        for r2 in greaterRanks:
+                            if r2 in self.backend['skillCount'][environment]:
+                                greaterSkills += self.backend['skillCount'][environment][r2]
+                        if greaterSkills == 0:
+                            return True
+                        else:
+                            return False
+                    else:
+                        return True
+            elif environment == "ground":
+                return True
+        else:
+            return True
+
     def skillAllowed(self, rank, row, col, environment):
         if environment == 'ground':
             maxSkills = 10 # Could be set by captain rank/level
@@ -1900,7 +2003,7 @@ class SETS():
         # col is the position-in-chain
 
         #if environment == 'ground': return True
-        self.logWriteSimple('skillAllowed', environment, 3, [name, self.backend['skillCount'][environment]])
+        self.logWriteSimple('skillAllowed', environment, 3, [name, self.backend['skillCount'][environment]["sum"]])
         if not name in self.build['skilltree'][environment]: self.build['skilltree'][environment][name] = False
         enabled = self.build['skilltree'][environment][name]
         child = self.build['skilltree'][environment][plusOne] if plusOne and col < 2 else False
@@ -1918,8 +2021,8 @@ class SETS():
 
         else: # Can we turn this on?
             # Can we activate that rank?
-            if self.backend['skillCount'][environment] < rankReqs[rank]: return False
-            if self.backend['skillCount'][environment] + 1 > maxSkills: return False
+            if self.backend['skillCount'][environment]["sum"] < rankReqs[rank]: return False
+            if self.backend['skillCount'][environment]["sum"] + 1 > maxSkills: return False
             # Is our required already True?
             if not parent2: return False
             if not ( col == 2 and split ):
@@ -1937,8 +2040,8 @@ class SETS():
         if environment == 'ground': name = self.skillGetGroundNode(rank, row, col, type='name')
         else: name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
         backendName = name
-
         if not self.skillAllowed(rank, row, col, environment): return # Check for requirements before enable
+        if not self.skillValidDeselect(name, environment, rank): return # Check whether deselecting the skill would cause the skill tree to be invalid
 
         self.build['skilltree'][environment][name] = not self.build['skilltree'][environment][name]
 
@@ -1951,7 +2054,9 @@ class SETS():
             image1 = self.emptyImage
             canvas.configure(bg=self.theme['icon_off']['bg'], relief=self.theme['icon_off']['relief'])
 
-        self.backend['skillCount'][environment] += countChange
+        self.backend['skillCount'][environment]["sum"] += countChange
+        if environment == "space":
+            self.backend['skillCount'][environment][rank] += countChange
         self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
         canvas.itemconfig(img[1],image=image1)
 
@@ -1962,28 +2067,6 @@ class SETS():
         self.skillLabelCallback(e, canvas, img, i, key, args, environment)
 
         return
-
-    def getSkillnodeByName(self, name: str, environment: str, pkey=""):
-        if environment == "space":
-            skillnode = None
-            skillindex = -1
-            if pkey == "": keylist = ["lieutenant", "lieutenant commander", "commander", "captain", "admiral"]
-            else: keylist = [pkey]
-            for key in keylist:
-                for j in range(0,6):
-                    skillname = self.cache['spaceSkills'][key][j]['skill']
-                    if isinstance(skillname, str) and skillname == name[:-2]:
-                        skillnode = self.cache['spaceSkills'][key][j]
-                        break
-                    elif isinstance(skillname, list) and (name in skillname or name[:-2] in skillname):
-                        skillnode = self.cache['spaceSkills'][key][j]
-                        for k in range(0, len(skillnode['skill'])):
-                            if skillnode['skill'][k]==name or skillnode['skill'][k]==name[:-2]:
-                                skillindex=k
-                                break
-                if skillnode != None:
-                    break
-            return [skillnode, skillindex]
 
     def redditExportDisplayGroundSkills(self, textframe: Text):
         textframe.configure(state=NORMAL)
@@ -3142,6 +3225,8 @@ class SETS():
                     hgt = 3.5
                 elif lines == 4:
                     hgt = 5
+                else:
+                    hgt = lines
             elif identifier == "personaltrait":
                 hgt = lines+1
             elif identifier == "boff":
@@ -3679,9 +3764,15 @@ class SETS():
         if (name in self.cache['shipTraits'])and not printed:
             text.insert(END, name+"\n", 'starshipTraitHead')
             text.insert(END, "Starship Trait\n", 'head')
-            text.insert(END, "Placeholder for obtain information", "subhead")
+            if self.cache['shipTraitsFull'][name]["obtained"] == "T5" or self.cache['shipTraitsFull'][name]["obtained"] == "T6":
+                obtaintext = "This Starship Trait can be obtained from the "+self.cache['shipTraitsFull'][name]["obtained"]+" Mastery of the "+self.cache['shipTraitsFull'][name]["ship"] 
+            elif self.cache['shipTraitsFull'][name]["obtained"] == "spec":
+                obtaintext = "This Starship Trait can be obtained from the Captain Specialization system by completing the "+self.cache['shipTraitsFull'][name]["ship"]+" specialization."
+            elif self.cache['shipTraitsFull'][name]["obtained"] == "recr":
+                obtaintext = 'This Starship Trait can be obtained from a "'+self.cache['shipTraitsFull'][name]["ship"]+'" character.'
+            text.insert(END, obtaintext, "subhead")
             text.update()
-            text.configure(height=self.getDH(text.winfo_width(), name+"\n"+"StarshipTrait\n"+"Placeholder for obtain information", "Helvetica", 15, "bold", "traithead"))
+            text.configure(height=self.getDH(text.winfo_width(), name+"\n"+"StarshipTrait\n"+obtaintext, "Helvetica", 15, "bold", "traithead"))
             Frame(mtfr, background=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight']).grid(row=2,column=0,sticky="nsew")
             contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=3, column=0, sticky="nsew")
@@ -3739,7 +3830,7 @@ class SETS():
                 contentframe.grid_propagate(True)
                 printed=True"""
             else:
-                skillnode, skillindex = self.getSkillnodeByName(name, "space", key)
+                skillnode, skillindex, skr = self.getSkillnodeByName(name, key)
                 if skillnode['career']=="tac": skillprofession = "Tactical "
                 elif skillnode['career']=="eng": skillprofession = "Engineering "
                 elif skillnode['career']=="sci": skillprofession = "Science "
