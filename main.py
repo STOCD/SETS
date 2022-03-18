@@ -1967,31 +1967,28 @@ class SETS():
 
     def skillValidDeselect(self, name, environment, rank):
         """Checks whether deselecting a skill would cause the skill tree to be invalid."""
-        """Note1: this list shows rank requirements 1 higher than in reality, because a category gets closed with one skill more than you need for unlocking it 
-           (you need 5 points to unlock LtCom skills, having spent 5 points means 0 points spent in higher categories, so deseleting a node is never a problem.
-           But with 6 skills selected and you want to deselect one, you have to check whether a skill is selected in a higher rank)"""
         if name in self.build['skilltree'][environment] and self.build["skilltree"][environment][name]:
             if environment == "space":
-                rankRequirements = { '1': 'lieutenant', '6' : 'lieutenant commander', '16' : 'commander', '26' : 'captain', '36' : 'admiral' }    # Note1
-                rankNumber = { 'lieutenant': 0, 'lieutenant commander': 1, 'commander': 2, 'captain': 3, 'admiral': 4 } 
-                if not str(self.backend['skillCount'][environment]["sum"]) in rankRequirements:
-                    return True
-                else:
-                    if rankNumber[rankRequirements[str(self.backend['skillCount'][environment]["sum"])]] > rankNumber[rank]:
-                        greaterRanks = list()
-                        for r in rankNumber:
-                            if rankNumber[r] > rankNumber[rank]:
-                                greaterRanks.append(r)
-                        greaterSkills = 0
-                        for r2 in greaterRanks:
-                            if r2 in self.backend['skillCount'][environment]:
-                                greaterSkills += self.backend['skillCount'][environment][r2]
-                        if greaterSkills == 0:
-                            return True
-                        else:
-                            return False
+                rankRequirements = { '0': 'lieutenant','lieutenant':'0', '5' : 'lieutenant commander', 'lieutenant commander': '5', '15' : 'commander','commander':'15', '25' : 'captain', 'captain': '25', '35' : 'admiral', 'admiral': '35'}
+                sktr = dict(self.backend['skillCount'][environment])
+                sktr['sum'] = sktr['sum']-1
+                sktr[rank] = sktr[rank]-1
+                li = list()
+                subsum = sktr['lieutenant']
+                for rsk in ['lieutenant commander', 'commander', 'captain', 'admiral']:
+                    if (int(rankRequirements[rsk])) <= subsum:
+                        li.append(True)
                     else:
-                        return True
+                        if sktr[rsk] == 0:
+                            li.append(True)
+                        else:
+                            li.append(False)
+                    subsum += sktr[rsk]
+                if False in li:
+                    return False
+                else:
+                    return True
+
             elif environment == "ground":
                 return True
         else:
@@ -2069,6 +2066,7 @@ class SETS():
         if environment == 'ground': name = self.skillGetGroundNode(rank, row, col, type='name')
         else: name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
         backendName = name
+
         if not self.skillAllowed(rank, row, col, environment): return # Check for requirements before enable
         if not self.skillValidDeselect(name, environment, rank): return # Check whether deselecting the skill would cause the skill tree to be invalid
 
@@ -2080,8 +2078,8 @@ class SETS():
         self.backend['skillCount'][environment]["sum"] += countChange
         if environment == "space":
             self.backend['skillCount'][environment][rank] += countChange
-
         self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
+
         canvas.itemconfig(img[1],image=image1)
 
         self.skillButtonChildUpdate(rank, row, col, environment)
