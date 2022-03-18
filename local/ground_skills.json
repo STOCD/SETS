@@ -26,12 +26,12 @@
 			"nodes" : [
 				{
 					"name" : "Endurance Training",
-					"image" : "Ground_Skill_R4_R1_icon",
+					"image" : "Ground_Skill_4_R1_icon",
 					"desc" : "+60 Health Capacity<br>*Total Max Hitpoint Bonus = +12%"
 				},
 				{
 					"name" : "Improved Endurance Training",
-					"image" : "Ground_Skill_R4_R2_icon",
+					"image" : "Ground_Skill_4_R2_icon",
 					"desc" : "+40 Health Capacity<br>*Total Max Hitpoint Bonus = +20%"
 				}
 			]
@@ -167,7 +167,7 @@
 			"tree" : 2,
 			"side" : "",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Personal_Shields_Expert",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Personal Shields Expert",
 					"image" : "Ground_Skill_5_R1_icon",

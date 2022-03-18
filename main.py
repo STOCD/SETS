@@ -1822,8 +1822,6 @@ class SETS():
 
         self.get_display_window('Merge export', data)
 
-        return result
-
     def merge_walk(self, data, tree, tag_pre=''):
         self.logWriteSimple('merge', '', 2, [tag_pre])
         eol = '\n'
@@ -2013,7 +2011,7 @@ class SETS():
         else:
             maxSkills = 46 # Could be set by captain rank/level
             rankReqs = { 'lieutenant': 0, 'lieutenant commander': 5, 'commander': 15, 'captain': 25, 'admiral': 35 }
-            split = self.skillGetFieldSkill(environment, rank, row, '', type='linear')
+            split = self.skillGetFieldSkill(environment, rank, row, type='linear')
         # col is the position-in-chain
 
         #if environment == 'ground': return True
@@ -2777,7 +2775,7 @@ class SETS():
         self.logWriteSimple('Skill', 'Node', 5, [environment, rank if environment == 'space' else '', row, 'nodes', col, type, '=', result])
         return result
 
-    def skillGetFieldSkill(self, environment, rank, row, col, type='name'):
+    def skillGetFieldSkill(self, environment, rank, row, type='name'):
         result = ''
         if self.cache['skills'][environment]:
             tree = self.cache['skills'][environment][rank] if environment == 'space' else self.cache['skills'][environment]
@@ -2786,7 +2784,7 @@ class SETS():
                     result = tree[row][type]
             except:
                 pass
-        #self.logWriteSimple('Skill', 'Core', 3, [rankName, row, col, type, self.cache['skills']['space'][rankName][row][type]])
+        #self.logWriteSimple('Skill', 'Core', 3, [rankName, row, type, self.cache['skills']['space'][rankName][row][type]])
         return result
 
     def setupSkillBuildFrames(self, environment=None):
@@ -2815,12 +2813,15 @@ class SETS():
         parentFrame.grid_columnconfigure(0, weight=1, uniform='skillFrameFullCol'+environment)
 
         rankRows = 8 if environment == 'ground' else 6
-        ranks = [None] if environment == 'ground' else self.cache['skills'][environment]
+        ranks = [None, None] if environment == 'ground' else self.cache['skills'][environment]
         frame.grid_rowconfigure(0, weight=0, uniform='skillFrameRow'+environment)
         for row in range(rankRows):
-            rowGroup = "0" if row == 0 else ''
-            frame.grid_rowconfigure((row*2)+1, weight=1, uniform='skillFrameRow'+environment+rowGroup)
-            frame.grid_rowconfigure((row*2)+2, weight=1, uniform='skillFrameRow'+environment+rowGroup)
+            if environment == 'ground':
+                frame.grid_rowconfigure(row, weight=1, uniform='skillFrameRow' + environment)
+            else:
+                rowGroup = "0" if row == 0 else ''
+                frame.grid_rowconfigure((row * 2) + 1, weight=1, uniform='skillFrameRow' + environment + rowGroup)
+                frame.grid_rowconfigure((row * 2) + 2, weight=1, uniform='skillFrameRow' + environment + rowGroup)
             rank = -1
             for rankName in ranks:
                 rank += 1
@@ -2830,34 +2831,36 @@ class SETS():
                     self.setup_skill_group_space(frame, environment, rankName, row, rank)
 
     def setup_skill_group_ground(self, frame, environment, rankName, row, rank):
-        rankColumns = 4
-        split_row = self.skillGetFieldSkill(environment, rankName, row, 0, type='linear')
-        if row == 0 and isinstance(rankName, str):
-            l = Label(frame, text=rankName.title().replace(' ', '\n'), bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=self.theme['title2']['font_object'])
-            l.grid(row=row, column=rank*rankColumns, columnspan=3, sticky='s', pady=1)
-        for col in range(rankColumns):
-            rowspan = 2
-            sticky = sticky2 = ''
-            if split_row and col == 1:
-                rowspan = 1
-                sticky = 's'
-                sticky2 = 'n'
-            if split_row and col == 2: col = 3
-            rowspanMaster = 2
-            col_actual = ((rank * rankColumns) + col)
-            row_actual = (row * rowspanMaster) + 1
-            skill_id = (rankName, row, col)
+        rankColumns = 5
 
-            self.setupSkillButton(frame, rank, skill_id, col, row_actual, col_actual, rowspan, environment, sticky=sticky)
-            if split_row and col == 1:
-                row_actual = (row * rowspanMaster) + 2
-                skill_id = (rankName, row, col+1)
-                self.setupSkillButton(frame, rank, skill_id, col+1, row_actual, col_actual,  rowspan, environment, sticky=sticky2)
+        for col in range(rankColumns):
+            if row > 5:
+                continue
+            row_item = ((rank * 6) + row)
+            col_item = col
+            row_actual = (row + 1) if rank else row
+            col_actual = ((rank * rankColumns) + col)
+            split_row = self.skillGetFieldSkill(environment, rankName, row_item, type='side')
+            sticky = ''
+            if split_row:
+                if col == 0:
+                    continue
+                col_item -= 1
+                if split_row == 'r':
+                    sticky = 's'
+                else:
+                    sticky = 'n'
+
+            skill_id = (rankName, row_item, col_item)
+
+            name = self.skillGetFieldNode(environment, skill_id)
+            self.logWriteSimple('skill', 'ground', 2, [environment, rank, row_item, col_item, row_actual, col_actual, split_row, name])
+            self.setupSkillButton(frame, rank, skill_id, col_item, row_actual, col_actual, environment, sticky=sticky)
 
     def setup_skill_group_space(self, frame, environment, rankName, row, rank):
         rankColumns = 4
-        split_row = self.skillGetFieldSkill(environment, rankName, row, 0, type='linear')
-        if row == 0 and isinstance(rankName, str):
+        split_row = self.skillGetFieldSkill(environment, rankName, row, type='linear')
+        if row == 0:
             l = Label(frame, text=rankName.title().replace(' ', '\n'), bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=self.theme['title2']['font_object'])
             l.grid(row=row, column=rank*rankColumns, columnspan=3, sticky='s', pady=1)
         for col in range(rankColumns):
@@ -2873,13 +2876,13 @@ class SETS():
             row_actual = (row * rowspanMaster) + 1
             skill_id = (rankName, row, col)
 
-            self.setupSkillButton(frame, rank, skill_id, col, row_actual, col_actual, rowspan, environment, sticky=sticky)
+            self.setupSkillButton(frame, rank, skill_id, col, row_actual, col_actual, environment, rowspan=rowspan, sticky=sticky)
             if split_row and col == 1:
                 row_actual = (row * rowspanMaster) + 2
                 skill_id = (rankName, row, col+1)
-                self.setupSkillButton(frame, rank, skill_id, col+1, row_actual, col_actual,  rowspan, environment, sticky=sticky2)
+                self.setupSkillButton(frame, rank, skill_id, col+1, row_actual, col_actual, environment, rowspan=rowspan, sticky=sticky2)
 
-    def setupSkillButton(self, frame, rank, skill_id, col, row_actual, col_actual, rowspan, environment, sticky=''):
+    def setupSkillButton(self, frame, rank, skill_id, col, row_actual, col_actual, environment, rowspan=1, sticky=''):
         padxCanvas = (2,2)
         padyCanvas = (3,0) if row_actual % 2 != 0 else (0, 3)
         frame.grid_columnconfigure(col_actual, weight=2 if col == 3 else 1, uniform='skillFrameCol' + environment + str(rank))
@@ -3653,7 +3656,7 @@ class SETS():
         elif isinstance(item, str):
             name = item
         else:
-            self.logWriteSimple('InfoboxFail', environment, 3, tags=["NO NAME", key])
+            self.logWriteSimple('InfoboxEmpty', environment, 3, tags=["NO NAME", key])
             return
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
         if name != '' and self.displayedInfoboxItem == name:
