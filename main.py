@@ -741,8 +741,10 @@ class SETS():
         if 'spaceSkills' in self.cache and len(self.cache['spaceSkills']) > 0:
             return
 
-        self.cache['spaceSkills'] = self.fetchOrRequestJson('', 'space_skills', local=True)
-        self.logWriteCounter('spaceSkills', '(json)', len(self.cache['spaceSkills']))
+        skills = self.fetchOrRequestJson('', 'space_skills', local=True)
+        if 'space' in skills:
+            self.cache['spaceSkills'] = skills['space']
+            self.logWriteCounter('spaceSkills', '(json)', len(self.cache['spaceSkills']))
 
     def precacheGroundSkills(self):
         if 'groundSkills' in self.cache and len(self.cache['groundSkills']) > 0:

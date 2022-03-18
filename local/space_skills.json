@@ -1,4 +1,5 @@
 {
+    "space": {
 	"lieutenant" : [
 		{
 			"skill" : "Projectile Weapon Training",
@@ -814,5 +815,5 @@
 				}
 			]
 		}
-	]
+	]}
 }
