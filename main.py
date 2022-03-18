@@ -2023,22 +2023,29 @@ class SETS():
         parent = self.build['skilltree'][environment][minusOne] if minusOne and col > 0 else True
         parent2 = self.build['skilltree'][environment][minusTwo] if minusTwo and col > 1 else True
 
-        if enabled: # Can we turn this off?
+        if enabled:  # Can we turn this off?
             # If this takes us below our current rank, are there skills above this rank?
 
             # Do we have requiredby that are True?
-            if child2: return False
-            if not ( col == 1 and split ):
-                if child: return False
+            if child2:
+                return False
+            if not (col == 1 and split):
+                if child:
+                    return False
 
-        else: # Can we turn this on?
+        else:  # Can we turn this on?
             # Can we activate that rank?
-            if self.backend['skillCount'][environment]["sum"] < rankReqs[rank]: return False
-            if self.backend['skillCount'][environment]["sum"] + 1 > maxSkills: return False
+            if environment == 'space':
+                if self.backend['skillCount'][environment]["sum"] < rankReqs[rank]:
+                    return False
+            if self.backend['skillCount'][environment]["sum"] + 1 > maxSkills:
+                return False
             # Is our required already True?
-            if not parent2: return False
-            if not ( col == 2 and split ):
-                if not parent: return False
+            if not parent2:
+                return False
+            if not (col == 2 and split):
+                if not parent:
+                    return False
 
         return True
 
