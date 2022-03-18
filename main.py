@@ -738,20 +738,22 @@ class SETS():
             self.fetchOrRequestImage(self.wikiImages+e['image'].replace(' ','_'), e['Page'], self.imageBoxX, self.imageBoxY)
 
     def precacheSpaceSkills(self):
-        if 'spaceSkills' in self.cache and len(self.cache['spaceSkills']) > 0:
+        if 'space' in self.cache['skills'] and len(self.cache['skills']['space']) > 0:
             return
 
         skills = self.fetchOrRequestJson('', 'space_skills', local=True)
         if 'space' in skills:
-            self.cache['spaceSkills'] = skills['space']
-            self.logWriteCounter('spaceSkills', '(json)', len(self.cache['spaceSkills']))
+            self.cache['skills']['space'] = skills['space']
+            self.logWriteCounter('space skills', '(json)', len(self.cache['skills']['space']))
 
     def precacheGroundSkills(self):
-        if 'groundSkills' in self.cache and len(self.cache['groundSkills']) > 0:
+        if 'ground' in self.cache['skills'] and len(self.cache['skills']['ground']) > 0:
             return
 
-        self.cache['groundSkills'] = self.fetchOrRequestJson('', 'ground_skills', local=True)
-        self.logWriteCounter('groundSkills', '(json)', len(self.cache['groundSkills']))
+        skills = self.fetchOrRequestJson('', 'ground_skills', local=True)
+        if 'ground' in skills:
+            self.cache['skills']['ground'] = skills['ground']
+            self.logWriteCounter('ground skills', '(json)', len(self.cache['skills']['ground']))
 
     def precacheSkills(self):
         self.precacheSpaceSkills()
@@ -950,13 +952,13 @@ class SETS():
             else: keylist = [pkey]
             for key in keylist:
                 for j in range(0,6):
-                    skillname = self.cache['spaceSkills'][key][j]['skill']
+                    skillname = self.cache['skills']['space'][key][j]['skill']
                     if isinstance(skillname, str) and skillname == name[:-2]:
-                        skillnode = self.cache['spaceSkills'][key][j]
+                        skillnode = self.cache['skills']['space'][key][j]
                         skillrank = key
                         break
                     elif isinstance(skillname, list) and (name in skillname or name[:-2] in skillname):
-                        skillnode = self.cache['spaceSkills'][key][j]
+                        skillnode = self.cache['skills']['space'][key][j]
                         skillrank = key
                         for k in range(0, len(skillnode['skill'])):
                             if skillnode['skill'][k]==name or skillnode['skill'][k]==name[:-2]:
@@ -1213,9 +1215,7 @@ class SETS():
                 'specsPrimary': dict(),
                 'specsSecondary': dict(),
                 'specsGroundBoff': dict(),
-                'skills': dict(),
-                'spaceSkills': dict(),
-                'groundSkills': dict(),
+                'skills': { 'space': dict(), 'ground': dict() },
                 'factions': dict(),
                 'modifiers': None,
             }
@@ -2107,8 +2107,8 @@ class SETS():
         column1 = list()
         column2 = list()
         column3 = list()
-        for rank in self.cache["spaceSkills"]:
-            for skill in self.cache["spaceSkills"][rank]:
+        for rank in self.cache['skills']['space']:
+            for skill in self.cache['skills']['space'][rank]:
                 if skill["linear"] == 0:
                     column0 = column0 + self.makeRedditColumn(["[**{0}**]({1})".format(skill["skill"], skill["link"])], 1)
                     column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"]+" 1"]==True else [None], 1)
@@ -2766,11 +2766,11 @@ class SETS():
         self.labelBuildBlock(parentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.build['eliteCaptain'] else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
 
     def skillGetGroundNode(self, rank, row, col, type='name'):
-        if 'content' in self.cache['groundSkills']:
+        if 'content' in self.cache['skills']['ground']:
             # needs to be smarter than 'try'
             try:
-                if type in self.cache['groundSkills']['content'][rank][row][col]:
-                    return self.cache['groundSkills']['content'][rank][row][col][type]
+                if type in self.cache['skills']['ground']['content'][rank][row][col]:
+                    return self.cache['skills']['ground']['content'][rank][row][col][type]
             except:
                 return ''
 
@@ -2778,10 +2778,10 @@ class SETS():
 
     def skillSpaceGetFieldNode(self, rankName, row, col, type='name'):
         result = ''
-        if self.cache['spaceSkills']:
+        if self.cache['skills']['space']:
             try:
-                if type in self.cache['spaceSkills'][rankName][row]['nodes'][col]:
-                    result = self.cache['spaceSkills'][rankName][row]['nodes'][col][type]
+                if type in self.cache['skills']['space'][rankName][row]['nodes'][col]:
+                    result = self.cache['skills']['space'][rankName][row]['nodes'][col][type]
             except:
                 result = ''
         # self.logWriteSimple('Skill', 'Node', 3, [rankName, row, col, type, result])
@@ -2789,13 +2789,13 @@ class SETS():
 
     def skillSpaceGetFieldSkill(self, rankName, row, col, type='name'):
         result = ''
-        if self.cache['spaceSkills']:
+        if self.cache['skills']['space']:
             try:
-                if type in self.cache['spaceSkills'][rankName][row]:
-                    result = self.cache['spaceSkills'][rankName][row][type]
+                if type in self.cache['skills']['space'][rankName][row]:
+                    result = self.cache['skills']['space'][rankName][row][type]
             except:
                 result = ''
-        #self.logWriteSimple('Skill', 'Core', 3, [rankName, row, col, type, self.cache['spaceSkills'][rankName][row][type]])
+        #self.logWriteSimple('Skill', 'Core', 3, [rankName, row, col, type, self.cache['skills']['space'][rankName][row][type]])
         return result
 
     def setupSkillBuildFrames(self, environment=None):
@@ -2815,7 +2815,7 @@ class SETS():
 
     def setupGroundSkillTreeFrame(self, parentFrame, environment='ground'):
         self.precacheGroundSkills()
-        if not self.cache['groundSkills']:
+        if not self.cache['skills']['ground']:
             return
 
         frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
@@ -2835,7 +2835,7 @@ class SETS():
 
     def setupSpaceSkillTreeFrame(self, parentFrame, environment='space'):
         self.precacheSpaceSkills()
-        if not self.cache['spaceSkills']:
+        if not self.cache['skills']['space']:
             return
 
         frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
@@ -2850,7 +2850,7 @@ class SETS():
             frame.grid_rowconfigure((row*2)+1, weight=1, uniform='skillFrameRow'+environment+rowGroup)
             frame.grid_rowconfigure((row*2)+2, weight=1, uniform='skillFrameRow'+environment+rowGroup)
             rank = -1
-            for rankName in self.cache['spaceSkills']:
+            for rankName in self.cache['skills']['space']:
                 rank += 1
                 dependencySplit = self.skillSpaceGetFieldSkill(rankName, row, 0, type='linear')
                 if row == 0:
@@ -3664,15 +3664,15 @@ class SETS():
         skillcolor = "pink"
         if environment == 'skill':
             frame = self.skillInfoboxFrame
-            if key in self.cache['spaceSkills']:
+            if key in self.cache['skills']['space']:
                 for i in range(0,6):
-                    skillname = self.cache['spaceSkills'][key][i]['skill']
+                    skillname = self.cache['skills']['space'][key][i]['skill']
                     if (skillname == name[:-2] and isinstance(skillname, str)) or (isinstance(skillname, list) and (name[:-2] in skillname or name in skillname)):
-                        if self.cache['spaceSkills'][key][i]['career'] == "tac":
+                        if self.cache['skills']['space'][key][i]['career'] == "tac":
                             skillcolor = "#c83924"
-                        elif self.cache['spaceSkills'][key][i]['career'] == "eng":
+                        elif self.cache['skills']['space'][key][i]['career'] == "eng":
                             skillcolor = "#c59129"
-                        elif self.cache['spaceSkills'][key][i]['career'] == "sci":
+                        elif self.cache['skills']['space'][key][i]['career'] == "sci":
                             skillcolor = "#1265a3"
             else:
                 skillcolor = self.theme['tooltip']['subhead']['fg']
@@ -3827,15 +3827,15 @@ class SETS():
 
         if environment == "skill":
             skillnode = None
-            if key not in self.cache['spaceSkills']:
+            if key not in self.cache['skills']['space']:
                 pass
                 """for jg in range(0, 10):
-                    skillname = self.cache['groundSkills']['content'][jg]['skill']
+                    skillname = self.cache['skills']['ground']['content'][jg]['skill']
                     if skillname[0] == name:
-                        skillnode = self.cache['groundSkills']['content'][jg]
+                        skillnode = self.cache['skills']['ground']['content'][jg]
                         skillindex = 0
                     elif skillname[1] == name:
-                        skillnode = self.cache['groundSkills']['content'][jg]
+                        skillnode = self.cache['skills']['ground']['content'][jg]
                         skillindex = 1
                 text.insert(END, name.title(), 'skillhead')
                 text.insert(END, '\nGround Skill'.title(), 'skillsub')
