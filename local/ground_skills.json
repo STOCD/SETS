@@ -5,7 +5,7 @@
 			"tree" : 1,
 			"side" : "r",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Regeneration",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Regeneration",
 					"image" : "Ground_Skill_2_R1_icon",
@@ -23,7 +23,7 @@
 			"tree" : 1,
 			"side" : "",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Endurance_Training",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Endurance Training",
 					"image" : "Ground_Skill_R4_R1_icon",
@@ -41,7 +41,7 @@
 			"tree" : 1,
 			"side" : "l",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Armor_Expert",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Armor Expert",
 					"image" : "Ground_Skill_3_R1_icon",
@@ -59,7 +59,7 @@
 			"tree" : 0,
 			"side" : "r",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Weapon_Penetration",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Weapon Penetration",
 					"image" : "Ground_Skill_3_R1_icon",
@@ -77,7 +77,7 @@
 			"tree" : 0,
 			"side" : "",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Weapon_Proficiency",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Weapon Proficiency",
 					"image" : "Ground_Skill_1_R1",
@@ -95,7 +95,7 @@
 			"tree" : 0,
 			"side" : "l",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Weapon_Criticals",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Weapon Criticals",
 					"image" : "Ground_Skill_2_R1_icon",
@@ -113,7 +113,7 @@
 			"tree" : 3,
 			"side" : "",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Kit_Performance_Expert",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Kit Performance Expert",
 					"image" : "Ground_Skill_1_R1",
@@ -131,7 +131,7 @@
 			"tree" : 3,
 			"side" : "l",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Kit_Efficiency",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Kit Efficiency",
 					"image" : "Ground_Skill_2_R1_icon",
@@ -149,7 +149,7 @@
 			"tree" : 2,
 			"side" : "r",
 			"link" : "https://sto.fandom.com/wiki/Skill:_Personal_Shield_Resilience",
-			"nodes\r\n" : [
+			"nodes" : [
 				{
 					"name" : "Personal Shields Resilience",
 					"image" : "Ground_Skill_3_R1_icon",

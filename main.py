@@ -1217,7 +1217,7 @@ class SETS():
                 'specsPrimary': dict(),
                 'specsSecondary': dict(),
                 'specsGroundBoff': dict(),
-                'skills': { 'space': dict(), 'ground': dict() },
+                'skills': {'space': dict(), 'ground': dict()},
                 'factions': dict(),
                 'modifiers': None,
             }
@@ -1998,24 +1998,19 @@ class SETS():
             return True
 
     def skillAllowed(self, rank, row, col, environment):
+        name = self.skillGetFieldNode(environment, rank, row, col, type='name')
+        plusOne = self.skillGetFieldNode(environment, rank, row, col+1, type='name')
+        plusTwo = self.skillGetFieldNode(environment, rank, row, col+2, type='name')
+        minusOne = self.skillGetFieldNode(environment, rank, row, col-1, type='name')
+        minusTwo = self.skillGetFieldNode(environment, rank, row, col-2, type='name')
         if environment == 'ground':
             maxSkills = 10 # Could be set by captain rank/level
             rankReqs = [0, 0]
-            name = self.skillGetGroundNode(rank, row, col, type='name')
             split = False
-            plusOne = self.skillGetGroundNode(rank, row, col+1, type='name')
-            plusTwo = self.skillGetGroundNode(rank, row, col+2, type='name')
-            minusOne = self.skillGetGroundNode(rank, row, col-1, type='name')
-            minusTwo = self.skillGetGroundNode(rank, row, col-2, type='name')
         else:
             maxSkills = 46 # Could be set by captain rank/level
             rankReqs = { 'lieutenant': 0, 'lieutenant commander': 5, 'commander': 15, 'captain': 25, 'admiral': 35 }
-            name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
             split = self.skillSpaceGetFieldSkill(rank, row, '', type='linear')
-            plusOne = self.skillSpaceGetFieldNode(rank, row, col+1, type='name')
-            plusTwo = self.skillSpaceGetFieldNode(rank, row, col+2, type='name')
-            minusOne = self.skillSpaceGetFieldNode(rank, row, col-1, type='name')
-            minusTwo = self.skillSpaceGetFieldNode(rank, row, col-2, type='name')
         # col is the position-in-chain
 
         #if environment == 'ground': return True
@@ -2066,8 +2061,7 @@ class SETS():
 
     def skillLabelCallback(self, e, canvas, img, i, key, args, environment='space'):
         rank, row, col, drawEnvironment = args
-        if environment == 'ground': name = self.skillGetGroundNode(rank, row, col, type='name')
-        else: name = self.skillSpaceGetFieldNode(rank, row, col, type='name')
+        name = self.skillGetFieldNode(environment, rank, row, col, type='name')
         backendName = name
 
         if not self.skillAllowed(rank, row, col, environment): return # Check for requirements before enable
@@ -2765,26 +2759,15 @@ class SETS():
         self.labelBuildBlock(parentFrame, "Weapons", 3, 0, 2, 'groundWeapons' , 2, self.itemLabelCallback, ["Ground Weapon", "Pick Weapon (G)", "", 'ground'])
         self.labelBuildBlock(parentFrame, "Devices", 4, 0, 5, 'groundDevices', 5 if self.build['eliteCaptain'] else 4, self.itemLabelCallback, ["Ground Device", "Pick Device (G)", "", 'ground'])
 
-    def skillGetGroundNode(self, rank, row, col, type='name'):
-        if 'content' in self.cache['skills']['ground']:
-            # needs to be smarter than 'try'
-            try:
-                if type in self.cache['skills']['ground']['content'][rank][row][col]:
-                    return self.cache['skills']['ground']['content'][rank][row][col][type]
-            except:
-                return ''
-
-        return ''
-
-    def skillSpaceGetFieldNode(self, rankName, row, col, type='name'):
+    def skillGetFieldNode(self, environment, rank, row, col, type='name'):
         result = ''
-        if self.cache['skills']['space']:
+        if self.cache['skills'][environment]:
+            tree = self.cache['skills'][environment][rank] if environment == 'space' else self.cache['skills'][environment]
             try:
-                if type in self.cache['skills']['space'][rankName][row]['nodes'][col]:
-                    result = self.cache['skills']['space'][rankName][row]['nodes'][col][type]
+                result = tree[row]['nodes'][col][type]
             except:
-                result = ''
-        # self.logWriteSimple('Skill', 'Node', 3, [rankName, row, col, type, result])
+                pass
+        self.logWriteSimple('Skill', 'Node', 5, [environment, rank if environment == 'space' else '', row, 'nodes', col, type, '=', result])
         return result
 
     def skillSpaceGetFieldSkill(self, rankName, row, col, type='name'):
@@ -2817,6 +2800,7 @@ class SETS():
         self.precacheGroundSkills()
         if not self.cache['skills']['ground']:
             return
+        return self.setupSpaceSkillTreeFrame(parentFrame, environment)
 
         frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         frame.grid(row=0, column=0, sticky='n', padx=1, pady=1)
@@ -2864,36 +2848,32 @@ class SETS():
                         sticky = 's'
                         sticky2 = 'n'
                     if dependencySplit and col == 2: col = 3
+                    rowspanMaster = 2
+                    col_actual = ((rank * rankColumns) + col)
+                    row_actual = (row * rowspanMaster) + 1
+                    skill_id = (rankName, row, col)
 
-                    self.setupSkillButton(frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky=sticky, rowShift=1)
+                    self.setupSkillButton(frame, rank, rankName, row, col, row_actual, col_actual, rowspan, environment, sticky=sticky)
                     if dependencySplit and col == 1:
-                        self.setupSkillButton(frame, rank, rankName, rankColumns, row, col+1, rowspan, environment, sticky=sticky2, colShift=-1, rowShift=2)
+                        col_actual = ((rank * rankColumns) + col)
+                        row_actual = (row * rowspanMaster) + 2
+                        self.setupSkillButton(frame, rank, rankName, row, col+1, row_actual, col_actual,  rowspan, environment, sticky=sticky2)
 
-    def setupSkillButton(self, frame, rank, rankName, rankColumns, row, col, rowspan, environment, sticky='', colShift=0, rowShift=0):
-        rowspanMaster = 2
-        colActual = ((rank*rankColumns)+col) + colShift
-        rowActual = (row * rowspanMaster)+rowShift
+    def setupSkillButton(self, frame, rank, rankName, row, col, row_actual, col_actual, rowspan, environment, sticky=''):
         padxCanvas = (2,2)
-        padyCanvas = (3,0) if rowActual % 2 != 0 else (0,3)
-        frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillFrameCol'+environment+str(rank))
-        if environment == 'ground':
-            name = self.skillGetGroundNode(rank, row, col, type='name')
-        else:
-            name = self.skillSpaceGetFieldNode(rankName, row, col, type='name')
+        padyCanvas = (3,0) if row_actual % 2 != 0 else (0, 3)
+        frame.grid_columnconfigure(col_actual, weight=2 if col == 3 else 1, uniform='skillFrameCol' + environment + str(rank))
+        name = self.skillGetFieldNode(environment, rankName, row, col, type='name')
+
         backendName = name
         args = [rankName if environment=='space' else rank, row, col, 'skill']
         # self.logWriteSimple('SkillButton', 'create', 2, [rank, row, col, environment, name])
         if not environment in self.build['skilltree']: self.build['skilltree'][environment] = dict()
 
         if name and col != 3:
-            if environment == 'space':
-                imagename = self.skillSpaceGetFieldNode(rankName, row, col, type='image')
-                desc = self.skillSpaceGetFieldNode(rankName, row, col, type='desc')
-                callback = self.skillLabelCallback
-            elif environment == 'ground':
-                imagename = self.skillGetGroundNode(rank, row, col, type='image')
-                desc = self.skillGetGroundNode(rank, row, col, type='desc')
-                callback = self.skillGroundLabelCallback
+            imagename = self.skillGetFieldNode(environment, rankName, row, col, type='image')
+            desc = self.skillGetFieldNode(environment, rankName, row, col, type='desc')
+            callback = self.skillGroundLabelCallback if environment == 'ground' else self.skillLabelCallback
 
             if not name in self.build['skilltree'][environment]:
                 self.build['skilltree'][environment][name] = False
@@ -2902,9 +2882,9 @@ class SETS():
 
             (image1, bg, relief) = self.get_theme_skill_icon(self.build['skilltree'][environment][name])
 
-            self.createButton(frame, 'skilltree', callback=callback, row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky=sticky, relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
+            self.createButton(frame, 'skilltree', callback=callback, row=row_actual, rowspan=rowspan, column=col_actual, borderwidth=1, bg=bg, image0Name=imagename, image1=image1, sticky=sticky, relief=relief, padx=padxCanvas, pady=padyCanvas, args=args, name=name, tooltip=desc, anchor='center')
         else:
-            self.createButton(frame, '', row=rowActual, rowspan=rowspan, column=colActual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
+            self.createButton(frame, '', row=row_actual, rowspan=rowspan, column=col_actual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
     def setupSkillBonusFrame(self, parentFrame, environment='space'):
         frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
