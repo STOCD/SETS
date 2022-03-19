@@ -1781,6 +1781,8 @@ class SETS():
 
     def importCallback(self, event=None):
         """Callback for import button"""
+        if self.in_splash():
+            return
         initialDir = self.getFolderLocation('library')
         inFilename = filedialog.askopenfilename(filetypes=[('SETS files', '*.json *.png'),('JSON files', '*.json'),('PNG image','*.png'),('All Files','*.*')], initialdir=initialDir)
         self.importByFilename(inFilename)
@@ -1808,7 +1810,7 @@ class SETS():
         if not inFilename or not os.path.exists(inFilename) or not os.path.getsize(inFilename):
             return False
 
-        self.makeSplashWindow()
+        self.makeSplash()
         with open(inFilename, 'r') as inFile:
             self.logWriteTransaction(name, 'loaded', '', inFilename, 1)
             self.logWriteBreak('MERGE PROCESSING START')
@@ -1818,7 +1820,7 @@ class SETS():
             data = re.sub('{{.[^}]*}}[\r\n]+', '', data, re.M)  # Clear unused merge entries
             data = re.sub('{{.[^}]*}}', '', data)  # Clear unused merge entries
             self.logWriteBreak('MERGE PROCESSING END')
-        self.removeSplashWindow()
+        self.closeSplash()
 
         self.get_display_window('Merge export', data)
 
@@ -1862,7 +1864,7 @@ class SETS():
             return False
 
         name = '{} file'.format('Autosave' if autosave else 'Template')
-        self.makeSplashWindow()
+        self.makeSplash()
         if inFilename.lower().endswith('.png'):
             # image = Image.open(inFilename)
             # self.build = json.loads(image.text['build'])
@@ -1908,7 +1910,7 @@ class SETS():
             self.logWriteTransaction(name, 'loaded', '', inFilename, 0, [logNote])
             self.logWriteBreak('IMPORT PROCESSING END')
 
-        self.removeSplashWindow()
+        self.closeSplash()
         if not result and self.persistent['forceJsonLoad']:
             return self.importByFilename(inFilename, True)
         else:
@@ -1925,8 +1927,13 @@ class SETS():
 
         return filename
 
+    def in_splash(self):
+        return self.visible_window == 'splash'
+
     def exportCallback(self, event=None):
         """Callback for export as png button"""
+        if self.in_splash():
+            return
         # pixel correction
         self.requestWindowUpdate('force')
 
@@ -2260,6 +2267,8 @@ class SETS():
         textframe.configure(state=DISABLED)
 
     def exportRedditCallback(self, event=None):
+        if self.in_splash():
+            return
         redditWindow = Toplevel(self.window, bg=self.theme["app"]["bg"])
         borderframe = Frame(redditWindow, bg=self.theme["app"]["fg"])
         borderframe.pack(fill=BOTH, expand=True, padx=15, pady=15)
@@ -2307,6 +2316,8 @@ class SETS():
                 self.logWrite('Failed to delete %s. Reason: %s' % (file_path, e), 2)
 
     def settingsMenuCallback(self, choice, type):
+        if self.in_splash():
+            return
         if type == 'clearButton':
             if choice == 'Clear all':
                 self.clearBuildCallback()
@@ -2459,13 +2470,26 @@ class SETS():
 
 
     def focusFrameCallback(self, type='space', init=False):
-        if type is None: type = 'space'
+        if self.in_splash() and type != 'return':
+            return
+        if type is None:
+            type = 'space'
+
+        previous = self.visible_window
+        if self.visible_window != 'splash':
+            self.visible_window_previous = previous
+        if type == 'return':
+            type = self.visible_window_previous
+
+        self.visible_window = type
+        self.logWriteSimple('focus', type, 3, [self.visible_window, self.visible_window_previous])
 
         if type == 'ground': self.currentFrameUpdateTo(self.groundBuildFrame)
         elif type == 'skill': self.currentFrameUpdateTo(self.skillTreeFrame)
         elif type == 'library': self.currentFrameUpdateTo(self.libraryFrame)
         elif type == 'settings': self.currentFrameUpdateTo(self.settingsFrame)
         elif type == 'space': self.currentFrameUpdateTo(self.spaceBuildFrame)
+        elif type == 'splash': self.currentFrameUpdateTo(self.splashFrame)
         else: return
 
         self.groundBuildFrame.pack_forget() if type != 'ground' else None
@@ -2473,13 +2497,16 @@ class SETS():
         self.libraryFrame.pack_forget() if type != 'library' else None
         self.settingsFrame.pack_forget() if type != 'settings' else None
         self.spaceBuildFrame.pack_forget() if type != 'space' else None
+        if type != 'splash':
+            self.splashFrame.pack_forget()
 
         self.currentFrame.pack(fill=BOTH, expand=True, padx=15)
         #self.currentFrame.place(height = self.framePriorheight) # Supposed to maintain frame height, may need grid
-        if not init:
+        if not init and type != 'splash':
             self.clearInfoboxFrame(type)
 
-        if type == 'skill': self.setupCurrentSkillBuildFrames('space')
+        if type == 'skill':
+            self.setupCurrentSkillBuildFrames('space')
 
     # Could be removed with lambdas in the original command=
     def focusSpaceBuildFrameCallback(self): self.focusFrameCallback('space')
@@ -2861,7 +2888,7 @@ class SETS():
             skill_id = (rankName, row_item, col_item)
 
             name = self.skillGetFieldNode(environment, skill_id)
-            self.logWriteSimple('skill', 'ground', 2, [environment, rank, row_item, col_item, row_actual, col_actual, split_row, name])
+            # self.logWriteSimple('skill', 'ground', 2, [environment, rank, row_item, col_item, row_actual, col_actual, split_row, name])
             self.setupSkillButton(frame, rank, skill_id, col_item, row_actual, col_actual, environment, sticky=sticky)
 
     def setup_skill_group_space(self, frame, environment, rankName, row, rank):
@@ -5054,7 +5081,7 @@ class SETS():
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family=self.theme['app']['font']['family'], size=self.theme['app']['font']['size'])
 
-        self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'])
+        self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'], highlightthickness=1, highlightbackground='pink')
         self.containerFrame.pack(fill=BOTH, expand=True)
         self.logoFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'])
         self.logoFrame.pack(fill=X)
@@ -5062,13 +5089,17 @@ class SETS():
         self.menuFrame.pack(fill=X, padx=15)
         self.verticalFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'], height=self.windowActiveHeight)
         self.verticalFrame.pack(fill='none', side='left')  # Minimum height frame
+
+        # Interior, tabbed frames
         self.spaceBuildFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
         self.groundBuildFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
         self.skillTreeFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
         self.libraryFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
         self.settingsFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
+        self.splashFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
 
-        self.focusFrameCallback(type=self.args.startuptab, init=True)
+        self.focusFrameCallback(type='splash', init=True)
+        self.makeSplash()
 
         self.setupFooterFrame()
         self.setupLogoFrame()
@@ -5085,6 +5116,7 @@ class SETS():
             self.setupCurrentBuildFrames()
             self.resetBuildFrames()
 
+        self.focusFrameCallback(type=self.args.startuptab)
         self.containerFrame.pack_propagate(False)
 
     def argParserSetup(self):
@@ -5320,6 +5352,8 @@ class SETS():
 
         self.logWriteBreak("logStart")
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
+        self.visible_window = 'space'
+        self.visible_window_previous = 'space'
 
         self.resetPersistent()
         self.resetBuild()
@@ -5420,6 +5454,19 @@ class SETS():
         self.splash_image_h = self.images['splash_image'].height()
 
 
+    def makeSplash(self, close=False):
+        self.focusFrameCallback(type='splash')
+        self.splash_window_interior(self.splashFrame)
+        self.requestWindowUpdate(type='force')
+        if not close:
+            self.perf('splash')
+            self.requestWindowUpdateHold(0)
+            self.splashProgressBarUpdates = 0
+            self.splashProgressBar.start()
+
+    def closeSplash(self):
+        self.focusFrameCallback(type='return')
+
     def makeSplashWindow(self, close=False):
         if self.splashWindow is not None:
             try:
@@ -5448,7 +5495,7 @@ class SETS():
 
     def progressBarUpdate(self, weight=1):
         # weight denotes how much progress that item is
-        if self.splashProgressBar is None:
+        if self.splashProgressBar is None or self.visible_window != 'splash':
             return
 
         self.splashProgressBarUpdates += weight
@@ -5540,11 +5587,11 @@ class SETS():
         self.updateWindowSize(init=True)
         self.initSplashWindow()
 
-        self.makeSplashWindow()
+        #self.makeSplashWindow()
         self.setupEmptyImages()
         self.precacheDownloads()
         self.setupUIFrames()
-        self.removeSplashWindow()
+        #self.removeSplashWindow()
 
     def run(self):
         self.window.mainloop()
