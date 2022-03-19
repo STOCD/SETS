@@ -297,6 +297,10 @@ class SETS():
                 messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)  
         except:
             messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
+    
+    def openWikiPage(self, pagename):
+        url = "https://sto.fandom.com/wiki/"+pagename.replace(" ", "_")
+        self.openURL(url)
 
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
@@ -3816,6 +3820,7 @@ class SETS():
                 if t.strip() != "":
                     self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#ffffff", 10, "normal", insertinrow, text.winfo_width())
                     insertinrow = insertinrow+1
+            mainbutton.configure(command=lambda p = html['Page']: self.openWikiPage(p))
             contentframe.grid_propagate(True)
             printed = True
 
@@ -3851,6 +3856,7 @@ class SETS():
             contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['traits'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
             contentframe.grid_propagate(True)
+            mainbutton.configure(command=lambda p = "Trait: "+ name: self.openWikiPage(p))
             printed = True
 
         if (environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]) and not printed:
@@ -3862,6 +3868,7 @@ class SETS():
             contentframe.grid_propagate(False)
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['boffTooltips'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
             contentframe.grid_propagate(True)
+            mainbutton.configure(command=lambda p = "Ability: "+ name: self.openWikiPage(p))
             printed = True
 
         if environment == "skill":
