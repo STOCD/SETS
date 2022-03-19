@@ -272,6 +272,8 @@ class SETS():
         total_pixels = array.size//n
         hidden_bits = ""
         for p in range(total_pixels):
+            if p % 5000 == 0:
+                self.progressBarUpdate()
             for q in range(0, 3):
                 hidden_bits += (bin(array[p][q])[2:][-1])
         hidden_bits = [hidden_bits[i:i+8] for i in range(0, len(hidden_bits), 8)]
