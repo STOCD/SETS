@@ -1,5 +1,6 @@
 # SETS - STO Equipment and Trait Selector
 A Star Trek Online build tool in Python
+**Website: https://stobuilds.com/SETS/sets.html**
 
 ## Description
 
@@ -77,6 +78,7 @@ All:
 * Programmer - Liraal2
 * Programmer | Linux Testing - Serious Table - Discord: Serious Table#8141
 * Programmer - Stephen Hill - Discord: sukobi#1841
+* Programmer | QA | "girl Friday" - Shinga - Discord: Shinga#9959
 
 ## Licence
 
