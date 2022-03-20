@@ -3628,7 +3628,7 @@ class SETS():
                     passtext = ptext.replace("\n*", "\n• ").replace("*","• ")
                 else:
                     passtext = ptext[0:end+1].replace("\n*","\n• ").replace("*","• ")
-                    inserttext2 = ptext[end+2:]
+                    inserttext2 = ptext[end+1:]
             else:
                 start = occs[0]
                 end = 0
