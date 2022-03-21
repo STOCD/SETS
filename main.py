@@ -952,6 +952,7 @@ class SETS():
                 self.logWriteSimple('fromInfoboxName', name, 4, [image.width(), image.height()])
             return image
         except:
+            self.logWriteSimple('fromInfoboxName', 'FAIL', 4)
             return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
 
     def resetAfterImport(self):
@@ -1877,7 +1878,7 @@ class SETS():
     def importByFilename(self, inFilename, force=False, autosave=False):
         if not inFilename or not os.path.exists(inFilename) or not os.path.getsize(inFilename):
             return False
-
+        self.logWriteBreak('IMPORT START')
         name = '{} file'.format('Autosave' if autosave else 'Template')
         self.makeSplash()
         if inFilename.lower().endswith('.png'):
@@ -5134,11 +5135,14 @@ class SETS():
         self.setupLibraryFrame()
         self.setupSettingsFrame()
         for type in ['skill', 'ground', 'space']:
+            self.logWriteBreak('Build: {}'.format(type))
             self.setupInitialBuildFrames(type)
 
         if not self.build_auto_load():
+            self.logWriteBreak('Build Frames (no initial load)')
             self.setupCurrentBuildFrames()
             self.resetBuildFrames()
+            self.closeSplash()
 
         self.focusFrameCallback(type=self.args.startuptab)
         self.containerFrame.pack_propagate(False)
@@ -5361,8 +5365,10 @@ class SETS():
 
     def build_auto_load(self):
         configFile = self.getFileLocation('autosave')
-        autosave_result = self.importByFilename(self.getFileLocation('autosave'), autosave=True)
-        if not autosave_result:
+        autosave_exists = os.path.exists(configFile)
+        if autosave_exists:
+            autosave_result = self.importByFilename(configFile, autosave=True)
+        if not autosave_exists or not autosave_result:
             autosave_result = self.importByFilename(self.getFileLocation('template'))
 
         return autosave_result
@@ -5522,10 +5528,7 @@ class SETS():
             return
 
         self.splashProgressBarUpdates += weight
-        try:  # Some cases where it's not properly deconstructed yet
-            self.splashProgressBar.step()
-        except:
-            pass
+        self.splashProgressBar.step()
         # modulo to reduce time / flashing UI spent on updating
         # if 1 or self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
         if text is not None:
@@ -5605,16 +5608,20 @@ class SETS():
         self.init_window()
         self.init_settings()
 
+        self.logWriteBreak('CONFIG')
         self.argParserSetup()  # First for location overrides
         self.stateFileLoad(init=True)
         self.configFileLoad()  # Third to override persistent
         self.precache_theme_fonts()  # Fourth in case of new theme from configs
         self.updateWindowSize(init=True)
+
+        self.logWriteBreak('PREP')
         self.init_splash()
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
-
         self.setupEmptyImages()
         self.precacheDownloads()
+
+        self.logWriteBreak('UI BUILD')
         self.setupUIFrames()
 
     def run(self):
