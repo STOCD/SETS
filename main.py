@@ -438,6 +438,7 @@ class SETS():
                 # Previously failed, do not attempt download again until next reattempt days have passed
                 return None
 
+        self.progressBarUpdate(text=url)
         img_request = requests.get(url)
         self.logWriteTransaction('fetchImage', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code)])
 
@@ -446,6 +447,9 @@ class SETS():
             self.persistent['imagesFail'][url] = today.isoformat()
             self.auto_save(quiet=True)
             return None
+
+        self.persistent['imagesFail'][url] = ''
+        self.auto_save()
 
         return img_request.content
 
@@ -527,8 +531,10 @@ class SETS():
 
         image = Image.open(filename)
         if(width is not None):
-            if forceAspect: image = image.resize((width, height),Image.ANTIALIAS)
-            else: image.thumbnail((width, height), resample=Image.LANCZOS)
+            if forceAspect:
+                image = image.resize((width, height), Image.ANTIALIAS)
+            else:
+                image.thumbnail((width, height), resample=Image.LANCZOS)
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
         return ImageTk.PhotoImage(image)
 
@@ -1537,6 +1543,9 @@ class SETS():
         self.splashProgressBar = Progressbar(OuterFrame, orient='horizontal', mode='indeterminate', length=self.splash_image_w)
         self.splashProgressBar.grid(row=0, column=0, sticky='sw')
 
+        self.splashText = StringVar()
+        label = Label(OuterFrame, textvariable=self.splashText, bg=self.theme['frame']['bg'])
+        label.grid(row=1, column=0, sticky='n')
 
     def itemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
@@ -4998,6 +5007,7 @@ class SETS():
 
     def logFullWrite(self, notice):
         self.logFull.set(self.lineTruncate(self.logFull.get()+'\n'+notice))
+        self.progressBarUpdate(text=notice)
 
     def logminiWrite(self, notice, level=0):
         if level == 0:
@@ -5090,7 +5100,7 @@ class SETS():
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family=self.theme['app']['font']['family'], size=self.theme['app']['font']['size'])
 
-        self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'], highlightthickness=1, highlightbackground='pink')
+        self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'])
         self.containerFrame.pack(fill=BOTH, expand=True)
         self.logoFrame = Frame(self.containerFrame, bg=self.theme['app']['bg'])
         self.logoFrame.pack(fill=X)
@@ -5352,6 +5362,10 @@ class SETS():
 
         return autosave_result
 
+    def init_splash(self):
+        self.images['splash_image'] = self.loadLocalImage('sets_loading.PNG', width=self.splashBoxX, height=self.splashBoxY)
+        self.splash_image_w = self.images['splash_image'].width()
+        self.splash_image_h = self.images['splash_image'].height()
 
     def init_settings(self):
         """Initialize session settings state"""
@@ -5359,6 +5373,10 @@ class SETS():
         self.resetInternals()
         self.resetSettings()
 
+        self.splashWindow = None
+        self.splashProgressBar = None
+        self.splashProgressBarUpdates = 0
+        self.splashText = ''
         self.logWriteBreak("logStart")
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
         self.visible_window = 'space'
@@ -5454,15 +5472,6 @@ class SETS():
             self.logWriteSimple('=== Splash', type, 2, [now])
             return now
 
-
-    def initSplashWindow(self):
-        self.splashWindow = None
-        self.splashProgressBar = None
-        self.images['splash_image'] = self.loadLocalImage('sets_loading.PNG', width=self.splashBoxX, height=self.splashBoxY)
-        self.splash_image_w = self.images['splash_image'].width()
-        self.splash_image_h = self.images['splash_image'].height()
-
-
     def makeSplash(self, close=False):
         self.focusFrameCallback(type='splash')
         self.splash_window_interior(self.splashFrame)
@@ -5502,7 +5511,7 @@ class SETS():
             self.splashProgressBar = None
 
 
-    def progressBarUpdate(self, weight=1):
+    def progressBarUpdate(self, weight=1, text=None):
         # weight denotes how much progress that item is
         if self.splashProgressBar is None or self.visible_window != 'splash':
             return
@@ -5514,7 +5523,9 @@ class SETS():
             pass
         # modulo to reduce time / flashing UI spent on updating
         # if 1 or self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
-        self.requestWindowUpdate('footerProgressBar')
+        if text is not None:
+            self.splashText.set(text)
+        self.requestWindowUpdate()
 
     def setupUIScaling(self,event=None):
         scale = float(self.persistent['uiScale']) if 'uiScale' in self.persistent else 1.0
@@ -5594,13 +5605,11 @@ class SETS():
         self.configFileLoad()  # Third to override persistent
         self.precache_theme_fonts()  # Fourth in case of new theme from configs
         self.updateWindowSize(init=True)
-        self.initSplashWindow()
+        self.init_splash()
 
-        #self.makeSplashWindow()
         self.setupEmptyImages()
         self.precacheDownloads()
         self.setupUIFrames()
-        #self.removeSplashWindow()
 
     def run(self):
         self.window.mainloop()
