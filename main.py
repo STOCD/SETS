@@ -331,16 +331,16 @@ class SETS():
 
     def fetchOrRequestJson(self, url, designation, local=False):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
-        if local: cache_base = self.settings['folder']['local']
-        else: cache_base = self.getFolderLocation('cache')
+        cache_base = self.settings['folder']['local'] if local else self.getFolderLocation('cache')
         override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
 
-        filename = os.path.join(*filter(None, [cache_base, designation]))+".json"
         filenameOverride = os.path.join(*filter(None, [override_base, designation]))+".json"
         if os.path.exists(filenameOverride):
             filename = filenameOverride
+        else:
+            filename = os.path.join(*filter(None, [cache_base, designation])) + ".json"
 
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
@@ -348,17 +348,17 @@ class SETS():
             if interval.days < 7 or local:
                 with open(filename, 'r', encoding='utf-8') as json_file:
                     json_data = json.load(json_file)
+                    self.logWriteTransaction('Cache File (json)', 'read', str(os.path.getsize(filename)), designation, 1)
                     return json_data
-            if interval.days >= 7: self.clearCacheFolder(designation+".json")
-        elif local:
-            return
-
-        r = requests.get(url)
-        self.makeFilenamePath(os.path.dirname(filename))
-        with open(filename, 'w') as json_file:
-            json.dump(r.json(),json_file)
-            self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
-        return r.json()
+            if interval.days >= 7:
+                self.clearCacheFolder(designation+".json")
+        elif not local:
+            r = requests.get(url)
+            self.makeFilenamePath(os.path.dirname(filename))
+            with open(filename, 'w') as json_file:
+                json.dump(r.json(),json_file)
+                self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
+            return r.json()
 
     def filePathSanitize(self, txt, chr_set='printable'):
         """Converts txt to a valid filename.
@@ -5013,7 +5013,7 @@ class SETS():
         if level == 0:
             self.setFooterFrame('', notice)
         if self.settings['debug'] > 0 and self.settings['debug'] >= level:
-            sys.stderr.write('info: '+notice+'\n')
+            self.log_write_stderr('info: '+notice)
 
     def logWriteBreak(self, title, level=1):
         self.logWrite('=== {:>1} ==='.format(title.upper()), level)
@@ -5053,9 +5053,14 @@ class SETS():
             self.setFooterFrame(notice, '')
             self.logFullWrite(notice)
         if self.settings['debug'] > 0 and self.settings['debug'] >= level:
-            sys.stderr.write(notice)
-            sys.stderr.write('\n')
+            self.log_write_stderr(notice)
             self.logFullWrite(notice)
+
+    def log_write_stderr(self, text):
+        now = datetime.datetime.now()
+        sys.stderr.write('{}: '.format(now))
+        sys.stderr.write(text)
+        sys.stderr.write('\n')
 
     def requestWindowUpdateHold(self, count=50):
         self.updateOnHeavyStep = 50
@@ -5606,6 +5611,7 @@ class SETS():
         self.precache_theme_fonts()  # Fourth in case of new theme from configs
         self.updateWindowSize(init=True)
         self.init_splash()
+        self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
 
         self.setupEmptyImages()
         self.precacheDownloads()
