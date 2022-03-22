@@ -5057,8 +5057,6 @@ class SETS():
         sys.stderr.write('\n')
 
     def requestWindowUpdateHold(self, count=50):
-        self.updateOnHeavyStep = 50
-
         if count == 0:
             self.updateOnStep = 1
         else:
@@ -5381,6 +5379,7 @@ class SETS():
         self.splashProgressBar = None
         self.splashProgressBarUpdates = 0
         self.splashText = ''
+        self.updateOnHeavyStep = 50
         self.logWriteBreak("logStart")
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
         self.visible_window = 'space'
