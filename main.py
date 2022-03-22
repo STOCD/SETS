@@ -3912,9 +3912,10 @@ class SETS():
                 skill_level = ''
 
             if skill_linear > 0:
-                skill_gdesc = skill_gdesc[skillindex] if len(skill_desc) >= skillindex else ''
+                skill_gdesc = skill_gdesc[skillindex] if len(skill_gdesc) >= skillindex else ''
                 skill_skill = skill_skill[skillindex] if len(skill_skill) >= skillindex else ''
 
+            self.logWriteSimple('tooltip', 'skill', 2, [key, skill_skill, skill_gdesc, skill_desc])
             text.insert(END, skill_level+skill_skill, 'skillhead')
 
             text.insert(END, '\n'+skillprofession+skill_environment.title()+' Skill\n'+name.title(), 'skillsub')
@@ -3927,14 +3928,7 @@ class SETS():
             contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=2, column=0, sticky="nsew")
             contentframe.grid_propagate(False)
-            if skill_linear == 0:
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-            elif skill_linear == 1 and skillindex == 0:
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-            elif skill_linear == 1 and skillindex == 1:
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-            elif skill_linear == 2:
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
             contentframe.grid_propagate(True)
             mainbutton.configure(command=lambda url = skill_link: self.openURL(url))
             printed=True
