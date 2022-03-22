@@ -35,7 +35,7 @@ class HoverButton(tkinter.Button):
 
 class SETS():
     """Main App Class"""
-    version = '20220321_beta'
+    version = '20220322_beta'
 
     daysDelayBeforeReattempt = 7
 
