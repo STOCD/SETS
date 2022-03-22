@@ -331,7 +331,7 @@ class SETS():
 
     def fetchOrRequestJson(self, url, designation, local=False):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
-        cache_base = self.settings['folder']['local'] if local else self.getFolderLocation('cache')
+        cache_base = self.resource_path(self.settings['folder']['local']) if local else self.getFolderLocation('cache')
         override_base = self.getFolderLocation('override')
         if not os.path.exists(cache_base):
             return
@@ -579,7 +579,7 @@ class SETS():
     def loadLocalImage(self, filename, width = None, height = None, forceAspect=False):
         """Request image from web or fetch from local cache"""
         cache_base = self.settings['folder']['local']
-        self.makeFilenamePath(cache_base)
+        self.makeFilenamePath(self.resource_path(cache_base))
         filename = os.path.join(*filter(None, [cache_base, filename]))
         if os.path.exists(filename):
             image = Image.open(filename)
