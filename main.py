@@ -1110,9 +1110,11 @@ class SETS():
 
         self.perf_store = dict()
         self.windowUpdate = dict()
-        self.tooltip_tracking = dict()
+        self.reset_tooltip_tracking()
         self.images = dict()
 
+    def reset_tooltip_tracking(self):
+        self.tooltip_tracking = dict()
 
     def resetSettings(self):
         # self.settings are optionally loaded from config, but manually edited or saved
@@ -1545,7 +1547,8 @@ class SETS():
         self.splashProgressBar.grid(row=0, column=0, sticky='sw')
 
         self.splashText = StringVar()
-        label = Label(OuterFrame, textvariable=self.splashText, bg=self.theme['frame']['bg'])
+        label = Label(OuterFrame, height=4, textvariable=self.splashText, bg=self.theme['frame']['bg'], wraplength=400)
+        label.grid(row=1, column=0, sticky='n')
         label.grid(row=1, column=0, sticky='n')
 
     def itemLabelCallback(self, e, canvas, img, i, key, args):
@@ -2034,7 +2037,7 @@ class SETS():
         else:
             maxSkills = 46 # Could be set by captain rank/level
             rankReqs = { 'lieutenant': 0, 'lieutenant commander': 5, 'commander': 15, 'captain': 25, 'admiral': 35 }
-            split = self.skillGetFieldSkill(environment, rank, row, type='linear')
+            split = self.skillGetFieldSkill(environment, (rank, row, None), type='linear')
         # col is the position-in-chain
 
         #if environment == 'ground': return True
@@ -2491,6 +2494,7 @@ class SETS():
         if type is None:
             type = 'space'
 
+        self.reset_tooltip_tracking()
         previous = self.visible_window
         if self.visible_window != 'splash':
             self.visible_window_previous = previous
@@ -2709,8 +2713,11 @@ class SETS():
             canvas.itemconfig(img1, state=DISABLED)
         else:
             tooltip_uuid = self.uuid_assign_for_tooltip()
-            environment = args[3] if args is not None and len(args) >= 4 else 'space'
+            environment = args[-1] if args is not None and len(args) >= 2 else 'space'
             internalKey = args[0] if args is not None and type(args[0]) is str else ''
+            if environment == 'skill':
+                internalKey = args[0]
+
             if callback is not None:
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
             if name != 'blank':
@@ -2822,11 +2829,17 @@ class SETS():
                 result = tree[row]['nodes'][col][type]
             except:
                 pass
-        self.logWriteSimple('Skill', 'Node', 5, [environment, rank if environment == 'space' else '', row, 'nodes', col, type, '=', result])
+        self.logWriteSimple('get', 'skillnode', 5, [environment, rank if environment == 'space' else '', row, 'nodes', col, type, '=', result])
         return result
 
-    def skillGetFieldSkill(self, environment, rank, row, type='name'):
+    def skillGetFieldSkill(self, environment, skill_id, type='name'):
         result = ''
+        if len(skill_id) != 3:
+            return result
+        (rank, row, col) = skill_id
+        if rank is None:
+            environment = 'ground'
+
         if self.cache['skills'][environment]:
             tree = self.cache['skills'][environment][rank] if environment == 'space' else self.cache['skills'][environment]
             try:
@@ -2834,7 +2847,7 @@ class SETS():
                     result = tree[row][type]
             except:
                 pass
-        #self.logWriteSimple('Skill', 'Core', 3, [rankName, row, type, self.cache['skills']['space'][rankName][row][type]])
+        self.logWriteSimple('get', 'skillfield', 5, [environment, rank, row, type, result])
         return result
 
     def setupSkillBuildFrames(self, environment=None):
@@ -2890,7 +2903,7 @@ class SETS():
             col_item = col
             row_actual = (row + 1) if rank else row
             col_actual = ((rank * rankColumns) + col)
-            split_row = self.skillGetFieldSkill(environment, rankName, row_item, type='side')
+            split_row = self.skillGetFieldSkill(environment, (rankName, row_item, None), type='side')
             sticky = ''
             if split_row:
                 if col == 0:
@@ -2909,7 +2922,7 @@ class SETS():
 
     def setup_skill_group_space(self, frame, environment, rankName, row, rank):
         rankColumns = 4
-        split_row = self.skillGetFieldSkill(environment, rankName, row, type='linear')
+        split_row = self.skillGetFieldSkill(environment, (rankName, row, None), type='linear')
         if row == 0:
             l = Label(frame, text=rankName.title().replace(' ', '\n'), bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], font=self.theme['title2']['font_object'])
             l.grid(row=row, column=rank*rankColumns, columnspan=3, sticky='s', pady=1)
@@ -2972,7 +2985,7 @@ class SETS():
             for col in range(4):
                 colActual = col
                 frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillBonusFrameColSpace'+str(col))
-                args = [None, row, col, 'skill']
+                args = [(None, row, col), 'skill']
 
                 self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
@@ -3203,7 +3216,7 @@ class SETS():
         self.clearFrame(frame)
         n = self.rarities.index(rarity)
         itemVar['rarity'] = rarity
-        if not len(itemVar['modifiers']):
+        if not len(itemVar['modifiers']) == n:
             itemVar['modifiers'] = ['']*n
 
         mods = sorted(self.cache['modifiers'])
@@ -3224,7 +3237,7 @@ class SETS():
 
     def setupInfoboxFrameTooltipDraw(self, ui_key, item, key, environment='space', tooltip=None):
         """Tooltip mouse-enter -- initiate the delayed call"""
-        #self.logWriteSimple('Tooltip', 'enter', 2, [ui_key, 'key', key, 'environment', environment, tooltip])
+        self.logWriteSimple('Tooltip', 'enter', 4, [ui_key, item, key, environment, tooltip])
         if ui_key:
             self.tooltip_tracking[ui_key] = True
             #self.setupInfoboxFrameMaster(ui_key, item, key, environment, tooltip)
@@ -3237,8 +3250,9 @@ class SETS():
         """Actually draw the tooltip if ui_key is None or still true"""
         if ('X' in self.tooltip_tracking and self.tooltip_tracking['X']) or\
                 ('hold' in self.tooltip_tracking and self.tooltip_tracking['hold']):
-                # Would it be good to re-initiate a .after call?
-                return
+            self.logWriteSimple('tooltip', 'IGNORED', 3)
+            # Would it be good to re-initiate a .after call?
+            return
         if ui_key is None or (ui_key in self.tooltip_tracking and self.tooltip_tracking[ui_key]):
             self.tooltip_tracking[ui_key] = False
             self.tooltip_tracking['hold'] = True
@@ -3714,29 +3728,15 @@ class SETS():
             return
         self.displayedInfoboxItem = name
 
-        skillcolor = "pink"
         if environment == 'skill':
             frame = self.skillInfoboxFrame
-            if key in self.cache['skills']['space']:
-                for i in range(0,6):
-                    skillname = self.cache['skills']['space'][key][i]['skill']
-                    if (skillname == name[:-2] and isinstance(skillname, str)) or (isinstance(skillname, list) and (name[:-2] in skillname or name in skillname)):
-                        if self.cache['skills']['space'][key][i]['career'] == "tac":
-                            skillcolor = "#c83924"
-                        elif self.cache['skills']['space'][key][i]['career'] == "eng":
-                            skillcolor = "#c59129"
-                        elif self.cache['skills']['space'][key][i]['career'] == "sci":
-                            skillcolor = "#1265a3"
-            else:
-                skillcolor = self.theme['tooltip']['subhead']['fg']
-
         elif environment == 'ground':
             frame = self.groundInfoboxFrame
         else:
             frame = self.shipInfoboxFrame
         frame.configure(highlightthickness=0)
         frame.pack_propagate(False)
-        if key is not None and key != '':
+        if environment != 'skill' and key is not None and key != '':
             self.precacheEquipment(key)
 
         raritycolor = '#ffffff'
@@ -3754,11 +3754,19 @@ class SETS():
 
         self.clearFrame(frame)
 
-        mainbutton = Button(frame, text="Stats & Other Info", highlightbackground=self.theme['tooltip']['bg'], highlightthickness=1)
+        mainbutton = HoverButton(frame, text="Stats & Other Info", highlightbackground=self.theme['tooltip']['bg'],  highlightthickness=1, activebackground=self.theme['button_heavy']['hover'])
         mainbutton.pack(fill=X, expand=False, side=TOP)
         mtfr = Frame(frame, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
         mtfr.pack(fill="both",expand=False,side=TOP)
         text = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=3.5)
+
+        skillcolor_by_career = {'tac': '#c83924', 'eng': '#c59129', 'sci': '#1265a3'}
+        skillcolor = "pink"
+        if environment == 'skill' and isinstance(key, tuple):
+            (skill_rank, skill_row, skillindex) = key
+            skill_environment = 'ground' if skill_rank is None else 'space'
+            skill_career = self.skillGetFieldSkill(skill_environment, key, 'career')
+            skillcolor = skillcolor_by_career[skill_career] if skill_career in skillcolor_by_career else self.theme['tooltip']['subhead']['fg']
 
         text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], font=self.font_tuple_create('tooltip_head'))
         text.tag_configure('name', foreground=raritycolor, font=self.font_tuple_create('tooltip_name'))
@@ -3881,70 +3889,50 @@ class SETS():
             mainbutton.configure(command=lambda p = "Ability: "+ name: self.openWikiPage(p))
             printed = True
 
-        if environment == "skill":
-            skillnode = None
-            if key not in self.cache['skills']['space']:
-                pass
-                """for jg in range(0, 10):
-                    skillname = self.cache['skills']['ground']['content'][jg]['skill']
-                    if skillname[0] == name:
-                        skillnode = self.cache['skills']['ground']['content'][jg]
-                        skillindex = 0
-                    elif skillname[1] == name:
-                        skillnode = self.cache['skills']['ground']['content'][jg]
-                        skillindex = 1
-                text.insert(END, name.title(), 'skillhead')
-                text.insert(END, '\nGround Skill'.title(), 'skillsub')
-                text.update()
-                if self.build['skilltree']['ground'][name]:
-                    text.insert(END, "\nSkill is active!", "subhead")
-                    text.configure(height=self.getDH(text.winfo_width(),name.title(), "Helvetica", 15, "bold","skill")+1)
-                else:
-                    text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
-                contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-                contentframe.grid(row=2, column=0, sticky="nsew")
-                contentframe.grid_propagate(False)
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString((skillnode["gdesc"]+"<hr>"+skillnode["desc"][skillindex]).strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-                contentframe.grid_propagate(True)
-                printed=True"""
-            else:
-                skillnode, skillindex, skr = self.getSkillnodeByName(name, key)
-                if skillnode['career']=="tac": skillprofession = "Tactical "
-                elif skillnode['career']=="eng": skillprofession = "Engineering "
-                elif skillnode['career']=="sci": skillprofession = "Science "
-                if skillnode['linear']==0:
-                    if int(name[-1])==1: lev=""
-                    elif int(name[-1])==2: lev="Improved "
-                    elif int(name[-1])==3: lev="Advanced "
-                    text.insert(END, lev+name[:-2], 'skillhead')
-                elif skillnode['linear']==1:
-                    if skillindex==1: text.insert(END, name, 'skillhead')
-                    elif int(name[-1])==1: text.insert(END, name[:-2], 'skillhead')
-                    elif int(name[-1])==2: text.insert(END, "Improved "+name[:-2], 'skillhead')
-                elif skillnode['linear']==2:
-                    text.insert(END, name, 'skillhead')
-                text.insert(END, "\n"+skillprofession+"Space Skill\n"+key.title(), 'skillsub')
-                text.update()
-                if self.build['skilltree']["space"][name]:
-                    text.insert(END, "\nSkill is active!", "subhead")
-                    text.configure(height=self.getDH(text.winfo_width(),name.title(), "Helvetica", 15, "bold","skill")+1)
-                else:
-                    text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
-                contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-                contentframe.grid(row=2, column=0, sticky="nsew")
-                contentframe.grid_propagate(False)
-                if skillnode['linear']==0:
-                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc']+"<hr>"+skillnode['nodes'][int(name[-1])-1]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-                elif skillnode['linear']==1 and skillindex==0:
-                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][int(name[-1])-1]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-                elif skillnode['linear']==1 and skillindex==1:
-                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][2]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-                elif skillnode['linear']==2:
-                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skillnode['gdesc'][skillindex]+"<hr>"+skillnode['nodes'][skillindex]["desc"]).strip(), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-                contentframe.grid_propagate(True)
-                mainbutton.configure(command=lambda url = skillnode['link']: self.openURL(url))
-                printed=True
+        if environment == "skill" and isinstance(key, tuple):
+            skillcareer_by_career = {'tac': 'Tactical', 'eng': 'Engineering', 'sci': 'Science'}
 
+            skillprofession = skillcareer_by_career[skill_career]+' ' if skill_career in skillcareer_by_career else ''
+            skill_linear = self.skillGetFieldSkill(skill_environment, key, 'linear')
+            skill_skill = self.skillGetFieldSkill(skill_environment, key, 'skill')
+            skill_gdesc = self.skillGetFieldSkill(skill_environment, key, 'gdesc')
+            skill_desc = self.skillGetFieldNode(skill_environment, key, 'desc')
+            skill_link = self.skillGetFieldNode(skill_environment, key, 'link')
+            skill_name_last_word = name.split()[-1]
+            if skill_name_last_word == '3':
+                skill_level = 'Advanced '
+            elif skill_name_last_word == '2':
+                skill_level = 'Improved '
+            else:
+                skill_level = ''
+
+            if skill_linear > 0:
+                skill_gdesc = skill_gdesc[skillindex] if len(skill_desc) >= skillindex else ''
+                skill_skill = skill_skill[skillindex] if len(skill_skill) >= skillindex else ''
+
+            text.insert(END, skill_level+skill_skill, 'skillhead')
+
+            text.insert(END, '\n'+skillprofession+skill_environment.title()+' Skill\n'+name.title(), 'skillsub')
+            text.update()
+            if self.build['skilltree'][skill_environment][name]:
+                text.insert(END, "\nSkill is active!", "subhead")
+                text.configure(height=self.getDH(text.winfo_width(),name.title(), "Helvetica", 15, "bold","skill")+1)
+            else:
+                text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
+            contentframe.grid(row=2, column=0, sticky="nsew")
+            contentframe.grid_propagate(False)
+            if skill_linear == 0:
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            elif skill_linear == 1 and skillindex == 0:
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            elif skill_linear == 1 and skillindex == 1:
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            elif skill_linear == 2:
+                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            contentframe.grid_propagate(True)
+            mainbutton.configure(command=lambda url = skill_link: self.openURL(url))
+            printed=True
 
         text.configure(state=DISABLED)
         #frame.pack_propagate(True) Preset width means we don't need to turn this back on
@@ -5532,7 +5520,7 @@ class SETS():
         # modulo to reduce time / flashing UI spent on updating
         # if 1 or self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
         if text is not None:
-            self.splashText.set(text)
+            self.splashText.set(text[:300])
         self.requestWindowUpdate()
 
     def setupUIScaling(self,event=None):
