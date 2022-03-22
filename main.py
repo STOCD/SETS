@@ -645,21 +645,28 @@ class SETS():
 
     def precachePreload(self, limited=False):
         self.logWriteBreak('precachePreload START')
-        self.precacheDownloads()
-        self.precacheShips()
-        self.precacheTemplates()
-        if not limited:
-            self.precacheBoffAbilities()
-            self.precacheTraits()
-            self.precacheShipTraits()
-            self.precacheDoffs("Space")
-            self.precacheDoffs("Ground")
-            self.precacheModifiers()
-            self.precacheReputations()
-            self.precacheFactions()
-            self.precacheSkills()
-            # Add the known equipment series [optional?]
+        self.perf('downloads');self.precacheDownloads();self.perf('downloads', 'stop')
+        self.perf('cache-ships');self.precacheShips();self.perf('cache-ships', 'stop')
+        self.perf('cache-templates');self.precacheTemplates();self.perf('cache-templates', 'stop')
+        self.perf('cache-doffspace');self.precacheDoffs("Space");self.perf('cache-doffspace', 'stop')
+        self.perf('cache-doffground');self.precacheDoffs("Ground");self.perf('cache-doffground', 'stop')
+        self.perf('cache-mods');self.precacheModifiers();self.perf('cache-mods', 'stop')
+        self.perf('cache-reps');self.precacheReputations();self.perf('cache-reps', 'stop')
+        self.perf('cache-factions');self.precacheFactions();self.perf('cache-factions', 'stop')
+        self.perf('cache-skills');self.precacheSkills();self.perf('cache-skills', 'stop')
+
+        # Image list builders are slower
+
+        self.perf('cache-boffabilities');self.precacheBoffAbilities(limited=limited);self.perf('cache-boffabilities', 'stop')
+        self.perf('cache-traits');self.precacheTraits(limited=limited);self.perf('cache-traits', 'stop')
+        self.perf('cache-shiptraits');self.precacheShipTraits(limited=limited);self.perf('cache-shiptraits', 'stop')
+        self.perf('cache-equipment');self.precache_equipment(limited=limited);self.perf('cache-equipment', 'stop')
+        # Add the known equipment series [optional?]
         self.logWriteBreak('precachePreload END')
+
+    def precache_equipment(self, limited=False):
+
+        return
 
     def precacheIconCleanup(self):
         #preliminary gathering for self-cleaning icon folder
@@ -877,7 +884,7 @@ class SETS():
                 self.cache['shipTraitsFull'][name] = {"ship":nm, "desc": self.deWikify(desc, leaveHTML=True), "image": self.imageFromInfoboxName(name), "link": "https://sto.fandom.com/wiki/"+item["Page"].replace(" ", "_"), "obtained": obt }
 
 
-    def precacheShipTraits(self):
+    def precacheShipTraits(self, limited=False):
         """Populate in-memory cache of ship traits for faster loading"""
         if 'shipTraits' in self.cache and len(self.cache['shipTraits']) > 0:
             return self.cache['shipTraits']
@@ -919,7 +926,7 @@ class SETS():
             self.cache['traitsWithImages'][type][environment].append((name,self.imageFromInfoboxName(name)))
             self.logWriteSimple('precacheTrait', '', 4, tags=[type, environment, name, '|'+str(len(desc))+'|'])
 
-    def precacheTraits(self):
+    def precacheTraits(self, limited=False):
         """Populate in-memory cache of traits for faster loading"""
         if 'traits' in self.cache and 'space' in self.cache['traits']:
             return self.cache['traits']
@@ -1057,7 +1064,7 @@ class SETS():
         # self.persistent will be auto-saved and auto-loaded for persistent state data
         self.persistent = {
             'forceJsonLoad': 0,
-            'noPreCache': 0,
+            'fast_start': 0,
             'uiScale': 1,
             'geometry': '',
             'tooltipDelay': 2,
@@ -1074,7 +1081,7 @@ class SETS():
             'keepTemplateOnShipChange': 0,
             'pickerSpawnUnderMouse': 1,
             'useFactionSpecificIcons': 0,
-            'useExperimentalTooltip': 0,
+            'useAlternateTooltip': 0,
             'autosave': 1,
             'autosave_delay': 750,  # ms
             'versioning': 0,
@@ -1693,7 +1700,7 @@ class SETS():
 
             self.logWriteSimple('precacheBoffAbilities', 'Single', 4, tags=[environment, category, str(type), name, '|'+str(len(desc))+'|'])
 
-    def precacheBoffAbilities(self):
+    def precacheBoffAbilities(self, limited=False):
         """Common callback for boff labels"""
         if 'boffAbilities' in self.cache and 'space' in self.cache['boffAbilities'] and 'ground' in self.cache['boffAbilities']:
             return
@@ -3256,7 +3263,7 @@ class SETS():
         if ui_key is None or (ui_key in self.tooltip_tracking and self.tooltip_tracking[ui_key]):
             self.tooltip_tracking[ui_key] = False
             self.tooltip_tracking['hold'] = True
-            if self.persistent['useExperimentalTooltip']:
+            if not self.persistent['useAlternateTooltip']:
                 self.setupInfoboxFrame(item, key, environment, tooltip)
             else:
                 self.setupInfoboxFrameStatic(item, key, environment, tooltip)
@@ -3722,7 +3729,7 @@ class SETS():
         else:
             self.logWriteSimple('InfoboxEmpty', environment, 3, tags=["NO NAME", key])
             return
-        self.logWriteSimple('Infobox', environment, 4, tags=[name, key])
+        self.logWriteSimple('Infobox', environment, 3, tags=[name, key, item])
         if name != '' and self.displayedInfoboxItem == name:
             self.logWriteSimple('Infobox', 'displayed', 2, [environment])
             return
@@ -4770,8 +4777,6 @@ class SETS():
             'Theme Settings (auto-saved):'          : { 'col' : 1, 'type': 'title'},
             'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'var_name' : 'uiScale' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
-            'Use experimental tooltips'             : { 'col' : 2, 'type' : 'menu', 'var_name' : 'useExperimentalTooltip', 'boolean' : True },
-            'blank2'                                : { 'col' : 1, 'type' : 'blank' },
             'Export default'                        : { 'col' : 2, 'type' : 'menu', 'var_name' : 'exportDefault', 'setting_options': self.exportOptions },
             'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'var_name' : 'pickerSpawnUnderMouse', 'boolean' : True },
             'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'var_name' : 'keepTemplateOnShipClear', 'boolean' : True },
@@ -4796,7 +4801,7 @@ class SETS():
             'Auto-save build': {'col': 2, 'type': 'menu', 'var_name': 'autosave', 'boolean': True},
             'In-file versions': {'col': 2, 'type': 'menu', 'var_name': 'versioning', 'boolean': True},
             'Force out of date JSON loading'        : {'col': 2, 'type': 'menu', 'var_name': 'forceJsonLoad', 'boolean': True},
-            'Disabled precache at startup'          : {'col': 2, 'type': 'menu', 'var_name': 'noPreCache', 'boolean': True},
+            'Fast start (experimental)'          : {'col': 2, 'type': 'menu', 'var_name': 'fast_start', 'boolean': True},
             'Use faction-specific icons (experimental)': {'col': 2, 'type': 'menu', 'var_name': 'useFactionSpecificIcons', 'boolean': True},
             'blank2'                                : {'col': 1, 'type': 'blank'},
             'Create SETS manual settings file': {'col' : 2, 'type': 'button', 'var_name': 'exportConfigFile'},
@@ -5114,7 +5119,7 @@ class SETS():
         self.setupLogoFrame()
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
-        self.precachePreload(limited=(self.args.nocache or self.persistent['noPreCache']))
+        self.precachePreload(limited=(self.args.faststart or self.persistent['fast_start']))
 
         self.setupLibraryFrame()
         self.setupSettingsFrame()
@@ -5139,7 +5144,7 @@ class SETS():
         parser.add_argument('--file', type=str, help='File to import on open')
         parser.add_argument('--nofetch', type=str, help='Do not fetch new images')
         parser.add_argument('--allfetch', type=str, help='Retry images every load')
-        parser.add_argument('--nocache', type=str, help='Do not precache at start')
+        parser.add_argument('--faststart', type=str, help='EXPERIMENTAL -- skip some items at app load')
         parser.add_argument('--startuptab', type=str, help='space, ground, skill, settings [space is default]')
 
         self.args = parser.parse_args()
@@ -5462,10 +5467,10 @@ class SETS():
             perf_slice = slice(-1 * self.settings['perf_to_retain'], None)
             self.persistent['perf'][name][perf_slice] += ['{}'.format(run)]
 
-            self.logWriteSimple('=== Splash', type, 2, [now, run])
+            self.logWriteSimple('--- perf', name, 3, [type, now, run])
             return run
         else:
-            self.logWriteSimple('=== Splash', type, 2, [now])
+            self.logWriteSimple('--- perf', name, 4, [type, now])
             return now
 
     def makeSplash(self, close=False):
@@ -5610,7 +5615,7 @@ class SETS():
         self.init_splash()
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
         self.setupEmptyImages()
-        self.precacheDownloads()
+        # self.precacheDownloads()
 
         self.logWriteBreak('UI BUILD')
         self.setupUIFrames()
