@@ -660,12 +660,20 @@ class SETS():
         self.perf('cache-boffabilities');self.precacheBoffAbilities(limited=limited);self.perf('cache-boffabilities', 'stop')
         self.perf('cache-traits');self.precacheTraits(limited=limited);self.perf('cache-traits', 'stop')
         self.perf('cache-shiptraits');self.precacheShipTraits(limited=limited);self.perf('cache-shiptraits', 'stop')
-        self.perf('cache-equipment');self.precache_equipment(limited=limited);self.perf('cache-equipment', 'stop')
+        self.perf('cache-equipment');self.precache_equipment_all(limited=limited);self.perf('cache-equipment', 'stop')
         # Add the known equipment series [optional?]
         self.logWriteBreak('precachePreload END')
 
-    def precache_equipment(self, limited=False):
-
+    def precache_equipment_all(self, limited=False):
+        equipment_types = [
+            'Ship Fore Weapon', 'Ship Aft Weapon', 'Ship Device', 'Hangar Bay', 'Experimental',
+            'Ship Deflector Dish', 'Ship Secondary Deflector', 'Impulse Engine', 'Warp', 'Singularity', 'Ship Shields',
+            'Console', 'Ship Tactical Console', 'Ship Science Console', 'Ship Engineering Console',
+            'Kit Module', 'Kit Frame', 'Body Armor', 'EV Suit', 'Personal Shield', 'Ground Weapon', 'Ground Device',
+        ]
+        if not limited:
+            for type in equipment_types:
+                self.precacheEquipment(type)
         return
 
     def precacheIconCleanup(self):
@@ -3729,7 +3737,7 @@ class SETS():
         else:
             self.logWriteSimple('InfoboxEmpty', environment, 3, tags=["NO NAME", key])
             return
-        self.logWriteSimple('Infobox', environment, 3, tags=[name, key, item])
+        self.logWriteSimple('Infobox', environment, 4, tags=[name, key, item])
         if name != '' and self.displayedInfoboxItem == name:
             self.logWriteSimple('Infobox', 'displayed', 2, [environment])
             return
@@ -5068,7 +5076,7 @@ class SETS():
 
         # runaway check
         if self.windowUpdate['updates'] % 500 == 0:
-            self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 1)
+            self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 3)
 
         if type == 'force':
             self.window.update()
@@ -5447,7 +5455,7 @@ class SETS():
                 self.window.geometry("{}x{}+{}+{}".format(self.windowWidth, self.windowHeight, self.window_topleft_x, self.window_topleft_y))
 
 
-    def perf(self, name, type='start'):
+    def perf(self, name, type='start', loud=False):
         now = datetime.datetime.now()
         if not name in self.perf_store:
             self.perf_store[name] = dict()
@@ -5467,7 +5475,10 @@ class SETS():
             perf_slice = slice(-1 * self.settings['perf_to_retain'], None)
             self.persistent['perf'][name][perf_slice] += ['{}'.format(run)]
 
-            self.logWriteSimple('--- perf', name, 3, [type, now, run])
+            if loud:
+                self.logWriteSimple('--- perf', name, 3, [type, now, run])
+            else:
+                self.logWriteSimple('---', name, 3, [run])
             return run
         else:
             self.logWriteSimple('--- perf', name, 4, [type, now])
