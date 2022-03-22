@@ -5541,7 +5541,13 @@ class SETS():
             self.itemBoxX = self.itemBoxX_default * scale
             self.itemBoxY = self.itemBoxY_default * scale
 
-        self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, platform.system(), platform.release(), self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, scale, dpi))
+
+        self.os_system = platform.system()
+        self.os_release = platform.release()
+        if self.os_system == 'Windows' and self.os_release == 10 and sys.getwindowsversion().build >= 22000:
+            self.os_release = 11
+
+        self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, scale, dpi))
 
 
     def updateWindowSize(self, caller='', init=False, no_geometry=False):
