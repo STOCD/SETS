@@ -3912,7 +3912,7 @@ class SETS():
             skill_skill = self.skillGetFieldSkill(skill_environment, key, 'skill')
             skill_gdesc = self.skillGetFieldSkill(skill_environment, key, 'gdesc')
             skill_desc = self.skillGetFieldNode(skill_environment, key, 'desc')
-            skill_link = self.skillGetFieldNode(skill_environment, key, 'link')
+            skill_link = self.skillGetFieldSkill(skill_environment, key, 'link')
 
             if not skill_linear:
                 skill_linear = 0
