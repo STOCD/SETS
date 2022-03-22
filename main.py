@@ -3915,7 +3915,6 @@ class SETS():
                 skill_gdesc = skill_gdesc[skillindex] if len(skill_gdesc) >= skillindex else ''
                 skill_skill = skill_skill[skillindex] if len(skill_skill) >= skillindex else ''
 
-            self.logWriteSimple('tooltip', 'skill', 2, [key, skill_skill, skill_gdesc, skill_desc])
             text.insert(END, skill_level+skill_skill, 'skillhead')
 
             text.insert(END, '\n'+skillprofession+skill_environment.title()+' Skill\n'+name.title(), 'skillsub')
