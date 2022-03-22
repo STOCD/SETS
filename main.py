@@ -3898,6 +3898,11 @@ class SETS():
             skill_gdesc = self.skillGetFieldSkill(skill_environment, key, 'gdesc')
             skill_desc = self.skillGetFieldNode(skill_environment, key, 'desc')
             skill_link = self.skillGetFieldNode(skill_environment, key, 'link')
+
+            if not skill_linear:
+                skill_linear = 0
+            if not skill_skill:
+                skill_skill = name
             skill_name_last_word = name.split()[-1]
             if skill_name_last_word == '3':
                 skill_level = 'Advanced '
