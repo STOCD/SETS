@@ -5606,9 +5606,14 @@ class SETS():
              self.logWriteSimple('***WINDOW CHANGE', '{}x{}'.format(self.windowWidth, self.windowHeight), 2,
                         [self.windowActiveHeight, self.window_topleft_x, self.window_topleft_y, caller])
 
+    def resource_path(self, relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+        return os.path.join(base_path, relative_path)
+
     def init_window(self):
         self.window = Tk()
-        self.window.iconphoto(False, PhotoImage(file='local/icon.PNG'))
+        self.window.iconphoto(False, PhotoImage(file=self.resource_path('local/icon.PNG')))
         self.window.title("STO Equipment and Trait Selector")
 
     def __init__(self) -> None:
