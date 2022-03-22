@@ -3929,6 +3929,7 @@ class SETS():
             if skill_linear > 0:
                 skill_gdesc = skill_gdesc[skillindex] if len(skill_gdesc) >= skillindex else ''
                 skill_skill = skill_skill[skillindex] if len(skill_skill) >= skillindex else ''
+                skill_link = skill_link[skillindex] if len(skill_link) >= skillindex else ''
 
             text.insert(END, skill_level+skill_skill, 'skillhead')
 

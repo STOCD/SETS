@@ -215,6 +215,7 @@
 				"location" : "r",
 				"link" : [
 					"https://sto.fandom.com/wiki/Skill:_Drain_Expertise",
+					"https://sto.fandom.com/wiki/Skill:_Drain_Expertise",
 					"https://sto.fandom.com/wiki/Skill:_Drain_Infection"
 				],
 				"nodes" : [
@@ -246,6 +247,7 @@
 				"linear" : 1,
 				"location" : "l",
 				"link" : [
+					"https://sto.fandom.com/wiki/Skill:_Control_Expertise",
 					"https://sto.fandom.com/wiki/Skill:_Control_Expertise",
 					"https://sto.fandom.com/wiki/Skill:_Control_Amplification"
 				],
@@ -307,6 +309,7 @@
 				"linear" : 1,
 				"location" : "l",
 				"link" : [
+					"https://sto.fandom.com/wiki/Skill:_Electro-Plasma_System_Flow",
 					"https://sto.fandom.com/wiki/Skill:_Electro-Plasma_System_Flow",
 					"https://sto.fandom.com/wiki/Skill:_Full_Impulse_Energy_Shunt"
 				],
@@ -802,6 +805,7 @@
 				"linear" : 1,
 				"location" : "l",
 				"link" : [
+					"https://sto.fandom.com/wiki/Skill:_Warp_Core_Potential",
 					"https://sto.fandom.com/wiki/Skill:_Warp_Core_Potential",
 					"https://sto.fandom.com/wiki/Skill:_Warp_Core_Efficiency"
 				],
