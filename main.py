@@ -9,6 +9,7 @@ from tkinter.ttk import Progressbar
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab
 import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, platform, uuid
+import webbrowser
 import numpy as np
 
 CLEANR = re.compile('<.*?>')
@@ -287,6 +288,8 @@ class SETS():
 
     def openURL(self, url):
         try:
+            webbrowser.open(url, new=2, autoraise=True)
+            """
             if platform.system() == "Windows":
                 os.startfile(url)
             elif platform.system() == "Darwin":
@@ -294,7 +297,8 @@ class SETS():
             elif platform.system() == "Linux":
                 subprocess.Popen(['xdg-open', url])
             else:
-                messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)  
+                messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
+            """
         except:
             messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
     
