@@ -1,0 +1,27 @@
+Sukobi - Win/Dev
+         python: 3.9.11 (tags/v3.9.11:2de452f, Mar 16 2022, 14:33:45) [MSC v.1929 64 bit (AMD64)]
+        tkinter: 8.6.12
+             OS: Windows 10 19043
+           dist:
+   win-geometry: 2048x1152 (96.0dpi x1.0)
+   
+Sukobi - Docker/Test
+         python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
+        tkinter: 8.6.10
+             OS: Linux 5.10.60.1-microsoft-standard-WSL2 
+           dist: Ubuntu 20.04.4 LTS (Focal Fossa)
+   win-geometry: 2048x1152 (96.0dpi x1.0)
+   
+Sukobi - macOS/Test
+         python: 3.10.2 (v3.10.2:a58ebcc701, Jan 13 2022, 14:50:16) [Clang 13.0.0 (clang-1300.0.29.30)]
+        tkinter: 8.6.12
+             OS: Darwin 19.6.0 
+           dist: 
+   win-geometry: 1920x1080 (72.0dpi x0.75)
+   
+Sukobi - macOS/Test/python2 [wrong python]
+         python: 2.7.16 (default, Mar 25 2021, 03:11:28) [GCC 4.2.1 Compatible Apple LLVM 11.0.3 (clang-1103.0.29.20) (-macos10.15-objc-
+             OS: Darwin 19.6.0 
+   win-geometry: 1920x1080 (72.0dpi x0.75)
+        tkinter: 8.5.9
+           dist: 
