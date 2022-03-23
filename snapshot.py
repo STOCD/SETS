@@ -1,4 +1,4 @@
-import sys, platform
+import sys, platform, csv
 try:
     import tkinter as tk
 except:
@@ -31,12 +31,20 @@ except:
     dpi = ''
     factor = ''
 
+try:
+    with open('/etc/os-release') as f:
+        os_release = csv.reader(f, delimiter='=')
+        distribution = '{} {}'.format(os_release['NAME'], os_release['VERSION'])
+except:
+    distribution = ''
+
 reported = dict()
 
 snapshot = {
     'python': python_version,
     'tkinter': tkinter_version,
     'OS': '{} {} {}'.format(system, release, build),
+    'dist': '{}'.format(distribution),
     'win-geometry': '{} ({}dpi x{})'.format(tk_screen_geometry, dpi, factor),
 }
 
