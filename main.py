@@ -453,7 +453,6 @@ class SETS():
 
         return img_request.content
 
-
     def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None, forceAspect = False):
         """Request image from web or fetch from local cache"""
         cache_base = self.getFolderLocation('images')
@@ -463,7 +462,7 @@ class SETS():
 
         self.logWriteTransaction('Image File', 'try', '----', url, 5, [designation, faction, forceAspect])
         image_data = None
-        designation.replace("/", "_") # Missed by the path sanitizer
+        designation = designation.replace("/", "_") # Missed by the path sanitizer
         designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
         factionCode = factionCodeDefault = '_(Federation)'
         if faction is not None and self.persistent['useFactionSpecificIcons']:
@@ -1986,7 +1985,14 @@ class SETS():
             #self.logWrite('==={}'.format(self.persistent['exportDefault'].lower()), 2)
 
         outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.filenameDefault(), initialdir=initialDir)
-        if not outFilename: return
+        if not outFilename:
+            return
+
+        (path, name) = os.path.split(outFilename)
+        name = name.replace("/", "_") # Missed by the path sanitizer
+        name = self.filePathSanitize(name) # Probably should move to pathvalidate library
+        # name = '"{}"'.format(name)
+        outFilename = os.path.join(path, name)
         justFile, chosenExtension = os.path.splitext(outFilename)
         self.update_build_master()
         if chosenExtension.lower() == '.json':
