@@ -5,6 +5,8 @@ except:
     pass
 
 python_version = sys.version
+python_version = python_version.replace('\r', '')
+python_version = python_version.replace('\n', '')
 system = platform.system()
 release = platform.release()
 try:
