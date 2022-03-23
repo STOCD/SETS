@@ -430,7 +430,7 @@ class SETS():
         text = re.sub('-([a-z])', self.titleCaseRegexpText, text)
         return text
 
-    def fetchImage(self, url):
+    def fetchImage(self, url, designation):
         today = datetime.date.today()
         if not self.args.allfetch and url in self.persistent['imagesFail'] and self.persistent['imagesFail'][url]:
             daysSinceFail = today - datetime.date.fromisoformat(self.persistent['imagesFail'][url])
@@ -440,7 +440,7 @@ class SETS():
 
         self.progressBarUpdate(text=url)
         img_request = requests.get(url)
-        self.logWriteTransaction('fetchImage', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code)])
+        self.logWriteTransaction('fetchImage', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code), designation])
 
         if not img_request.ok:
             # No response on icon grab, mark for no downlaad attempt till restart
@@ -453,6 +453,27 @@ class SETS():
 
         return img_request.content
 
+    def filepath_sanitizer(self, path):
+        (path_only, name) = os.path.split(path)
+        name = self.filename_sanitizer(name)
+        path_converted = os.path.join(path_only, name)
+
+        return path_converted
+
+    def filename_sanitizer(self, name):
+        name_only, chosenExtension = os.path.splitext(name)
+
+        name_only = name_only.replace('/', '_')  # Missed by the path sanitizer
+        name_only = self.filePathSanitize(name_only)  # Probably should move to pathvalidate library
+        name_only = name_only.replace('\\\\', '_')  # Missed by the path sanitizer
+        name_only = name_only.replace('.', '')  # Missed by the path sanitizer
+
+        name_converted = '{}{}'.format(name_only, chosenExtension)
+
+        self.logWriteSimple('sanitize', 'name', 6, [name, '=>', name_converted])
+
+        return name_converted
+
     def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None, forceAspect = False):
         """Request image from web or fetch from local cache"""
         cache_base = self.getFolderLocation('images')
@@ -462,8 +483,8 @@ class SETS():
 
         self.logWriteTransaction('Image File', 'try', '----', url, 5, [designation, faction, forceAspect])
         image_data = None
-        designation = designation.replace("/", "_") # Missed by the path sanitizer
-        designation = self.filePathSanitize(designation) # Probably should move to pathvalidate library
+        designation = self.filename_sanitizer(designation)
+
         factionCode = factionCodeDefault = '_(Federation)'
         if faction is not None and self.persistent['useFactionSpecificIcons']:
             if 'faction' in self.build['captain'] and self.build['captain']['faction'] != '':
@@ -491,11 +512,11 @@ class SETS():
         if os.path.exists(filename):
             self.progressBarUpdate()
         elif not self.args.nofetch:
-            image_data = self.fetchImage(url)
+            image_data = self.fetchImage(url, designation)
 
             if image_data is None:
                 url2 = self.iconNameCleanup(url)
-                image_data = self.fetchImage(url2) if url2 != url else image_data
+                image_data = self.fetchImage(url2, designation) if url2 != url else image_data
 
             if image_data is None:
                 if factionCode in url:
@@ -506,11 +527,11 @@ class SETS():
                     filenameExisting = filenameDefault
 
                 if not os.path.exists(filenameExisting):
-                    image_data = self.fetchImage(url3) if url3 != url and url3 != url2 else image_data
+                    image_data = self.fetchImage(url3, designation) if url3 != url and url3 != url2 else image_data
 
                     if image_data is None:
                         url4 = self.iconNameCleanup(url3)
-                        image_data = self.fetchImage(url4) if url4 != url3 and url4 != url and url4 != url2 else image_data
+                        image_data = self.fetchImage(url4, designation) if url4 != url3 and url4 != url and url4 != url2 else image_data
 
         if os.path.exists(filenameExisting):
             self.progressBarUpdate(int(self.updateOnHeavyStep / 2))
@@ -951,13 +972,20 @@ class SETS():
     def setListIndex(self, list, index, value):
         list[index] = value
 
+    def uri_sanitize_stowiki(self, name):
+        name = name.replace(' ', '_')
+        name = name.replace('/', '_')
+        name = html.unescape(name)
+        name = urllib.parse.quote(name)
+        return name
+
     def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon', faction=None, forceAspect = False):
         """Translate infobox name into wiki icon link"""
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
 
         try:
-            image = self.fetchOrRequestImage(self.wikiImages+urllib.parse.quote(html.unescape(name.replace(' ', '_')))+suffix+".png", name, width, height, faction, forceAspect=forceAspect)
+            image = self.fetchOrRequestImage(self.wikiImages+self.uri_sanitize_stowiki(name)+suffix+".png", name, width, height, faction, forceAspect=forceAspect)
             if image is None:
                 self.logWriteSimple('fromInfoboxName', 'NONE', 4)
             elif image == self.emptyImage:
@@ -1958,6 +1986,8 @@ class SETS():
         elif type: filename = type
         else: filename = ''
 
+        filename = self.filename_sanitizer(filename)
+
         return filename
 
     def in_splash(self):
@@ -1988,12 +2018,9 @@ class SETS():
         if not outFilename:
             return
 
-        (path, name) = os.path.split(outFilename)
-        name = name.replace("/", "_") # Missed by the path sanitizer
-        name = self.filePathSanitize(name) # Probably should move to pathvalidate library
-        # name = '"{}"'.format(name)
-        outFilename = os.path.join(path, name)
-        justFile, chosenExtension = os.path.splitext(outFilename)
+        outFilename = self.filepath_sanitizer(outFilename)
+        name_only, chosenExtension = os.path.splitext(outFilename)
+
         self.update_build_master()
         if chosenExtension.lower() == '.json':
             try:
