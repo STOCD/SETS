@@ -7,11 +7,15 @@ except:
 python_version = sys.version
 system = platform.system()
 release = platform.release()
-if system == 'Windows' and release == 10 and sys.getwindowsversion().build >= 22000:
+try:
+    build = sys.getwindowsversion().build
+except:
+    build = ''
+if system == 'Windows' and release == 10 and build >= 22000:
     release = 11
 
 try:
-    tkinter_version = tkinter.Tcl().call("info", "patchlevel")
+    tkinter_version = tk.Tcl().call("info", "patchlevel")
 except:
     tkinter_version = 'fail'
 
@@ -25,15 +29,16 @@ except:
     dpi = ''
     factor = ''
 
+reported = dict()
+
 snapshot = {
-    'python-version': python_version,
-    'system': system,
-    'release': release,
-    'tkinter-version': tkinter_version,
-    'win-geometry': tk_screen_geometry,
-    'dpi': dpi,
-    'factor': factor,
+    'python': python_version,
+    'tkinter': tkinter_version,
+    'OS': '{} {} {}'.format(system, release, build),
+    'win-geometry': '{} ({}dpi x{})'.format(tk_screen_geometry, dpi, factor),
 }
 
 for type in snapshot:
-    print('{:>20}: {:>10}'.format(type, snapshot[type]))
+    if not type in reported:
+        print('{:>20}: {}'.format(type, snapshot[type]))
+
