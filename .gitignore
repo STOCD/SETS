@@ -1,5 +1,6 @@
 # Project-specific directories
 cache/
+.config/
 images/
 .vscode/
 
