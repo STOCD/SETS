@@ -42,5 +42,5 @@ snapshot = {
 
 for type in snapshot:
     if not type in reported:
-        print('{:>20}: {}'.format(type, snapshot[type]))
+        print('{:>15}: {}'.format(type, snapshot[type]))
 
