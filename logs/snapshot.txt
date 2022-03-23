@@ -1,9 +1,8 @@
 Sukobi - Win/Dev
-         python: 3.9.11 (tags/v3.9.11:2de452f, Mar 16 2022, 14:33:45) [MSC v.1929 64 bit (AMD64)]
-        tkinter: 8.6.12
-             OS: Windows 10 19043
-           dist:
-   win-geometry: 2048x1152 (96.0dpi x1.0)
+     python: 3.9.11 (tags/v3.9.11:2de452f, Mar 16 2022, 14:33:45) [MSC v.1929 64 bit (AMD64)]
+         OS: Windows 10 (19043)
+ screen-dpi: 2048x1152 (96.0dpi x1.0)
+    modules: (tkinter 8.6.12) (Pillow 8.3.1) (numpy 1.22.3)
    
 Sukobi - Docker/Test
          python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
