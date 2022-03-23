@@ -32,9 +32,12 @@ except:
     factor = ''
 
 try:
+    release_data = dict()
     with open('/etc/os-release') as f:
         os_release = csv.reader(f, delimiter='=')
-        distribution = '{} {}'.format(os_release['NAME'], os_release['VERSION'])
+        for row in os_release:
+            release_data[row[0]] = row[1]
+        distribution = '{} {}'.format(release_data['NAME'], release_data['VERSION'])
 except:
     distribution = ''
 
