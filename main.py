@@ -486,8 +486,6 @@ class SETS():
     def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None, forceAspect = False):
         """Request image from web or fetch from local cache"""
         cache_base = self.getFolderLocation('images')
-        override_base = self.getFolderLocation('override')
-        internal_base = self.resource_path(self.settings['folder']['images'])
         if not os.path.exists(cache_base):
             return
 
@@ -503,6 +501,8 @@ class SETS():
         extension = "jpeg" if url.endswith("jpeg") or url.endswith("jpg") else "png"
         fileextension = '.'+extension
         filename = filenameDefault = filenameNoFaction = os.path.join(*filter(None, [cache_base, designation]))+fileextension
+        override_base = self.getFolderLocation('override')
+        internal_base = self.resource_path(self.settings['folder']['images'])
         filenameOverride = os.path.join(*filter(None, [override_base, designation]))+fileextension
         filenameInternal = os.path.join(*filter(None, [internal_base, designation]))+fileextension
         filenameExisting = ''
@@ -519,8 +519,7 @@ class SETS():
 
         if os.path.exists(filenameOverride):
             filename = filenameOverride
-
-        if not os.path.exists(filename) and os.path.exists(filenameInternal):
+        elif not os.path.exists(filename) and os.path.exists(filenameInternal):
             filename = filenameInternal
 
         if os.path.exists(filename):
