@@ -5584,7 +5584,7 @@ class SETS():
         scale = float(self.persistent['uiScale']) if 'uiScale' in self.persistent else 1.0
         screen_width = self.window.winfo_screenwidth()
         if screen_width < self.windowWidth:
-            scale = screen_width / self.windowWidth
+            scale = float('{:.2f}'.format(screen_width / self.windowWidth))
             self.logWriteSimple('setupUIScaling', 'scale change', 1, '{}'.format(scale))
         self.factor = ( self.dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
 
