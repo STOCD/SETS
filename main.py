@@ -2435,8 +2435,8 @@ class SETS():
         elif type == 'resetPosition':
                 self.persistent['geometry'] = ''
                 self.auto_save()
-                self.updateWindowSize()
-                # self.setupGeometry()
+                # self.updateWindowSize()
+                self.setupGeometry()
         elif type == 'merge_file_create':
             self.merge_file_create()
         elif type == 'backupCache':
