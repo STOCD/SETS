@@ -447,7 +447,7 @@ class SETS():
                 # Previously failed, do not attempt download again until next reattempt days have passed
                 return None
 
-        self.progressBarUpdate(text=url)
+        self.progressBarUpdate(text=designation)
         img_request = requests.get(url)
         self.logWriteTransaction('fetchImage', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code), designation])
 
@@ -487,6 +487,7 @@ class SETS():
         """Request image from web or fetch from local cache"""
         cache_base = self.getFolderLocation('images')
         override_base = self.getFolderLocation('override')
+        internal_base = self.resource_path(self.settings['folder']['images'])
         if not os.path.exists(cache_base):
             return
 
@@ -503,6 +504,7 @@ class SETS():
         fileextension = '.'+extension
         filename = filenameDefault = filenameNoFaction = os.path.join(*filter(None, [cache_base, designation]))+fileextension
         filenameOverride = os.path.join(*filter(None, [override_base, designation]))+fileextension
+        filenameInternal = os.path.join(*filter(None, [internal_base, designation]))+fileextension
         filenameExisting = ''
 
         if faction is not None and faction != False and '_icon' in url and not '_icon_(' in url:
@@ -517,6 +519,8 @@ class SETS():
 
         if os.path.exists(filenameOverride):
             filename = filenameOverride
+        elif os.path.exists(filenameInternal):
+            filename = filenameInternal
 
         if os.path.exists(filename):
             self.progressBarUpdate()
@@ -5305,7 +5309,7 @@ class SETS():
                 filePath = os.path.join(filePath, self.settings['folder'][subfolder])
             self.makeFilenamePath(filePath)
 
-        if not os.path.exists ( filePath ):
+        if not os.path.exists(filePath):
             filePath = ''
             if subfolder in self.settings['folder']:
                 filePath = self.settings['folder'][subfolder]
