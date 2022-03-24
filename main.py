@@ -1150,7 +1150,7 @@ class SETS():
 
     def get_debug_default(self):
         self.fileDebug = '.debug'
-        self.fileDebug = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.fileDebug)
+        self.fileDebug = self.fileDebug
         self.debugDefault = 0
         if os.path.exists(self.fileDebug):
             self.debugDefault = 1
