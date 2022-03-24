@@ -4403,9 +4403,9 @@ class SETS():
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         settingsMenuExport = {
             'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
-            'Save...': {'type': 'button_block', 'var_name': 'exportFullButton', 'callback': self.exportCallback},
-            'Open...': {'type': 'button_block', 'var_name': 'importButton', 'callback': self.importCallback},
-            'Clear': {'type': 'menu', 'var_name': 'clearButton', 'setting_options': ['Clear all', 'Clear skills'], 'callback': 'menu_clear_callback'},
+            'Save': {'type': 'button_block', 'var_name': 'exportFullButton', 'callback': self.exportCallback},
+            'Open': {'type': 'button_block', 'var_name': 'importButton', 'callback': self.importCallback},
+            'Clear...': {'type': 'menu', 'var_name': 'clearButton', 'setting_options': ['Clear all', 'Clear skills'], 'callback': 'menu_clear_callback'},
         }
         self.create_item_block(exportImportFrame, theme=settingsMenuExport, shape='row', elements=1)
         col += 1
@@ -4425,7 +4425,7 @@ class SETS():
             'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.exportRedditCallback},
             'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
-            'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
+            'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback, 'image': self.three_bars},
         }
 
         self.create_item_block(buttonSettings, theme=settingsMenuSettings, shape='row', elements=1)
@@ -4985,6 +4985,7 @@ class SETS():
             'boolean': False,
             'callback': None,
             'store': 'persistent',
+            'image': None,
         }
         default = {**item_block_default, **theme['default']} if 'default' in theme else {**item_block_default}
 
@@ -5065,6 +5066,8 @@ class SETS():
                 option_frame.configure(command=item_theme['callback'])
             elif is_button:
                 option_frame = HoverButton(parent_frame, text=title, fg=item_theme['fg'], bg=item_theme['bg'], activebackground=item_theme['abg'])
+                if item_theme['image'] is not None:
+                    option_frame.configure(image=item_theme['image'])
                 option_frame.configure(command=item_theme['callback'])
             else:
                 continue
@@ -5498,6 +5501,7 @@ class SETS():
         self.emptyImageFaction = dict()
         self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
         self.epicImage = self.fetchOrRequestImage(self.wikiImages+"Epic.png", "Epic")
+        self.three_bars = self.loadLocalImage('hamburger_icon.png', width=self.itemBoxX, height=self.itemBoxY_default / 2)
 
         width = self.imageBoxX * 2 / 3
         height = self.imageBoxY * 2 / 3
