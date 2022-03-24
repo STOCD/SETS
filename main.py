@@ -1629,7 +1629,7 @@ class SETS():
         self.splashProgressBar.grid(row=0, column=0, sticky='sw')
 
         self.splashText = StringVar()
-        label = Label(OuterFrame, height=4, textvariable=self.splashText, bg=self.theme['frame']['bg'], wraplength=400)
+        label = Label(OuterFrame, height=4, textvariable=self.splashText, bg=self.theme['frame']['bg'], fg=self.theme['frame']['fg'], wraplength=400)
         label.grid(row=1, column=0, sticky='n')
         label.grid(row=1, column=0, sticky='n')
 
@@ -5080,9 +5080,10 @@ class SETS():
         self.logDisplay.insert('0.0', self.logFull.get())
         self.logDisplay.yview_pickplace(END)
 
-    def logFullWrite(self, notice):
+    def logFullWrite(self, notice, log_only=False):
         self.logFull.set(self.lineTruncate(self.logFull.get()+'\n'+notice))
-        self.progressBarUpdate(text=notice)
+        if not log_only:
+            self.progressBarUpdate(text=notice)
 
     def logminiWrite(self, notice, level=0):
         if level == 0:
@@ -5095,6 +5096,13 @@ class SETS():
 
     def logTagClean(self, tag):
         return '{}'.format(tag).strip()
+
+    def logWritePerf(self, title, level=3, run='', tags=None):
+        logNote = ''
+        if tags:
+            for tag in tags:
+                logNote = logNote + '[{:>1}]'.format(self.logTagClean(tag))
+        self.logWrite('{:16} {:15} {}'.format('{}'.format(run), title, logNote), level, log_only=True)
 
     def logWriteSimple(self, title, body, level=1, tags=None):
         logNote = ''
@@ -5117,7 +5125,7 @@ class SETS():
                 logNote = logNote + '[{:>9}]'.format(self.logTagClean(tag))
         self.logWrite('{:>12} {:>6} count: {:>6} {:>6}'.format(title, body, str(count), logNote), 2)
 
-    def logWrite(self, notice, level=0):
+    def logWrite(self, notice, level=0, log_only=False):
         # Level 0: Default, always added to short log note frame on UI
         # Higher than 0 will not be added to short log note (but will be in the full log)
         # Log levels uses are just suggestions
@@ -5126,10 +5134,10 @@ class SETS():
         # Level 3+: minor detail spam -- any useful long-term diagnostic, the more spammy, the higher
         if level == 0:
             self.setFooterFrame(notice, '')
-            self.logFullWrite(notice)
+            self.logFullWrite(notice, log_only=log_only)
         if self.settings['debug'] > 0 and self.settings['debug'] >= level:
             self.log_write_stderr(notice)
-            self.logFullWrite(notice)
+            self.logFullWrite(notice, log_only=log_only)
 
     def log_write_stderr(self, text):
         now = datetime.datetime.now()
@@ -5139,14 +5147,15 @@ class SETS():
 
     def requestWindowUpdateHold(self, count=50):
         if count == 0:
-            self.updateOnStep = 1
+            self.updateOnStep = 5
         else:
             self.updateOnStep = self.updateOnHeavyStep
         self.windowUpdate['hold'] = count
 
     def requestWindowUpdate(self, type=''):
         if not 'updates' in self.windowUpdate:
-            self.windowUpdate = { 'updates': 0, 'lastupdate': 0, 'hold': 0 }
+            self.windowUpdate = { 'updates': 0, 'requests': 0, 'hold': 0 }
+        self.windowUpdate['requests'] += 1
 
         if type == 'force':
             self.window.update()
@@ -5155,7 +5164,7 @@ class SETS():
             # a hold has been called (contains number of updates to wait)
             self.windowUpdate['hold'] -= 1
             return
-        elif(type == "footerProgressBar"):
+        elif type == "footerProgressBar":
             self.splashProgressBar.update()
             self.windowUpdate['updates'] += 1
         elif not type:
@@ -5544,12 +5553,13 @@ class SETS():
             self.persistent['perf'][name][perf_slice] += ['{}'.format(run)]
 
             if loud:
-                self.logWriteSimple('--- perf', name, 3, [type, now, run])
+                self.logWritePerf(name, run=run, tags=[type, now])
             else:
-                self.logWriteSimple('---', name, 3, [run])
+                self.logWritePerf(name, run=run)
             return run
         else:
-            self.logWriteSimple('--- perf', name, 4, [type, now])
+            if loud:
+                self.logWritePerf(name, tags=[type, now])
             return now
 
     def makeSplash(self, close=False):
@@ -5595,14 +5605,18 @@ class SETS():
         # weight denotes how much progress that item is
         if self.splashProgressBar is None or self.visible_window != 'splash':
             return
-
+        max_weight = 5
+        if weight > max_weight:
+            weight = max_weight
         self.splashProgressBarUpdates += weight
-        self.splashProgressBar.step()
+
         # modulo to reduce time / flashing UI spent on updating
-        # if 1 or self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
         if text is not None:
             self.splashText.set(text[:300])
-        self.requestWindowUpdate()
+        if self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
+            self.splashProgressBar.step(weight)
+            self.requestWindowUpdate()
+            pass
 
     def setupUIScaling(self,event=None):
         scale = float(self.persistent['uiScale']) if 'uiScale' in self.persistent else 1.0
