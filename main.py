@@ -12,6 +12,11 @@ import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argpar
 import webbrowser
 import numpy as np
 
+if platform.system() == 'Darwin':
+    from tkmacosx import Button
+else:
+    from tkinter import Button
+
 CLEANR = re.compile('<.*?>')
 
 """This section will improve display, but may require sizing adjustments to activate"""
@@ -21,9 +26,9 @@ if sys.platform.startswith('win'):
     except:
         ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
 
-class HoverButton(tkinter.Button):
+class HoverButton(Button):
     def __init__(self, master, **kw):
-        tkinter.Button.__init__(self,master=master,**kw)
+        Button.__init__(self,master=master,**kw)
         self.defaultBackground = self["background"]
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
@@ -1541,7 +1546,7 @@ class SETS():
         topFrame = Frame(subWindow, width=windowWidth, bg=self.theme['frame']['bg'])
         topFrame.grid(row=0, column=0, sticky='nsew', padx=1, pady=1)
         if close and type == 'splash':
-            optionFrame = Button(topFrame, text='Close', command=lambda:self.windowCloseCallback(subWindow))
+            optionFrame = HoverButton(topFrame, text='Close', command=lambda:self.windowCloseCallback(subWindow))
             optionFrame.configure(bg=self.theme['button']['bg'],fg=self.theme['button']['fg'], borderwidth=0, width=10)
             optionFrame.grid(row=0, column=0, sticky='ew')
             topFrame.grid_rowconfigure(0, minsize=10)
@@ -5595,7 +5600,6 @@ class SETS():
             # If dpi / framing are adjusted, this should happen with a scaling adjustment
             self.itemBoxX = self.itemBoxX_default * scale
             self.itemBoxY = self.itemBoxY_default * scale
-
 
         self.os_system = platform.system()
         self.os_release = platform.release()
