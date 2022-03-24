@@ -1148,10 +1148,34 @@ class SETS():
             }
         }
 
+    def get_debug_default(self):
+        self.fileDebug = '.debug'
+        self.debugDefault = 0
+
+        path_debug = self.resource_path(self.fileDebug)
+        if os.path.exists(path_debug):
+            self.debugDefault = 1
+            with open(path_debug) as f:
+                entry = f.readline()
+                try:
+                    entry = int(entry)
+                    if entry > 0:
+                       self.debugDefault = entry
+                except Exception:
+                    pass
+
+    def get_debug_current(self):
+        if self.args.debug is not None:
+            self.settings['debug'] = self.args.debug
+            self.logWriteSimple('Debug', 'set by arg', 1, tags=[str(self.settings['debug'])])
+        elif not 'debug' in self.settings or self.debugDefault > self.settings['debug']:
+            self.settings['debug'] = self.debugDefault
+            self.logWriteSimple('Debug', 'set from default', 1, tags=[str(self.settings['debug'])])
+        else:
+            self.logWriteSimple('Debug', 'set in config', 1, tags=[str(self.settings['debug'])])
 
     def resetInternals(self):
-        self.fileDebug = '.debug'
-        self.debugDefault = 1 if os.path.exists(self.fileDebug) else 0
+        self.get_debug_default()
 
         # log and logmini are the bottom text, logFull provides a history
         self.log = StringVar()
@@ -5342,14 +5366,7 @@ class SETS():
                 except:
                     self.logWriteTransaction('Config File', 'load error', '', configFile, 0)
 
-                if self.args.debug is not None:
-                    self.settings['debug'] = self.args.debug
-                    self.logWriteSimple('Debug', 'set by arg', 1, tags=[str(self.settings['debug'])])
-                elif not 'debug' in self.settings or self.debugDefault > self.settings['debug']:
-                    self.settings['debug'] = self.debugDefault
-                    self.logWriteSimple('Debug', 'set from default', 1, tags=[str(self.settings['debug'])])
-                else:
-                    self.logWriteSimple('Debug', 'set in config', 1, tags=[str(self.settings['debug'])])
+                self.get_debug_current()
         else:
             self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, 0)
 
