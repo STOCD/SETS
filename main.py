@@ -603,7 +603,8 @@ class SETS():
     def loadLocalImage(self, filename, width = None, height = None, forceAspect=False):
         """Request image from web or fetch from local cache"""
         cache_base = self.settings['folder']['local']
-        self.makeFilenamePath(self.resource_path(cache_base))
+        cache_base = self.resource_path(cache_base)
+        self.makeFilenamePath(cache_base)
         filename = os.path.join(*filter(None, [cache_base, filename]))
         if os.path.exists(filename):
             image = Image.open(filename)
@@ -5110,24 +5111,27 @@ class SETS():
     def requestWindowUpdate(self, type=''):
         if not 'updates' in self.windowUpdate:
             self.windowUpdate = { 'updates': 0, 'lastupdate': 0, 'hold': 0 }
-        self.windowUpdate['updates'] += 1
-
-        # runaway check
-        if self.windowUpdate['updates'] % 500 == 0:
-            self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 3)
 
         if type == 'force':
             self.window.update()
+            self.windowUpdate['updates'] += 1
         elif self.windowUpdate['hold']:
             # a hold has been called (contains number of updates to wait)
             self.windowUpdate['hold'] -= 1
             return
         elif(type == "footerProgressBar"):
             self.splashProgressBar.update()
+            self.windowUpdate['updates'] += 1
         elif not type:
             self.window.update()
+            self.windowUpdate['updates'] += 1
         else:
             return
+
+        # runaway check
+        if self.windowUpdate['updates'] % 500 == 0:
+            self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 3)
+
 
     def resetBuildFrames(self, types=None):
         if types is None:
@@ -5136,6 +5140,7 @@ class SETS():
             self.setupInfoFrame(type)
             self.setupDescFrame(type)
             self.setupHandleFrame(type)
+            self.updateTagsFrame(type)
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
@@ -5576,6 +5581,9 @@ class SETS():
 
     def setupUIScaling(self,event=None):
         scale = float(self.persistent['uiScale']) if 'uiScale' in self.persistent else 1.0
+        screen_width = self.window.winfo_screenwidth()
+        if 0 and screen_width < self.windowWidth:
+            scale = screen_width / self.windowWidth
         dpi = round(self.window.winfo_fpixels('1i'), 0)
         self.factor = ( dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
 
@@ -5643,14 +5651,21 @@ class SETS():
              self.logWriteSimple('***WINDOW CHANGE', '{}x{}'.format(self.windowWidth, self.windowHeight), 2,
                         [self.windowActiveHeight, self.window_topleft_x, self.window_topleft_y, caller])
 
-    def resource_path(self, relative_path):
+    def resource_path(self, relative_path, quiet=True):
         """ Get absolute path to resource, works for dev and for PyInstaller """
-        base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(base_path, relative_path)
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.dirname(os.path.abspath(__file__))
+
+        full_path = os.path.join(base_path, relative_path)
+        if not quiet:
+            self.log_write_stderr('Local path: {}'.format(full_path))
+        return full_path
 
     def init_window(self):
         self.window = Tk()
-        self.window.iconphoto(False, PhotoImage(file=self.resource_path('local/icon.PNG')))
+        self.window.iconphoto(False, PhotoImage(file=self.resource_path('local/icon.PNG', quiet=False)))
         self.window.title("STO Equipment and Trait Selector")
 
     def __init__(self) -> None:
