@@ -1150,19 +1150,21 @@ class SETS():
 
     def get_debug_default(self):
         self.fileDebug = '.debug'
+        self.fileDebug = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.fileDebug)
         self.debugDefault = 0
-
-        path_debug = self.resource_path(self.fileDebug)
-        if os.path.exists(path_debug):
+        if os.path.exists(self.fileDebug):
             self.debugDefault = 1
-            with open(path_debug) as f:
+            with open(self.fileDebug) as f:
                 entry = f.readline()
                 try:
                     entry = int(entry)
-                    if entry > 0:
-                       self.debugDefault = entry
                 except Exception:
-                    pass
+                    entry = 0
+                if entry > 0:
+                    self.debugDefault = entry
+                    self.log_write_stderr('debug set from file: {}'.format(self.debugDefault))
+                else:
+                    self.log_write_stderr('debug file found: {} [{}]'.format(self.debugDefault, entry))
 
     def get_debug_current(self):
         if self.args.debug is not None:
