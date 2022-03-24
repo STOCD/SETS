@@ -2425,6 +2425,7 @@ class SETS():
     def settingsMenuCallback(self, choice, type):
         if self.in_splash():
             return
+        self.build_vars['clearButton'].set('Clear')
         if type == 'clearButton':
             if choice == 'Clear all':
                 self.clearBuildCallback()
@@ -5028,6 +5029,7 @@ class SETS():
                 label.configure(fg=item_theme['label_fg'], bg=item_theme['label_bg'], font=font.Font(font=item_theme['font_label']))
                 label.grid(row=row_current, column=col_start, columnspan=span_label, sticky=sticky_label, pady=item_theme['pad_y'], padx=item_theme['pad_x'])
 
+            setting_var = ''
             if item_theme['type'] == 'menu' or item_theme['type'] == 'menu_block':
                 if item_theme['store'] == 'backend':
                     if item_theme['var_sub_name']:
@@ -5066,6 +5068,7 @@ class SETS():
                 else:
                     option_frame.configure(borderwidth=0, highlightthickness=0, width=9)
 
+                self.build_vars[item_theme['var_name']] = setting_var
                 col_option = 0 if is_button or item_theme['type'] == 'menu_block' else 1
                 span_option = elements if is_button else 1
                 option_frame.grid(row=row_current, column=col_start+col_option, columnspan=span_option, sticky=item_theme['sticky'], pady=item_theme['pad_y'], padx=item_theme['pad_x'])
@@ -5467,6 +5470,7 @@ class SETS():
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
         self.visible_window = 'space'
         self.visible_window_previous = 'space'
+        self.build_vars = dict()
 
         self.resetPersistent()
         self.resetBuild()
