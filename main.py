@@ -5302,13 +5302,9 @@ class SETS():
     def getFolderLocation(self, subfolder=None):
         filePath = self.configFolderLocation()
 
-        if subfolder == 'images' and os.path.exists(self.settings['folder']['images']):
-            # use appdir cache if it already exists /legacy
-            filePath = self.settings['folder']['images']
-        else:
-            if subfolder is not None and subfolder in self.settings['folder']:
-                filePath = os.path.join(filePath, self.settings['folder'][subfolder])
-            self.makeFilenamePath(filePath)
+        if subfolder is not None and subfolder in self.settings['folder']:
+            filePath = os.path.join(filePath, self.settings['folder'][subfolder])
+        self.makeFilenamePath(filePath)
 
         if not os.path.exists(filePath):
             filePath = ''
