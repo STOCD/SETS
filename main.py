@@ -1122,7 +1122,7 @@ class SETS():
             'boffSort': self.boffSortOptions[0],
             'boffSort2': self.boffSortOptions[0],
             'consoleSort': self.consoleSortOptions[0],
-            'keepTemplateOnShipClear': 0,
+            'keepTemplateOnShipClear': 1,
             'keepTemplateOnShipChange': 0,
             'pickerSpawnUnderMouse': 1,
             'useFactionSpecificIcons': 0,
