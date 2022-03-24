@@ -1,3 +1,4 @@
-Pillow==8.3.1
+Pillow>=8.3.1
 requests-html==0.10.0
 numpy
+tkmacosx; sys_platform == 'darwin'
