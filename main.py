@@ -2435,7 +2435,8 @@ class SETS():
         elif type == 'resetPosition':
                 self.persistent['geometry'] = ''
                 self.auto_save()
-                self.setupGeometry()
+                self.updateWindowSize()
+                # self.setupGeometry()
         elif type == 'merge_file_create':
             self.merge_file_create()
         elif type == 'backupCache':
@@ -5585,8 +5586,7 @@ class SETS():
         if screen_width < self.windowWidth:
             scale = screen_width / self.windowWidth
             self.logWriteSimple('setupUIScaling', 'scale change', 1, '{}'.format(scale))
-        dpi = round(self.window.winfo_fpixels('1i'), 0)
-        self.factor = ( dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
+        self.factor = ( self.dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
 
         if self.factor != 1:  # If the framing gets fixed at /72, this should be remove-able
             scale *= self.factor
@@ -5602,7 +5602,7 @@ class SETS():
         if self.os_system == 'Windows' and self.os_release == 10 and sys.getwindowsversion().build >= 22000:
             self.os_release = 11
 
-        self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, scale, dpi))
+        self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, scale, self.dpi))
 
 
     def updateWindowSize(self, caller='', init=False, no_geometry=False):
@@ -5611,6 +5611,7 @@ class SETS():
             self.itemBoxY = self.itemBoxY_default = 42
             self.window_topleft_x = self.window_topleft_x_default = 100  # Window top left corner
             self.window_topleft_y = self.window_topleft_y_default = 100
+            self.dpi = round(self.window.winfo_fpixels('1i'), 0)
 
             self.windowBarHeight = 34
             self.logoHeight = 134
