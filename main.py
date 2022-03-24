@@ -41,7 +41,7 @@ class HoverButton(Button):
 
 class SETS():
     """Main App Class"""
-    version = '20220323_beta'
+    version = '20220324a_beta'
 
     daysDelayBeforeReattempt = 7
 
@@ -2425,12 +2425,6 @@ class SETS():
     def settingsMenuCallback(self, choice, type):
         if self.in_splash():
             return
-        self.build_vars['clearButton'].set('Clear')
-        if type == 'clearButton':
-            if choice == 'Clear all':
-                self.clearBuildCallback()
-            elif choice == 'Clear skills':
-                self.reset_skill_build()
 
     def settingsButtonCallback(self, type):
         self.logWriteSimple("settingsButtonCallback", '', 2, [type])
@@ -4392,6 +4386,14 @@ class SETS():
 
         self.create_item_block(parentFrame, theme=settingsMenuSkill, shape='row', elements=1)
 
+    def menu_clear_callback(self, choice):
+        if self.in_splash():
+            return
+        self.logWriteSimple('menu', 'clear', 2, [choice])
+        if choice == 'Clear all':
+            self.clearBuildCallback()
+        elif choice == 'Clear skills':
+            self.reset_skill_build()
 
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
@@ -4402,8 +4404,8 @@ class SETS():
         settingsMenuExport = {
             'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Save...': {'type': 'button_block', 'var_name': 'exportFullButton', 'callback': self.exportCallback},
-            'Export reddit': { 'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.exportRedditCallback},
             'Open...': {'type': 'button_block', 'var_name': 'importButton', 'callback': self.importCallback},
+            'Clear': {'type': 'menu', 'var_name': 'clearButton', 'setting_options': ['Clear all', 'Clear skills'], 'callback': 'menu_clear_callback'},
         }
         self.create_item_block(exportImportFrame, theme=settingsMenuExport, shape='row', elements=1)
         col += 1
@@ -4421,8 +4423,7 @@ class SETS():
         buttonSettings.grid(row=0, column=col, sticky='nsew')
         settingsMenuSettings = {
             'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
-            # 'Clear'     : { 'type' : 'button_block', 'var_name' : 'clearButton', 'callback' : self.clearBuildCallback},
-            'Clear': {'type': 'menu_block', 'var_name': 'clearButton', 'setting_options': ['Clear all', 'Clear skills']},
+            'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.exportRedditCallback},
             'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
             'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback},
         }
@@ -4535,12 +4536,12 @@ class SETS():
 
         captainSettingsDefaults = {
             'default': {'store': 'backend', 'sticky': 'nsew'},
-            # 'Elite Captain': {'col': 2, 'type': 'menu', 'var_name': 'eliteCaptain', 'boolean': True, 'callback': self.eliteCaptainCallback},
-            'Captain Career': {'col': 2, 'type': 'menu', 'var_name': 'career', 'setting_options': ['', 'Tactical', 'Engineering', 'Science']},
-            'Faction': {'col': 2, 'type': 'menu', 'var_name': 'captain', 'var_sub_name': 'faction', 'setting_options': self.factionNames},
-            'Species': {'col': 2, 'type': 'menu', 'var_name': 'species', 'setting_options': self.speciesNames['all']},
-            'Primary Spec': {'col': 2, 'type': 'menu', 'var_name': 'specPrimary', 'setting_options': sorted(self.cache['specsPrimary'])},
-            'Secondary Spec': {'col': 2, 'type': 'menu', 'var_name': 'specSecondary', 'setting_options': sorted(self.cache['specsSecondary'])},
+            # 'Elite Captain': {'col': 2, 'type': 'optionmenu', 'var_name': 'eliteCaptain', 'boolean': True, 'callback': self.eliteCaptainCallback},
+            'Captain Career': {'col': 2, 'type': 'optionmenu', 'var_name': 'career', 'setting_options': ['', 'Tactical', 'Engineering', 'Science']},
+            'Faction': {'col': 2, 'type': 'optionmenu', 'var_name': 'captain', 'var_sub_name': 'faction', 'setting_options': self.factionNames},
+            'Species': {'col': 2, 'type': 'optionmenu', 'var_name': 'species', 'setting_options': self.speciesNames['all']},
+            'Primary Spec': {'col': 2, 'type': 'optionmenu', 'var_name': 'specPrimary', 'setting_options': sorted(self.cache['specsPrimary'])},
+            'Secondary Spec': {'col': 2, 'type': 'optionmenu', 'var_name': 'specSecondary', 'setting_options': sorted(self.cache['specsSecondary'])},
         }
         self.create_item_block(charInfoFrame, theme=captainSettingsDefaults, row=row)
 
@@ -4848,9 +4849,9 @@ class SETS():
 
         settingsDefaults = {
             'Defaults (auto-saved):'     : { 'col' : 1, 'type': 'title'},
-            'Mark'                       : { 'col' : 2, 'type' : 'menu', 'var_name' : 'markDefault', 'setting_options': self.marks},
-            'Rarity'                     : { 'col' : 2, 'type' : 'menu', 'var_name' : 'rarityDefault', 'setting_options': [''] + self.rarities},
-            'Faction'                    : { 'col' : 2, 'type' : 'menu', 'var_name' : 'factionDefault', 'setting_options': self.factionNames},
+            'Mark'                       : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'markDefault', 'setting_options': self.marks},
+            'Rarity'                     : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'rarityDefault', 'setting_options': [''] + self.rarities},
+            'Faction'                    : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'factionDefault', 'setting_options': self.factionNames},
             'blank1': {'col': 1, 'type': 'blank'},
             'Merge Export': {'col': 2, 'type': 'button', 'var_name': 'merge_file_create'},
 
@@ -4861,15 +4862,15 @@ class SETS():
             'Theme Settings (auto-saved):'          : { 'col' : 1, 'type': 'title'},
             'UI Scale (restart app for changes)'    : { 'col' : 2, 'type' : 'scale', 'var_name' : 'uiScale' },
             'blank1'                                : { 'col' : 1, 'type' : 'blank' },
-            'Export default'                        : { 'col' : 2, 'type' : 'menu', 'var_name' : 'exportDefault', 'setting_options': self.exportOptions },
-            'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'menu', 'var_name' : 'pickerSpawnUnderMouse', 'boolean' : True },
-            'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'menu', 'var_name' : 'keepTemplateOnShipClear', 'boolean' : True },
-            'Keep build when changing ships'        : { 'col' : 2, 'type' : 'menu', 'var_name' : 'keepTemplateOnShipChange', 'boolean' : True },
+            'Export default'                        : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'exportDefault', 'setting_options': self.exportOptions },
+            'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'pickerSpawnUnderMouse', 'boolean' : True },
+            'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'keepTemplateOnShipClear', 'boolean' : True },
+            'Keep build when changing ships'        : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'keepTemplateOnShipChange', 'boolean' : True },
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Sort Options:'                         : { 'col' : 1 },
-            'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'menu', 'var_name' : 'boffSort', 'setting_options': self.boffSortOptions },
-            'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'menu', 'var_name' : 'boffSort2', 'setting_options': self.boffSortOptions },
-            'Console Sort'                          : { 'col' : 2, 'type' : 'menu', 'var_name' : 'consoleSort', 'setting_options': self.consoleSortOptions },
+            'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'boffSort', 'setting_options': self.boffSortOptions },
+            'BOFF Sort 2nd'                         : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'boffSort2', 'setting_options': self.boffSortOptions },
+            'Console Sort'                          : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'consoleSort', 'setting_options': self.consoleSortOptions },
             'blank4': {'col': 1, 'type': 'blank'},
             'Save current window position': {'col': 2, 'type': 'button', 'var_name': 'savePositionOnly'},
             'Save current window size+position': {'col': 2, 'type': 'button', 'var_name': 'savePosition'},
@@ -4882,11 +4883,11 @@ class SETS():
             'Open Log'                              : {'col': 2, 'type': 'button', 'var_name': 'openLog'},
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : {'col': 1, 'type': 'blank'},
-            'Auto-save build': {'col': 2, 'type': 'menu', 'var_name': 'autosave', 'boolean': True},
-            'In-file versions': {'col': 2, 'type': 'menu', 'var_name': 'versioning', 'boolean': True},
-            'Force out of date JSON loading'        : {'col': 2, 'type': 'menu', 'var_name': 'forceJsonLoad', 'boolean': True},
-            'Fast start (experimental)'          : {'col': 2, 'type': 'menu', 'var_name': 'fast_start', 'boolean': True},
-            'Use faction-specific icons (experimental)': {'col': 2, 'type': 'menu', 'var_name': 'useFactionSpecificIcons', 'boolean': True},
+            'Auto-save build': {'col': 2, 'type': 'optionmenu', 'var_name': 'autosave', 'boolean': True},
+            'In-file versions': {'col': 2, 'type': 'optionmenu', 'var_name': 'versioning', 'boolean': True},
+            'Force out of date JSON loading'        : {'col': 2, 'type': 'optionmenu', 'var_name': 'forceJsonLoad', 'boolean': True},
+            'Fast start (experimental)'          : {'col': 2, 'type': 'optionmenu', 'var_name': 'fast_start', 'boolean': True},
+            'Use faction-specific icons (experimental)': {'col': 2, 'type': 'optionmenu', 'var_name': 'useFactionSpecificIcons', 'boolean': True},
             'blank2'                                : {'col': 1, 'type': 'blank'},
             'Create SETS manual settings file': {'col' : 2, 'type': 'button', 'var_name': 'exportConfigFile'},
             'Backup current caches/settings'        : {'col': 2, 'type': 'button', 'var_name': 'backupCache'},
@@ -5002,7 +5003,7 @@ class SETS():
                 item_theme['font_label'] = self.font_tuple_create('title1')
             if item_theme['type'] == 'button':
                 item_theme['sticky'] = theme[title]['sticky'] if 'sticky' in theme[title] else 'nwe'
-            if item_theme['type'] == 'button_block' or item_theme['type'] == 'menu_block':
+            if item_theme['type'] == 'button_block' or item_theme['type'] == 'optionmenu_block' or item_theme['type'] == 'menu':
                 item_theme['sticky'] = theme[title]['sticky'] if 'sticky' in theme[title] else 'nsew'
                 item_theme['pad_x'] = theme[title]['pad_x'] if 'pad_x' in theme[title] else 0
                 item_theme['pad_y'] = theme[title]['pad_y'] if 'pad_y' in theme[title] else 0
@@ -5012,9 +5013,9 @@ class SETS():
             if item_theme['callback'] is None:
                 if is_button:
                     item_theme['callback'] = lambda var_name=item_theme['var_name']: self.settingsButtonCallback(type=var_name)
-                elif item_theme['type'] == 'menu_block':
+                elif item_theme['type'] == 'optionmenu_block':
                     item_theme['callback'] = lambda choice, var_name=item_theme['var_name']: self.settingsMenuCallback(choice, type=var_name)
-                elif item_theme['type'] == 'menu' or item_theme['type'] == 'scale':
+                elif item_theme['type'] == 'optionmenu' or item_theme['type'] == 'scale':
                     item_theme['callback'] = lambda choice, var_name=item_theme['var_name'], var_sub_name = item_theme['var_sub_name'], isBoolean=item_theme['boolean'], store=item_theme['store']:self.create_item_set_var(choice, var_name=var_name, var_sub_name=var_sub_name, store=store, boolean=isBoolean)
 
             row_current = (i * elements) + row if shape == 'col' else row
@@ -5030,7 +5031,7 @@ class SETS():
                 label.grid(row=row_current, column=col_start, columnspan=span_label, sticky=sticky_label, pady=item_theme['pad_y'], padx=item_theme['pad_x'])
 
             setting_var = ''
-            if item_theme['type'] == 'menu' or item_theme['type'] == 'menu_block':
+            if item_theme['type'] == 'optionmenu' or item_theme['type'] == 'optionmenu_block':
                 if item_theme['store'] == 'backend':
                     if item_theme['var_sub_name']:
                         setting_var = self.backend[item_theme['var_name']][item_theme['var_sub_name']]
@@ -5041,7 +5042,7 @@ class SETS():
                         if setting_var.get() != current_as_boolean:
                             setting_var.set(current_as_boolean)
                 else:
-                    if item_theme['type'] == 'menu_block':
+                    if item_theme['type'] == 'optionmenu_block':
                         setting_data = title
                     elif item_theme['boolean']:
                         setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback=False, boolean=True, boolean_options=['No', 'Yes'])
@@ -5050,6 +5051,13 @@ class SETS():
 
                     setting_var = StringVar(value=setting_data)
                 option_frame = OptionMenu(parent_frame, setting_var, *item_theme['setting_options'], command=item_theme['callback'])
+            elif item_theme['type'] == 'menu':
+                option_frame = Menubutton(parent_frame, text=title, relief='raised')
+                option_menu = Menu(option_frame, tearoff=False)
+                option_frame['menu'] = option_menu
+                for sub_menu in item_theme['setting_options']:
+                    sub_command = lambda choice=sub_menu: getattr(self, item_theme['callback'])(choice)
+                    option_menu.add_command(label=sub_menu, command=sub_command)
             elif item_theme['type'] == 'scale':
                 setting_data = self.create_item_get_var(item_theme['var_name'], store=item_theme['store'], fallback=1.0)
                 setting_var = DoubleVar(value=setting_data)
@@ -5063,16 +5071,16 @@ class SETS():
 
             if item_theme['type'] != 'blank':
                 option_frame.configure(bg=item_theme['bg'], fg=item_theme['fg'])
-                if item_theme['type'] == 'button_block' or item_theme['type'] == 'menu_block':
+                option_frame.configure(highlightthickness=item_theme['highlightthickness'], highlightbackground=item_theme['highlightbackground'])
+                if item_theme['type'] == 'button_block' or item_theme['type'] == 'optionmenu_block' or item_theme['type'] == 'menu':
                     option_frame.configure(font=font.Font(font=item_theme['font_data']))
                 else:
                     option_frame.configure(borderwidth=0, highlightthickness=0, width=9)
 
                 self.build_vars[item_theme['var_name']] = setting_var
-                col_option = 0 if is_button or item_theme['type'] == 'menu_block' else 1
+                col_option = 0 if is_button or item_theme['type'] == 'optionmenu_block' or item_theme['type'] == 'menu' else 1
                 span_option = elements if is_button else 1
                 option_frame.grid(row=row_current, column=col_start+col_option, columnspan=span_option, sticky=item_theme['sticky'], pady=item_theme['pad_y'], padx=item_theme['pad_x'])
-                option_frame.configure(highlightthickness=item_theme['highlightthickness'], highlightbackground=item_theme['highlightbackground'])
                 parent_frame.grid_rowconfigure(row_current, weight=item_theme['row_weight'])
                 parent_frame.grid_columnconfigure(col_start + col_option, weight=item_theme['col_weight'])
                 self.logWriteSimple('create', 'item', 5, [row_current, col_start+col_option, span_option, title, item_theme['var_name'], item_theme['type']])
@@ -5145,7 +5153,7 @@ class SETS():
     def log_write_stderr(self, text):
         now = datetime.datetime.now()
         sys.stderr.write('{}: '.format(now))
-        sys.stderr.write(text)
+        sys.stderr.write('{}'.format(text))
         sys.stderr.write('\n')
 
     def requestWindowUpdateHold(self, count=50):
