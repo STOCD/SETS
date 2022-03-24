@@ -519,7 +519,8 @@ class SETS():
 
         if os.path.exists(filenameOverride):
             filename = filenameOverride
-        elif os.path.exists(filenameInternal):
+
+        if not os.path.exists(filename) and os.path.exists(filenameInternal):
             filename = filenameInternal
 
         if os.path.exists(filename):
