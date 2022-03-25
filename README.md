@@ -1,10 +1,11 @@
 # SETS - STO Equipment and Trait Selector
 A Star Trek Online build tool in Python
-**Website: https://stobuilds.com/SETS/sets.html**
+**Website: https://stobuilds.com/SETS/**
 
 ## Description
 
-Alpha version of build management and sharing tool for STO.  Builds can be exported to a PNG file that can be opened by another person using SETS.
+Alpha version of build management and sharing tool for STO.
+Builds can be exported to a PNG file that can be opened by another person using SETS.
 
 ## Contributing
 If you find any information or images missing, please check or update the official wiki (https://sto.fandom.com/) -- where SETS gets this information.
@@ -12,45 +13,51 @@ If you find any information or images missing, please check or update the offici
 For application-related issues or suggestions, please visit the github: https://github.com/STOCD/SETS/issues
 
 ## Getting Started
-Follow the instructions below to setup your Python environment.
+### Application (no installations required)
+- https://stobuilds.com/SETS/downloads/ for the latest app build
+  - Windows 8, 10, 11 -- available
+  - MacOS -- in development
+  - Linux -- if requested
 
-**NOTE**: At this early stage of development, performance will be slow as the image cache is build from the wiki. It may take several seconds after the click of a button for the pop-up window to appear!
+### Script (using the git source)
+- View the INSTALLATION.md file for detailed installation information
+- This is not necessary with the application version.
 
-### Easy Access
-Easy way for Windows 10 users: Download the latest version, double-click to unpack it and follow instructions in readme.txt. Most of the images are included in this package, so the app runs smoother. I you start the app this way, you'll get the latest version each time you execute it.
-https://www.dropbox.com/sh/3rqhak69tr6ki2c/AADkuygAThVa9z9e_ckc4vB9a?dl=0
-
-### Dependencies
-
-* Python 3.7 or higher
-* Pillow
-* requests-html
-* numpy
-
-### Installing
-
-> pip install -r requirements.txt
-
-Make also sure to have the 'local' folder downloaded and in the same folder as main.py to see the title banner.
-
-### Executing program
+### Running the program (script, not application)
 
 Windows:
 > python main.py
 
-Linux:
+Linux/macOS:
 > python3 main.py
+> 
+### Dependencies
+* Python 3.7 or higher
+* Pillow
+* requests-html
+* numpy
+* tkmacos (MacOS only)
 
-## Configuration locations
-The configuration directory will house all the configuration files. [^1]
 
-Portable mode can be enabled (keeping all the files inside the application's directory) or the application can be allowed to create an OS-based default settings directory.
-### Configuration directory
-Portable mode:
+> 
+## Image cache
+The image cache can be over 4,000 files.
+
+The majority of this are gear icons and ship images.  Gear icons tend to be very small (under 40MB for them all, included in the packaged images) while ship images can be quite large and are left for automatic download.
+- `CONFIG_DIRECTORY/images/` (automatic) is used to store downloaded images.
+- `APP_DIRECTORY/images/` (optional) is checked after downloaded images.
+  - This is where packaged images are initially set up.
+  - https://stobuilds.com/downloads/images.zip can be added here for a quick start
+
+## Configuration directory
+The configuration directory contains multiple files and folders.
+The configuration directory will automatically be created unless using portable mode.
+
+Portable mode (optional):
+: Keeps all files inside the application's directory
 : Create a folder named `.config/` inside the application directory (uses APPDIR/.config/ for all files)
-: Create a file named `.config.json` inside the application directory (uses APPDIR/ for all files, can be an empty file)
 
-Windows: [^2]
+Windows: [^1]
 : Will attempt to make `~/OneDrive/Documents/SETS/` and use it for all files
 : Will try `~/Documents/SETS/` if OneDrive not available
 
@@ -61,16 +68,16 @@ Unix:
 : Will attempt to make `~/.config/SETS/` and use it for all files
 
 All:
-: Will use the APPDIR/ for all files if the above are note accessible
+: Will use the APPDIR/ for all files if the above are not accessible
 
 ### Configuration Files
 - `cache/` (automatic) is used to store downloaded wiki source data
-- `images/` (automatic) is used to store downloaded images.  [^1]
 - `library/` (automatic) is the default open/save location for exports and imports.
+- `library/.template.json` (optional) will be imported when running the app [^2]
+- `library/autosave.json` (automatic) will be used to save changes as you make them
 - `override/` (optional) will be checked for images/files before the standard locations, allowing a user to manually override any item.
 - `.state_SETS.json` (automatic) is used to store settings
 - `.config.json` (optional) is used for manual settings
-- `.template.json` (optional) will be imported when running the app [^3]
 
 ## Authors
 
@@ -86,6 +93,6 @@ SETS and its source code is licensed under GPLv3
 
 Star Trek Online and its content is copyright of Cryptic Studios.
 
-[^1]: The `images/` directory will stay in the APPDIR/ if that directory already exists, regardless of configuration directory.
-[^2]: File paths are listed with forward slashes -- `/` -- but windows uses `\` in actual paths
-[^3]: This is a standard .json file exported from SETS
+[^1]: File paths are listed with forward slashes -- `/` -- but windows uses `\` in actual paths
+
+[^2]: This is a standard .json file exported from SETS
