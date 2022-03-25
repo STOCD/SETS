@@ -5,16 +5,48 @@ Sukobi - Win/Dev
       modules: (tkinter 8.6.12) (Pillow 8.3.1) (numpy 1.22.3)
    
 Sukobi - Docker/Test
-     python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
-         OS: Linux 5.10.60.1-microsoft-standard-WSL2 (Ubuntu 20.04.4 LTS (Focal Fossa))
- screen-dpi: 2048x1152 (96.0dpi x1.0)
-    modules: (tkinter 8.6.10) (Pillow 8.3.1) (numpy 1.22.3)
+       python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
+           OS: Linux 5.10.60.1-microsoft-standard-WSL2 (Ubuntu 20.04.4 LTS (Focal Fossa))
+   screen-dpi: 2048x1152 (96.0dpi x1.0)
+      modules: (tkinter 8.6.10) (Pillow 8.3.1) (numpy 1.22.3)
+  Pillow-libs:
+        linux-vdso.so.1 (0x00007ffe80bcb000)
+        libjpeg-ba7bf5af.so.9.4.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libjpeg-ba7bf5af.so.9.4.0 (0x00007f29110ab000)
+        libopenjp2-f0612b30.so.2.4.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libopenjp2-f0612b30.so.2.4.0 (0x00007f2910e29000)
+        libz-b8b1b7c1.so.1.2.11 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libz-b8b1b7c1.so.1.2.11 (0x00007f2910c0b000)
+        libtiff-102594ad.so.5.7.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libtiff-102594ad.so.5.7.0 (0x00007f2910963000)
+        libxcb-2dfad6c3.so.1.1.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libxcb-2dfad6c3.so.1.1.0 (0x00007f2910722000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f29106f4000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f2910502000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f29103b3000)
+        liblzma-99449165.so.5.2.5 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/liblzma-99449165.so.5.2.5 (0x00007f291017f000)
+        libXau-312dbc56.so.6.0.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libXau-312dbc56.so.6.0.0 (0x00007f290ff7c000)
+        libXdmcp-e15573e7.so.6.0.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libXdmcp-e15573e7.so.6.0.0 (0x00007f290fd74000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f291158d000)
+        librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f290fd6a000)
+
 
 Sukobi - VirtualBox/Test
-     python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
-         OS: Linux 5.13.0-37-generic (Ubuntu 20.04.4 LTS (Focal Fossa))
- screen-dpi: 1920x1080 (96.0dpi x1.0)
-    modules: (tkinter 8.6.10) (Pillow 8.3.1) (numpy 1.22.3)
+       python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
+           OS: Linux 5.13.0-37-generic (Ubuntu 20.04.4 LTS (Focal Fossa))
+   screen-dpi: 1600x900 (96.0dpi x1.0)
+      modules: (tkinter 8.6.10) (Pillow 8.3.1) (numpy 1.22.3)
+  Pillow-libs:
+	linux-vdso.so.1 (0x00007ffc4dba7000)
+	libjpeg-ba7bf5af.so.9.4.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libjpeg-ba7bf5af.so.9.4.0 (0x00007f71978b6000)
+	libopenjp2-f0612b30.so.2.4.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libopenjp2-f0612b30.so.2.4.0 (0x00007f7197634000)
+	libz-b8b1b7c1.so.1.2.11 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libz-b8b1b7c1.so.1.2.11 (0x00007f7197416000)
+	libtiff-102594ad.so.5.7.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libtiff-102594ad.so.5.7.0 (0x00007f719716e000)
+	libxcb-2dfad6c3.so.1.1.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libxcb-2dfad6c3.so.1.1.0 (0x00007f7196f2d000)
+	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f7196ef9000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f7196d07000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f7196bb8000)
+	liblzma-99449165.so.5.2.5 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/liblzma-99449165.so.5.2.5 (0x00007f7196984000)
+	libXau-312dbc56.so.6.0.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libXau-312dbc56.so.6.0.0 (0x00007f7196781000)
+	libXdmcp-e15573e7.so.6.0.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libXdmcp-e15573e7.so.6.0.0 (0x00007f7196579000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f7197d98000)
+	librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f719656f000)
+
    
 Sukobi - macOS/Test
       python: 3.10.2 (v3.10.2:a58ebcc701, Jan 13 2022, 14:50:16) [Clang 13.0.0 (clang-1300.0.29.30)]
