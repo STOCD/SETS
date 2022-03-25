@@ -54,6 +54,12 @@ try:
 except:
     numpy_version = 'fail'
 
+try:
+    import tkmacosx
+    tkmacosx_version = tkmacosx.__version__
+except:
+    tkmacosx_version = ''
+
 snapshot = {
     'python': python_version,
     'OS': os_text,
@@ -64,6 +70,7 @@ modules= {
     'tkinter': tkinter_version,
     'Pillow': PIL_version,
     'numpy': numpy_version,
+    'tkLocal': tkmacosx_version,
 }
 
 min_title_width = 5

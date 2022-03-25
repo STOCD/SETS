@@ -9,7 +9,7 @@ from tkinter.ttk import Progressbar
 from requests_html import Element, HTMLSession, HTML
 from PIL import Image, ImageTk, ImageGrab
 import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, platform, uuid
-import webbrowser
+import webbrowser, textwrap
 import numpy as np
 
 if platform.system() == 'Darwin':
@@ -1871,11 +1871,11 @@ class SETS():
                 self.build['ship'] = item['item']
                 self.backend['shipHtml'] = None
                 self.setShipImage()
-                self.shipButton.configure(text=item['item'])
+                self.shipButton.configure(text=self.ship_name_wrap(empty=True))
                 self.backend['ship'].set(item['item'])
                 self.setupCurrentBuildFrames('space')
             else:
-                self.shipButton.configure(text=item['item'])
+                self.shipButton.configure(text=self.ship_name_wrap(item['item']))
                 self.backend['ship'].set(item['item'])
                 self.setupBoffFrame('space', self.backend['shipHtml'])
             self.auto_save_queue()
@@ -4615,7 +4615,7 @@ class SETS():
                 row += 1
                 labelFrame = Label(NameFrame, text="Ship: ", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'])
                 labelFrame.grid(column=0, row = row, sticky='w', pady=(1,0))
-                self.shipButton = HoverButton(NameFrame, text="<Pick>", command=self.shipPickButtonCallback, bg=self.theme['frame_medium']['bg'], wraplength=270, activebackground=self.theme['frame_medium']['hover'])
+                self.shipButton = HoverButton(NameFrame, text=self.ship_name_wrap(empty=True), command=self.shipPickButtonCallback, bg=self.theme['frame_medium']['bg'], activebackground=self.theme['frame_medium']['hover'])
                 self.shipButton.grid(column=1, row=row, sticky='nwse')
                 row += 1
 
@@ -4649,11 +4649,21 @@ class SETS():
             self.groundDescFrame = descFrame
         elif environment == 'space':
             self.shipDescFrame = descFrame
-            if self.build['ship'] is not None: self.shipButton.configure(text=self.build['ship'])
+            if self.build['ship'] is not None: self.shipButton.configure(text=self.ship_name_wrap())
             if 'tier' in self.build and len(self.build['tier']) > 1:
                 self.setupTierFrame(int(self.build['tier'][1]))
                 self.setupShipImageFrame()
                 pass
+
+    def ship_name_wrap(self, name='', empty=False):
+        if not name:
+            name = self.build['ship']
+        if empty:
+            name = '<Pick>'
+
+        wrapped_name_parts = textwrap.wrap(name, width=45)
+        final_name = '\n'.join(wrapped_name_parts)
+        return final_name
 
     def setupHandleFrame(self, environment='space'):
         if environment == 'skill':
@@ -5065,9 +5075,11 @@ class SETS():
                 option_frame = Scale(parent_frame, from_=0.5, to=2.0, digits=2, resolution=0.1, orient='horizontal', variable=setting_var)
                 option_frame.configure(command=item_theme['callback'])
             elif is_button:
-                option_frame = HoverButton(parent_frame, text=title, fg=item_theme['fg'], bg=item_theme['bg'], activebackground=item_theme['abg'])
+                option_frame = HoverButton(parent_frame, fg=item_theme['fg'], bg=item_theme['bg'], activebackground=item_theme['abg'])
                 if item_theme['image'] is not None:
                     option_frame.configure(image=item_theme['image'])
+                else:
+                    option_frame.configure(text=title)
                 option_frame.configure(command=item_theme['callback'])
             else:
                 continue
