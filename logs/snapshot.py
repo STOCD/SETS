@@ -50,21 +50,14 @@ except:
 
 try:
     PIL_location = PIL.__path__
-    PIL_libs = subprocess.check_output(['otool', '-L', PIL_location[0]+'/_imaging.cpython-310-darwin.so']).decode("utf-8")
+    PIL_libs = subprocess.check_output(['otool', '-L', PIL_location[0]+'/_imaging.*so']).decode("utf-8")
 except:
     PIL_libs = ''
 
 if not PIL_libs:
     try:
         PIL_location = PIL.__path__
-        PIL_libs = subprocess.check_output(['otool', '-L', PIL_location[0] + '/_imaging.so']).decode("utf-8")
-    except:
-        PIL_libs = ''
-
-if not PIL_libs:
-    try:
-        PIL_location = PIL.__path__
-        PIL_libs = subprocess.check_output(['ldd', PIL_location[0] + '/_imaging.so']).decode("utf-8")
+        PIL_libs = subprocess.check_output(['ldd', PIL_location[0] + '/_imaging.*so']).decode("utf-8")
     except:
         PIL_libs = ''
 
