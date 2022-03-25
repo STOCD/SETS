@@ -1,4 +1,4 @@
-import sys, platform, subprocess
+import sys, platform, subprocess, glob
 python_version = sys.version
 python_version = python_version.replace('\r', '')
 python_version = python_version.replace('\n', '')
@@ -50,16 +50,13 @@ except:
 
 try:
     PIL_location = PIL.__path__
-    PIL_libs = subprocess.check_output(['otool', '-L', PIL_location[0]+'/_imaging.*so']).decode("utf-8")
+    imaging_location = glob.glob(PIL_location[0]+'/_imaging.*so')[0]
+    if system == 'Darwin':
+        PIL_libs = subprocess.check_output(['otool', '-L', imaging_location]).decode("utf-8")
+    else:  # Linux -- no windows method yet
+        PIL_libs = subprocess.check_output(['ldd', imaging_location]).decode("utf-8")
 except:
     PIL_libs = ''
-
-if not PIL_libs:
-    try:
-        PIL_location = PIL.__path__
-        PIL_libs = subprocess.check_output(['ldd', PIL_location[0] + '/_imaging.*so']).decode("utf-8")
-    except:
-        PIL_libs = ''
 
 try:
     import numpy
