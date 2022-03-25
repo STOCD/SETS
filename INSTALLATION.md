@@ -64,6 +64,10 @@ At a shell prompt, change to the folder you want the SETS folder installed into 
 > 
 > > brew install libjpeg [^5]
 > 
+> brew install git
+> 
+> git clone https://github.com/STOCD/SETS.git
+> 
 > python3 -m pip install -r requirements.txt
 > 
 > python3 main.py
