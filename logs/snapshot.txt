@@ -1,8 +1,8 @@
 Sukobi - Win/Dev
-     python: 3.9.11 (tags/v3.9.11:2de452f, Mar 16 2022, 14:33:45) [MSC v.1929 64 bit (AMD64)]
-         OS: Windows 10 (19043)
- screen-dpi: 2048x1152 (96.0dpi x1.0)
-    modules: (tkinter 8.6.12) (Pillow 8.3.1) (numpy 1.22.3)
+       python: 3.9.11 (tags/v3.9.11:2de452f, Mar 16 2022, 14:33:45) [MSC v.1929 64 bit (AMD64)]
+           OS: Windows 10 (19043)
+   screen-dpi: 2048x1152 (96.0dpi x1.0)
+      modules: (tkinter 8.6.12) (Pillow 8.3.1) (numpy 1.22.3)
    
 Sukobi - Docker/Test
      python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
@@ -17,14 +17,21 @@ Sukobi - VirtualBox/Test
     modules: (tkinter 8.6.10) (Pillow 8.3.1) (numpy 1.22.3)
    
 Sukobi - macOS/Test
-     python: 3.10.2 (v3.10.2:a58ebcc701, Jan 13 2022, 14:50:16) [Clang 13.0.0 (clang-1300.0.29.30)]
-         OS: Darwin 19.6.0
- screen-dpi: 1920x1080 (72.0dpi x0.75)
-    modules: (tkinter 8.6.12) (Pillow 8.3.1) (numpy 1.22.3)
+      python: 3.10.2 (v3.10.2:a58ebcc701, Jan 13 2022, 14:50:16) [Clang 13.0.0 (clang-1300.0.29.30)]
+          OS: Darwin 19.6.0
+  screen-dpi: 1920x1080 (72.0dpi x0.75)
+     modules: (tkinter 8.6.12) (Pillow 9.0.1) (numpy 1.22.3) (tkLocal 1.0.4) 
+ Pillow-libs:
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/PIL/_imaging.cpython-310-darwin.so:
+	@loader_path/.dylibs/libopenjp2.2.4.0.dylib (compatibility version 7.0.0, current version 2.4.0)
+	@loader_path/.dylibs/libz.1.2.11.dylib (compatibility version 1.0.0, current version 1.2.11)
+	@loader_path/.dylibs/libtiff.5.dylib (compatibility version 12.0.0, current version 12.0.0)
+	@loader_path/.dylibs/libxcb.1.1.0.dylib (compatibility version 3.0.0, current version 3.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1311.0.0)
    
 Sukobi - macOS/Test/python2 [wrong python]
 DEPRECATION WARNING: The system version of Tk is deprecated and may be removed in a future release. Please don't rely on it. Set TK_SILENCE_DEPRECATION=1 to suppress this warning.
-     python: 2.7.16 (default, Mar 25 2021, 03:11:28) [GCC 4.2.1 Compatible Apple LLVM 11.0.3 (clang-1103.0.29.20) (-macos10.15-objc-
- screen-dpi: 1920x1080 (72.0dpi x0.75)
-         OS: Darwin 19.6.0
-    modules: (numpy 1.8.0rc1) (tkinter 8.5.9) (Pillow fail)
+       python: 2.7.16 (default, Mar 25 2021, 03:11:28) [GCC 4.2.1 Compatible Apple LLVM 11.0.3 (clang-1103.0.29.20) (-macos10.15-objc-
+   screen-dpi: 1920x1080 (72.0dpi x0.75)
+           OS: Darwin 19.6.0
+      modules: (numpy 1.8.0rc1) (tkinter 8.5.9) (Pillow fail) (tkLocal ) 

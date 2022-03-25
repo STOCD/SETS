@@ -1,4 +1,4 @@
-import sys, platform
+import sys, platform, subprocess
 python_version = sys.version
 python_version = python_version.replace('\r', '')
 python_version = python_version.replace('\n', '')
@@ -49,6 +49,26 @@ except:
     PIL_version = 'fail'
 
 try:
+    PIL_location = PIL.__path__
+    PIL_libs = subprocess.check_output(['otool', '-L', PIL_location[0]+'/_imaging.cpython-310-darwin.so']).decode("utf-8")
+except:
+    PIL_libs = ''
+
+if not PIL_libs:
+    try:
+        PIL_location = PIL.__path__
+        PIL_libs = subprocess.check_output(['otool', '-L', PIL_location[0] + '/_imaging.so']).decode("utf-8")
+    except:
+        PIL_libs = ''
+
+if not PIL_libs:
+    try:
+        PIL_location = PIL.__path__
+        PIL_libs = subprocess.check_output(['ldd', PIL_location[0] + '/_imaging.so']).decode("utf-8")
+    except:
+        PIL_libs = ''
+
+try:
     import numpy
     numpy_version = numpy.__version__
 except:
@@ -59,6 +79,8 @@ try:
     tkmacosx_version = tkmacosx.__version__
 except:
     tkmacosx_version = ''
+
+
 
 snapshot = {
     'python': python_version,
@@ -73,7 +95,7 @@ modules= {
     'tkLocal': tkmacosx_version,
 }
 
-min_title_width = 5
+min_title_width = 12
 for type in snapshot:
     if len(type) > min_title_width:
         min_title_width = len(type)
@@ -84,7 +106,11 @@ for type in snapshot:
 modules_text = '{:>{min}}: '.format('modules', min=min_title_width+1)
 
 for type in modules:
-    modules_text += '({} {}) '.format(type, modules[type])
+    if modules[type]:
+        modules_text += '({} {}) '.format(type, modules[type])
 
 print(modules_text)
+if PIL_libs:
+    print('{:>{min}}:'.format('Pillow-libs', min=min_title_width+1))
+    print(PIL_libs)
 
