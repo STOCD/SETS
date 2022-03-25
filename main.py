@@ -503,8 +503,10 @@ class SETS():
         filename = filenameDefault = filenameNoFaction = os.path.join(*filter(None, [cache_base, designation]))+fileextension
         override_base = self.getFolderLocation('override')
         internal_base = self.resource_path(self.settings['folder']['images'])
+        local_base = self.settings['folder']['images']
         filenameOverride = os.path.join(*filter(None, [override_base, designation]))+fileextension
         filenameInternal = os.path.join(*filter(None, [internal_base, designation]))+fileextension
+        filenameLocal = os.path.join(*filter(None, [local_base, designation]))+fileextension
         filenameExisting = ''
 
         if faction is not None and faction != False and '_icon' in url and not '_icon_(' in url:
@@ -519,8 +521,11 @@ class SETS():
 
         if os.path.exists(filenameOverride):
             filename = filenameOverride
-        elif not os.path.exists(filename) and os.path.exists(filenameInternal):
-            filename = filenameInternal
+        elif not os.path.exists(filename):
+            if os.path.exists(filenameInternal):
+                filename = filenameInternal
+            elif os.path.exists(filenameLocal):
+                filename = filenameLocal
 
         if os.path.exists(filename):
             self.progressBarUpdate()
