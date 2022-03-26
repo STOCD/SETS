@@ -1,4 +1,4 @@
-import sys, platform, subprocess, glob
+import sys, platform, subprocess, glob, re
 python_version = sys.version
 python_version = python_version.replace('\r', '')
 python_version = python_version.replace('\n', '')
@@ -58,6 +58,13 @@ try:
 except:
     PIL_libs = ''
 
+PIL_libs_cleaned = ''
+if PIL_libs:
+    PIL_lib_lines = PIL_libs.splitlines(True)
+    for i in range(len(PIL_lib_lines)):
+        #PIL_libs_cleaned += PIL_lib_lines[i]+'\n'
+        PIL_libs_cleaned += re.sub(' (=>|\(0x).*$', '', PIL_lib_lines[i])
+
 try:
     import numpy
     numpy_version = numpy.__version__
@@ -69,8 +76,6 @@ try:
     tkmacosx_version = tkmacosx.__version__
 except:
     tkmacosx_version = ''
-
-
 
 snapshot = {
     'python': python_version,
@@ -100,7 +105,8 @@ for type in modules:
         modules_text += '({} {}) '.format(type, modules[type])
 
 print(modules_text)
-if PIL_libs:
+if PIL_libs_cleaned:
     print('{:>{min}}:'.format('Pillow-libs', min=min_title_width+1))
-    print(PIL_libs)
+    print(PIL_libs_cleaned)
+    # print(PIL_libs)
 

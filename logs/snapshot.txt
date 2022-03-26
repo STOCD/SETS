@@ -8,22 +8,21 @@ Sukobi - Docker/Test
        python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
            OS: Linux 5.10.60.1-microsoft-standard-WSL2 (Ubuntu 20.04.4 LTS (Focal Fossa))
    screen-dpi: 2048x1152 (96.0dpi x1.0)
-      modules: (tkinter 8.6.10) (Pillow 8.3.1) (numpy 1.22.3)
+      modules: (tkinter 8.6.10) (Pillow 9.0.1) (numpy 1.22.3)
   Pillow-libs:
-        linux-vdso.so.1 (0x00007ffe80bcb000)
-        libjpeg-ba7bf5af.so.9.4.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libjpeg-ba7bf5af.so.9.4.0 (0x00007f29110ab000)
-        libopenjp2-f0612b30.so.2.4.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libopenjp2-f0612b30.so.2.4.0 (0x00007f2910e29000)
-        libz-b8b1b7c1.so.1.2.11 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libz-b8b1b7c1.so.1.2.11 (0x00007f2910c0b000)
-        libtiff-102594ad.so.5.7.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libtiff-102594ad.so.5.7.0 (0x00007f2910963000)
-        libxcb-2dfad6c3.so.1.1.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libxcb-2dfad6c3.so.1.1.0 (0x00007f2910722000)
-        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f29106f4000)
-        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f2910502000)
-        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f29103b3000)
-        liblzma-99449165.so.5.2.5 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/liblzma-99449165.so.5.2.5 (0x00007f291017f000)
-        libXau-312dbc56.so.6.0.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libXau-312dbc56.so.6.0.0 (0x00007f290ff7c000)
-        libXdmcp-e15573e7.so.6.0.0 => /usr/local/lib/python3.8/dist-packages/PIL/../Pillow.libs/libXdmcp-e15573e7.so.6.0.0 (0x00007f290fd74000)
-        /lib64/ld-linux-x86-64.so.2 (0x00007f291158d000)
-        librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f290fd6a000)
+        linux-vdso.so.1
+        libjpeg-62ed1500.so.62.3.0
+        libopenjp2-430a98fc.so.2.4.0
+        libz-dd453c56.so.1.2.11
+        libtiff-8e99fb9e.so.5.7.0
+        libxcb-1122e22b.so.1.1.0
+        libpthread.so.0
+        libc.so.6
+        libm.so.6
+        liblzma-d540a118.so.5.2.5
+        libXau-00ec42fe.so.6.0.0
+        /lib64/ld-linux-x86-64.so.2
+
 
 
 Sukobi - VirtualBox/Test
@@ -62,8 +61,40 @@ Sukobi - macOS/Test
 	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1311.0.0)
    
 Sukobi - macOS/Test/python2 [wrong python]
-DEPRECATION WARNING: The system version of Tk is deprecated and may be removed in a future release. Please don't rely on it. Set TK_SILENCE_DEPRECATION=1 to suppress this warning.
        python: 2.7.16 (default, Mar 25 2021, 03:11:28) [GCC 4.2.1 Compatible Apple LLVM 11.0.3 (clang-1103.0.29.20) (-macos10.15-objc-
-   screen-dpi: 1920x1080 (72.0dpi x0.75)
-           OS: Darwin 19.6.0
-      modules: (numpy 1.8.0rc1) (tkinter 8.5.9) (Pillow fail) (tkLocal ) 
+      modules: (numpy 1.8.0rc1) (tkinter 8.5.9) (Pillow fail) (tkLocal )
+
+
+Sukobi - manylinux2
+       python: 3.10.2 (main, Mar  6 2022, 09:39:37) [GCC 6.3.0 20170516]
+      modules: (tkinter 8.6.6) (Pillow 9.0.1) (numpy 1.22.3)
+
+       python: 3.9.10 (main, Mar  6 2022, 09:39:23) [GCC 6.3.0 20170516]
+      modules: (tkinter 8.6.6) (Pillow 9.0.1) (numpy 1.22.3)
+
+       python: 3.8.12 (default, Mar  6 2022, 09:39:08) [GCC 6.3.0 20170516]
+      modules: (tkinter 8.6.6) (Pillow 9.0.1) (numpy 1.22.3)
+
+       python: 3.7.12 (default, Mar  6 2022, 09:38:53) [GCC 6.3.0 20170516]
+      modules: (tkinter 8.6.6) (Pillow 9.0.1) (numpy 1.21.5)
+           OS: Linux 5.10.60.1-microsoft-standard-WSL2 (Debian GNU/Linux 9 (stretch))
+   screen-dpi: 2048x1152 (96.0dpi x1.0)
+  Pillow-libs:
+        linux-vdso.so.1
+        libjpeg-62ed1500.so.62.3.0
+        libopenjp2-430a98fc.so.2.4.0
+        libz-dd453c56.so.1.2.11
+        libtiff-8e99fb9e.so.5.7.0
+        libxcb-1122e22b.so.1.1.0
+        libpthread.so.0
+        libc.so.6
+        libm.so.6
+        liblzma-d540a118.so.5.2.5
+        libXau-00ec42fe.so.6.0.0
+        /lib64/ld-linux-x86-64.so.2
+
+
+
+
+
+
