@@ -4,7 +4,7 @@ Sukobi - Win/Dev
    screen-dpi: 2048x1152 (96.0dpi x1.0)
       modules: (tkinter 8.6.12) (Pillow 8.3.1) (numpy 1.22.3)
 
-   
+
 Sukobi - Docker/Test
        python: 3.8.10 (default, Nov 26 2021, 20:14:08) [GCC 9.3.0]
            OS: Linux 5.10.60.1-microsoft-standard-WSL2 (Ubuntu 20.04.4 LTS (Focal Fossa))

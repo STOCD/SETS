@@ -41,7 +41,7 @@ class HoverButton(Button):
 
 class SETS():
     """Main App Class"""
-    version = '20220325a_beta'
+    version = '20220326a_beta'
 
     daysDelayBeforeReattempt = 7
 

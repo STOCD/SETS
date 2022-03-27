@@ -39,7 +39,7 @@ At a shell prompt, change to the folder you want the SETS folder installed into 
 > python3 main.py
 
 
-### MacOS:
+### MacOS (11.5, 11.6):
 MacOS has the most complicated installation.
 - MacOS already has python2
 - XCode installs have an older python3
@@ -47,6 +47,8 @@ MacOS has the most complicated installation.
 - There are a couple extra steps to enable JPEGs
 
 At a shell prompt, change to the folder you want the SETS folder installed into and run the following:
+> > xcode-select --install [^6]
+>
 > /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" [^2]
 > 
 > brew install python3
@@ -95,3 +97,5 @@ At a shell prompt [^1], change to the folder SETS is in
 [^4]: the '@3.9' portion of the text may be different if you're using a different python version
 
 [^5]: MacOS (10.15 tested) has some issues with the build in JPEG library.  These steps were necessary to get it to function.  Feel free to skip them initialy -- if there is a failure, you can run these steps and then run the `python3 -m pip install -y requirements.txt` again.
+
+[^6]: If xcode hangs on finding/install, check <https://developer.apple.com/download/all/> for `Command Line Tools for Xcode 13.3` (13.3 for macOS 12+ and 13.2 for down to macOS 11.3).  Homebrew should do this automatically, but can hang on download (requiring this to be installed manually).
