@@ -20,21 +20,21 @@ from tkinter import Tk
 from tkinter import BOTH, BOTTOM, DISABLED, END, FLAT, HORIZONTAL
 from tkinter import LEFT, NORMAL, RIGHT, TOP, VERTICAL, WORD, X, Y
 from tkinter import DoubleVar, IntVar, StringVar
-from tkinter import Canvas, Checkbutton, Entry, Frame, Image, Label, Menu, Menubutton
-if platform.system() == 'Darwin':
-    from tkmacosx import Button
-else:
-    from tkinter import Button
+from tkinter import Canvas, Checkbutton, Entry, Frame, Label, Menu, Menubutton
 from tkinter import OptionMenu, PhotoImage, Radiobutton, Scale, Scrollbar, Text, Toplevel
 from tkinter import font
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter.ttk import Progressbar
-
 from PIL import Image, ImageTk, ImageGrab
 from requests_html import Element, HTMLSession, HTML
 import requests
 import numpy as np
+
+if platform.system() == 'Darwin':
+    from tkmacosx import Button
+else:
+    from tkinter import Button
 
 CLEANR = re.compile('<.*?>')
 

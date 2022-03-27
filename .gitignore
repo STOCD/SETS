@@ -150,3 +150,6 @@ main.py.bak
 # Pycharm data
 .idea/
 wily-report.html
+.pylintrc
+.pylint_current
+.pylint_current.json
