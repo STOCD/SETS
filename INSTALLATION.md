@@ -98,4 +98,4 @@ At a shell prompt [^1], change to the folder SETS is in
 
 [^5]: MacOS (10.15 tested) has some issues with the build in JPEG library.  These steps were necessary to get it to function.  Feel free to skip them initialy -- if there is a failure, you can run these steps and then run the `python3 -m pip install -y requirements.txt` again.
 
-[^6]: If xcode hangs on finding/install, check <https://developer.apple.com/download/all/> for `Command Line Tools for Xcode 13.3` (13.3 for macOS 12+ and 13.2 for down to macOS 11.3).  Homebrew should do this automatically, but can hang on download (requiring this to be installed manually).
+[^6]: If xcode hangs on finding/install, check <https://developer.apple.com/download/all/> for `Command Line Tools for Xcode 13.3` (13.3 for macOS 12+ and 13.2 for down to macOS 11.3).  Homebrew should install this automatically, but can hang on download (requiring this to be installed manually).

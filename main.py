@@ -1,21 +1,40 @@
 # from textwrap import fill
-from asyncio import subprocess
-from tkinter import *
-from tkinter import filedialog
-from tkinter import font
-import tkinter
-from tkinter import messagebox
-from tkinter.ttk import Progressbar
-from requests_html import Element, HTMLSession, HTML
-from PIL import Image, ImageTk, ImageGrab
-import os, requests, json, re, datetime, html, urllib.parse, ctypes, sys, argparse, platform, uuid
-import webbrowser, textwrap
-import numpy as np
+# from asyncio import subprocess
+import argparse
+import ctypes
+import datetime
+import html
+import json
+import os
+import platform
+import re
+import sys
+import textwrap
+import urllib.parse
+import uuid
+import webbrowser
 
+# from tkinter import *
+import tkinter as tk
+from tkinter import Tk
+from tkinter import BOTH, BOTTOM, DISABLED, END, FLAT, HORIZONTAL
+from tkinter import LEFT, NORMAL, RIGHT, TOP, VERTICAL, WORD, X, Y
+from tkinter import DoubleVar, IntVar, StringVar
+from tkinter import Canvas, Checkbutton, Entry, Frame, Image, Label, Menu, Menubutton
 if platform.system() == 'Darwin':
     from tkmacosx import Button
 else:
     from tkinter import Button
+from tkinter import OptionMenu, PhotoImage, Radiobutton, Scale, Scrollbar, Text, Toplevel
+from tkinter import font
+from tkinter import filedialog
+from tkinter import messagebox
+from tkinter.ttk import Progressbar
+
+from PIL import Image, ImageTk, ImageGrab
+from requests_html import Element, HTMLSession, HTML
+import requests
+import numpy as np
 
 CLEANR = re.compile('<.*?>')
 
@@ -41,7 +60,7 @@ class HoverButton(Button):
 
 class SETS():
     """Main App Class"""
-    version = '20220326a_beta'
+    version = '20220327a_beta'
 
     daysDelayBeforeReattempt = 7
 
@@ -2254,7 +2273,7 @@ class SETS():
                         column2 = column2 + ["[{0}]({1})".format(skill["skill"][1], skill["link"])]
                         column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][1]]==True else [None], 1)
                         column3 = column3 + ["[{0}]({1})".format(skill["skill"][2], skill["link"])]
-                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][2]]==True else [None], 1) 
+                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][2]]==True else [None], 1)
         redditstring = redditstring + self.makeRedditTable(['&nbsp;']+column0, ['**Base:**']+column1, ['**Improved:**']+column2, ['**Advanced:**']+column3, [":---",":-:",":-:",":-:"])
         textframe.configure(state=NORMAL)
         textframe.delete("1.0", END)
@@ -3452,7 +3471,7 @@ class SETS():
                 color.append(text.find("</font>"))
             t = t[color[-1]:]
         while len(color)>0:
-            try: 
+            try:
                 text = text[:color[-1]]+text[color[-1]+7:]
             except IndexError:
                 text = text[:color[-1]]
@@ -3527,7 +3546,7 @@ class SETS():
                 underlined.append(ptext.find("<u>"))
                 underlined.append(ptext.find("</u>"))
             t = ptext[underlined[-1]+4:]
-        l = bolditalic + bold + italic + bold2 + underlined 
+        l = bolditalic + bold + italic + bold2 + underlined
         l.sort()
         self.tag_configure('bolditalic', font=(pfamily, psize, "bold", "italic"))
         self.tag_configure('bold', font=(pfamily, psize, "bold"))
@@ -3596,9 +3615,9 @@ class SETS():
             self.insert(END, passtext)
         else:
             self.insert(END, ptext)
-            
-    
-    tkinter.Text.formattedInsert = formattedInsert
+
+
+    tk.Text.formattedInsert = formattedInsert
 
     def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, framewidth):
         """Inserts Infobox paragraph into a frame"""
@@ -3935,7 +3954,7 @@ class SETS():
             text.insert(END, name+"\n", 'starshipTraitHead')
             text.insert(END, "Starship Trait\n", 'head')
             if self.cache['shipTraitsFull'][name]["obtained"] == "T5" or self.cache['shipTraitsFull'][name]["obtained"] == "T6":
-                obtaintext = "This Starship Trait can be obtained from the "+self.cache['shipTraitsFull'][name]["obtained"]+" Mastery of the "+self.cache['shipTraitsFull'][name]["ship"] 
+                obtaintext = "This Starship Trait can be obtained from the "+self.cache['shipTraitsFull'][name]["obtained"]+" Mastery of the "+self.cache['shipTraitsFull'][name]["ship"]
             elif self.cache['shipTraitsFull'][name]["obtained"] == "spec":
                 obtaintext = "This Starship Trait can be obtained from the Captain Specialization system by completing the "+self.cache['shipTraitsFull'][name]["ship"]+" specialization."
             elif self.cache['shipTraitsFull'][name]["obtained"] == "recr":
@@ -4155,20 +4174,20 @@ class SETS():
         self.setupCurrentBuildTagFrames()
         self.logWriteSimple('checkbuttonCallback', var, 2, [masterkey, key, text])
         self.auto_save_queue()
-    
+
     def checkbuttonBuildBlock(self, window, frame: Frame, values, bg, fg, masterkey: str, key = str(""), geomanager="grid", orientation=HORIZONTAL, rowoffset=0, columnoffset=0,  alignment=TOP):
         """Inserts a series of Checkbuttons either horizontally or vertically, either row for row in the grid of the parent frame or packed into the parent
         frame on the given side. Parameters:
-        window: Toplevel or Tkinter window mainlooping; 
-        frame: the parent frame that the checkboxes get inserted to (must be managed by the geomanager stated in parameter geomanager); 
-        values: list or dictionary containing the individual checkbuttons texts, each entry has to have a correspondence inside the dictionary the checkbuttons values will be saved to; 
-        bg: background for text and checkboxes; fg: text color; masterkey: first-level identifier of the corresponding dictionary; 
-        key: second-level identifier of the corresponding dictionary; 
-        geomanager: which geomanager manages frame; 
-        orientation: orientation of checkbutton sequence; 
-        rowoffset / columnoffset: if frame is managed by grid, then they determine the cell the first checkbutton will be inserted, subsequent Checkbuttons will be insertet left / below it; 
+        window: Toplevel or Tkinter window mainlooping;
+        frame: the parent frame that the checkboxes get inserted to (must be managed by the geomanager stated in parameter geomanager);
+        values: list or dictionary containing the individual checkbuttons texts, each entry has to have a correspondence inside the dictionary the checkbuttons values will be saved to;
+        bg: background for text and checkboxes; fg: text color; masterkey: first-level identifier of the corresponding dictionary;
+        key: second-level identifier of the corresponding dictionary;
+        geomanager: which geomanager manages frame;
+        orientation: orientation of checkbutton sequence;
+        rowoffset / columnoffset: if frame is managed by grid, then they determine the cell the first checkbutton will be inserted, subsequent Checkbuttons will be insertet left / below it;
         alignment: if frame is managed by pack, then the Checkbuttons will be aligned at that side inside the frame
-        
+
         The method returns the number of checkbuttons inserted"""
         if geomanager == "grid":
             topframe = frame
@@ -4180,14 +4199,14 @@ class SETS():
             insertrow = 0
             insertcolumn = 0
         else: return
-        count = 0 
+        count = 0
         for t in values:
             itemframe = Frame(topframe, highlightthickness=0, bg=bg)
-            if orientation==HORIZONTAL: 
+            if orientation==HORIZONTAL:
                 topframe.columnconfigure(insertcolumn, weight=1)
                 itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="n")
                 insertcolumn +=1
-            elif orientation==VERTICAL: 
+            elif orientation==VERTICAL:
                 topframe.rowconfigure(insertrow, weight=1)
                 itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="w")
                 insertrow +=1
@@ -4208,7 +4227,7 @@ class SETS():
             l.bind("<Button-1>", lambda e, var=v: self.checkbuttonVarUpdateCallbackToggle(var))
             count +=1
         return count
-        
+
 
     def buildTagCallback(self):
         tagwindow = Toplevel(self.window, bg=self.theme['app']["bg"])
@@ -4233,7 +4252,7 @@ class SETS():
         cfr.rowconfigure(3, minsize=12)
         Label(mdmgfr, text="Main Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=5, sticky="new")
         self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.persistent['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", "tags", "maindamage", "grid", HORIZONTAL, 1)
-        
+
         etypefr = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
         etypefr.grid(row=4, column=0, sticky="n")
         cfr.columnconfigure(0, weight=1)
@@ -4241,7 +4260,7 @@ class SETS():
         cfr.rowconfigure(5, minsize=12)
         Label(etypefr, text="Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
         self.checkbuttonBuildBlock(tagwindow, etypefr, self.persistent['tags']['energytype'], self.theme['app']['fg'], "#ffffff", "tags", "energytype", "grid", VERTICAL, 1)
-        
+
         wtypefr = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
         wtypefr.grid(row=4, column=1, sticky="n")
         cfr.columnconfigure(1, weight=1)
