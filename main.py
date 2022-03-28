@@ -20,7 +20,7 @@ from tkinter import Tk
 from tkinter import BOTH, BOTTOM, DISABLED, END, FLAT, HORIZONTAL
 from tkinter import LEFT, NORMAL, RIGHT, TOP, VERTICAL, WORD, X, Y
 from tkinter import DoubleVar, IntVar, StringVar
-from tkinter import Canvas, Checkbutton, Entry, Frame, Label, Menu, Menubutton
+from tkinter import Canvas, Checkbutton, Entry, Frame, Label, Menu, Menubutton, Message
 from tkinter import OptionMenu, PhotoImage, Radiobutton, Scale, Scrollbar, Text, Toplevel
 from tkinter import font
 from tkinter import filedialog
@@ -5754,10 +5754,19 @@ class SETS():
             self.log_write_stderr('Local path: {}'.format(full_path))
         return full_path
 
+    def resized_main_window(self, value):
+        self.window_last_change = value
+        self.window.after(1000, lambda value=value: self.resized_main_window_delay_check(value))
+
+    def resized_main_window_delay_check(self, value):
+        if value == self.window_last_change:
+            self.logWriteSimple('WINDOW', 'resize', 3, [value])
+
     def init_window(self):
         self.window = Tk()
         self.window.iconphoto(False, PhotoImage(file=self.resource_path('local/icon.PNG', quiet=False)))
         self.window.title("STO Equipment and Trait Selector")
+        self.window.bind('<Configure>', self.resized_main_window)
 
     def __init__(self) -> None:
         """Main setup function"""

@@ -61,6 +61,27 @@ Sukobi - macOS/Test/python2 [wrong python]
        python: 2.7.16 (default, Mar 25 2021, 03:11:28) [GCC 4.2.1 Compatible Apple LLVM 11.0.3 (clang-1103.0.29.20) (-macos10.15-objc-
       modules: (numpy 1.8.0rc1) (tkinter 8.5.9) (Pillow fail) (tkLocal )
 
+Sukobi - macOS/Test/Retina (normal scaling)
+       python: 3.9.10 (main, Jan 15 2022, 11:48:04) [Clang 13.0.0 (clang-1300.0.29.3)]
+           OS: Darwin 21.4.0
+   screen-dpi: 1280x800 (72.0dpi x0.75)
+      modules: (tkinter 8.6.12) (Pillow 9.0.1) (numpy 1.22.3) (tkLocal 1.0.4)
+  Pillow-libs:
+/usr/local/lib/python3.9/site-packages/PIL/_imaging.cpython-39-darwin.so:
+	@loader_path/.dylibs/libopenjp2.2.4.0.dylib (compatibility version 7.0.0, current version 2.4.0)
+	@loader_path/.dylibs/libz.1.2.11.dylib (compatibility version 1.0.0, current version 1.2.11)
+	@loader_path/.dylibs/libtiff.5.dylib (compatibility version 12.0.0, current version 12.0.0)
+	@loader_path/.dylibs/libxcb.1.1.0.dylib (compatibility version 3.0.0, current version 3.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1311.0.0)
+
+Sukobi - macOS/Test/Retina (higher density scaling)
+   screen-dpi: 1680x1050 (72.0dpi x0.75)
+
+Sukobi - macOS/Test/Retina [wrong python - xcode]
+       python: 3.8.9 (default, Feb 18 2022, 07:45:34) [Clang 13.1.6 (clang-1316.0.21.2)]
+           OS: Darwin 21.4.0
+   screen-dpi: 1680x1050 (72.0dpi x0.75)
+      modules: (tkinter 8.5.9) (Pillow fail) (numpy fail)
 
 Sukobi - manylinux2
        python: 3.10.2 (main, Mar  6 2022, 09:39:37) [GCC 6.3.0 20170516]
