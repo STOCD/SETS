@@ -475,9 +475,9 @@ class SETS():
             self.persistent['imagesFail'][url] = today.isoformat()
             self.auto_save(quiet=True)
             return None
-
-        self.persistent['imagesFail'][url] = ''
-        self.auto_save()
+        if url in self.persistent['imagesFail'] and self.persistent['imagesFail'][url]:
+            self.persistent['imagesFail'][url] = ''
+            self.auto_save()
 
         return img_request.content
 
@@ -589,7 +589,7 @@ class SETS():
         image = Image.open(filename)
         if(width is not None):
             if forceAspect:
-                image = image.resize((width, height), Image.ANTIALIAS)
+                image = image.resize((width, height), Image.LANCZOS)
             else:
                 image.thumbnail((width, height), resample=Image.LANCZOS)
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
@@ -643,7 +643,7 @@ class SETS():
             image = Image.open(filename)
             #self.logWrite('==={}x{} [{}]'.format(width, height, filename), 2)
             if(width is not None):
-                if forceAspect: image = image.resize((width,height),Image.ANTIALIAS)
+                if forceAspect: image = image.resize((width,height),Image.LANCZOS)
                 else: image.thumbnail((width, height), resample=Image.LANCZOS)
             return ImageTk.PhotoImage(image)
         return self.emptyImage
@@ -1011,29 +1011,35 @@ class SETS():
         list[index] = value
 
     def uri_sanitize_stowiki(self, name):
-        name = name.replace(' ', '_')
-        name = name.replace('/', '_')
-        name = html.unescape(name)
-        name = urllib.parse.quote(name)
+        if isinstance(name, str):
+            name = name.replace(' ', '_')
+            name = name.replace('/', '_')
+            name = html.unescape(name)
+            name = urllib.parse.quote(name)
+        elif not name:
+            name = ''
+        else:
+            self.logWriteSimple('URI_sanitize', 'NAME NOT STRING', 2, [name])
+            name = ''
         return name
 
-    def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon', faction=None, forceAspect = False):
+    def imageFromInfoboxName(self, name, width=None, height=None, suffix='_icon', faction=None, forceAspect=False):
         """Translate infobox name into wiki icon link"""
         width = self.itemBoxX if width is None else width
         height = self.itemBoxY if height is None else height
 
-        try:
-            image = self.fetchOrRequestImage(self.wikiImages+self.uri_sanitize_stowiki(name)+suffix+".png", name, width, height, faction, forceAspect=forceAspect)
-            if image is None:
-                self.logWriteSimple('fromInfoboxName', 'NONE', 4)
-            elif image == self.emptyImage:
-                self.logWriteSimple('fromInfoboxName', 'EMPTY', 4)
-            else:
-                self.logWriteSimple('fromInfoboxName', name, 4, [image.width(), image.height()])
-            return image
-        except:
+        name_clean = self.uri_sanitize_stowiki(name)
+        image = self.fetchOrRequestImage(self.wikiImages+name_clean+suffix+".png", name, width, height, faction, forceAspect=forceAspect) if name_clean else None
+        if image is None:
+            self.logWriteSimple('fromInfoboxName', 'NONE', 4)
+        elif image == self.emptyImage:
+            self.logWriteSimple('fromInfoboxName', 'EMPTY', 4)
+        elif not name_clean:
             self.logWriteSimple('fromInfoboxName', 'FAIL', 4)
             return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
+        else:
+            self.logWriteSimple('fromInfoboxName', name, 4, [image.width(), image.height()])
+        return image
 
     def resetAfterImport(self):
         self.skillCount('space')
@@ -1795,7 +1801,7 @@ class SETS():
         if not name in self.cache['boffAbilities'][environment][type]:
             self.cache['boffAbilities'][environment][type][name] = 'yes'
 
-            self.cache['boffAbilitiesWithImages'][environment][category][type].append((name,self.imageFromInfoboxName(name, faction = 1)))
+            self.cache['boffAbilitiesWithImages'][environment][category][type].append((name,self.imageFromInfoboxName(name, faction=1)))
 
             self.logWriteSimple('precacheBoffAbilities', 'Single', 4, tags=[environment, category, str(type), name, '|'+str(len(desc))+'|'])
 
@@ -5770,6 +5776,7 @@ class SETS():
 
     def __init__(self) -> None:
         """Main setup function"""
+
         self.init_window()
         self.init_settings()
 
@@ -5790,6 +5797,9 @@ class SETS():
         self.setupUIFrames()
 
     def run(self):
+        if __name__ != '__main__':
+            return
+
         self.window.mainloop()
 
 SETS().run()
