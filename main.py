@@ -579,20 +579,45 @@ class SETS():
 
         if image_data is not None:
             self.progressBarUpdate(self.updateOnHeavyStep)
+            self.perf('file_write')
             with open(filename, 'wb') as handler:
                 handler.write(image_data)
             self.logWriteTransaction('Image File', 'write', len(str(os.path.getsize(filename))) if os.path.exists(filename) else '----', filename, 1)
+            self.perf('file_write', 'stop', cumulative=True)
         elif not os.path.exists(filename):
             self.progressBarUpdate(int(self.updateOnHeavyStep / 4))
             return self.emptyImage
 
-        image = Image.open(filename)
+        self.perf('file_read')
+        image_load = Image.open(filename)
         if(width is not None):
             if forceAspect:
-                image = image.resize((width, height), Image.LANCZOS)
+                image = image_load.resize((width, height), Image.LANCZOS)
             else:
+                image = image_load
                 image.thumbnail((width, height), resample=Image.LANCZOS)
+        else:
+            image = image_load
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
+
+        if self.persistent['image_beta']:
+            self.perf('file_read', 'stop', cumulative=True)
+            self.perf('file_write')
+            with open(filename+'.test', 'wb') as handler:
+                try:
+                    handler.write(image_load)
+                except:
+                    pass
+            self.perf('file_write', 'stop', cumulative=True)
+
+            pix = np.array(image_load)
+            self.perf('file_write_np')
+            np.save(filename + '.npy', pix)
+            self.perf('file_write_np', 'stop', cumulative=True)
+
+            self.perf('file_read_np')
+            np.save(filename + '.npy', pix)
+            self.perf('file_read_np', 'stop', cumulative=True)
         return ImageTk.PhotoImage(image)
 
     def deHTML(self, textBlock, leaveHTML=False):
@@ -1165,6 +1190,7 @@ class SETS():
             'autosave_delay': 750,  # ms
             'versioning': 0,
             'perf': dict(),
+            'image_beta': 0,
             'tags': {
                 'maindamage':{
                     'energy':0, 'kinetic':0, 'exotic':0, 'drain':0
@@ -3364,7 +3390,7 @@ class SETS():
         """Actually draw the tooltip if ui_key is None or still true"""
         if ('X' in self.tooltip_tracking and self.tooltip_tracking['X']) or\
                 ('hold' in self.tooltip_tracking and self.tooltip_tracking['hold']):
-            self.logWriteSimple('tooltip', 'IGNORED', 3)
+            self.logWriteSimple('tooltip', 'IGNORED', 4)
             # Would it be good to re-initiate a .after call?
             return
         if ui_key is None or (ui_key in self.tooltip_tracking and self.tooltip_tracking[ui_key]):
@@ -3834,7 +3860,7 @@ class SETS():
         elif isinstance(item, str):
             name = item
         else:
-            self.logWriteSimple('InfoboxEmpty', environment, 3, tags=["NO NAME", key])
+            self.logWriteSimple('InfoboxEmpty', environment, 4, tags=["NO NAME", key])
             return
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key, item])
         if name != '' and self.displayedInfoboxItem == name:
@@ -4923,6 +4949,7 @@ class SETS():
             'Open Log'                              : {'col': 2, 'type': 'button', 'var_name': 'openLog'},
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : {'col': 1, 'type': 'blank'},
+            'Test image variations': {'col': 2, 'type': 'optionmenu', 'var_name': 'image_beta', 'boolean': True},
             'Auto-save build': {'col': 2, 'type': 'optionmenu', 'var_name': 'autosave', 'boolean': True},
             'In-file versions': {'col': 2, 'type': 'optionmenu', 'var_name': 'versioning', 'boolean': True},
             'Force out of date JSON loading'        : {'col': 2, 'type': 'optionmenu', 'var_name': 'forceJsonLoad', 'boolean': True},
@@ -5590,7 +5617,7 @@ class SETS():
                 self.window.geometry("{}x{}+{}+{}".format(self.windowWidth, self.windowHeight, self.window_topleft_x, self.window_topleft_y))
 
 
-    def perf(self, name, type='start', loud=False):
+    def perf(self, name, type='start', loud=False, cumulative=False):
         now = datetime.datetime.now()
         if not name in self.perf_store:
             self.perf_store[name] = dict()
@@ -5610,11 +5637,19 @@ class SETS():
             perf_slice = slice(-1 * self.settings['perf_to_retain'], None)
             self.persistent['perf'][name][perf_slice] += ['{}'.format(run)]
 
+            if cumulative:
+                if not 'total' in self.perf_store[name]:
+                    self.perf_store[name]['total'] = run
+                else:
+                    self.perf_store[name]['total'] += run
+                run = self.perf_store[name]['total']
             if loud:
                 self.logWritePerf(name, run=run, tags=[type, now])
             else:
                 self.logWritePerf(name, run=run)
             return run
+        elif type == 'total':
+            self.logWritePerf(name, run=self.perf_store[name]['total'])
         else:
             if loud:
                 self.logWritePerf(name, tags=[type, now])
