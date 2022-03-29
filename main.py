@@ -588,7 +588,6 @@ class SETS():
             self.progressBarUpdate(int(self.updateOnHeavyStep / 4))
             return self.emptyImage
 
-        self.perf('file_read')
         image_load = Image.open(filename)
         if(width is not None):
             if forceAspect:
@@ -599,26 +598,8 @@ class SETS():
         else:
             image = image_load
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
-
-        if self.persistent['image_beta']:
-            self.perf('file_read', 'stop', cumulative=True)
-            self.perf('file_write')
-            with open(filename+'.test', 'wb') as handler:
-                try:
-                    handler.write(image_load)
-                except:
-                    pass
-            self.perf('file_write', 'stop', cumulative=True)
-
-            pix = np.array(image_load)
-            self.perf('file_write_np')
-            np.save(filename + '.npy', pix)
-            self.perf('file_write_np', 'stop', cumulative=True)
-
-            self.perf('file_read_np')
-            np.save(filename + '.npy', pix)
-            self.perf('file_read_np', 'stop', cumulative=True)
-        return ImageTk.PhotoImage(image)
+        tk_image = ImageTk.PhotoImage(image)
+        return tk_image
 
     def deHTML(self, textBlock, leaveHTML=False):
         textBlock = html.unescape(html.unescape(textBlock)) # Twice because the wiki overlaps some
