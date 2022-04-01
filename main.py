@@ -95,7 +95,7 @@ class SETS():
                        "Pilot": "Pedal to the Metal",
                        "Intelligence Officer": "Predictive Algorithms",
                        "Strategist": "Unconventional Tactics"}
-    
+
     #available recruits and their respective starship traits
     recruits = {"Klingon Recruit": "Hunter's Instinct",
                 "Delta Recruit": "Temporal Insight",
@@ -325,7 +325,7 @@ class SETS():
             """
         except:
             messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
-    
+
     def openWikiPage(self, pagename):
         url = "https://sto.fandom.com/wiki/"+pagename.replace(" ", "_")
         self.openURL(url)
@@ -841,7 +841,7 @@ class SETS():
         if 'ground' in self.cache['skills'] and len(self.cache['skills']['ground']) > 0:
             return
 
-        skills = self.fetchOrRequestJson('', 'ground_skills', local=True) 
+        skills = self.fetchOrRequestJson('', 'ground_skills', local=True)
 
         if "ground" in skills:
             self.cache['skills']['ground'] = skills['ground']
@@ -932,7 +932,7 @@ class SETS():
             self.cache['shipTraits'][name] = self.deWikify(desc, leaveHTML=True)
             self.cache['shipTraitsWithImages']['cache'].append((name,self.imageFromInfoboxName(name)))
             self.logWriteSimple('precacheShipTrait', '', 5, tags=[name])
-        
+
         if not name in self.cache['shipTraitsFull']:
             if "_pageName" in item:
                 obt = "T5" if item['traitdesc'] == desc or item['traitdesc2'] == desc or item['traitdesc3'] == desc else "T6"
@@ -1085,7 +1085,7 @@ class SETS():
             self.backend['skillCount'][environment][rank] = 0
             for name in lskills:
                 snode, sindex, srank = self.getSkillnodeByName(name, rank)
-                if self.build['skilltree'][environment][name] and snode != None: 
+                if self.build['skilltree'][environment][name] and snode != None:
                     self.backend['skillCount'][environment]["sum"] += 1
                     if environment == "space":
                         self.backend['skillCount'][environment][rank] +=1
@@ -1175,7 +1175,7 @@ class SETS():
             'tags': {
                 'maindamage':{
                     'energy':0, 'kinetic':0, 'exotic':0, 'drain':0
-                }, 
+                },
                 'energytype':{
                     'phaser':0, 'disruptor':0, 'plasma':0, 'polaron':0, 'Tetryon':0, 'antiproton':0
                 },
@@ -1262,7 +1262,6 @@ class SETS():
         self.versionJSONminimum = 0
         self.versionJSON = 2022022811
         self.clearing = False
-        self.shipImageResizeCount = 0
         self.build = {
             'versionJSON': self.versionJSON,
             'boffs': dict(),
@@ -1292,6 +1291,7 @@ class SETS():
             'playerHandle': '',
             'playerShipName': '',
             'playerShipDesc': '',
+            'playerName': '',
             'playerDesc': '',
             'specSecondary': '',
             'tier': '',
@@ -1312,21 +1312,102 @@ class SETS():
             'doffs': {'space': [None] * 6 , 'ground': [None] * 6},
             'tags': dict(),
         }
+        # self.reset_build_part(environment='space', init=True)  # Disabled until environment slices are refactored
+        # self.reset_build_part(environment='ground', init=True)  # Disabled until environment slices are refactored
+        self.reset_build_skill(init=True)
 
-        self.reset_skill_build(init=True)
+    def reset_build_part(self, environment='space', init=False):
+        build = {}
 
+        build['space'] = {
+            'playerHandle': '',
 
-    def reset_skill_build(self, init=False):
+            # Captain items -- should this reset on space or it's own group?
+            'eliteCaptain': False,
+            'specPrimary': '',
+            'specSecondary': '',
+            'captain': {'faction': ''},
+            'career': '',
+            'species': '',
+
+            # Need refactor to split space/ground
+            'doffs': [None] * 6,
+            'boffs': dict(),
+            'boffseats': dict(),
+
+            # Ship build definition
+            'ship': '',
+            'tier': '',
+            'playerShipName': '',
+            'playerShipDesc': '',
+            'tags': dict(),
+
+            # Ship build loadout
+            'activeRepTrait': [None] * 5,
+            'spaceRepTrait': [None] * 5,
+            'personalSpaceTrait': [None] * 6,
+            'personalSpaceTrait2': [None] * 6,
+            'starshipTrait': [None] * 6,
+            'uniConsoles': [None] * 5,
+            'tacConsoles': [None] * 5,
+            'sciConsoles': [None] * 5,
+            'engConsoles': [None] * 5,
+            'devices': [None] * 5,
+            'aftWeapons': [None] * 5,
+            'foreWeapons': [None] * 5,
+            'experimental': [None],
+            'hangars': [None] * 2,
+            'deflector': [None],
+            'engines': [None],
+            'warpCore': [None],
+            'secdef': [None],
+            'shield': [None],
+        }
+
+        build['ground'] = {
+            # Need refactor to split space/ground
+            'boffs': dict(),
+            'boffseats': dict(),
+            'doffs': {'space': [None] * 6, 'ground': [None] * 6},
+
+            # Ground details
+            'playerName': '',
+            'playerDesc': '',
+            'personalGroundTrait': [None] * 6,
+            'personalGroundTrait2': [None] * 6,
+            'groundActiveRepTrait': [None] * 5,
+            'groundRepTrait': [None] * 5,
+            'groundKitModules': [None] * 6,
+            'groundKit': [None],
+            'groundArmor': [None],
+            'groundEV': [None],
+            'groundShield': [None],
+            'groundWeapons': [None] * 2,
+            'groundDevices': [None] * 5,
+        }
+
+        if not init:
+            self.clearing = True
+
+        self.build.update(build[environment])
+        if not init:
+            self.clearing = False
+            self.setupCurrentBuildFrames(environment)
+            self.auto_save_queue()
+
+    def reset_build_skill(self, init=False):
         build_skill = {
             'skilltree': {'space': dict(), 'ground': dict()},
         }
         if not init:
-            self.clearing = 1
+            self.clearing = True
+
         self.build.update(build_skill)
+
         if not init:
             self.skillCount('space')
             self.skillCount('ground')
-            self.clearing = 0
+            self.clearing = False
             self.setupCurrentBuildFrames('skill')
             self.auto_save_queue()
 
@@ -2530,10 +2611,10 @@ class SETS():
     def clearBuildCallback(self, event=None, type=None):
         """Callback for the clear build button"""
         self.resetBuild(type)
-        self.clearing = 1
+        self.clearing = True
 
         self.buildToBackendSeries()
-        #self.reset_skill_build(init=True)
+        #self.reset_build_skill(init=True)
         #self.backend['tier'].set('')
         self.backend['shipHtml'] = None
         self.shipImg = self.getEmptyFactionImage()
@@ -2543,7 +2624,7 @@ class SETS():
 
         self.resetBuildFrames()
 
-        self.clearing = 0
+        self.clearing = False
         self.setupCurrentBuildFrames()
         self.auto_save_queue()
 
@@ -3149,7 +3230,6 @@ class SETS():
         # on ship change / removal
         # Clear specs so we don't gather specs as we change
         self.build['boffseats']['space_spec'] = [None] * 6
-        self.shipImageResizeCount = 0
 
         if not self.persistent['keepTemplateOnShipChange']:
             self.build['playerShipName'] = ''
@@ -4430,7 +4510,7 @@ class SETS():
         if choice == 'Clear all':
             self.clearBuildCallback()
         elif choice == 'Clear skills':
-            self.reset_skill_build()
+            self.reset_build_skill()
 
     def setupMenuFrame(self):
         self.clearFrame(self.menuFrame)
@@ -5531,6 +5611,7 @@ class SETS():
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
         self.visible_window = 'space'
         self.visible_window_previous = 'space'
+        self.clearing = False  # Hold on updating UI
         self.build_vars = dict()
 
         self.resetPersistent()
