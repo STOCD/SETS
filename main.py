@@ -5523,7 +5523,7 @@ class SETS():
 
                 self.get_debug_current()
         else:
-            self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, 0)
+            self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, 1)
 
     def stateFileLoad(self, init=False):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
@@ -5676,8 +5676,7 @@ class SETS():
                 else:
                     self.window.geometry(self.persistent['geometry'])
         else:
-                self.window.geometry("{}x{}+{}+{}".format(self.windowWidth, self.windowHeight, self.window_topleft_x, self.window_topleft_y))
-
+            self.window.geometry("{}x{}+{}+{}".format(self.windowWidth, self.windowHeight, self.window_topleft_x, self.window_topleft_y))
 
     def perf(self, name, type='start', loud=False, cumulative=False):
         now = datetime.datetime.now()
@@ -5794,7 +5793,11 @@ class SETS():
         if self.os_system == 'Windows' and self.os_release == 10 and sys.getwindowsversion().build >= 22000:
             self.os_release = 11
 
-        self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, scale, self.dpi))
+        self.scale = scale
+        self.ui_update_log()
+
+    def ui_update_log(self):
+        self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, self.scale, self.dpi))
 
 
     def updateWindowSize(self, caller='', init=False, no_geometry=False):
@@ -5858,12 +5861,25 @@ class SETS():
         return full_path
 
     def resized_main_window(self, value):
-        self.window_last_change = value
-        self.window.after(1000, lambda value=value: self.resized_main_window_delay_check(value))
+        if '{}'.format(value.widget) == '.':
+            self.main_window_last_change = value
+            self.window.after(1000, lambda value=value: self.resized_main_window_delay_check(value))
+        else:
+            self.sub_window_last_change = value
+            self.window.after(1000, lambda value=value: self.resized_sub_window_delay_check(value))
+
+    def resized_sub_window_delay_check(self, value):
+        if value == self.sub_window_last_change:
+            self.logWriteSimple('WINDOW', 'sub-resize', 3, [value, value.width, value.height, value.widget])
 
     def resized_main_window_delay_check(self, value):
-        if value == self.window_last_change:
-            self.logWriteSimple('WINDOW', 'resize', 3, [value])
+        if value == self.main_window_last_change:
+            self.logWriteSimple('WINDOW', 'main-resize', 3, [value, value.width, value.height, value.widget])
+            pointer_x = value.x
+            pointer_y = value.y
+            self.windowWidth = value.width
+            self.windowHeight = value.height
+            self.ui_update_log()
 
     def init_window(self):
         self.window = Tk()
