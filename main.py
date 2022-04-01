@@ -502,7 +502,7 @@ class SETS():
 
         return name_converted
 
-    def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None, forceAspect = False):
+    def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None, forceAspect = False, loop=1):
         """Request image from web or fetch from local cache"""
         cache_base = self.getFolderLocation('images')
         if not os.path.exists(cache_base):
@@ -549,26 +549,7 @@ class SETS():
         if os.path.exists(filename):
             self.progressBarUpdate()
         elif not self.args.nofetch:
-            image_data = self.fetchImage(url, designation)
-
-            if image_data is None:
-                url2 = self.iconNameCleanup(url)
-                image_data = self.fetchImage(url2, designation) if url2 != url else image_data
-
-            if image_data is None:
-                if factionCode in url:
-                    url3 = re.sub(factionCode, factionCodeDefault, url)
-                    filenameExisting = filenameNoFaction
-                else:
-                    url3 = re.sub('_icon', '_icon{}'.format(factionCode), url)
-                    filenameExisting = filenameDefault
-
-                if not os.path.exists(filenameExisting):
-                    image_data = self.fetchImage(url3, designation) if url3 != url and url3 != url2 else image_data
-
-                    if image_data is None:
-                        url4 = self.iconNameCleanup(url3)
-                        image_data = self.fetchImage(url4, designation) if url4 != url3 and url4 != url and url4 != url2 else image_data
+            image_data = self.fetch_image_from_url(url, designation, factionCode, factionCodeDefault, filenameNoFaction, filenameDefault)
 
         if os.path.exists(filenameExisting):
             self.progressBarUpdate(int(self.updateOnHeavyStep / 2))
@@ -588,7 +569,50 @@ class SETS():
             self.progressBarUpdate(int(self.updateOnHeavyStep / 4))
             return self.emptyImage
 
-        image_load = Image.open(filename)
+        image_result = self.fetch_image(filename, width, height, forceAspect)
+        if image_result is None and loop == 1:
+            # remove image
+            try:
+                # os.rename(filename, filename+'.bad')
+                os.unlink(filename)
+            except BaseException as err:
+                self.logWriteSimple('image unlink', 'fail', 1, [err])
+            else:
+                image_result = self.fetchOrRequestImage(url, designation, width, height, faction, forceAspect, loop=2)
+
+        return image_result
+
+    def fetch_image_from_url(self, url, designation, factionCode, factionCodeDefault, filenameNoFaction, filenameDefault):
+        image_data = self.fetchImage(url, designation)
+
+        if image_data is None:
+            url2 = self.iconNameCleanup(url)
+            image_data = self.fetchImage(url2, designation) if url2 != url else image_data
+
+        if image_data is None:
+            if factionCode in url:
+                url3 = re.sub(factionCode, factionCodeDefault, url)
+                filenameExisting = filenameNoFaction
+            else:
+                url3 = re.sub('_icon', '_icon{}'.format(factionCode), url)
+                filenameExisting = filenameDefault
+
+            if not os.path.exists(filenameExisting):
+                image_data = self.fetchImage(url3, designation) if url3 != url and url3 != url2 else image_data
+
+                if image_data is None:
+                    url4 = self.iconNameCleanup(url3)
+                    image_data = self.fetchImage(url4, designation) if url4 != url3 and url4 != url and url4 != url2 else image_data
+
+        return image_data
+
+    def fetch_image(self, filename, width, height, forceAspect):
+        try:
+            image_load = Image.open(filename)
+        except PIL.UnidentifiedImageError:
+            self.logWriteTransaction('Image File', 'unidentified', '', filename, 4)
+            return None
+
         if(width is not None):
             if forceAspect:
                 image = image_load.resize((width, height), Image.LANCZOS)
