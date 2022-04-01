@@ -4519,7 +4519,7 @@ class SETS():
         exportImportFrame = Frame(self.menuFrame, bg=self.theme['frame']['bg'])
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         settingsMenuExport = {
-            'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
+            'default': {'sticky': 'n', 'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Save': {'type': 'button_block', 'var_name': 'exportFullButton', 'callback': self.exportCallback},
             'Open': {'type': 'button_block', 'var_name': 'importButton', 'callback': self.importCallback},
             'Clear...': {'type': 'menu', 'var_name': 'clearButton', 'setting_options': ['Clear all', 'Clear skills'], 'callback': 'menu_clear_callback'},
@@ -4528,7 +4528,7 @@ class SETS():
         col += 1
 
         settingsMenuTop = {
-            'default': {'bg': self.theme['button_heavy']['bg'], 'fg': self.theme['button_heavy']['fg'], 'font_data': self.font_tuple_create('button_heavy')},
+            'default': {'sticky': 'n', 'bg': self.theme['button_heavy']['bg'], 'fg': self.theme['button_heavy']['fg'], 'font_data': self.font_tuple_create('button_heavy')},
             'SPACE': {'type': 'button_block', 'var_name': 'spaceButton', 'callback': self.focusSpaceBuildFrameCallback},
             'GROUND': {'type': 'button_block', 'var_name': 'groundButton', 'callback': self.focusGroundBuildFrameCallback},
             'SKILL TREE': {'type': 'button_block', 'var_name': 'skillButton', 'callback': self.focusSkillTreeFrameCallback},
@@ -4539,7 +4539,7 @@ class SETS():
         buttonSettings = Frame(self.menuFrame, bg=self.theme['frame']['bg'])
         buttonSettings.grid(row=0, column=col, sticky='nsew')
         settingsMenuSettings = {
-            'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
+            'default': {'sticky': 'n', 'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.exportRedditCallback},
             'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
             'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback, 'image': self.three_bars},
