@@ -26,6 +26,7 @@ from tkinter import font
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter.ttk import Progressbar
+import PIL
 from PIL import Image, ImageTk, ImageGrab
 from requests_html import Element, HTMLSession, HTML
 import requests
@@ -60,7 +61,7 @@ class HoverButton(Button):
 
 class SETS():
     """Main App Class"""
-    version = '20220327a_beta'
+    version = '20220405a_beta'
 
     daysDelayBeforeReattempt = 7
 
