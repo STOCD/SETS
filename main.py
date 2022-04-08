@@ -4144,7 +4144,7 @@ class SETS():
 
             text.insert(END, skill_level+skill_skill, 'skillhead')
 
-            text.insert(END, '\n'+skillprofession+skill_environment.title()+' Skill\n'+name.title(), 'skillsub')
+            text.insert(END, '\n'+skillprofession+skill_environment.title()+' Skill\n', 'skillsub')
             text.update()
             if self.build['skilltree'][skill_environment][name]:
                 text.insert(END, "\nSkill is active!", "subhead")
