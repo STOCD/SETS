@@ -314,16 +314,6 @@ class SETS():
     def openURL(self, url):
         try:
             webbrowser.open(url, new=2, autoraise=True)
-            """
-            if platform.system() == "Windows":
-                os.startfile(url)
-            elif platform.system() == "Darwin":
-                subprocess.Popen(['open', url])
-            elif platform.system() == "Linux":
-                subprocess.Popen(['xdg-open', url])
-            else:
-                messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
-            """
         except:
             messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
 
@@ -1210,6 +1200,9 @@ class SETS():
                 'state':0,
                 'role':{
                     'dps':0, 'heavytank':0, 'debufftank':0, 'nanny':0, 'off-meta':0, 'theme':0
+                },
+                'pvprole':{
+                    'PvP:':0, 'dogfighter':0, 'cruiser-carrier':0, 'science-spam':0, 'healer':0
                 }
             }
         }
@@ -1867,13 +1860,12 @@ class SETS():
         return (font_family, font_size, font_weight)
 
     def font_tuple_merge(self, name, family=None, size=None, weight=None):
-        tuple_build = self.font.tuple.create(name)
-        if family is not None:
-            tuple_build[0] = family
-        if size is not None:
-            tuple_build[1] = size
-        if weight is not None:
-            tuple_build[2] = weight
+        if family is None:
+            family = self.theme[name]['font']['family'] if 'family' in self.theme[name]['font'] else self.theme['app']['font']['family']
+        if size is None:
+            size = self.theme[name]['font']['size'] if 'size' in self.theme[name]['font'] else self.theme['app']['font']['size']
+        if weight is None:
+            weight = self.theme[name]['font']['weight'] if 'weight' in self.theme[name]['font'] else self.theme['app']['font']['weight']
 
         return (family, size, weight)
 
@@ -4293,7 +4285,7 @@ class SETS():
         self.logWriteSimple('checkbuttonCallback', var, 2, [masterkey, key, text])
         self.auto_save_queue()
 
-    def checkbuttonBuildBlock(self, window, frame: Frame, values, bg, fg, masterkey: str, key = str(""), geomanager="grid", orientation=HORIZONTAL, rowoffset=0, columnoffset=0,  alignment=TOP):
+    def checkbuttonBuildBlock(self, window, frame: Frame, values, bg, fg, pfont: font, masterkey: str, key = str(""), geomanager="grid", orientation=HORIZONTAL, rowoffset=0, columnoffset=0,  alignment=TOP):
         """Inserts a series of Checkbuttons either horizontally or vertically, either row for row in the grid of the parent frame or packed into the parent
         frame on the given side. Parameters:
         window: Toplevel or Tkinter window mainlooping;
@@ -4339,7 +4331,7 @@ class SETS():
             v = IntVar(window, value=lvar)
             Checkbutton(itemframe, bg=bg, fg = "#000000", variable=v, activebackground=bg).pack(side=LEFT, ipadx=1, padx=0)
             v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key, m=masterkey: self.checkbuttonVarUpdateCallback(var.get(), m, k, text))
-            l = Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold"))
+            l = Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=pfont)
             l.pack(side=LEFT, ipadx=0, padx=0)
 
             l.bind("<Button-1>", lambda e, var=v: self.checkbuttonVarUpdateCallbackToggle(var))
@@ -4359,8 +4351,8 @@ class SETS():
 
         roleframe = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
         roleframe.grid(row=0, column=0, columnspan=4, sticky="nsew")
-        Label(roleframe, text="Role:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'], font=("Helvetica", self.theme['button_heavy']['font']['size'], self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=6, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, roleframe, self.persistent['tags']['role'], self.theme['app']['fg'], "#ffffff", "tags", "role", "grid", HORIZONTAL, 1)
+        Label(roleframe, text="Role:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'], font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=6, sticky="new")
+        self.checkbuttonBuildBlock(tagwindow, roleframe, self.persistent['tags']['role'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), "tags", "role", "grid", HORIZONTAL, 1)
         Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=1, column=0, columnspan=4)
         cfr.rowconfigure(1, minsize=12)
 
@@ -4368,27 +4360,27 @@ class SETS():
         mdmgfr.grid(row=2, column=0, sticky="nsew", columnspan=4)
         Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=3, column=0, columnspan=4)
         cfr.rowconfigure(3, minsize=12)
-        Label(mdmgfr, text="Main Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, columnspan=5, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.persistent['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", "tags", "maindamage", "grid", HORIZONTAL, 1)
+        Label(mdmgfr, text="Main Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=5, sticky="new")
+        self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.persistent['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), "tags", "maindamage", "grid", HORIZONTAL, 1)
 
         etypefr = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
         etypefr.grid(row=4, column=0, sticky="n")
         cfr.columnconfigure(0, weight=1)
         Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=5, column=0, columnspan=4)
         cfr.rowconfigure(5, minsize=12)
-        Label(etypefr, text="Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, etypefr, self.persistent['tags']['energytype'], self.theme['app']['fg'], "#ffffff", "tags", "energytype", "grid", VERTICAL, 1)
+        Label(etypefr, text="Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, sticky="new")
+        self.checkbuttonBuildBlock(tagwindow, etypefr, self.persistent['tags']['energytype'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), "tags", "energytype", "grid", VERTICAL, 1)
 
         wtypefr = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
         wtypefr.grid(row=4, column=1, sticky="n")
         cfr.columnconfigure(1, weight=1)
-        Label(wtypefr, text="Weapons Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, wtypefr, self.persistent['tags']['weapontype'], self.theme['app']['fg'], "#ffffff", "tags", "weapontype", "grid", VERTICAL, 1)
+        Label(wtypefr, text="Weapons Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, sticky="new")
+        self.checkbuttonBuildBlock(tagwindow, wtypefr, self.persistent['tags']['weapontype'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), "tags", "weapontype", "grid", VERTICAL, 1)
 
         stypefr = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
         stypefr.grid(row=4, column=2, sticky="n")
         cfr.columnconfigure(2, weight=1)
-        Label(stypefr, text="State of the Build", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=("Helvetica", self.theme['button_heavy']['font']['size'],self.theme['button_heavy']['font']['weight'])).grid(row=0, column=0, sticky="new")
+        Label(stypefr, text="State of the Build:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, sticky="new")
         i = 1
         if "state" in self.build["tags"]:
             lvar = self.build["tags"]["state"]
@@ -4401,17 +4393,28 @@ class SETS():
             itemframe.grid(row=i, column=0, padx=16, sticky="w")
             selection_number = i-1
             Radiobutton(itemframe, bg=self.theme['app']['fg'], fg = "#000000", variable=tagvar, value=selection_number, activebackground=self.theme['app']['fg']).pack(side=LEFT, ipadx=1, padx=0)
-            l = Label(itemframe, fg="#ffffff", bg=self.theme['app']['fg'], text=tag, font=(self.theme["app"]["font"]["family"],self.theme["app"]["font"]["size"],"bold"))
+            l = Label(itemframe, fg="#ffffff", bg=self.theme['app']['fg'], text=tag, font=self.font_tuple_merge("app", weight="bold"))
             l.pack(side=LEFT, ipadx=0, padx=0)
             l.bind("<Button-1>", lambda e, var=tagvar,choice=selection_number: self.radiobuttonVarUpdateCallbackToggle(var, choice))
 
             i += 1
         tagvar.trace_add("write", lambda c1, c2, c3, var=tagvar, k="state", m="tags": self.checkbuttonVarUpdateCallback(var.get(), m, k))
 
+        Frame(cfr, highlightthickness=0, bg=self.theme['app']["bg"]).grid(row=6, column=0, columnspan=4, sticky="nsew")
+        cfr.rowconfigure(6, minsize=12)
+        pvpframe = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
+        pvpframe.grid(row=7, column=0, columnspan=4, sticky="nsew")
+        self.checkbuttonBuildBlock(tagwindow, pvpframe, ["PvP:"], self.theme['app']['fg'], self.theme['label']['bg'], self.font_tuple_create("title2"), 'tags', 'pvprole')
+        pvptags = self.persistent['tags']['pvprole']
+        pvptags.pop("PvP:")
+        pvpframe2 = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
+        pvpframe2.grid(row=8, column=0, columnspan=4, sticky="nsew")
+        self.checkbuttonBuildBlock(tagwindow, pvpframe2, pvptags, self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', 'pvprole', rowoffset=1)
+
         tagwindow.wait_visibility()
         tagwindow.grab_set()
         tagwindow.update()
-        tagwindow.geometry(self.pickerLocation(width=tagwindow.winfo_width(), height=tagwindow.winfo_height(), anchor='sw'))
+        tagwindow.geometry(self.pickerLocation(width=tagwindow.winfo_width(), height=tagwindow.winfo_height(), anchor='nw'))
         tagwindow.wait_window()
 
 
@@ -5914,7 +5917,7 @@ class SETS():
 
     def __init__(self) -> None:
         """Main setup function"""
-
+        
         self.init_window()
         self.init_settings()
 
