@@ -17,7 +17,8 @@ All versions:
 
 
 ### Windows:
--> Easy Access version: https://www.dropbox.com/sh/3rqhak69tr6ki2c/AADkuygAThVa9z9e_ckc4vB9a?dl=0
+> For an easy usable version with setup script and debug functions get the newest `SETS_Package` from: https://www.dropbox.com/sh/3rqhak69tr6ki2c/AADkuygAThVa9z9e_ckc4vB9a?dl=0
+> Manual Install below
 - Install Python (/www.python.org/downloads/windows/)
     - 3.9 is suggested for most systems with the 64-bit installer (as of March 2022)
     - Requires Windows 8 or later
