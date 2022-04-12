@@ -102,6 +102,31 @@ class SETS():
                 "Delta Recruit": "Temporal Insight",
                 "Temporal Agent": "Critical Systems"}
 
+    #conversion from self.build['equipment'] keys to self.cache['equipment'] keys
+    keys = {"foreWeapons": "Ship Fore Weapon",
+            "aftWeapons": "Ship Aft Weapon",
+            "deflector": "Ship Deflector Dish",
+            "engines": "Impulse Engine",
+            "warpCore": "Warp",
+            "shield": "Ship Shields",
+            "devices": "Ship Device",
+            "secdef": "Ship Secondary Deflector",
+            "experimental": "Experimental",
+            "engConsoles": "Ship Engineering Console",
+            "sciConsoles": "Ship Science Console",
+            "tacConsoles": "Ship Tactical Console",
+            "uniConsoles": "Console",
+            "groundKit": "Kit Frame",
+            "groundArmor": "Body Armor",
+            "groundEV": "EV Suit",
+            "groundShield": "Personal Shield",
+            "groundWeapons": "Ground Weapon",
+            "groundDevices": "Ground Device",
+            "groundKitModules": "Kit Module",
+            "hangars": "Hangar Bay"
+
+    }
+
     # Needs fonts, padx, pady, possibly others
     theme = theme_default = {
         'name': 'SETS_default',
@@ -318,8 +343,10 @@ class SETS():
             messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
 
     def openWikiPage(self, pagename):
-        url = "https://sto.fandom.com/wiki/"+pagename.replace(" ", "_")
-        self.openURL(url)
+        self.openURL(self.getWikiURL(pagename))
+
+    def getWikiURL(self, pagename):
+        return "https://sto.fandom.com/wiki/"+pagename.replace(" ", "_")
 
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
@@ -710,8 +737,13 @@ class SETS():
     def makeRedditColumn(self, c0, length):
         return c0+['&nbsp;']*(length-len(c0))+['--------------']
 
-    def preformatRedditEquipment(self, key,len):
-        return ["{0} {1} {2}".format(item['item'], item['mark'], ''.join(item['modifiers'])) for item in self.build[key] if item is not None][:len]
+    def preformatRedditEquipment(self, key,len): #self.cache['equipment'][key][name]
+        equipment = list()
+        for item in self.build[key]:
+            if item is not None:
+                equipment.append("[{0} {1} {2}]({3})".format(item["item"], item['mark'], ''.join(item['modifiers']), self.getWikiURL(self.cache['equipment'][self.keys[key]][item["item"]]['Page'])))
+        return equipment[:len]
+        #return ["{0} {1} {2}".format(item['item'], item['mark'], ''.join(item['modifiers'])) for item in self.build[key] if item is not None][:len]
 
     def getEmptyItem(self):
         return {"item": "", "image": self.emptyImage}
@@ -2375,9 +2407,9 @@ class SETS():
                         column1 = column1 + ["[{0}]({1})".format(skill["skill"][0], skill["link"][0])]
                         column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]+" 1"]==True else [None], 1)
                         column2 = column2 + ["[{0}]({1})".format("Improved "+skill["skill"][0], skill["link"][0])]
-                        column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]+" 2"]==True else [None], 1)
+                        column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][1]+" 2"]==True else [None], 1)
                         column3 = column3 + ["[{0}]({1})".format(skill["skill"][1], skill["link"][1])]
-                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][1]]==True else [None], 1)
+                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][2]]==True else [None], 1)
                     elif skill["linear"] ==2:
                         column1 = column1 + ["[{0}]({1})".format(skill["skill"][0], skill["link"])]
                         column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]]==True else [None], 1)
@@ -2392,7 +2424,7 @@ class SETS():
         textframe.configure(state=DISABLED)
 
     def redditExportDisplayGround(self, textframe:Text):
-        if not self.build['eliteCaptain']:
+        if not self.build['eliteCaptain']: #self.cache['equipment'][key][name]
             elite = 'No'
         elif self.build['eliteCaptain']:
             elite = 'Yes'
@@ -2459,7 +2491,7 @@ class SETS():
         deviceBlanks = [None] * 6
         column0 = (self.makeRedditColumn(["**Fore Weapons:**"], self.backend['shipForeWeapons']) +
                    self.makeRedditColumn(["**Aft Weapons:**"], self.backend['shipAftWeapons']) +
-                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + deviceBlanks[0:(self.backend['shipDevices']-1)] + (["**Secondary Deflector**"] if self.build['secdef'][0] is not None else ['&nbsp;']) + (["**Experimental Weapon**"] if self.build['experimental'][0] is not None else ['&nbsp;']), 7+max(self.backend['shipDevices']-1, 1)) +
+                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + deviceBlanks[0:(self.backend['shipDevices']-1)] + (["**Hangar**"] if self.build["hangars"][0] is not None else ['&nbsp;']) + (["**Secondary Deflector**"] if self.build['secdef'][0] is not None else ['&nbsp;']) + (["**Experimental Weapon**"] if self.build['experimental'][0] is not None else ['&nbsp;']), 7+max(self.backend['shipDevices']-1, 1)) +
                    self.makeRedditColumn(["**Engineering Consoles:**"], self.backend['shipEngConsoles']) +
                    self.makeRedditColumn(["**Science Consoles:**"], self.backend['shipSciConsoles']) +
                    self.makeRedditColumn(["**Tactical Consoles:**"], self.backend['shipTacConsoles']) +
@@ -2471,6 +2503,7 @@ class SETS():
                                          self.preformatRedditEquipment('warpCore', 1) +
                                          self.preformatRedditEquipment('shield', 1) +
                                          self.preformatRedditEquipment('devices', self.backend['shipDevices']) +
+                                         self.preformatRedditEquipment('hangars', self.backend['shipHangars']) +
                                          self.preformatRedditEquipment('secdef', 1 if self.build['secdef'][0] is not None else 0) +
                                          self.preformatRedditEquipment('experimental', 1 if self.build['experimental'][0] is not None else 0), 7+max(self.backend['shipDevices']-1, 1)) +
                    self.makeRedditColumn(self.preformatRedditEquipment('engConsoles', self.backend['shipEngConsoles']), self.backend['shipEngConsoles']) +
@@ -2484,7 +2517,13 @@ class SETS():
         for spaceboff in self.build['boffs'].keys():
             if "spaceboff" in spaceboff.lower():
                 column0 = column0 + self.makeRedditColumn([self.backend['shipHtml']['boffs'][int(spaceboff[-1])].replace("-", " / ")], len(self.build['boffs'][spaceboff]))
-                column1 = column1 + self.makeRedditColumn(self.build['boffs'][spaceboff], len(self.build['boffs'][spaceboff]))
+                boffabilities = list()
+                for ability in self.build['boffs'][spaceboff]:
+                    if isinstance(ability, str):
+                        boffabilities.append("[{0}]({1})".format(ability, self.getWikiURL("Ability: "+ability)))
+                    else:
+                        boffabilities.append("&nbsp;")
+                column1 = column1 + self.makeRedditColumn(boffabilities, len(boffabilities))
         redditString = redditString + self.makeRedditTable(['**Profession**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n\n## Active Space Duty Officers\n\n"
         column0 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['spec'] for i in range(1,7) if self.build['doffs']['space'][i-1] is not None], 6)
