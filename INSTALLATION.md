@@ -17,7 +17,7 @@ All versions:
 
 
 ### Windows:
-> For an easy usable version with setup script and debug functions get the newest `SETS_Package` from: https://www.dropbox.com/sh/3rqhak69tr6ki2c/AADkuygAThVa9z9e_ckc4vB9a?dl=0
+> For an easy usable version with setup script and debug functions get the newest `SETS_Package` from: https://stobuilds.com/SETS/downloads.html or https://www.dropbox.com/sh/3rqhak69tr6ki2c/AADkuygAThVa9z9e_ckc4vB9a?dl=0
 > Manual Install below
 - Install Python (/www.python.org/downloads/windows/)
     - 3.9 is suggested for most systems with the 64-bit installer (as of March 2022)
