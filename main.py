@@ -1237,6 +1237,7 @@ class SETS():
             'keepTemplateOnShipClear': 1,
             'keepTemplateOnShipChange': 0,
             'pickerSpawnUnderMouse': 1,
+            'showRedditDescriptions': "No",
             'useFactionSpecificIcons': 0,
             'useAlternateTooltip': 0,
             'autosave': 1,
@@ -2477,16 +2478,20 @@ class SETS():
         redditString = redditString + "\n\n\n## Traits\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['personalGroundTrait'] if trait is not None] +
                                         ["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['personalGroundTrait2'] if trait is not None], 11)
-        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalGroundTrait'] if trait is not None]+
-                                        [self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalGroundTrait2'] if trait is not None], 11)
+        if self.persistent['showRedditDescriptions']=="Yes":
+            column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalGroundTrait'] if trait is not None]+
+                                            [self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalGroundTrait2'] if trait is not None], 11)
+        else: column1 = [None]*len(column0)
         redditString = redditString + self.makeRedditTable(['**Personal Ground Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
-        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['groundRepTrait'] if trait is not None], 5)
-        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['groundRepTrait'] if trait is not None], 5)
+        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['groundRepTrait'] if trait is not None and trait['item'] != ""], 5)
+        if self.persistent['showRedditDescriptions']=="Yes": column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['groundRepTrait'] if trait is not None and trait['item'] != ""], 5)
+        else: column1 = [None]*len(column0)
         redditString = redditString + self.makeRedditTable(['**Ground Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
-        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['groundActiveRepTrait'] if trait is not None], 5)
-        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['groundActiveRepTrait'] if trait is not None], 5)
+        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['groundActiveRepTrait'] if trait is not None and trait['item'] != ""], 5)
+        if self.persistent['showRedditDescriptions']=="Yes": column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['groundActiveRepTrait'] if trait is not None and trait['item'] != ""], 5)
+        else: column1 = [None]*len(column0)
         redditString = redditString + self.makeRedditTable(['**Active Ground Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n## Active Ground Duty Officers\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(self.build['doffs']['ground'][i-1]['spec'], self.getWikiURL("Specialization: "+self.build['doffs']['ground'][i-1]['spec'])) for i in range(1,7) if self.build['doffs']['ground'][i-1] is not None], 6)
@@ -2582,23 +2587,28 @@ class SETS():
         redditString = redditString + "\n\n\n##    Traits\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['personalSpaceTrait'] if trait is not None] +
                                         ["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
-        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalSpaceTrait'] if trait is not None]+
-                                        [self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
+        if self.persistent['showRedditDescriptions']=="Yes":
+            column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalSpaceTrait'] if trait is not None]+
+                                            [self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
+        else: column1 = [None]*len(column0)
         redditString = redditString + self.makeRedditTable(['**Personal Space Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
         try:
             column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['starshipTrait'] if trait is not None], 6)
-            column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['shipTraits'][trait['item']].strip()).replace("\n", " ") for trait in self.build['starshipTrait'] if trait is not None], 6)
+            if self.persistent['showRedditDescriptions']=="Yes":column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['shipTraits'][trait['item']].strip()).replace("\n", " ") for trait in self.build['starshipTrait'] if trait is not None], 6)
+            else: column1 = [None]*len(column0)
             redditString = redditString + self.makeRedditTable(['**Starship Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         except KeyError:
             redditString = redditString + "1 or more starship traits missing from the self.cache['shipTraits'] dictionary"
         redditString = redditString + "\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['spaceRepTrait'] if trait is not None], 5)
-        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['spaceRepTrait'] if trait is not None], 5)
+        if self.persistent['showRedditDescriptions']=="Yes": column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['spaceRepTrait'] if trait is not None], 5)
+        else: column1 = [None]*len(column0)
         redditString = redditString + self.makeRedditTable(['**Space Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['activeRepTrait'] if trait is not None], 5)
-        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['activeRepTrait'] if trait is not None], 5)
+        if self.persistent['showRedditDescriptions']=="Yes": column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['activeRepTrait'] if trait is not None], 5)
+        else: column1 = [None]*len(column0)
         redditString = redditString + self.makeRedditTable(['**Active Space Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         textframe.configure(state=NORMAL)
         textframe.delete('1.0',END)
@@ -5163,6 +5173,7 @@ class SETS():
             'Picker window spawn under mouse'       : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'pickerSpawnUnderMouse', 'boolean' : True },
             'Keep template when clearing ship'      : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'keepTemplateOnShipClear', 'boolean' : True },
             'Keep build when changing ships'        : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'keepTemplateOnShipChange', 'boolean' : True },
+            'Show Descriptions on Reddit Export'    : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'showRedditDescriptions', 'boolean' : False},
             'blank3'                                : { 'col' : 1, 'type' : 'blank' },
             'Sort Options:'                         : { 'col' : 1 },
             'BOFF Sort 1st'                         : { 'col' : 2, 'type' : 'optionmenu', 'var_name' : 'boffSort', 'setting_options': self.boffSortOptions },
