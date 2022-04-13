@@ -3350,13 +3350,17 @@ class SETS():
                 tooltip_uuid = self.uuid_assign_for_tooltip()
                 o.bind('<Enter>', lambda e, tooltip_uuid=tooltip_uuid, item=default, environment=environment:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, 'skilltree', environment))
                 o.bind('<Leave>', lambda e, tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
-                f = Label(frame, relief='sunken', borderwidth=1, bg='red')
-                f.configure(bg=self.theme['entry_dark']['bg'])
-                f.grid(row=row+1, column=col, sticky='')
-                f = Frame(frame)
-                f.configure(bg=self.theme['entry_dark']['bg'])
-                f.grid(row=row+1, column=col+1, sticky='nsew')
                 frame.grid_rowconfigure(row, weight=1, uniform='skillBonusFrameRow'+group)
+                if row < (row_total * 2):
+                    f = Label(frame, relief='sunken', borderwidth=1, bg='red')
+                    f.configure(bg=self.theme['entry_dark']['bg'])
+                    f.grid(row=row+1, column=col, sticky='ns')
+                    f = Frame(frame)
+                    f.configure(bg=self.theme['entry_dark']['bg'])
+                    f.grid(row=row+1, column=col+1, sticky='nsew')
+                    frame.grid_rowconfigure(row + 1, weight=1, uniform='skillBonusFrameRow' + group)
+
+
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -4257,6 +4261,13 @@ class SETS():
             self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['boffTooltips'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
             contentframe.grid_propagate(True)
             mainbutton.configure(command=lambda p = "Ability: "+ name: self.openWikiPage(p))
+            printed = True
+
+        if key == 'skilltree' and name in self.cache['skills']['tooltips']:
+            desc = self.cache['skills']['tooltips'][name]
+            text.insert(END, name, 'skillhead')
+            text.insert(END, '\n'+desc, 'skillsub')
+            text.update()
             printed = True
 
         if environment == "skill" and isinstance(key, tuple):
