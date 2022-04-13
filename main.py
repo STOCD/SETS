@@ -2459,12 +2459,12 @@ class SETS():
                                         [self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalGroundTrait2'] if trait is not None], 11)
         redditString = redditString + self.makeRedditTable(['**Personal Ground Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
-        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['groundRepTrait'] if trait is not None], 5)
-        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['groundRepTrait'] if trait is not None], 5)
+        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['groundRepTrait'] if trait is not None and trait['item'] != ""], 5)
+        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['groundRepTrait'] if trait is not None and trait['item'] != ""], 5)
         redditString = redditString + self.makeRedditTable(['**Ground Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
-        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['groundActiveRepTrait'] if trait is not None], 5)
-        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['groundActiveRepTrait'] if trait is not None], 5)
+        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['groundActiveRepTrait'] if trait is not None and trait['item'] != ""], 5)
+        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["ground"][trait['item']].strip()).replace("\n", " ") for trait in self.build['groundActiveRepTrait'] if trait is not None and trait['item'] != ""], 5)
         redditString = redditString + self.makeRedditTable(['**Active Ground Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n## Active Ground Duty Officers\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(self.build['doffs']['ground'][i-1]['spec'], self.getWikiURL("Specialization: "+self.build['doffs']['ground'][i-1]['spec'])) for i in range(1,7) if self.build['doffs']['ground'][i-1] is not None], 6)
