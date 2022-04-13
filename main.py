@@ -213,13 +213,18 @@ class SETS():
                 'weight': 'italic',
             },
         },
+        'text_medium': {
+            'font': {  # self.theme['text_medium']['font_object']
+                'size': 9,
+            },
+        },
         'text_small': {
             'font': {  # self.theme['text_small']['font_object']
                 'size': 8,
             },
         },
         'text_tiny': {
-            'font': {  # self.theme['text_small']['font_object']
+            'font': {  # self.theme['text_tiny']['font_object']
                 'size': 8,
                 'weight': 'bold',
             },
@@ -876,6 +881,18 @@ class SETS():
         for e in self.ships:
             self.fetchOrRequestImage(self.wikiImages+e['image'].replace(' ','_'), e['Page'], self.imageBoxX, self.imageBoxY)
 
+    def precache_skill_unlock_tooltips(self, environment='space'):
+        if not self.cache['skills'][environment+'_unlocks']:
+            return
+
+        unlocks = self.cache['skills'][environment+'_unlocks']
+        for group in unlocks:
+            if group.startswith('_'):
+                continue
+            for tier in range(len(unlocks[group])):
+                for node in unlocks[group][tier]['nodes']:
+                    self.cache['skills']['tooltips'][node] = unlocks[group][tier]['nodes'][node]
+
     def precacheSpaceSkills(self):
         if 'space' in self.cache['skills'] and len(self.cache['skills']['space']) > 0:
             return
@@ -883,8 +900,11 @@ class SETS():
         skills = self.fetchOrRequestJson('', 'space_skills', local=True)
 
         if "space" in skills:
-            self.cache['skills']['space'] = skills["space"]
+            self.cache['skills']['space'] = skills['space']
+            self.cache['skills']['space_unlocks'] = skills['space_unlocks']
             self.logWriteCounter('space skills', '(json)', len(self.cache['skills']['space']))
+
+        self.precache_skill_unlock_tooltips('space')
 
     def precacheGroundSkills(self):
         if 'ground' in self.cache['skills'] and len(self.cache['skills']['ground']) > 0:
@@ -894,7 +914,10 @@ class SETS():
 
         if "ground" in skills:
             self.cache['skills']['ground'] = skills['ground']
+            self.cache['skills']['ground_unlocks'] = skills['ground_unlocks']
             self.logWriteCounter('ground skills', '(json)', len(self.cache['skills']['ground']))
+
+        self.precache_skill_unlock_tooltips('ground')
 
     def precacheSkills(self, environment=None):
         if environment == 'space' or environment is None:
@@ -1449,7 +1472,7 @@ class SETS():
 
     def reset_build_skill(self, init=False):
         build_skill = {
-            'skilltree': {'space': dict(), 'ground': dict()},
+            'skilltree': {'space': dict(), 'ground': dict(), 'space_unlocks': dict(), 'ground_unlocks': dict()},
         }
         if not init:
             self.clearing = True
@@ -1486,7 +1509,7 @@ class SETS():
                 'specsPrimary': dict(),
                 'specsSecondary': dict(),
                 'specsGroundBoff': dict(),
-                'skills': {'space': dict(), 'ground': dict()},
+                'skills': {'space': dict(), 'ground': dict(), 'tooltips': dict()},
                 'factions': dict(),
                 'modifiers': None,
             }
@@ -1510,10 +1533,10 @@ class SETS():
                 'shipHtml': None,
                 'shipHtmlFull': None,
                 'eliteCaptain': IntVar(self.window),
-                'skillLabels': dict(),
+                'skillLabels': {},
                 'skillNames': [[], [], [], [], []],
                 'skillCount': { 'space': 0, 'ground': 0 },
-                'tags': dict()
+                'tags': {}
             }
         if rebuild: self.buildToBackendSeries()
         self.hookBackend()
@@ -1530,7 +1553,6 @@ class SETS():
         self.backend['tier'].trace_add('write', lambda v,i,m:self.setupCurrentBuildFrames('space'))
         self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.clean_backend_elitecaptain())
         self.backend['ship'].trace_add('write', self.shipMenuCallback)
-
 
     def clean_backend_elitecaptain(self):
         pass
@@ -3266,22 +3288,65 @@ class SETS():
         else:
             self.createButton(frame, '', row=row_actual, rowspan=rowspan, column=col_actual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
+    def skill_unlock_update(self, o, v, environment, location):
+        if not environment+'_unlocks' in self.build['skilltree']:
+            self.build['skilltree'][environment+'_unlocks'] = {}
+        entry = v.get()
+        self.build['skilltree'][environment+'_unlocks'][location] = entry
+        self.auto_save_queue()
+        tooltip_uuid = self.uuid_assign_for_tooltip()
+        o.bind('<Enter>', lambda e, tooltip_uuid=tooltip_uuid, item=entry, environment=environment: self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, 'skilltree', environment))
+        o.bind('<Leave>', lambda e, tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
+
     def setupSkillBonusFrame(self, parentFrame, environment='space'):
-        frame = Frame(parentFrame, bg=self.theme['frame']['bg'])
-        frame.grid(row=0, column=1, sticky='ns', padx=1, pady=1)
+        if not self.cache['skills'][environment+'_unlocks']:
+            return
+        frame = Frame(parentFrame)
+        frame.grid(row=0, column=1, sticky='nsw', padx=1, pady=1)
+        frame.configure(bg=self.theme['entry_dark']['bg'])
         parentFrame.grid_rowconfigure(0, weight=1, uniform='skillBonusFrameFullRowSpace')
-        parentFrame.grid_columnconfigure(0, weight=1, uniform='skillBonusFrameFullColSpace')
+        #parentFrame.grid_columnconfigure(0, weight=1, uniform='skillBonusFrameFullColSpace')
 
         padxCanvas = (2,2)
         padyCanvas = (1,1)
-        for row in range(11):
-            frame.grid_rowconfigure(row, weight=1, uniform='skillBonusFrameRowSpace')
-            for col in range(4):
-                colActual = col
-                frame.grid_columnconfigure(colActual, weight=2 if col == 3 else 1, uniform='skillBonusFrameColSpace'+str(col))
-                args = [(None, row, col), 'skill']
 
-                self.createButton(frame, '', row=row, column=colActual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='n', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
+        unlocks = self.cache['skills'][environment+'_unlocks']
+
+        col = -1
+        for group in unlocks:
+            if group.startswith('_'):
+                continue
+            col += 2
+            frame.grid_columnconfigure(col, weight=1, uniform='skillBonusFrameCol' + group)
+
+            row_total = len(unlocks[group])
+            for tier in range(row_total):
+                row = (row_total - tier) * 2
+                # self.logWriteSimple('###skillbonus', '', 2, ['{}'.format(unlocks[group])], log_only=True)
+                options = unlocks[group][tier]['nodes'].keys()
+                location = '{}{}'.format(group, tier)
+                v = StringVar(self.window, '')
+                default = ''
+                if environment+'_unlocks' in self.build['skilltree'] and \
+                    location in self.build['skilltree'][environment+'_unlocks']:
+                    default = self.build['skilltree'][environment+'_unlocks'][location]
+                    v.set(default)
+                o = OptionMenu(frame, v, *options)
+                v.trace_add('write', lambda a, b, c, o=o, v=v, environment=environment, location=location:self.skill_unlock_update(o, v, environment, location))
+                o.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], highlightthickness=0, width=8)
+                o.configure()
+                o.configure(wraplength=60, font=self.theme['text_medium']['font_object'])
+                o.grid(row=row, column=col, columnspan=2, sticky='nsew')
+                tooltip_uuid = self.uuid_assign_for_tooltip()
+                o.bind('<Enter>', lambda e, tooltip_uuid=tooltip_uuid, item=default, environment=environment:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, 'skilltree', environment))
+                o.bind('<Leave>', lambda e, tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
+                f = Label(frame, relief='sunken', borderwidth=1, bg='red')
+                f.configure(bg=self.theme['entry_dark']['bg'])
+                f.grid(row=row+1, column=col, sticky='')
+                f = Frame(frame)
+                f.configure(bg=self.theme['entry_dark']['bg'])
+                f.grid(row=row+1, column=col+1, sticky='nsew')
+                frame.grid_rowconfigure(row, weight=1, uniform='skillBonusFrameRow'+group)
 
     def setupSpaceTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -3424,8 +3489,10 @@ class SETS():
                 self.build['boffseats'][environment][i] = spec
                 self.build['boffseats'][environment+'_spec'][i] = sspec
             else:
-                if self.build['boffseats'][environment][i] is None: self.build['boffseats'][environment][i] = 'Science'
-                if self.build['boffseats'][environment+"_spec"][i] is None: self.build['boffseats'][environment+"_spec"][i] = sspec
+                if self.build['boffseats'][environment][i] is None:
+                    self.build['boffseats'][environment][i] = 'Science'
+                if self.build['boffseats'][environment+"_spec"][i] is None:
+                    self.build['boffseats'][environment+"_spec"][i] = sspec
 
             v = StringVar(self.window, value=self.build['boffseats'][environment][i])
             v2 = StringVar(self.window, value=self.build['boffseats'][environment+'_spec'][i])
@@ -4021,7 +4088,7 @@ class SETS():
             return
         self.displayedInfoboxItem = name
 
-        if environment == 'skill':
+        if environment == 'skill' or key == 'skilltree':
             frame = self.skillInfoboxFrame
         elif environment == 'ground':
             frame = self.groundInfoboxFrame
@@ -4029,7 +4096,7 @@ class SETS():
             frame = self.shipInfoboxFrame
         frame.configure(highlightthickness=0)
         frame.pack_propagate(False)
-        if environment != 'skill' and key is not None and key != '':
+        if environment != 'skill' and key is not None and key != '' and key != 'skilltree':
             self.precacheEquipment(key)
 
         raritycolor = '#ffffff'
@@ -5351,12 +5418,12 @@ class SETS():
                 logNote = logNote + '[{:>1}]'.format(self.logTagClean(tag))
         self.logWrite('{:16} {:15} {}'.format('{}'.format(run), title, logNote), level, log_only=True)
 
-    def logWriteSimple(self, title, body, level=1, tags=None):
+    def logWriteSimple(self, title, body, level=1, tags=None, log_only=False):
         logNote = ''
         if tags:
             for tag in tags:
                 logNote = logNote + '[{:>1}]'.format(self.logTagClean(tag))
-        self.logWrite('{:>12} {:>13}: {:>6}'.format(title, body, logNote), level)
+        self.logWrite('{:>12} {:>13}: {:>6}'.format(title, body, logNote), level, log_only=log_only)
 
     def logWriteTransaction(self, title, body, count, path, level=1, tags=None):
         logNote = ''
@@ -5973,11 +6040,11 @@ class SETS():
 
     def resized_sub_window_delay_check(self, value):
         if value == self.sub_window_last_change:
-            self.logWriteSimple('WINDOW', 'sub-resize', 3, [value, value.width, value.height, value.widget])
+            self.logWriteSimple('WINDOW', 'sub-resize', 3, [value, value.width, value.height, value.widget], log_only=True)
 
     def resized_main_window_delay_check(self, value):
         if value == self.main_window_last_change:
-            self.logWriteSimple('WINDOW', 'main-resize', 3, [value, value.width, value.height, value.widget])
+            self.logWriteSimple('WINDOW', 'main-resize', 3, [value, value.width, value.height, value.widget], log_only=True)
             pointer_x = value.x
             pointer_y = value.y
             self.windowWidth = value.width
