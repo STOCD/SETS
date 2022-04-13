@@ -31,6 +31,8 @@ from PIL import Image, ImageTk, ImageGrab
 from requests_html import Element, HTMLSession, HTML
 import requests
 import numpy as np
+#import xlsxwriter
+
 
 if platform.system() == 'Darwin':
     from tkmacosx import Button
@@ -2424,7 +2426,7 @@ class SETS():
         textframe.configure(state=DISABLED)
 
     def redditExportDisplayGround(self, textframe:Text):
-        if not self.build['eliteCaptain']: #self.cache['equipment'][key][name]
+        if not self.build['eliteCaptain']:
             elite = 'No'
         elif self.build['eliteCaptain']:
             elite = 'Yes'
@@ -2491,25 +2493,41 @@ class SETS():
         deviceBlanks = [None] * 6
         column0 = (self.makeRedditColumn(["**Fore Weapons:**"], self.backend['shipForeWeapons']) +
                    self.makeRedditColumn(["**Aft Weapons:**"], self.backend['shipAftWeapons']) +
-                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + deviceBlanks[0:(self.backend['shipDevices']-1)] + (["**Hangar**"] if self.build["hangars"][0] is not None else ['&nbsp;']) + (["**Secondary Deflector**"] if self.build['secdef'][0] is not None else ['&nbsp;']) + (["**Experimental Weapon**"] if self.build['experimental'][0] is not None else ['&nbsp;']), 7+max(self.backend['shipDevices']-1, 1)) +
-                   self.makeRedditColumn(["**Engineering Consoles:**"], self.backend['shipEngConsoles']) +
-                   self.makeRedditColumn(["**Science Consoles:**"], self.backend['shipSciConsoles']) +
-                   self.makeRedditColumn(["**Tactical Consoles:**"], self.backend['shipTacConsoles']) +
-                   self.makeRedditColumn(["**Universal Consoles:**"], self.backend['shipUniConsoles']))
+                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + deviceBlanks[0:(self.backend['shipDevices']-1)], 5+max(self.backend['shipDevices']-1, 1))) 
+        if self.backend['shipHtml']['hangars'] != '':
+            column0.extend(self.makeRedditColumn(["**Hangar Pets**"], self.backend['shipHtml']['hangars']))
+        if self.backend['shipHtml']['secdeflector'] == 1:
+            column0.extend(self.makeRedditColumn(["**Secondary Deflector**"], 1))
+        if self.backend['shipHtml']['experimental'] == 1:
+            column0.extend(self.makeRedditColumn(['**Experimental Weapon**'], 1))
+        column0.extend( self.makeRedditColumn(["**Engineering Consoles:**"], self.backend['shipEngConsoles']) +
+                        self.makeRedditColumn(["**Science Consoles:**"], self.backend['shipSciConsoles']) +
+                        self.makeRedditColumn(["**Tactical Consoles:**"], self.backend['shipTacConsoles']) +
+                        self.makeRedditColumn(["**Universal Consoles:**"], self.backend['shipUniConsoles']))
         column1 = (self.makeRedditColumn(self.preformatRedditEquipment('foreWeapons', self.backend['shipForeWeapons']), self.backend['shipForeWeapons']) +
                    self.makeRedditColumn(self.preformatRedditEquipment('aftWeapons', self.backend['shipAftWeapons']), self.backend['shipAftWeapons']) +
                    self.makeRedditColumn(self.preformatRedditEquipment('deflector', 1) +
                                          self.preformatRedditEquipment('engines', 1) +
                                          self.preformatRedditEquipment('warpCore', 1) +
                                          self.preformatRedditEquipment('shield', 1) +
-                                         self.preformatRedditEquipment('devices', self.backend['shipDevices']) +
-                                         self.preformatRedditEquipment('hangars', self.backend['shipHangars']) +
-                                         self.preformatRedditEquipment('secdef', 1 if self.build['secdef'][0] is not None else 0) +
-                                         self.preformatRedditEquipment('experimental', 1 if self.build['experimental'][0] is not None else 0), 7+max(self.backend['shipDevices']-1, 1)) +
-                   self.makeRedditColumn(self.preformatRedditEquipment('engConsoles', self.backend['shipEngConsoles']), self.backend['shipEngConsoles']) +
-                   self.makeRedditColumn(self.preformatRedditEquipment('sciConsoles', self.backend['shipSciConsoles']), self.backend['shipSciConsoles']) +
-                   self.makeRedditColumn(self.preformatRedditEquipment('tacConsoles', self.backend['shipTacConsoles']), self.backend['shipTacConsoles']) +
-                   self.makeRedditColumn(self.preformatRedditEquipment('uniConsoles', self.backend['shipUniConsoles']), max(self.backend['shipUniConsoles'], 1)))
+                                         self.preformatRedditEquipment('devices', self.backend['shipDevices']), 5+max(self.backend['shipDevices']-1, 1)))
+        if self.backend['shipHtml']['hangars'] != '':
+            column1.extend(self.makeRedditColumn(self.preformatRedditEquipment('hangars', self.backend['shipHtml']['hangars']), self.backend['shipHtml']['hangars']))
+        if self.backend['shipHtml']['secdeflector'] == 1:
+            column1.extend(self.makeRedditColumn(self.preformatRedditEquipment('secdef',1), 1))
+        if self.backend['shipHtml']['experimental'] == 1:
+            column1.extend(self.makeRedditColumn(self.preformatRedditEquipment('experimental', 1), 1))
+        column1.extend( self.makeRedditColumn(self.preformatRedditEquipment('engConsoles', self.backend['shipEngConsoles']), self.backend['shipEngConsoles']) +
+                        self.makeRedditColumn(self.preformatRedditEquipment('sciConsoles', self.backend['shipSciConsoles']), self.backend['shipSciConsoles']) +
+                        self.makeRedditColumn(self.preformatRedditEquipment('tacConsoles', self.backend['shipTacConsoles']), self.backend['shipTacConsoles']) +
+                        self.makeRedditColumn(self.preformatRedditEquipment('uniConsoles', self.backend['shipUniConsoles']), max(self.backend['shipUniConsoles'], 1)))
+        """with xlsxwriter.Workbook('test2.xlsx') as workbook:
+            worksheet = workbook.add_worksheet()
+            for i in range(0, len(column0)):
+                worksheet.write(i, 0, column0[i])
+            for j in range(0, len(column1)):
+                worksheet.write(j, 1, column1[j])"""
+            
         redditString = redditString + self.makeRedditTable(['**Basic Information**']+column0, ['**Component**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n\n## Bridge Officer Stations\n\n"
         column0 = []
@@ -2526,22 +2544,30 @@ class SETS():
                 column1 = column1 + self.makeRedditColumn(boffabilities, len(boffabilities))
         redditString = redditString + self.makeRedditTable(['**Profession**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n\n## Active Space Duty Officers\n\n"
-        column0 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['spec'] for i in range(1,7) if self.build['doffs']['space'][i-1] is not None], 6)
+        column0 = self.makeRedditColumn(["[{0}]({1})".format(self.build['doffs']['space'][i-1]['spec'], self.getWikiURL("Specialization: "+self.build['doffs']['space'][i-1]['spec'])) for i in range(1,7) if self.build['doffs']['space'][i-1] is not None], 6)
         column1 = self.makeRedditColumn([self.build['doffs']['space'][i-1]['effect'] for i in range(1,7) if self.build['doffs']['space'][i-1] is not None], 6)
         redditString = redditString + self.makeRedditTable(['**Specialization**']+column0, ['**Power**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n\n##    Traits\n\n"
-        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['personalSpaceTrait'] if trait is not None] +
-                                        [trait['item'] for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
-        redditString = redditString + self.makeRedditTable(['**Personal Space Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['personalSpaceTrait'] if trait is not None] +
+                                        ["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
+        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalSpaceTrait'] if trait is not None]+
+                                        [self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
+        redditString = redditString + self.makeRedditTable(['**Personal Space Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
-        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['starshipTrait'] if trait is not None], 6)
-        redditString = redditString + self.makeRedditTable(['**Starship Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        try:
+            column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['starshipTrait'] if trait is not None], 6)
+            column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['shipTraits'][trait['item']].strip()).replace("\n", " ") for trait in self.build['starshipTrait'] if trait is not None], 6)
+            redditString = redditString + self.makeRedditTable(['**Starship Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
+        except KeyError:
+            redditString = redditString + "1 or more starship traits missing from the self.cache['shipTraits'] dictionary"
         redditString = redditString + "\n\n"
-        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['spaceRepTrait'] if trait is not None], 5)
-        redditString = redditString + self.makeRedditTable(['**Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['spaceRepTrait'] if trait is not None], 5)
+        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['spaceRepTrait'] if trait is not None], 5)
+        redditString = redditString + self.makeRedditTable(['**Space Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n"
-        column0 = self.makeRedditColumn([trait['item'] for trait in self.build['activeRepTrait'] if trait is not None], 5)
-        redditString = redditString + self.makeRedditTable(['**Active Space Reputation Traits**']+column0, ['**Description**']+[None]*len(column0), ['**Notes**']+[None]*len(column0))
+        column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['activeRepTrait'] if trait is not None], 5)
+        column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['activeRepTrait'] if trait is not None], 5)
+        redditString = redditString + self.makeRedditTable(['**Active Space Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         textframe.configure(state=NORMAL)
         textframe.delete('1.0',END)
         textframe.insert(END, redditString)
