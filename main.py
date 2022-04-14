@@ -721,7 +721,9 @@ class SETS():
         v['image'] = image
         win.destroy()
 
-    def makeRedditTable(self, c0, c1, c2, c3:list = [], alignment:list = [":---", ":---", ":---"]):
+    def makeRedditTable(self, c0, c1, c2:list = [], c3:list = [], alignment:list = [":---", ":---", ":---"]):
+        """Creates Markdown formatted table from lists containing the column elements and an alignment list"""
+        # 4 columns
         if c3 != []:
             result = '**{0}** | **{1}** | **{2}** | **{3}**\n'.format(c0[0],c1[0],c2[0],c3[0])
             result = result + "{0} | {1} | {2} | {3}\n".format(alignment[0], alignment[1], alignment[2], alignment[3])
@@ -732,8 +734,20 @@ class SETS():
                 c3[i] = c3[i] if c3[i] is not None else '&nbsp;'
                 result = result + "{0} | {1} | {2} | {3}\n".format(c0[i],c1[i],c2[i],c3[i])
             return result
+        
+        # 2 columns
+        if c2 == []:
+            result = '**{0}** | **{1}**\n'.format(c0[0], c1[0])
+            result = result + "{0} | {1}\n".format(alignment[0], alignment[1])
+            for i in range(1, len(c0)):
+                c0[i] = c0[i] if c0[i] is not None else '&nbsp;'
+                c1[i] = c1[i] if c1[i] is not None else '&nbsp;'
+                result = result + "{0} | {1}\n".format(c0[i], c1[i])
+            return result
+        
+        # 3 columns
         result = '**{0}** | **{1}** | **{2}**\n'.format(c0[0],c1[0],c2[0])
-        result = result + "{1} | {1} | {2}\n".format(alignment[0], alignment[1], alignment[2])
+        result = result + "{0} | {1} | {2}\n".format(alignment[0], alignment[1], alignment[2])
         for i in range(1,len(c0)):
             c0[i] = c0[i] if c0[i] is not None else '&nbsp;'
             c1[i] = c1[i] if c1[i] is not None else '&nbsp;'
@@ -2404,10 +2418,29 @@ class SETS():
 
         return
 
+    def getGroundSkillNode(self, ptuple):
+        ptree, pside = ptuple
+        for skill in self.cache['skills']['ground']:
+            if skill['tree']==ptree and skill['side']==pside:
+                return skill
+
     def redditExportDisplayGroundSkills(self, textframe: Text):
+        if not len(self.build['skilltree']['ground'])==20:
+            return
+        redditstring = "## **<u>Ground Skills</u>**\n\n"
+        column0 = list()
+        column1 = list()
+        grsktr = [(0,""), (0,"l"), (0,"r"), (1,""), (1,"l"), (1,"r"), (2,""), (2,"r"), (3,""), (3,"l")]
+        for t in grsktr:
+            node = self.getGroundSkillNode(t)
+            column0 = column0 + ["[**{0}**]({1})".format(node["nodes"][0]['name'], node["link"])]
+            column0 = column0 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["ground"][node["nodes"][0]['name']] == True else [None], 1)
+            column1 = column1 + ["[**{0}**]({1})".format(node["nodes"][1]['name'], node["link"])]
+            column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["ground"][node["nodes"][1]['name']] == True else [None], 1)
+        redditstring = redditstring + self.makeRedditTable(["**Basic:**"]+column0, ['**Improved:**']+column1, alignment=[":-:",":-:"])
         textframe.configure(state=NORMAL)
         textframe.delete("1.0", END)
-        textframe.insert(END, "TBD")
+        textframe.insert(END, redditstring)
         textframe.configure(state=DISABLED)
 
     def redditExportDisplaySpaceSkills(self, textframe: Text):
