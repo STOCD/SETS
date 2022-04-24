@@ -612,12 +612,12 @@
 					},
 					{
 						"name" : "Offensive Subsystem Tuning (Weapons)",
-						"image" : "Engineering_Skill_3_R2",
+						"image" : "Engineering_Skill_6_R2",
 						"desc" : "+3.2 Weapons Subsystem Power<br>Total Weapons Subsystem Power Bonus = +8.0"
 					},
 					{
 						"name" : "Offensive Subsystem Tuning (Engines)",
-						"image" : "Engineering_Skill_3_R2",
+						"image" : "Engineering_Skill_4_R2",
 						"desc" : "+3.2 Engines Subsystem Power<br>Total Engines Subsystem Power Bonus = +8.0"
 					}
 				]
@@ -645,12 +645,12 @@
 					},
 					{
 						"name" : "Defensive Subsystem Tuning (Shields)",
-						"image" : "Engineering_Skill_3_R2",
+						"image" : "Engineering_Skill_5_R2",
 						"desc" : "+3.2 Shields Subsystem Power<br>Total Shields Subsystem Power Bonus = +8.0"
 					},
 					{
 						"name" : "Defensive Subsystem Tuning (Aux)",
-						"image" : "Engineering_Skill_3_R2",
+						"image" : "Engineering_Skill_1_R2",
 						"desc" : "+3.2 Auxiliary Subsystem Power<br>Total Auxiliary Subsystem Power Bonus = +8.0"
 					}
 				]
