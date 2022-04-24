@@ -756,6 +756,7 @@ class SETS():
         return result
 
     def makeRedditColumn(self, c0, length):
+        if length == 0: return []
         return c0+['&nbsp;']*(length-len(c0))+['--------------']
 
     def preformatRedditEquipment(self, key,len): #self.cache['equipment'][key][name]
@@ -1260,6 +1261,7 @@ class SETS():
             'perf': dict(),
             'image_beta': 0,
             'tags': {
+                'curated':0,
                 'maindamage':{
                     'energy':0, 'kinetic':0, 'exotic':0, 'drain':0
                 },
@@ -2427,7 +2429,7 @@ class SETS():
     def redditExportDisplayGroundSkills(self, textframe: Text):
         if not len(self.build['skilltree']['ground'])==20:
             return
-        redditstring = "## **<u>Ground Skills</u>**\n\n"
+        redditstring = "# **Ground Skills**\n\n"
         column0 = list()
         column1 = list()
         grsktr = [(0,""), (0,"l"), (0,"r"), (1,""), (1,"l"), (1,"r"), (2,""), (2,"r"), (3,""), (3,"l")]
@@ -2446,7 +2448,7 @@ class SETS():
     def redditExportDisplaySpaceSkills(self, textframe: Text):
         if not len(self.build["skilltree"]["space"]) == 90:
             return
-        redditstring = "## **<u>Space Skills</u>**\n\n"
+        redditstring = "# **Space Skills**\n\n"
         column0 = list()
         column1 = list()
         column2 = list()
@@ -2466,7 +2468,7 @@ class SETS():
                         column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]+" 1"]==True else [None], 1)
                         column2 = column2 + ["[{0}]({1})".format("Improved "+skill["skill"][0], skill["link"][0])]
                         column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][1]+" 2"]==True else [None], 1)
-                        column3 = column3 + ["[{0}]({1})".format(skill["skill"][1], skill["link"][1])]
+                        column3 = column3 + ["[{0}]({1})".format(skill["skill"][2], skill["link"][2])]
                         column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][2]]==True else [None], 1)
                     elif skill["linear"] ==2:
                         column1 = column1 + ["[{0}]({1})".format(skill["skill"][0], skill["link"])]
@@ -2488,7 +2490,7 @@ class SETS():
             elite = 'Yes'
         else:
             elite = 'You should not be seeing this... PANIC!'
-        redditString = "## **<u>Ground</u>**\n\n**Basic Information** | **Data** \n:--- | :--- \n*Player Name* | {0} \n*Player Species* | {1} \n*Player Career* | {2} \n*Elite Captain* | {3} \n*Primary Specialization* | {4} \n*Secondary Specialization* | {5}\n\n\n".format(self.backend['playerName'].get(), self.build['species'], self.build['career'], elite, self.build['specPrimary'], self.build['specSecondary'], self.build['playerDesc'])
+        redditString = "# **Ground**\n\n**Basic Information** | **Data** \n:--- | :--- \n*Player Name* | {0} \n*Player Species* | {1} \n*Player Career* | {2} \n*Elite Captain* | {3} \n*Primary Specialization* | {4} \n*Secondary Specialization* | {5}\n\n\n".format(self.backend['playerName'].get(), self.build['species'], self.build['career'], elite, self.build['specPrimary'], self.build['specSecondary'], self.build['playerDesc'])
         if self.build['playerDesc'] != '':
             redditString = redditString + "## Build Description\n\n{0}\n\n\n".format(self.build['playerDesc'])
         redditString = redditString +  "## Personal Equipment\n\n"
@@ -2556,7 +2558,7 @@ class SETS():
             elite = 'Yes'
         else:
             elite = 'You should not be seeing this... PANIC!'
-        redditString = "## **<u>SPACE</u>**\n\n**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n*Ship Tier* | {2} \n*Player Career* | {3} \n*Elite Captain* | {4} \n*Primary Specialization* | {5} \n*Secondary Specialization* | {6}\n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'], self.build['tier'], self.build['career'], elite, self.build['specPrimary'], self.build['specSecondary'])
+        redditString = "# SPACE\n\n**Basic Information** | **Data** \n:--- | :--- \n*Ship Name* | {0} \n*Ship Class* | {1} \n*Ship Tier* | {2} \n*Player Career* | {3} \n*Elite Captain* | {4} \n*Primary Specialization* | {5} \n*Secondary Specialization* | {6}\n\n\n".format(self.backend["playerShipName"].get(), self.build['ship'], self.build['tier'], self.build['career'], elite, self.build['specPrimary'], self.build['specSecondary'])
         if self.build['playerShipDesc'] != '':
             redditString = redditString + "## Build Description\n\n{0}\n\n\n".format(self.build['playerShipDesc'])
         redditString = redditString + "## Ship Equipment\n\n"
@@ -2590,7 +2592,7 @@ class SETS():
         column1.extend( self.makeRedditColumn(self.preformatRedditEquipment('engConsoles', self.backend['shipEngConsoles']), self.backend['shipEngConsoles']) +
                         self.makeRedditColumn(self.preformatRedditEquipment('sciConsoles', self.backend['shipSciConsoles']), self.backend['shipSciConsoles']) +
                         self.makeRedditColumn(self.preformatRedditEquipment('tacConsoles', self.backend['shipTacConsoles']), self.backend['shipTacConsoles']) +
-                        self.makeRedditColumn(self.preformatRedditEquipment('uniConsoles', self.backend['shipUniConsoles']), max(self.backend['shipUniConsoles'], 1)))
+                        self.makeRedditColumn(self.preformatRedditEquipment('uniConsoles', self.backend['shipUniConsoles']), (self.backend['shipUniConsoles'] + 1 if 'X' in self.build['tier'] else 0)))
         """with xlsxwriter.Workbook('test2.xlsx') as workbook:
             worksheet = workbook.add_worksheet()
             for i in range(0, len(column0)):
@@ -2625,7 +2627,7 @@ class SETS():
                                             [self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['personalSpaceTrait2'] if trait is not None], 11)
         else: column1 = [None]*len(column0)
         redditString = redditString + self.makeRedditTable(['**Personal Space Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
-        redditString = redditString + "\n\n"
+        redditString = redditString + "\n&#x200B;\n\n"
         try:
             column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['starshipTrait'] if trait is not None], 6)
             if self.persistent['showRedditDescriptions']=="Yes":column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['shipTraits'][trait['item']].strip()).replace("\n", " ") for trait in self.build['starshipTrait'] if trait is not None], 6)
@@ -2633,12 +2635,12 @@ class SETS():
             redditString = redditString + self.makeRedditTable(['**Starship Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         except KeyError:
             redditString = redditString + "1 or more starship traits missing from the self.cache['shipTraits'] dictionary"
-        redditString = redditString + "\n\n"
+        redditString = redditString + "\n&#x200B;\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['spaceRepTrait'] if trait is not None], 5)
         if self.persistent['showRedditDescriptions']=="Yes": column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['spaceRepTrait'] if trait is not None], 5)
         else: column1 = [None]*len(column0)
         redditString = redditString + self.makeRedditTable(['**Space Reputation Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
-        redditString = redditString + "\n\n"
+        redditString = redditString + "\n&#x200B;\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['activeRepTrait'] if trait is not None], 5)
         if self.persistent['showRedditDescriptions']=="Yes": column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['activeRepTrait'] if trait is not None], 5)
         else: column1 = [None]*len(column0)
@@ -2652,6 +2654,7 @@ class SETS():
         if self.in_splash():
             return
         redditWindow = Toplevel(self.window, bg=self.theme["app"]["bg"])
+        redditWindow.grab_set()
         borderframe = Frame(redditWindow, bg=self.theme["app"]["fg"])
         borderframe.pack(fill=BOTH, expand=True, padx=15, pady=15)
         redditText = Text(borderframe, bg=self.theme["app"]["fg"], fg="#ffffff", relief="flat")
@@ -4542,40 +4545,44 @@ class SETS():
         #tagwindow.attributes('-topmost', 1)
         tagwindow.title("Build Tags")
 
-        cfr = Frame(tagwindow, bg=self.theme['app']["fg"])
-        cfr.pack(expand=True, padx=15, pady=15, fill=BOTH)
+        if 'curated' in self.build['tags'] and self.build['tags']['curated'] % 7 == 3: #Creates "Curated Build" Label if necessary
+            Label(tagwindow, bg=self.theme['app']['bg']).pack(ipadx=12, fill=BOTH)
+            Label(tagwindow, bg=self.theme['app']['fg'], text="CURATED BUILD", fg=self.theme['app']['bg'], font=self.font_tuple_merge("app", weight="bold", size=15)).pack(ipady=4, padx=15, fill=X)
 
-        roleframe = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
+        tagframe = Frame(tagwindow, bg=self.theme['app']["fg"])  #tagframe: contains build tags
+        tagframe.pack(expand=True, padx=15, pady=15, fill=BOTH)
+
+        roleframe = Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]) #roleframe: frame for build roles
         roleframe.grid(row=0, column=0, columnspan=4, sticky="nsew")
         Label(roleframe, text="Role:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'], font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=6, sticky="new")
         self.checkbuttonBuildBlock(tagwindow, roleframe, self.persistent['tags']['role'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), "tags", "role", "grid", HORIZONTAL, 1)
-        Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=1, column=0, columnspan=4)
-        cfr.rowconfigure(1, minsize=12)
+        Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=1, column=0, columnspan=4)
+        tagframe.rowconfigure(1, minsize=12)
 
-        mdmgfr = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
+        mdmgfr = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #mdmgfr: main damage frame
         mdmgfr.grid(row=2, column=0, sticky="nsew", columnspan=4)
-        Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=3, column=0, columnspan=4)
-        cfr.rowconfigure(3, minsize=12)
+        Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=3, column=0, columnspan=4)
+        tagframe.rowconfigure(3, minsize=12)
         Label(mdmgfr, text="Main Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=5, sticky="new")
         self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.persistent['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), "tags", "maindamage", "grid", HORIZONTAL, 1)
 
-        etypefr = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
+        etypefr = Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]) #etypefr: energy type frame
         etypefr.grid(row=4, column=0, sticky="n")
-        cfr.columnconfigure(0, weight=1)
-        Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=5, column=0, columnspan=4)
-        cfr.rowconfigure(5, minsize=12)
+        tagframe.columnconfigure(0, weight=1)
+        Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=5, column=0, columnspan=4)
+        tagframe.rowconfigure(5, minsize=12)
         Label(etypefr, text="Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, sticky="new")
         self.checkbuttonBuildBlock(tagwindow, etypefr, self.persistent['tags']['energytype'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), "tags", "energytype", "grid", VERTICAL, 1)
 
-        wtypefr = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
+        wtypefr = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #wtypefr: weapon type frame
         wtypefr.grid(row=4, column=1, sticky="n")
-        cfr.columnconfigure(1, weight=1)
+        tagframe.columnconfigure(1, weight=1)
         Label(wtypefr, text="Weapons Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, sticky="new")
         self.checkbuttonBuildBlock(tagwindow, wtypefr, self.persistent['tags']['weapontype'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), "tags", "weapontype", "grid", VERTICAL, 1)
 
-        stypefr = Frame(cfr, highlightthickness=0, bg=self.theme['app']["fg"])
+        stypefr = Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"])  #stypefr: build state type frame
         stypefr.grid(row=4, column=2, sticky="n")
-        cfr.columnconfigure(2, weight=1)
+        tagframe.columnconfigure(2, weight=1)
         Label(stypefr, text="State of the Build:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, sticky="new")
         i = 1
         if "state" in self.build["tags"]:
@@ -4596,14 +4603,16 @@ class SETS():
             i += 1
         tagvar.trace_add("write", lambda c1, c2, c3, var=tagvar, k="state", m="tags": self.checkbuttonVarUpdateCallback(var.get(), m, k))
 
-        Frame(cfr, highlightthickness=0, bg=self.theme['app']["bg"]).grid(row=6, column=0, columnspan=4, sticky="nsew")
-        cfr.rowconfigure(6, minsize=12)
-        pvpframe = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
+        Frame(tagframe, highlightthickness=0, bg=self.theme['app']["bg"]).grid(row=6, column=0, columnspan=4, sticky="nsew")
+        tagframe.rowconfigure(6, minsize=12)
+
+        pvpframe = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #pvpframe: Frame for initial PvP role
         pvpframe.grid(row=7, column=0, columnspan=4, sticky="nsew")
         self.checkbuttonBuildBlock(tagwindow, pvpframe, ["PvP:"], self.theme['app']['fg'], self.theme['label']['bg'], self.font_tuple_create("title2"), 'tags', 'pvprole')
         pvptags = self.persistent['tags']['pvprole']
         pvptags.pop("PvP:")
-        pvpframe2 = Frame(cfr, highlightthickness=0,  bg=self.theme['app']["fg"])
+
+        pvpframe2 = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #pvpframe2: Frame for successive PvP roles
         pvpframe2.grid(row=8, column=0, columnspan=4, sticky="nsew")
         self.checkbuttonBuildBlock(tagwindow, pvpframe2, pvptags, self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', 'pvprole', rowoffset=1)
 
