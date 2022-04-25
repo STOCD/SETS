@@ -49,6 +49,7 @@ if sys.platform.startswith('win'):
         ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
 
 class HoverButton(Button):
+    """ Updates default Button to have a hover background """
     def __init__(self, master, **kw):
         Button.__init__(self,master=master,**kw)
         self.defaultBackground = self["background"]
@@ -312,13 +313,13 @@ class SETS():
         b_message = ''.join([format(ord(i), "08b") for i in message])
         req_pixels = len(b_message)
         if req_pixels <= total_pixels:
-            index=0
+            index = 0
             for p in range(total_pixels):
                 for q in range(0, 3):
                     if index < req_pixels:
                         array[p][q] = int(bin(array[p][q])[2:9] + b_message[index], 2)
                         index += 1
-            array=array.reshape(height, width, n)
+            array = array.reshape(height, width, n)
             enc_img = Image.fromarray(array.astype('uint8'), img.mode)
             enc_img.save(dest)
 
@@ -349,15 +350,18 @@ class SETS():
         return message[:-5]
 
     def openURL(self, url):
+        """ Open the system-specific browser with provided url """
         try:
             webbrowser.open(url, new=2, autoraise=True)
         except:
             messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
 
     def openWikiPage(self, pagename):
+        """ Request a browser tab with provided pagename """
         self.openURL(self.getWikiURL(pagename))
 
     def getWikiURL(self, pagename):
+        """ Convert provided pagename into an URL to find the page on the wiki """
         return "https://sto.fandom.com/wiki/"+pagename.replace(" ", "_")
 
     def fetchOrRequestHtml(self, url, designation):
@@ -475,6 +479,7 @@ class SETS():
 
 
     def iconNameCleanup(self, text):
+        """ Adjustments needed to convert cargo name to image URL name """
         text = text.replace('Q%27s_Ornament%3A_', '')
         # Much of this can be removed if the wiki templates have their lowercase forces removed
         text = re.sub('_From_', '_from_', text)
@@ -489,6 +494,10 @@ class SETS():
         return text
 
     def fetchImage(self, url, designation):
+        """
+        Attempt to get image from <url>, saved as <designation> in local cache
+        - will record failure and avoid re-trying that error until a designated number of days has passed
+        """
         today = datetime.date.today()
         if not self.args.allfetch and url in self.persistent['imagesFail'] and self.persistent['imagesFail'][url]:
             daysSinceFail = today - datetime.date.fromisoformat(self.persistent['imagesFail'][url])
@@ -512,6 +521,7 @@ class SETS():
         return img_request.content
 
     def filepath_sanitizer(self, path):
+        """ Take provided path, remove characters inappropriate for saving as a filename, return as path """
         (path_only, name) = os.path.split(path)
         name = self.filename_sanitizer(name)
         path_converted = os.path.join(path_only, name)
@@ -519,6 +529,7 @@ class SETS():
         return path_converted
 
     def filename_sanitizer(self, name):
+        """ Remove inappropriate filename characters (os agnostic rather than specific) """
         name_only, chosenExtension = os.path.splitext(name)
 
         name_only = name_only.replace('/', '_')  # Missed by the path sanitizer
@@ -614,6 +625,7 @@ class SETS():
 
     def fetch_image_from_url(self, url, designation, factionCode, factionCodeDefault, filenameNoFaction, filenameDefault):
         image_data = self.fetchImage(url, designation)
+        """ Try variations of image name to download from the wiki, returns the image """
         url4 = url3 = url2 = ''
 
         if image_data is None:
@@ -638,6 +650,7 @@ class SETS():
         return image_data
 
     def fetch_image(self, filename, width, height, forceAspect):
+        """ Open local image and provide an image with provided sizing """
         try:
             image_load = Image.open(filename)
         except PIL.UnidentifiedImageError:
@@ -657,6 +670,7 @@ class SETS():
         return tk_image
 
     def deHTML(self, textBlock, leaveHTML=False):
+        """ Remove HTML escaping, and optionally remove HTML tags """
         textBlock = html.unescape(html.unescape(textBlock)) # Twice because the wiki overlaps some
 
         if not leaveHTML: textBlock = re.sub(CLEANR, '', textBlock)
@@ -664,6 +678,7 @@ class SETS():
         return textBlock
 
     def deWikify(self, textBlock, leaveHTML=False):
+        """ Remove wiki format marks """
         textBlock = self.deHTML(textBlock, leaveHTML) # required first-- the below are *secondary* filters due to wiki formatting
         textBlock = textBlock.replace('&lt;',"<")
         textBlock = textBlock.replace('&gt;',">")
@@ -774,6 +789,7 @@ class SETS():
         #return ["{0} {1} {2}".format(item['item'], item['mark'], ''.join(item['modifiers'])) for item in self.build[key] if item is not None][:len]
 
     def getEmptyItem(self):
+        """ Provide an 'item' dict with empty formatting """
         return {"item": "", "image": self.emptyImage}
 
     def sanitizeEquipmentName(self, name):
@@ -783,6 +799,7 @@ class SETS():
         return name
 
     def precachePreload(self, limited=False):
+        """ Cache all popup and tooltip lists for full app functionality """
         self.logWriteBreak('precachePreload START')
         self.perf('downloads');self.precache_downloads();self.perf('downloads', 'stop')
         self.perf('cache-ships');self.precacheShips();self.perf('cache-ships', 'stop')
@@ -804,6 +821,7 @@ class SETS():
         self.logWriteBreak('precachePreload END')
 
     def precache_equipment_all(self, limited=False):
+        """ Precache all known equipment types """
         equipment_types = [
             'Ship Fore Weapon', 'Ship Aft Weapon', 'Ship Device', 'Hangar Bay', 'Experimental',
             'Ship Deflector Dish', 'Ship Secondary Deflector', 'Impulse Engine', 'Warp', 'Singularity', 'Ship Shields',
@@ -816,13 +834,14 @@ class SETS():
         return
 
     def precacheIconCleanup(self):
-        #preliminary gathering for self-cleaning icon folder
+        """ preliminary gathering for self-cleaning icon folder """
         #equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
         boffIcons = self.cache['boffTooltips']['space'].keys()
         boffIcons += self.cache['boffTooltips']['ground'].keys()
 
 
     def precacheEquipmentSingle(self, name, keyPhrase, item):
+        """Add an item to caches """
         name = self.sanitizeEquipmentName(name)
         if 'Hangar - Advanced' in name or 'Hangar - Elite' in name:
             return
