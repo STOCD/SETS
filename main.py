@@ -20,7 +20,7 @@ from tkinter import Tk
 from tkinter import BOTH, BOTTOM, DISABLED, END, FLAT, HORIZONTAL
 from tkinter import LEFT, NORMAL, RIGHT, TOP, VERTICAL, WORD, X, Y
 from tkinter import DoubleVar, IntVar, StringVar
-from tkinter import Canvas, Checkbutton, Entry, Frame, Label, Menu, Menubutton, Message
+from tkinter import Canvas, Checkbutton, Entry, Frame, Label, Menu, Menubutton  #, Message
 from tkinter import OptionMenu, PhotoImage, Radiobutton, Scale, Scrollbar, Text, Toplevel
 from tkinter import font
 from tkinter import filedialog
@@ -305,6 +305,8 @@ class SETS():
             n = 3
         elif img.mode == 'RGBA':
             n = 4
+        else:
+            return
         total_pixels = array.size//n
         message += "$t3g0"
         b_message = ''.join([format(ord(i), "08b") for i in message])
@@ -327,11 +329,14 @@ class SETS():
             n = 3
         elif img.mode == 'RGBA':
             n = 4
+        else:
+            return
+
         total_pixels = array.size//n
         hidden_bits = ""
         for p in range(total_pixels):
             if p % 5000 == 0:
-                self.progressBarUpdate()
+                self.progress_bar_update()
             for q in range(0, 3):
                 hidden_bits += (bin(array[p][q])[2:][-1])
         hidden_bits = [hidden_bits[i:i+8] for i in range(0, len(hidden_bits), 8)]
@@ -357,8 +362,8 @@ class SETS():
 
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
-        cache_base = self.getFolderLocation('cache')
-        override_base = self.getFolderLocation('override')
+        cache_base = self.get_folder_location('cache')
+        override_base = self.get_folder_location('override')
         if not os.path.exists(cache_base):
             return
 
@@ -375,7 +380,7 @@ class SETS():
                     s = html_file.read()
                     return HTML(html=s, url = 'https://sto.fandom.com/')
         r = self.session.get(url)
-        self.makeFilenamePath(os.path.dirname(filename))
+        self.make_filename_path(os.path.dirname(filename))
         with open(filename, 'w', encoding="utf-8") as html_file:
             html_file.write(r.text)
             self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1)
@@ -384,8 +389,8 @@ class SETS():
 
     def fetchOrRequestJson(self, url, designation, local=False):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
-        cache_base = self.resource_path(self.settings['folder']['local']) if local else self.getFolderLocation('cache')
-        override_base = self.getFolderLocation('override')
+        cache_base = self.resource_path(self.settings['folder']['local']) if local else self.get_folder_location('cache')
+        override_base = self.get_folder_location('override')
         if not os.path.exists(cache_base):
             return
 
@@ -407,7 +412,7 @@ class SETS():
                 self.clearCacheFolder(designation+".json")
         elif not local:
             r = requests.get(url)
-            self.makeFilenamePath(os.path.dirname(filename))
+            self.make_filename_path(os.path.dirname(filename))
             with open(filename, 'w') as json_file:
                 json.dump(r.json(),json_file)
                 self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
@@ -491,7 +496,7 @@ class SETS():
                 # Previously failed, do not attempt download again until next reattempt days have passed
                 return None
 
-        self.progressBarUpdate(text=designation)
+        self.progress_bar_update(text=designation)
         img_request = requests.get(url)
         self.logWriteTransaction('fetchImage', 'download', str(img_request.headers.get('Content-Length')), url, 1, [str(img_request.status_code), designation])
 
@@ -529,7 +534,7 @@ class SETS():
 
     def fetchOrRequestImage(self, url, designation, width = None, height = None, faction = None, forceAspect = False, loop=1):
         """Request image from web or fetch from local cache"""
-        cache_base = self.getFolderLocation('images')
+        cache_base = self.get_folder_location('images')
         if not os.path.exists(cache_base):
             return
 
@@ -545,7 +550,7 @@ class SETS():
         extension = "jpeg" if url.endswith("jpeg") or url.endswith("jpg") else "png"
         fileextension = '.'+extension
         filename = filenameDefault = filenameNoFaction = os.path.join(*filter(None, [cache_base, designation]))+fileextension
-        override_base = self.getFolderLocation('override')
+        override_base = self.get_folder_location('override')
         internal_base = self.resource_path(self.settings['folder']['images'])
         local_base = self.settings['folder']['images']
         filenameOverride = os.path.join(*filter(None, [override_base, designation]))+fileextension
@@ -572,26 +577,26 @@ class SETS():
                 filename = filenameLocal
 
         if os.path.exists(filename):
-            self.progressBarUpdate()
+            self.progress_bar_update()
         elif not self.args.nofetch:
             image_data = self.fetch_image_from_url(url, designation, factionCode, factionCodeDefault, filenameNoFaction, filenameDefault)
 
         if os.path.exists(filenameExisting):
-            self.progressBarUpdate(int(self.updateOnHeavyStep / 2))
+            self.progress_bar_update(int(self.updateOnHeavyStep / 2))
             self.persistent['imagesFactionAliases'][filename] = filenameExisting
             self.logWriteTransaction('Image File', 'alias', '----', filename, 3, [filenameExisting])
             self.auto_save(quiet=True)
             filename = filenameExisting
 
         if image_data is not None:
-            self.progressBarUpdate(self.updateOnHeavyStep)
+            self.progress_bar_update(self.updateOnHeavyStep)
             self.perf('file_write')
             with open(filename, 'wb') as handler:
                 handler.write(image_data)
             self.logWriteTransaction('Image File', 'write', len(str(os.path.getsize(filename))) if os.path.exists(filename) else '----', filename, 1)
             self.perf('file_write', 'stop', cumulative=True)
         elif not os.path.exists(filename):
-            self.progressBarUpdate(int(self.updateOnHeavyStep / 4))
+            self.progress_bar_update(int(self.updateOnHeavyStep / 4))
             return self.emptyImage
 
         image_result = self.fetch_image(filename, width, height, forceAspect)
@@ -609,6 +614,7 @@ class SETS():
 
     def fetch_image_from_url(self, url, designation, factionCode, factionCodeDefault, filenameNoFaction, filenameDefault):
         image_data = self.fetchImage(url, designation)
+        url4 = url3 = url2 = ''
 
         if image_data is None:
             url2 = self.iconNameCleanup(url)
@@ -692,7 +698,7 @@ class SETS():
         """Request image from web or fetch from local cache"""
         cache_base = self.settings['folder']['local']
         cache_base = self.resource_path(cache_base)
-        self.makeFilenamePath(cache_base)
+        self.make_filename_path(cache_base)
         filename = os.path.join(*filter(None, [cache_base, filename]))
         if os.path.exists(filename):
             image = Image.open(filename)
@@ -778,7 +784,7 @@ class SETS():
 
     def precachePreload(self, limited=False):
         self.logWriteBreak('precachePreload START')
-        self.perf('downloads');self.precacheDownloads();self.perf('downloads', 'stop')
+        self.perf('downloads');self.precache_downloads();self.perf('downloads', 'stop')
         self.perf('cache-ships');self.precacheShips();self.perf('cache-ships', 'stop')
         self.perf('cache-templates');self.precacheTemplates();self.perf('cache-templates', 'stop')
         self.perf('cache-doffspace');self.precacheDoffs("Space");self.perf('cache-doffspace', 'stop')
@@ -1338,6 +1344,7 @@ class SETS():
             'autosave': '.autosave.json',
             'cache': '.cache_SETS.json',
             'skills':   'skills.json',
+            'logfile': 'SETS###.log',  # ### to be replaced with time code
             'perf_to_retain': 50,
             'folder': {
                 'config' : '.config',
@@ -1348,6 +1355,7 @@ class SETS():
                 'local' : 'local',
                 'library' : 'library',
                 'backups' : 'backups',
+                'logs': 'logs',
             }
         }
 
@@ -2095,7 +2103,7 @@ class SETS():
         """Callback for import button"""
         if self.in_splash():
             return
-        initialDir = self.getFolderLocation('library')
+        initialDir = self.get_folder_location('library')
         inFilename = filedialog.askopenfilename(filetypes=[('SETS files', '*.json *.png'),('JSON files', '*.json'),('PNG image','*.png'),('All Files','*.*')], initialdir=initialDir)
         self.importByFilename(inFilename)
 
@@ -2117,12 +2125,12 @@ class SETS():
     def merge_file_create(self):
         eol = '\r\n'
         name = 'Merge file'
-        initialDir = self.getFolderLocation('library')
+        initialDir = self.get_folder_location('library')
         inFilename = filedialog.askopenfilename(filetypes=[('SETS merge files', '*.txt'),('All Files','*.*')], initialdir=initialDir)
         if not inFilename or not os.path.exists(inFilename) or not os.path.getsize(inFilename):
             return False
 
-        self.makeSplash()
+        self.make_splash()
         with open(inFilename, 'r') as inFile:
             self.logWriteTransaction(name, 'loaded', '', inFilename, 1)
             self.logWriteBreak('MERGE PROCESSING START')
@@ -2132,7 +2140,7 @@ class SETS():
             data = re.sub('{{.[^}]*}}[\r\n]+', '', data, re.M)  # Clear unused merge entries
             data = re.sub('{{.[^}]*}}', '', data)  # Clear unused merge entries
             self.logWriteBreak('MERGE PROCESSING END')
-        self.closeSplash()
+        self.close_splash()
 
         self.get_display_window('Merge export', data)
 
@@ -2176,7 +2184,7 @@ class SETS():
             return False
         self.logWriteBreak('IMPORT START')
         name = '{} file'.format('Autosave' if autosave else 'Template')
-        self.makeSplash()
+        self.make_splash()
         if inFilename.lower().endswith('.png'):
             # image = Image.open(inFilename)
             # self.build = json.loads(image.text['build'])
@@ -2184,7 +2192,7 @@ class SETS():
                 self.buildImport = json.loads(self.decodeBuildFromImage(inFilename))
             except:
                 self.logWriteTransaction(name, 'PNG load error', '', inFilename, 0)
-                self.removeSplashWindow()
+                self.remove_splash_window()
                 return
         else:
             with open(inFilename, 'r') as inFile:
@@ -2222,7 +2230,7 @@ class SETS():
             self.logWriteTransaction(name, 'loaded', '', inFilename, 0, [logNote])
             self.logWriteBreak('IMPORT PROCESSING END')
 
-        self.closeSplash()
+        self.close_splash()
         if not result and self.persistent['forceJsonLoad']:
             return self.importByFilename(inFilename, True)
         else:
@@ -2257,7 +2265,7 @@ class SETS():
         screenBottomRightY = screenTopLeftY + self.window.winfo_height()
         image = ImageGrab.grab(bbox=(screenTopLeftX, screenTopLeftY, screenBottomRightX, screenBottomRightY))
 
-        initialDir = self.getFolderLocation('library')
+        initialDir = self.get_folder_location('library')
         filetypesOptions = [('PNG image','*.png'),('JSON file', '*.json'),('All Files','*.*')]
         defaultExtensionOption = 'png'
         if self.persistent['exportDefault'].lower() == 'json':
@@ -2679,8 +2687,8 @@ class SETS():
         redditWindow.mainloop()
 
     def clearCacheFolder(self, file=None):
-        dir = self.getFolderLocation('cache')
-        dirBak = self.getFolderLocation('backups')
+        dir = self.get_folder_location('cache')
+        dirBak = self.get_folder_location('backups')
         for filename in os.listdir(dir):
             if filename == file or filename.endswith('.json') or filename.endswith('.html'):
                 file_path = os.path.join(dir, filename)
@@ -2695,7 +2703,7 @@ class SETS():
         #self.precachePreload()
 
     def clearImagesFolder(self):
-        dir = self.getFolderLocation('images')
+        dir = self.get_folder_location('images')
         for filename in os.listdir(dir):
             file_path = os.path.join(dir, filename)
             try:
@@ -2722,12 +2730,12 @@ class SETS():
             self.requestWindowUpdateHold(0)
             self.precachePreload()
         elif type == 'cacheSave':
-            self.save_json(self.getFileLocation('cache'), self.cache, 'Cache file', quiet=False)
+            self.save_json(self.get_file_location('cache'), self.cache, 'Cache file', quiet=False)
         elif type == 'openLog':
             self.logWindowCreate()
         elif type == 'openSplash':
-            self.updateWindowSize()
-            self.makeSplashWindow(close=True)
+            self.update_window_size()
+            self.make_splash_window(close=True)
         elif type == 'predownloadShipImages':
             self.predownloadShipImages()
         elif type == 'predownloadGearImages':
@@ -2746,8 +2754,8 @@ class SETS():
         elif type == 'resetPosition':
                 self.persistent['geometry'] = ''
                 self.auto_save()
-                # self.updateWindowSize()
-                self.setupGeometry()
+                # self.update_window_size()
+                self.setup_geometry()
         elif type == 'merge_file_create':
             self.merge_file_create()
         elif type == 'backupCache':
@@ -5301,7 +5309,7 @@ class SETS():
         elif var_name == 'boffSort' or var_name == 'boffSort2':
             self.setupBoffFrame('space', self.backend['shipHtml'])
         elif var_name == 'uiScale':
-            self.updateWindowSize(caller='persistentSet-uiScale')
+            self.update_window_size(caller='persistentSet-uiScale')
             pass
 
 
@@ -5475,7 +5483,7 @@ class SETS():
     def logFullWrite(self, notice, log_only=False):
         self.logFull.set(self.lineTruncate(self.logFull.get()+'\n'+notice))
         if not log_only:
-            self.progressBarUpdate(text=notice)
+            self.progress_bar_update(text=notice)
 
     def logminiWrite(self, notice, level=0):
         if level == 0:
@@ -5601,7 +5609,7 @@ class SETS():
         self.splashFrame = Frame(self.containerFrame, bg=self.theme['frame']['bg'])
 
         self.focusFrameCallback(type='splash', init=True)
-        self.makeSplash()
+        self.make_splash()
 
         self.setupFooterFrame()
         self.setupLogoFrame()
@@ -5619,12 +5627,12 @@ class SETS():
             self.logWriteBreak('Build Frames (no initial load)')
             self.setupCurrentBuildFrames()
             self.resetBuildFrames()
-            self.closeSplash()
+            self.close_splash()
 
         self.focusFrameCallback(type=self.args.startuptab)
         self.containerFrame.pack_propagate(False)
 
-    def argParserSetup(self):
+    def arg_parser_setup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
         parser.add_argument('--configfile', type=int, help='Set configuration file (must be .JSON)')
         parser.add_argument('--configfolder', type=int, help='Set configuration folder (contains config file, state file, default library location')
@@ -5647,51 +5655,51 @@ class SETS():
         if self.args.configfolder is not None:
             self.settings['folder']['config'] = self.args.configfolder
 
-    def configFolderLocation(self):
+    def config_folder_location(self):
         # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
         system = sys.platform
         if os.path.exists(self.settings['folder']['config']):
             # We already have a config folder in the app home directory, use portable mode
-            filePath = self.settings['folder']['config']
+            file_path = self.settings['folder']['config']
         elif os.path.exists(self.fileConfigName):
             # We already have a config file in the app home directory, use portable mode
-            filePath=''
+            file_path = ''
         elif system == 'win32':
             # (onedrive or documents -- Python intercepts AppData)
-            filePathOnedrive = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents')
-            filePathOnedriveSETS = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents', 'SETS')
-            filePathDocumentsSETS = os.path.join(os.path.expanduser('~'), 'Documents', 'SETS')
+            file_path_onedrive = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents')
+            file_path_onedrive_sets = os.path.join(os.path.expanduser('~'), 'OneDrive', 'Documents', 'SETS')
+            file_path_documents_sets = os.path.join(os.path.expanduser('~'), 'Documents', 'SETS')
             if sys.getwindowsversion().major < 6:
-                # earlier than WinvVista,7+
-                filePath = filePathDocumentsSETS
+                # earlier than Win Vista,7+
+                file_path = file_path_documents_sets
             else:
                 # WinVista,7+
-                if os.path.exists(filePathOnedrive):
-                    filePath = filePathOnedriveSETS
+                if os.path.exists(file_path_onedrive):
+                    file_path = file_path_onedrive_sets
                 else:
-                    filePath = filePathDocumentsSETS
+                    file_path = file_path_documents_sets
         elif system == 'darwin':
             # OSX
-            filePath = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support', 'SETS')
+            file_path = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support', 'SETS')
         else:
             # Unix
-            filePath = os.path.join(os.path.expanduser('~'), '.config', 'SETS')
+            file_path = os.path.join(os.path.expanduser('~'), '.config', 'SETS')
 
-        self.makeFilenamePath(filePath)
+        self.make_filename_path(file_path)
 
-        return filePath
+        return file_path
 
-    def configFileLocation(self):
-        filePath = self.configFolderLocation()
+    def config_file_location(self):
+        file_path = self.config_folder_location()
 
-        if os.path.exists(filePath):
-            fileName = os.path.join(filePath, self.fileConfigName)
+        if os.path.exists(file_path):
+            file_name = os.path.join(file_path, self.fileConfigName)
         else:
-            fileName = self.fileConfigName
+            file_name = self.fileConfigName
 
-        return fileName
+        return file_name
 
-    def makeFilenamePath(self, filePath):
+    def make_filename_path(self, filePath):
         if not os.path.exists(filePath):
             try:
                 os.makedirs(filePath)
@@ -5699,61 +5707,60 @@ class SETS():
             except:
                 self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
 
-    def getFolderLocation(self, subfolder=None):
-        filePath = self.configFolderLocation()
+    def get_folder_location(self, subfolder=None):
+        file_path = self.config_folder_location()
 
         if subfolder is not None and subfolder in self.settings['folder']:
-            filePath = os.path.join(filePath, self.settings['folder'][subfolder])
-        self.makeFilenamePath(filePath)
+            file_path = os.path.join(file_path, self.settings['folder'][subfolder])
+        self.make_filename_path(file_path)
 
-        if not os.path.exists(filePath):
-            filePath = ''
+        if not os.path.exists(file_path):
+            file_path = ''
             if subfolder in self.settings['folder']:
-                filePath = self.settings['folder'][subfolder]
+                file_path = self.settings['folder'][subfolder]
 
-        return filePath
+        return file_path
 
-
-    def getFileLocation(self, type):
-        fileArgs = None
+    def get_file_location(self, file_type):
+        file_args = None
         touch_on_access = False
-        filePath = self.configFolderLocation()
-        fileBase = self.settings[type] if type in self.settings else ''
-        if type == 'autosave':
-            filePath = self.getFolderLocation('library')
+        file_path = self.config_folder_location()
+        file_base = self.settings[file_type] if file_type in self.settings else ''
+        if file_type == 'autosave':
+            file_path = self.get_folder_location('library')
             touch_on_access = True
-        elif type == 'state':
-            fileBase = self.fileStateName
+        elif file_type == 'state':
+            file_base = self.fileStateName
             touch_on_access = True
-        elif type == 'template':
-            filePath = self.getFolderLocation('library')
-            fileArgs = self.args.file
-        elif type == 'cache':
+        elif file_type == 'template':
+            file_path = self.get_folder_location('library')
+            file_args = self.args.file
+        elif file_type == 'cache':
             touch_on_access = True
         else:
             # Invalid option
             return
 
-        if fileArgs is not None and os.path.exists(fileArgs):
-            fileName = fileArgs
+        if file_args is not None and os.path.exists(file_args):
+            fileName = file_args
         else:
-            if os.path.exists(filePath):
-                fileName = os.path.join(filePath, fileBase)
+            if os.path.exists(file_path):
+                fileName = os.path.join(file_path, file_base)
                 if touch_on_access and not os.path.exists(fileName):
                     open(fileName, 'w').close()
 
-            if not os.path.exists(filePath):
-                fileName = fileBase
+            if not os.path.exists(file_path):
+                fileName = file_base
 
-        if type == 'template':
+        if file_type == 'template':
             fileName += '.png' if os.path.exists(fileName+'.png') else '.json'
 
         return fileName
 
 
-    def configFileLoad(self):
+    def config_file_load(self):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
-        configFile = self.configFileLocation()
+        configFile = self.config_file_location()
         if not os.path.exists(configFile):
             configFile = self.fileConfigName
 
@@ -5773,9 +5780,9 @@ class SETS():
         else:
             self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, 1)
 
-    def stateFileLoad(self, init=False):
+    def state_file_load(self, init=False):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
-        configFile = self.getFileLocation('state')
+        configFile = self.get_file_location('state')
 
         if os.path.exists(configFile):
             self.logWriteTransaction('State File', 'found', '', configFile, 1)
@@ -5805,7 +5812,7 @@ class SETS():
     def auto_save(self, type='state', quiet=False):
         self.autosaving = True
         if type == 'state' or type == 'all':
-            self.save_json(self.getFileLocation('state'), self.persistent, 'State file', quiet)
+            self.save_json(self.get_file_location('state'), self.persistent, 'State file', quiet)
 
         if self.persistent['autosave'] and \
                 (type == 'template' or type == 'all'):
@@ -5817,7 +5824,7 @@ class SETS():
                     export = self.buildImport + [self.build]
             else:
                 export = self.build
-            self.save_json(self.getFileLocation('autosave'), export, 'Auto save file', quiet)
+            self.save_json(self.get_file_location('autosave'), export, 'Auto save file', quiet)
         self.autosaving = False
 
     def save_json(self, file, tree, title, quiet=False):
@@ -5830,12 +5837,12 @@ class SETS():
             pass
 
     def build_auto_load(self):
-        configFile = self.getFileLocation('autosave')
+        configFile = self.get_file_location('autosave')
         autosave_exists = os.path.exists(configFile)
         if autosave_exists:
             autosave_result = self.importByFilename(configFile, autosave=True)
         if not autosave_exists or not autosave_result:
-            autosave_result = self.importByFilename(self.getFileLocation('template'))
+            autosave_result = self.importByFilename(self.get_file_location('template'))
 
         return autosave_result
 
@@ -5847,6 +5854,8 @@ class SETS():
     def init_settings(self):
         """Initialize session settings state"""
         self.session = HTMLSession()
+        self.args = None
+
         self.resetInternals()
         self.resetSettings()
 
@@ -5867,8 +5876,7 @@ class SETS():
         self.resetCache()
         self.resetBackend()
 
-
-    def exportSettings(self):
+    def export_settings(self):
         try:
             with filedialog.asksaveasfile(defaultextension=".json",filetypes=[("JSON file","*.json"),("All Files","*.*")]) as outFile:
                 json.dump(self.settings, outFile)
@@ -5876,7 +5884,7 @@ class SETS():
         except AttributeError:
             pass
 
-    def setupEmptyImages(self):
+    def setup_empty_images(self):
         self.emptyImageFaction = dict()
         self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
         self.epicImage = self.fetchOrRequestImage(self.wikiImages+"Epic.png", "Epic")
@@ -5890,7 +5898,7 @@ class SETS():
         self.emptyImageFaction['romulan'] = self.fetchOrRequestImage(self.wikiImages+"Romulan_Republic_Emblem.png", "romulan_emblem", width, height)
         self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", width, height)
 
-    def precacheDownloads(self):
+    def precache_downloads(self):
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
@@ -5906,7 +5914,7 @@ class SETS():
         #self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
 
 
-    def setupGeometry(self, default=False):
+    def setup_geometry(self, default=False):
         # Check that it's not off-screen?
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
@@ -5918,7 +5926,7 @@ class SETS():
         if not default and 'geometry' in self.persistent and self.persistent['geometry']:
                 if self.persistent['geometry'] == '-fullscreen':
                     self.window.attributes(self.persistent['geometry'], True)
-                    self.updateWindowSize(caller='setupGeometry', no_geometry=True)
+                    self.update_window_size(caller='setup_geometry', no_geometry=True)
                 elif self.persistent['geometry'] == 'zoomed':
                     self.window.state(self.persistent['geometry'])
                 else:
@@ -5964,7 +5972,7 @@ class SETS():
                 self.logWritePerf(name, tags=[type, now])
             return now
 
-    def makeSplash(self, close=False):
+    def make_splash(self, close=False):
         self.focusFrameCallback(type='splash')
         self.splash_window_interior(self.splashFrame)
         self.requestWindowUpdate(type='force')
@@ -5974,10 +5982,10 @@ class SETS():
             self.splashProgressBarUpdates = 0
             self.splashProgressBar.start()
 
-    def closeSplash(self):
+    def close_splash(self):
         self.focusFrameCallback(type='return')
 
-    def makeSplashWindow(self, close=False):
+    def make_splash_window(self, close=False):
         if self.splashWindow is not None:
             try:
                 self.splashWindow.focus_set()
@@ -5995,7 +6003,7 @@ class SETS():
             self.splashProgressBar.start()
 
 
-    def removeSplashWindow(self):
+    def remove_splash_window(self):
         if self.splashWindow is not None:
             self.splashWindow.destroy()
             self.perf('splash', 'stop')
@@ -6003,7 +6011,7 @@ class SETS():
             self.splashProgressBar = None
 
 
-    def progressBarUpdate(self, weight=1, text=None):
+    def progress_bar_update(self, weight=1, text=None):
         # weight denotes how much progress that item is
         if self.splashProgressBar is None or self.visible_window != 'splash':
             return
@@ -6020,12 +6028,12 @@ class SETS():
             self.requestWindowUpdate()
             pass
 
-    def setupUIScaling(self,event=None):
+    def setup_ui_scaling(self, event=None):
         scale = float(self.persistent['uiScale']) if 'uiScale' in self.persistent else 1.0
         screen_width = self.window.winfo_screenwidth()
         if screen_width < self.windowWidth:
             scale = float('{:.2f}'.format(screen_width / self.windowWidth))
-            self.logWriteSimple('setupUIScaling', 'scale change', 1, '{}'.format(scale))
+            self.logWriteSimple('setup_ui_scaling', 'scale change', 1, '{}'.format(scale))
         self.factor = ( self.dpi / 96 )  # May need to be / 72, but the current framing doesn't work at /72 yet.
 
         if self.factor != 1:  # If the framing gets fixed at /72, this should be remove-able
@@ -6048,7 +6056,7 @@ class SETS():
         self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, self.scale, self.dpi))
 
 
-    def updateWindowSize(self, caller='', init=False, no_geometry=False):
+    def update_window_size(self, caller='', init=False, no_geometry=False):
         if init:
             self.itemBoxX = self.itemBoxX_default = 32
             self.itemBoxY = self.itemBoxY_default = 42
@@ -6081,9 +6089,9 @@ class SETS():
         self.splashBoxX = self.windowWidth * 2 / 3
         self.splashBoxY = self.windowActiveHeight * 2 / 3
 
-        self.setupUIScaling()
+        self.setup_ui_scaling()
         if not no_geometry:
-            self.setupGeometry()
+            self.setup_geometry()
 
         if init:
             return
@@ -6142,17 +6150,17 @@ class SETS():
         self.init_settings()
 
         self.logWriteBreak('CONFIG')
-        self.argParserSetup()  # First for location overrides
-        self.stateFileLoad(init=True)
-        self.configFileLoad()  # Third to override persistent
+        self.arg_parser_setup()  # First for location overrides
+        self.state_file_load(init=True)
+        self.config_file_load()  # Third to override persistent
         self.precache_theme_fonts()  # Fourth in case of new theme from configs
-        self.updateWindowSize(init=True)
+        self.update_window_size(init=True)
 
         self.logWriteBreak('PREP')
         self.init_splash()
         self.logWriteSimple('CWD', '', 1, tags=[os.getcwd()])
-        self.setupEmptyImages()
-        # self.precacheDownloads()
+        self.setup_empty_images()
+        # self.precache_downloads()
 
         self.logWriteBreak('UI BUILD')
         self.setupUIFrames()
@@ -6162,5 +6170,6 @@ class SETS():
             return
 
         self.window.mainloop()
+
 
 SETS().run()
