@@ -2384,12 +2384,24 @@ class SETS():
             if not (col == 1 and split):
                 if child:
                     return False
+            #ground: are there points spend in the sub-tree (in one of the "arms")?
+            if environment == 'ground' and col == 0 and self.skillGetFieldSkill(environment, (rank, row, col), type='side') == "":
+                try: # the part after the 'and' prevents interference from a wrong sub-tree
+                    if self.build['skilltree']['ground'][self.skillGetFieldNode('ground', (rank, row+1, 0), type='name')] and self.skillGetFieldSkill(environment, (rank, row+1, 0), type='side') == "l":
+                        return False
+                except KeyError:
+                    pass
+                try:
+                    if self.build['skilltree']['ground'][self.skillGetFieldNode('ground', (rank, row-1, 0), type='name')] and self.skillGetFieldSkill(environment, (rank, row-1, 0), type='side') == "r":
+                        return False
+                except KeyError:
+                    pass
 
         else:  # Can we turn this on?
             # Can we activate that rank?
             if environment == 'space':
                 if self.backend['skillCount'][environment]["sum"] < rankReqs[rank]:
-                    return False
+                    return False                
             if self.backend['skillCount'][environment]["sum"] + 1 > maxSkills:
                 return False
             # Is our required already True?
@@ -2398,6 +2410,15 @@ class SETS():
             if not (col == 2 and split):
                 if not parent:
                     return False
+            # ground: is the sub-tree unlocked? (can the "arms" be selected)
+            if environment == 'ground':
+                side = self.skillGetFieldSkill(environment, (rank, row, col), type='side')
+                if side == 'r':
+                    if not self.build['skilltree']['ground'][self.skillGetFieldNode('ground', (rank, row+1, 0), type='name')]:
+                        return False
+                elif side == 'l':
+                    if not self.build['skilltree']['ground'][self.skillGetFieldNode('ground', (rank, row-1, 0), type='name')]:
+                        return False
 
         return True
 
