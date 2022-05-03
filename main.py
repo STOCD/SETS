@@ -1285,28 +1285,6 @@ class SETS():
             'versioning': 0,
             'perf': dict(),
             'image_beta': 0,
-            'tags': {
-                'curated':0,
-                'maindamage':{
-                    'energy':0, 'kinetic':0, 'exotic':0, 'drain':0
-                },
-                'energytype':{
-                    'phaser':0, 'disruptor':0, 'plasma':0, 'polaron':0, 'Tetryon':0, 'antiproton':0
-                },
-                'weapontype':{
-                    'cannon':0, 'beam':0, 'mine':0, 'torpedo':0, 'sia':0, 'dsd':0, 'console-spam':0
-                },
-                'state':0,
-                'role':{
-                    'dps':0, 'heavytank':0, 'debufftank':0, 'nanny':0, 'off-meta':0, 'theme':0
-                },
-                'pvprole':{
-                    'PvP:':0, 'dogfighter':0, 'cruiser-carrier':0, 'science-spam':0, 'healer':0
-                },
-                'budget':{
-                    'no promo / lockbox ships':0, 'no lobi ships':0, 'no lobi gear':0, 'no c-store ships':0
-                }
-            }
         }
 
     def get_debug_default(self):
@@ -1375,6 +1353,28 @@ class SETS():
                 'library' : 'library',
                 'backups' : 'backups',
                 'logs': 'logs',
+            },
+            'tags': {
+                'curated': 0,
+                'maindamage': {
+                    'energy': 0, 'kinetic': 0, 'exotic': 0, 'drain': 0
+                },
+                'energytype': {
+                    'phaser': 0, 'disruptor': 0, 'plasma': 0, 'polaron': 0, 'Tetryon': 0, 'antiproton': 0
+                },
+                'weapontype': {
+                    'cannon': 0, 'beam': 0, 'mine': 0, 'torpedo': 0, 'sia': 0, 'dsd': 0, 'console-spam': 0
+                },
+                'state': 0,
+                'role': {
+                    'dps': 0, 'heavytank': 0, 'debufftank': 0, 'nanny': 0, 'off-meta': 0, 'theme': 0
+                },
+                'pvprole': {
+                    'PvP': 0, 'dogfighter': 0, 'cruiser-carrier': 0, 'science-spam': 0, 'healer': 0
+                },
+                'budget': {
+                    'no promo / lockbox ships': 0, 'no lobi ships': 0, 'no lobi gear': 0, 'no c-store ships': 0
+                }
             }
         }
 
@@ -4606,7 +4606,7 @@ class SETS():
         roleframe = Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]) #roleframe: frame for build roles
         roleframe.grid(row=0, column=0, columnspan=4, sticky="nsew")
         Label(roleframe, text="Role:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'], font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=6, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, roleframe, self.persistent['tags']['role'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', "role", "grid", HORIZONTAL, 1)
+        self.checkbuttonBuildBlock(tagwindow, roleframe, self.settings['tags']['role'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', "role", "grid", HORIZONTAL, 1)
         Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=1, column=0, columnspan=4)
         tagframe.rowconfigure(1, minsize=12)
 
@@ -4615,7 +4615,7 @@ class SETS():
         Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=3, column=0, columnspan=4)
         tagframe.rowconfigure(3, minsize=12)
         Label(mdmgfr, text="Main Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=5, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.persistent['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', "maindamage", "grid", HORIZONTAL, 1)
+        self.checkbuttonBuildBlock(tagwindow, mdmgfr, self.settings['tags']['maindamage'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', "maindamage", "grid", HORIZONTAL, 1)
 
         etypefr = Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]) #etypefr: energy type frame
         etypefr.grid(row=4, column=0, sticky="n")
@@ -4623,13 +4623,13 @@ class SETS():
         Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"]).grid(row=5, column=0, columnspan=4)
         tagframe.rowconfigure(5, minsize=12)
         Label(etypefr, text="Damage Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, etypefr, self.persistent['tags']['energytype'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', "energytype", "grid", VERTICAL, 1)
+        self.checkbuttonBuildBlock(tagwindow, etypefr, self.settings['tags']['energytype'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', "energytype", "grid", VERTICAL, 1)
 
         wtypefr = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #wtypefr: weapon type frame
         wtypefr.grid(row=4, column=1, sticky="n")
         tagframe.columnconfigure(1, weight=1)
         Label(wtypefr, text="Weapons Type:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, wtypefr, self.persistent['tags']['weapontype'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', "weapontype", "grid", VERTICAL, 1)
+        self.checkbuttonBuildBlock(tagwindow, wtypefr, self.settings['tags']['weapontype'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', "weapontype", "grid", VERTICAL, 1)
 
         stypefr = Frame(tagframe, highlightthickness=0, bg=self.theme['app']["fg"])  #stypefr: build state type frame
         stypefr.grid(row=4, column=2, sticky="n")
@@ -4659,13 +4659,14 @@ class SETS():
 
         pvpframe = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #pvpframe: Frame for initial PvP role
         pvpframe.grid(row=7, column=0, columnspan=4, sticky="nsew")
-        self.checkbuttonBuildBlock(tagwindow, pvpframe, ["PvP:"], self.theme['app']['fg'], self.theme['label']['bg'], self.font_tuple_create("title2"), 'tags', 'pvprole')
-        pvptags = self.persistent['tags']['pvprole']
-        pvptags.pop("PvP:")
+        # self.checkbuttonBuildBlock(tagwindow, pvpframe, ["PvP:"], self.theme['app']['fg'], self.theme['label']['bg'], self.font_tuple_create("title2"), 'tags', 'pvprole')
+        pvptags = self.settings['tags']['pvprole']
+        Label(pvpframe, text="PvP:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=len(pvptags), sticky="new")
+        # pvptags.pop("PvP:")
 
-        pvpframe2 = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #pvpframe2: Frame for successive PvP roles
-        pvpframe2.grid(row=8, column=0, columnspan=4, sticky="nsew")
-        self.checkbuttonBuildBlock(tagwindow, pvpframe2, pvptags, self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', 'pvprole', rowoffset=1)
+        # pvpframe2 = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #pvpframe2: Frame for successive PvP roles
+        # pvpframe2.grid(row=8, column=0, columnspan=4, sticky="nsew")
+        self.checkbuttonBuildBlock(tagwindow, pvpframe, pvptags, self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', 'pvprole', rowoffset=1)
 
         Frame(tagframe, highlightthickness=0, bg=self.theme['app']['bg']).grid(row=9, column=0, columnspan=4, sticky="nsew")
         tagframe.rowconfigure(9, minsize=12)
@@ -4673,7 +4674,7 @@ class SETS():
         budgetframe = Frame(tagframe, highlightthickness=0, bg=self.theme['app']['fg'])
         budgetframe.grid(row=10, column=0, columnspan=4, sticky="nsew")
         Label(budgetframe, text="Budget Limitations:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=4, sticky="new")
-        self.checkbuttonBuildBlock(tagwindow, budgetframe, self.persistent['tags']['budget'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', 'budget', rowoffset=1)
+        self.checkbuttonBuildBlock(tagwindow, budgetframe, self.settings['tags']['budget'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', 'budget', rowoffset=1)
 
         tagwindow.wait_visibility()
         tagwindow.grab_set()
