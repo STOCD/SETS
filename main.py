@@ -1369,8 +1369,9 @@ class SETS():
                 'role': {
                     'dps': 0, 'heavytank': 0, 'debufftank': 0, 'nanny': 0, 'off-meta': 0, 'theme': 0
                 },
+                'PvP':0,
                 'pvprole': {
-                    'PvP': 0, 'dogfighter': 0, 'cruiser-carrier': 0, 'science-spam': 0, 'healer': 0
+                    'dogfighter': 0, 'cruiser-carrier': 0, 'science-spam': 0, 'healer': 0
                 },
                 'budget': {
                     'no promo / lockbox ships': 0, 'no lobi ships': 0, 'no lobi gear': 0, 'no c-store ships': 0
@@ -2617,7 +2618,7 @@ class SETS():
         column0 = (self.makeRedditColumn(["**Fore Weapons:**"], self.backend['shipForeWeapons']) +
                    self.makeRedditColumn(["**Aft Weapons:**"], self.backend['shipAftWeapons']) +
                    self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + deviceBlanks[0:(self.backend['shipDevices']-1)], 5+max(self.backend['shipDevices']-1, 1))) 
-        if self.backend['shipHtml']['hangars'] != '':
+        if self.backend['shipHtml']['hangars'] is not None and self.backend['shipHtml']['hangars'] != '':
             column0.extend(self.makeRedditColumn(["**Hangar Pets**"], self.backend['shipHtml']['hangars']))
         if self.backend['shipHtml']['secdeflector'] == 1:
             column0.extend(self.makeRedditColumn(["**Secondary Deflector**"], 1))
@@ -4549,42 +4550,44 @@ class SETS():
         alignment: if frame is managed by pack, then the Checkbuttons will be aligned at that side inside the frame
 
         The method returns the number of checkbuttons inserted"""
-        if geomanager == "grid":
+        if geomanager == "grid":                                                            # prepares frames for grid
             topframe = frame
             insertrow = rowoffset
             insertcolumn = columnoffset
-        elif geomanager == "pack":
+        elif geomanager == "pack":                                                          # prepares frames for pack
             topframe = Frame(frame, bg=bg, highlightthickness=0)
             topframe.pack(side=alignment, fill=BOTH)
             insertrow = 0
             insertcolumn = 0
-        else: return
+        else: return                                                                        # wrong geomanager identifier aborts
         count = 0
-        for t in values:
-            itemframe = Frame(topframe, highlightthickness=0, bg=bg)
-            if orientation==HORIZONTAL:
+        for t in values:                                                                    # repeats the process for each element of the imputted list
+            itemframe = Frame(topframe, highlightthickness=0, bg=bg)                        # Checkbutton and corresponding Label are grouped up in a Frame
+            if orientation==HORIZONTAL:                                                     # places the frame at the right of the last
                 topframe.columnconfigure(insertcolumn, weight=1)
                 itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="n")
                 insertcolumn +=1
-            elif orientation==VERTICAL:
+            elif orientation==VERTICAL:                                                     # places the frame below the last
                 topframe.rowconfigure(insertrow, weight=1)
                 itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="w")
                 insertrow +=1
-            lvar = -1
-            if key != "":
+            lvar = -1 
+            if key != "":                                                                   # searches the build for the individual checkbuttons saved value
                 if key+"|"+t.lower() in self.build[masterkey]:
                     lvar = self.build[masterkey][key+"|"+t.lower()]
+                txt = t
             elif key == "":
-                if t.lower() in self.build[masterkey]:
-                    lvar = self.build[masterkey][t.lower()]
+                if t in self.build[masterkey]:
+                    lvar = self.build[masterkey][t]
+                key = t                                                                     # adjustment if tags dictionary is only 2 levels deep instead of 3
+                txt = ""                                                                    #   ""
             if lvar == -1: lvar = 0
-            v = IntVar(window, value=lvar)
+            v = IntVar(window, value=lvar)                                                  # trace-able variable
             Checkbutton(itemframe, bg=bg, fg = "#000000", variable=v, activebackground=bg).pack(side=LEFT, ipadx=1, padx=0)
-            v.trace_add("write", lambda c1, c2, c3, var=v, text=t, k=key, m=masterkey: self.checkbuttonVarUpdateCallback(var.get(), m, k, text))
-            l = Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=pfont)
+            v.trace_add("write", lambda c1, c2, c3, var=v, text=txt, k=key, m=masterkey: self.checkbuttonVarUpdateCallback(var.get(), m, k, text)) # adds the trace to the variable, so it is updated on change
+            l = Label(itemframe, fg=fg, bg=bg, text=t.capitalize(), font=pfont)             # Label for the checkbutton
             l.pack(side=LEFT, ipadx=0, padx=0)
-
-            l.bind("<Button-1>", lambda e, var=v: self.checkbuttonVarUpdateCallbackToggle(var))
+            l.bind("<Button-1>", lambda e, var=v: self.checkbuttonVarUpdateCallbackToggle(var)) # synchonizes clicking on the label and on the checkbutton itself
             count +=1
         return count
 
@@ -4657,16 +4660,12 @@ class SETS():
         Frame(tagframe, highlightthickness=0, bg=self.theme['app']["bg"]).grid(row=6, column=0, columnspan=4, sticky="nsew")
         tagframe.rowconfigure(6, minsize=12)
 
-        pvpframe = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #pvpframe: Frame for initial PvP role
+        pvpframe = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']['fg']) #pvpframe: Frame for PvP roles
         pvpframe.grid(row=7, column=0, columnspan=4, sticky="nsew")
-        # self.checkbuttonBuildBlock(tagwindow, pvpframe, ["PvP:"], self.theme['app']['fg'], self.theme['label']['bg'], self.font_tuple_create("title2"), 'tags', 'pvprole')
-        pvptags = self.settings['tags']['pvprole']
-        Label(pvpframe, text="PvP:", fg=self.theme['label']['bg'], bg=self.theme['app']['fg'],font=self.font_tuple_create("button_heavy")).grid(row=0, column=0, columnspan=len(pvptags), sticky="new")
-        # pvptags.pop("PvP:")
-
-        # pvpframe2 = Frame(tagframe, highlightthickness=0,  bg=self.theme['app']["fg"]) #pvpframe2: Frame for successive PvP roles
-        # pvpframe2.grid(row=8, column=0, columnspan=4, sticky="nsew")
-        self.checkbuttonBuildBlock(tagwindow, pvpframe, pvptags, self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', 'pvprole', rowoffset=1)
+        pvptitleframe = Frame(pvpframe, highlightthickness=0, bg=self.theme['app']['fg'])
+        pvptitleframe.grid(row=0, column=0, columnspan=4, sticky='nsew')
+        self.checkbuttonBuildBlock(tagwindow, pvptitleframe, ["PvP"], self.theme['app']['fg'], self.theme['label']['bg'], self.font_tuple_create("title2"), 'tags')
+        self.checkbuttonBuildBlock(tagwindow, pvpframe, self.settings['tags']['pvprole'], self.theme['app']['fg'], "#ffffff", self.font_tuple_merge("app", weight="bold"), 'tags', 'pvprole', rowoffset=1)
 
         Frame(tagframe, highlightthickness=0, bg=self.theme['app']['bg']).grid(row=9, column=0, columnspan=4, sticky="nsew")
         tagframe.rowconfigure(9, minsize=12)
