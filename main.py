@@ -2056,6 +2056,7 @@ class SETS():
 
     def boffLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for boff labels"""
+
         self.precacheBoffAbilities()
 
         spec = self.boffTitleToSpec(args[0].get()) if args[0] else ''
@@ -2078,6 +2079,36 @@ class SETS():
 
         items_list = self.restrictItemsList(items_list) # need to send boffseat spec/spec2
         self.picker_getresult(canvas, img, i, key, args, items_list, type='boffs', title='Pick ability')
+
+    def universalSeatUpdateCallback(self, canvas, img, i, i2, key, var, environment):
+        """manages changing properties for universal bridge officer stations with mutable profession or specialization on changing profession or specialization"""
+        """parameters:  canvas: the canvas the button images are displayed on
+                        img: tuple containing the 2 images displayed on the canvas (needed for clearing the image)
+                        i: index analogous to rank of specific boff ability (0:"Ensign", 1:"Lieutenant", 2:"Lieutenant Commander", 3:"Commander")
+                        i2: index identifying the boff seat in self.build['boffseats'] (integer between 0 and 5)
+                        key: identifies each boff seat clearly in self.build['boffs']
+                        var: StringVar containing the current profession of the station
+                        environment: distincts between space and ground as well as between specialization and non-specialization seats in self.build['boffseats']"""
+        
+        # updates self.build to contain the correct profession / specialization of the universal seat
+        self.build['boffseats'][environment][i2] = var.get()
+
+        # checks whether the ability belongs either to the current profession or to the current specialization, cleares the ability otherwise
+        invertedEnvironment = environment[:-5] if '_spec' in environment else environment+'_spec'
+        cleanEnvironment = environment[:-5] if '_spec' in environment else environment
+        clear = True
+        for power in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][invertedEnvironment][i2]][i+1]:
+            if power[0] == self.build['boffs'][key][i]:
+                clear = False
+        for power2 in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][environment][i2]][i+1]:
+            if power2[0] == self.build['boffs'][key][i]:
+                clear = False
+        if clear:
+            canvas.itemconfig(img[0],image=self.emptyImage)
+            canvas.itemconfig(img[1],image=self.emptyImage)
+            self.build['boffs'][key][i]= ''
+        
+        self.auto_save_queue()
 
 
     def uuid_assign_for_tooltip(self):
@@ -2847,10 +2878,6 @@ class SETS():
         if faction in self.emptyImageFaction: return self.emptyImageFaction[faction]
         else: return self.emptyImage
 
-    def boffUniversalCallback(self, v, idx, key):
-        self.build['boffseats'][key][idx] = v.get()
-        self.auto_save_queue()
-
     def doffStripPrefix(self, textBlock, isSpace=True):
         textBlock = self.deWikify(textBlock)
         if (isSpace and textBlock.startswith('[SP]')) or (not isSpace and textBlock.startswith('[GR]')):
@@ -3546,7 +3573,7 @@ class SETS():
             boffspecs = [''] * seats
         else:
             if ship is None or not 'boffs' in ship: return
-            else: boffs = ship["boffs"]
+            else: boffs = ship['boffs']
             seats = len(boffs)
             boffranks = [4] * seats
             boffsspecs = [''] * seats
@@ -3559,9 +3586,10 @@ class SETS():
                         break
                 boffspecs[i] = self.boffTitleToSpec(boffs[i].replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip())
 
+     
         for i in self.sortedBoffs(boffranks, boffspecs, boffsspecs, environment):
             boff = boffs[i]
-            boffSan = environment+'Boff_' + str(i)
+            boffSan = environment+'Boff_' + str(i)  # boffSan identifies the respective boff station as first level key in self.build['boffseats']
 
             if environment == 'ground':
                 rank = seats
@@ -3582,10 +3610,11 @@ class SETS():
 
             self.backend['images'][boffSan] = [None] * rank
 
-            if spec != 'Universal' and spec != self.build['boffseats'][environment][i]:
+            # does nothing, it's original purpose should be covered in universalSeatUpdateCallback()
+            """if spec != 'Universal' and spec != self.build['boffseats'][environment][i]:
                 #wipe skills of the changed spec here, keep the secondary spec
-                #self.build['boffs'][boffSan] = [None] * rank
-                pass
+                # self.build['boffs'][boffSan] = [None] * rank
+                pass"""
 
             if environment == 'space' and spec != 'Universal':
                 self.build['boffseats'][environment][i] = spec
@@ -3598,8 +3627,6 @@ class SETS():
 
             v = StringVar(self.window, value=self.build['boffseats'][environment][i])
             v2 = StringVar(self.window, value=self.build['boffseats'][environment+'_spec'][i])
-            v.trace_add("write", lambda v,i,m,v0=v,idx=i:self.boffUniversalCallback(v0, idx, environment))
-            v2.trace_add("write", lambda v2,i,m,v0=v2,idx=i:self.boffUniversalCallback(v0, idx, environment+'_spec'))
 
             if environment == 'space' and spec != 'Universal':
                 specLabel0 = Label(bSubFrame0, text=spec)
@@ -3644,7 +3671,12 @@ class SETS():
 
                 args = [v, v2, i, environment]
                 canvas, img0, img1 = self.createButton(bSubFrame1, key=boffSan, row=1, column=j, groupKey='boffs', i=j, callback=self.boffLabelCallback, args=args, faction=True, suffix=False, image0=self.backend['images'][boffSan][j])
+                
+                # adds traces so universal boff stations are properly updated when selected profession or specialization is changed
+                v.trace_add("write", lambda e1, e2, e3,  pcanvas = canvas, images = (img0, img1), index = j, index2 = i, pkey = boffSan, var=v, env = environment: self.universalSeatUpdateCallback(pcanvas, images, index, index2, pkey, var, env) )
+                v2.trace_add("write", lambda e1, e2, e3,  pcanvas = canvas, images = (img0, img1), index = j, index2 = i, pkey = boffSan, var = v2, env = environment+'_spec': self.universalSeatUpdateCallback(pcanvas, images, index, index2, pkey, var, env) )
 
+    
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
         self.build['tier'] = self.backend['tier'].get()
@@ -4933,6 +4965,7 @@ class SETS():
 
             l = Label(parent_frame, text=display_tag, fg=self.theme['frame']['fg'], bg=self.theme['frame']['bg'], font=self.font_tuple_create(font_theme))
             l.grid(row=row, column=column, columnspan=columnspan, pady=pad_y)
+        parent_frame.update()
 
 
     def setupCaptainFrame(self, charInfoFrame, environment='space'):
@@ -5625,7 +5658,17 @@ class SETS():
             self.setupInfoFrame(type)
             self.setupDescFrame(type)
             self.setupHandleFrame(type)
-            self.updateTagsFrame(type)
+
+            # deletes current tag display frame and rebuilds it
+            if type == 'space':
+                parentframe = self.shipBuildTagFrame.nametowidget(self.shipBuildTagFrame.winfo_parent())
+            if type == 'ground':
+                parentframe = self.groundBuildTagFrame.nametowidget(self.groundBuildTagFrame.winfo_parent())
+            if type == 'skill':
+                parentframe = self.skillBuildTagFrame.nametowidget(self.skillBuildTagFrame.winfo_parent())
+            self.clearFrame(parentframe)
+            self.setupTagsFrame(parentframe, type)
+            
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
