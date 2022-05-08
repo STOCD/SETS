@@ -1385,6 +1385,40 @@ class SETS():
         self.versionJSONminimum = 0
         self.versionJSON = 2022022811
         self.clearing = False
+        if type == 'keepSkills':
+            currentSkilltree = {'skilltree':self.build['skilltree']}
+        if type == 'clearShip':
+            self.build.update({
+            'versionJSON': self.versionJSON,
+            'boffs': dict(),
+            'boffseats': dict(),
+            'activeRepTrait': [None] * 5,
+            'spaceRepTrait': [None] * 5,
+            'personalSpaceTrait': [None] * 6,
+            'personalSpaceTrait2': [None] * 6,
+            'starshipTrait': [None] * 6,
+            'uniConsoles': [None] * 5,
+            'tacConsoles': [None] * 5,
+            'sciConsoles': [None] * 5,
+            'engConsoles': [None] * 5,
+            'devices': [None] * 5,
+            'aftWeapons': [None] * 5,
+            'foreWeapons': [None] * 5,
+            'hangars': [None] * 2,
+            'deflector': [None],
+            'engines': [None],
+            'warpCore': [None],
+            'shield': [None],
+            'ship': '',
+            'playerShipName': '',
+            'playerShipDesc': '',
+            'tier': '',
+            'secdef': [None],
+            'experimental': [None],
+            'tags': dict(),
+            })
+            self.build['doffs']['space']=[None]*6
+            return
         self.build = {
             'versionJSON': self.versionJSON,
             'boffs': dict(),
@@ -1437,7 +1471,10 @@ class SETS():
         }
         # self.reset_build_part(environment='space', init=True)  # Disabled until environment slices are refactored
         # self.reset_build_part(environment='ground', init=True)  # Disabled until environment slices are refactored
-        self.reset_build_skill(init=True)
+        if not type == 'keepSkills':
+            self.reset_build_skill(init=True)
+        else:
+            self.build.update(currentSkilltree)
 
     def reset_build_part(self, environment='space', init=False):
         build = {}
@@ -2097,12 +2134,14 @@ class SETS():
         invertedEnvironment = environment[:-5] if '_spec' in environment else environment+'_spec'
         cleanEnvironment = environment[:-5] if '_spec' in environment else environment
         clear = True
-        for power in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][invertedEnvironment][i2]][i+1]:
-            if power[0] == self.build['boffs'][key][i]:
-                clear = False
-        for power2 in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][environment][i2]][i+1]:
-            if power2[0] == self.build['boffs'][key][i]:
-                clear = False
+        if self.build['boffseats'][invertedEnvironment][i2] != '' and self.build['boffseats'][invertedEnvironment][i2] != None:
+            for power in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][invertedEnvironment][i2]][i+1]:
+                if power[0] == self.build['boffs'][key][i]:
+                    clear = False
+        if self.build['boffseats'][environment][i2] != '' and self.build['boffseats'][environment][i2] != None:
+            for power2 in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][environment][i2]][i+1]:
+                if power2[0] == self.build['boffs'][key][i]:
+                    clear = False
         if clear:
             canvas.itemconfig(img[0],image=self.emptyImage)
             canvas.itemconfig(img[1],image=self.emptyImage)
@@ -2116,8 +2155,20 @@ class SETS():
 
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
-        if self.backend['ship'].get() == '':
+        if self.backend['ship'].get() == '' and self.persistent['keepTemplateOnShipChange'] == 1:
             return
+        if self.persistent['keepTemplateOnShipChange'] == 0 and self.backend['ship'].get() == '':
+            self.resetBuild('clearShip')
+            self.backend['shipHtml'] = None
+            self.shipImg = self.getEmptyFactionImage()
+            self.setShipImage(self.shipImg)
+            self.resetBuildFrames(["space"])
+            self.resetBuildFrames(tagsonly=True)
+            return
+
+        if self.persistent ['keepTemplateOnShipChange'] == 0:
+            self.resetBuild('clearShip')
+
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
         tier = self.backend['shipHtml']['tier']
@@ -2354,7 +2405,7 @@ class SETS():
 
     def skillValidDeselect(self, name, environment, rank):
         """Checks whether deselecting a skill would cause the skill tree to be invalid."""
-        if name in self.build['skilltree'][environment] and self.build["skilltree"][environment][name]:
+        if name in self.build['skilltree'][environment] and self.build['skilltree'][environment][name]:
             if environment == "space":
                 rankRequirements = { '0': 'lieutenant','lieutenant':'0', '5' : 'lieutenant commander', 'lieutenant commander': '5', '15' : 'commander','commander':'15', '25' : 'captain', 'captain': '25', '35' : 'admiral', 'admiral': '35'}
                 sktr = dict(self.backend['skillCount'][environment])
@@ -2519,9 +2570,9 @@ class SETS():
         for t in grsktr:
             node = self.getGroundSkillNode(t)
             column0 = column0 + ["[**{0}**]({1})".format(node["nodes"][0]['name'], node["link"])]
-            column0 = column0 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["ground"][node["nodes"][0]['name']] == True else [None], 1)
+            column0 = column0 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["ground"][node["nodes"][0]['name']] == True else [None], 1)
             column1 = column1 + ["[**{0}**]({1})".format(node["nodes"][1]['name'], node["link"])]
-            column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["ground"][node["nodes"][1]['name']] == True else [None], 1)
+            column1 = column1 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["ground"][node["nodes"][1]['name']] == True else [None], 1)
         redditstring = redditstring + self.makeRedditTable(["**Basic:**"]+column0, ['**Improved:**']+column1, alignment=[":-:",":-:"])
         textframe.configure(state=NORMAL)
         textframe.delete("1.0", END)
@@ -2529,7 +2580,7 @@ class SETS():
         textframe.configure(state=DISABLED)
 
     def redditExportDisplaySpaceSkills(self, textframe: Text):
-        if not len(self.build["skilltree"]["space"]) == 90:
+        if not len(self.build['skilltree']["space"]) == 90:
             return
         redditstring = "# **Space Skills**\n\n"
         column0 = list()
@@ -2540,26 +2591,26 @@ class SETS():
             for skill in self.cache['skills']['space'][rank]:
                 if skill["linear"] == 0:
                     column0 = column0 + self.makeRedditColumn(["[**{0}**]({1})".format(skill["skill"], skill["link"])], 1)
-                    column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"]+" 1"]==True else [None], 1)
-                    column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"]+" 2"]==True else [None], 1)
-                    column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"]+" 3"]==True else [None], 1)
+                    column1 = column1 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"]+" 1"]==True else [None], 1)
+                    column2 = column2 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"]+" 2"]==True else [None], 1)
+                    column3 = column3 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"]+" 3"]==True else [None], 1)
                 else:
                     column0 = column0 + ["&nbsp;"]
                     column0 = column0 + self.makeRedditColumn(["[**{0}**]({1})".format(skill["skill"][0], skill["link"] if isinstance(skill["link"], str) else skill["link"][0])], 1)
                     if skill["linear"] == 1:
                         column1 = column1 + ["[{0}]({1})".format(skill["skill"][0], skill["link"][0])]
-                        column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]+" 1"]==True else [None], 1)
+                        column1 = column1 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"][0]+" 1"]==True else [None], 1)
                         column2 = column2 + ["[{0}]({1})".format("Improved "+skill["skill"][0], skill["link"][0])]
-                        column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][1]+" 2"]==True else [None], 1)
+                        column2 = column2 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"][1]+" 2"]==True else [None], 1)
                         column3 = column3 + ["[{0}]({1})".format(skill["skill"][2], skill["link"][2])]
-                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][2]]==True else [None], 1)
+                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"][2]]==True else [None], 1)
                     elif skill["linear"] ==2:
                         column1 = column1 + ["[{0}]({1})".format(skill["skill"][0], skill["link"])]
-                        column1 = column1 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][0]]==True else [None], 1)
+                        column1 = column1 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"][0]]==True else [None], 1)
                         column2 = column2 + ["[{0}]({1})".format(skill["skill"][1], skill["link"])]
-                        column2 = column2 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][1]]==True else [None], 1)
+                        column2 = column2 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"][1]]==True else [None], 1)
                         column3 = column3 + ["[{0}]({1})".format(skill["skill"][2], skill["link"])]
-                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build["skilltree"]["space"][skill["skill"][2]]==True else [None], 1)
+                        column3 = column3 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["space"][skill["skill"][2]]==True else [None], 1)
         redditstring = redditstring + self.makeRedditTable(['&nbsp;']+column0, ['**Base:**']+column1, ['**Improved:**']+column2, ['**Advanced:**']+column3, [":---",":-:",":-:",":-:"])
         textframe.configure(state=NORMAL)
         textframe.delete("1.0", END)
@@ -2635,6 +2686,8 @@ class SETS():
         textframe.configure(state=DISABLED)
 
     def redditExportDisplaySpace(self, textframe: Text):
+        if self.backend['shipHtml'] == None or self.backend['shipHtml'] == '':
+            return
         if not self.build['eliteCaptain']:
             elite = 'No'
         elif self.build['eliteCaptain']:
@@ -2853,7 +2906,7 @@ class SETS():
 
     def clearBuildCallback(self, event=None, type=None):
         """Callback for the clear build button"""
-        self.resetBuild(type)
+        self.resetBuild(type='keepSkills')
         self.clearing = True
 
         self.buildToBackendSeries()
@@ -2868,7 +2921,11 @@ class SETS():
         self.resetBuildFrames()
 
         self.clearing = False
-        self.setupCurrentBuildFrames()
+        
+        self.setupCurrentBuildTagFrames()
+        self.setupSpaceBuildFrames()
+        self.setupGroundBuildFrames()
+        
         self.auto_save_queue()
 
     def getEmptyFactionImage(self, faction=None):
@@ -3169,6 +3226,7 @@ class SETS():
 
     def setupShipGearFrame(self, ship):
         """Set up UI frame containing ship equipment"""
+        #if ship == []: return # aborts when shipHtml is empty due to a build without ship being loaded
 
         outerFrame = self.shipEquipmentFrame
         outerFrame.grid_rowconfigure(0, weight=1, uniform='shipFrameFullRowSpace')
@@ -5651,13 +5709,14 @@ class SETS():
             self.logWriteBreak("self.window.update({}): {:4}".format(type, str(self.windowUpdate['updates'])), 3)
 
 
-    def resetBuildFrames(self, types=None):
+    def resetBuildFrames(self, types=None, tagsonly=False):
         if types is None:
             types = ['skill', 'ground', 'space']
         for type in types:
-            self.setupInfoFrame(type)
-            self.setupDescFrame(type)
-            self.setupHandleFrame(type)
+            if not tagsonly:
+                self.setupInfoFrame(type)
+                self.setupDescFrame(type)
+                self.setupHandleFrame(type)
 
             # deletes current tag display frame and rebuilds it
             if type == 'space':
