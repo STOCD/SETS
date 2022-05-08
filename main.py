@@ -3226,7 +3226,7 @@ class SETS():
 
     def setupShipGearFrame(self, ship):
         """Set up UI frame containing ship equipment"""
-        #if ship == []: return # aborts when shipHtml is empty due to a build without ship being loaded
+        if ship == []: return # aborts when shipHtml is empty due to a build without ship being loaded
 
         outerFrame = self.shipEquipmentFrame
         outerFrame.grid_rowconfigure(0, weight=1, uniform='shipFrameFullRowSpace')
