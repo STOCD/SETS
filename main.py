@@ -4359,7 +4359,7 @@ class SETS():
             elif mkt and modt:
                 lines = self.getDH(text.winfo_width(), name+' '+item['mark']+' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), "Helvetica", 15, "bold", "equipmenthead")
             elif not mkt and not modt:
-                lines = self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold")
+                lines = self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", 'equipmenthead')
             text.configure(height=lines)
             html = self.cache['equipment'][key][name]
             if 'rarity' in item and item['rarity']:
