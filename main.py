@@ -13,6 +13,7 @@ import textwrap
 import urllib.parse
 import uuid
 import webbrowser
+import copy
 
 # from tkinter import *
 import tkinter as tk
@@ -724,6 +725,133 @@ class SETS():
             return ImageTk.PhotoImage(image)
         return self.emptyImage
 
+    def emptyShipLayout(self, shipHtml):
+        """overrides all ship components of self.build to feature the exact layout of the given ship"""
+        self.build['ship'] = shipHtml['Page']           # saves ship name
+
+        # Boffs
+        if not 'boffs' in shipHtml: return
+        seats = len(shipHtml['boffs'])
+        boffranks = [4] * seats
+        boffcareers = [''] * seats + [None] * (6-seats)
+        boffspecs = [''] * seats + [None] * (6-seats)
+        for i in range(len(shipHtml['boffs'])):
+            boffranks[i] = 3 if 'Lieutenant Commander' in shipHtml['boffs'][i] else 2 if 'Lieutenant' in shipHtml['boffs'][i] else 4 if 'Commander' in shipHtml['boffs'][i] else 1
+            for s in self.cache['specsPrimary']:
+                if '-'+s in shipHtml['boffs'][i]:
+                    boffspecs[i] = s
+                    break
+            boffcareers[i] = self.boffTitleToCareer(shipHtml['boffs'][i].replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip())
+        self.build['boffseats']['space'] = boffcareers
+        self.build['boffseats']['space_spec'] = boffspecs
+        for i in range(seats):
+            self.build['boffs']['spaceBoff_'+str(i)] = [None] * boffranks[i]
+        for i in range(seats, 6):
+            try: self.build['boffs'].pop('spaceBoff_'+str(i))
+            except KeyError: pass
+
+        # Consoles & Devices
+        self.build['tacConsoles'] = [None] * int(shipHtml['consolestac'])
+        self.build['engConsoles'] = [None] * int(shipHtml['consoleseng'])
+        self.build['sciConsoles'] = [None] * int(shipHtml['consolessci'])
+        self.build['uniConsoles'] = [None] * 1 if 'Innovation Effects' in shipHtml['abilities'] else [None] * 0
+        self.build['devices'] = [None] * int(shipHtml['devices'])
+        
+        # Weapons
+        self.build['foreWeapons'] = [None] * int(shipHtml['fore'])
+        self.build['aftWeapons'] = [None] * int(shipHtml['aft'])
+        if 'experimental' in shipHtml and shipHtml['experimental'] == 1:
+            self.build['experimental'] = [None]
+        else:
+            self.build['experimental'] = []
+
+        # DSECS
+        for decs in ['deflector', 'engines', 'warpCore', 'shield']:
+            self.build[decs] = [None]
+        if 'secdeflector' in shipHtml and shipHtml['secdeflector'] == 1:
+            self.build['secdef'] = [None]
+        else:
+            self.build['secdef'] = []
+        
+        # Hagars
+        if 'hangars' in shipHtml and (shipHtml['hangars'] == 1 or shipHtml['hangars'] == 2):
+            self.build['hagars'] = [None] * int(shipHtml['hangars'])
+        else:
+            self.build['hangars'] = []
+
+        # Misc
+        """ Do we need that?
+        self.build['playerShipName'] == ''
+        self.build['playerShipDesc'] == ''
+        """
+
+    def alignNewShipBuild(self, shipHtml):
+        """maps a space build onto a new ship and writes it into self.build. this only affects ship dependent parts of the build"""
+        # helper fuction to ensure that None < 0
+        def sortedNone(tup):
+            newTup = tuple()
+            for element in tup:
+                if element == None: newTup += (-float('inf'),)
+                else: newTup += (element,)
+            return newTup
+        
+        if  not ('boffs' in self.build and 'spaceBoff_0' in self.build['boffs'] and  'boffseats' in self.build and 'space' in self.build['boffseats']): return
+        
+        oldBuild = copy.deepcopy(self.build)        # saving the current build. oldBuild will be "laid over" the new layout
+        self.emptyShipLayout(shipHtml)              # creating an empty ship layout for the given ship
+
+        # putting in the equipment
+        for elem in ['tacConsoles','engConsoles','sciConsoles','uniConsoles','devices','foreWeapons','aftWeapons','experimental','secdef','hangars','deflector', 'engines', 'warpCore', 'shield']:
+            for index in range(len(self.build[elem])):
+                try:
+                    self.build[elem][index] = oldBuild[elem][index]
+                except IndexError:
+                    self.build[elem][index] = [None]
+
+        # putting in the boffs
+        if not 'boffs' in oldBuild and not 'boffseats' in oldBuild and not 'space' in oldBuild['boffseats'] and not 'space_spec' in oldBuild['boffseats']:
+            self.logWriteSimple('old build invalid', 'the old build is missing critical data about Boff seating', 1, ['possibly missing keys:','["boffs"]','["boffseats"]','["boffseats"]["space"]','["boffseats"]["space_spec"]'])
+            return
+        
+        oldSeats = []
+        newSeats = []
+        for dct in [self.build,oldBuild]:           # goes over the old and the new build and creates two lists with the bridge officers
+            for currentSeat in range(6):
+                rank = len(dct['boffs']['spaceBoff_'+str(currentSeat)]) if 'spaceBoff_'+str(currentSeat) in dct['boffs'] else None
+                career = dct['boffseats']['space'][currentSeat]
+                spec = dct['boffseats']['space_spec'][currentSeat]
+                id = 'spaceBoff_'+str(currentSeat)
+                if dct == oldBuild: oldSeats.append((rank, career, spec, id))
+                elif dct == self.build: newSeats.append((rank, career, spec, id))
+        
+        oldSeats = sorted(oldSeats, key=sortedNone, reverse=True)
+        newSeats = sorted(newSeats, key=sortedNone, reverse=True)
+
+        boffMapping = dict()                        # this dictionary will contain the information on which boff seat on the old build will be which on the new build: "<newSeatID>":"<oldSeatID>"
+        universalStationPurpose = ['']*6            # if a seat gets assigned to an universal seat the career that this universal seat needs to be is saved here
+        for oldSeat in oldSeats:                    # this tries to give every old seat a new seat. higher rank seats will be considered first.
+            if oldSeat[0] == None: continue
+            for withUniversalSeats in [False, True]:                                                                # ignores universal seats on the first iteration, considers them in the second
+                if oldSeat[3] in boffMapping.values(): break                                                        # aborts if current station has already been assigned a new station
+                for i in range(6):                      
+                    if oldSeat[1] == newSeats[i][1] or (newSeats[i][1] == 'Universal' and withUniversalSeats):      # index 1 stands for 'career'
+                        if not newSeats[i][3] in boffMapping:                                                       # index 3 stands for 'id'
+                            boffMapping[newSeats[i][3]] = oldSeat[3]
+                            universalStationPurpose[i] = oldSeat[1]
+                            break
+
+        for idx, seat in enumerate(newSeats):       # executes the mapping; saves respective abilities to their new locations in self.build; filters out specialist abilities not fitting onto the new station
+            if seat[0] == None or not seat[3] in boffMapping: continue
+            self.build['boffseats']['space'][int(seat[3][-1])] = seat[1] if not seat[1] == 'Universal' else universalStationPurpose[idx]
+            self.build['boffseats']['space_spec'][int(seat[3][-1])] = seat[2]
+            for r in range(1, min( len(self.build['boffs'][seat[3]]), len(oldBuild['boffs'][boffMapping[seat[3]]] ) ) + 1 ): # iterates for the minimum rank of the old and new station
+                ability = oldBuild['boffs'][boffMapping[seat[3]]][r-1]
+                if seat[2] == '': bofflist = self.cache['boffAbilitiesWithImages']['space'][self.build['boffseats']['space'][int(seat[3][-1])]][r]
+                else: bofflist = self.cache['boffAbilitiesWithImages']['space'][self.build['boffseats']['space'][int(seat[3][-1])]][r] + self.cache['boffAbilitiesWithImages']['space'][seat[2]][r]
+                for thisisshit in bofflist:
+                    if thisisshit[0] == ability:
+                        self.build['boffs'][seat[3]][r-1] = ability
+
     def getShipFromName(self, shipJson, shipName):
         """Find cargo table entry for given ship name"""
         ship_list = []
@@ -1252,6 +1380,7 @@ class SETS():
         self.universalTypes = ['Tactical', 'Engineering', 'Science' ]
         self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
         self.rarities = ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra rare', 'Epic']
+        self.mods_per_rarity = {'Common':0, 'Uncommon':1, 'Rare':2, 'Very rare':3, 'Ultra rare':4, 'Epic':5, '':0}
         self.factionNames = [ 'Federation', 'Dominion', 'DSC Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
         self.exportOptions = [ 'PNG', 'Json' ]
         self.boffSortOptions = [ 'release', 'ranks', 'spec', 'spec2' ]
@@ -1652,7 +1781,7 @@ class SETS():
             self.setupCurrentBuildFrames()
 
 
-    def boffTitleToSpec(self, title):
+    def boffTitleToCareer(self, title):
         return  "Tactical" if "Tactical" in title else "Science" if 'Science' in title else "Engineering" if "Engineering" in title else "Universal"
 
     def clearFrame(self, frame):
@@ -1913,7 +2042,7 @@ class SETS():
     def itemLabelCallback(self, e, canvas, img, i, key, args):
         """Common callback for ship equipment labels"""
         self.precacheEquipment(args[0])
-        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":['']}
+        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":[]}
 
         # items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
         items_list = self.cache['equipmentWithImages'][args[0]]
@@ -2096,7 +2225,7 @@ class SETS():
 
         self.precacheBoffAbilities()
 
-        spec = self.boffTitleToSpec(args[0].get()) if args[0] else ''
+        spec = self.boffTitleToCareer(args[0].get()) if args[0] else ''
         spec2 = args[1].get() if args[1] else ''
         # args[2] is the same as i
         environment = args[3] if args is not None and len(args) >= 4 else 'space'
@@ -2166,14 +2295,18 @@ class SETS():
             self.resetBuildFrames(tagsonly=True)
             return
 
-        if self.persistent ['keepTemplateOnShipChange'] == 0:
-            self.resetBuild('clearShip')
-
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
-        tier = self.backend['shipHtml']['tier']
+
+        if self.persistent['keepTemplateOnShipChange'] == 0:
+            self.resetBuild('clearShip')
+            self.emptyShipLayout(self.backend['shipHtml'])
+
+        elif self.persistent['keepTemplateOnShipChange'] == 1:
+            self.alignNewShipBuild(self.backend['shipHtml'])      
 
         self.clearFrame(self.shipTierFrame)
+        tier = self.backend['shipHtml']['tier']
         self.setupTierFrame(tier)
         self.setupShipImageFrame()
         self.backend['tier'].set(self.getTierOptions(tier)[0])
@@ -2198,7 +2331,7 @@ class SETS():
             else:
                 self.shipButton.configure(text=self.ship_name_wrap(item['item']))
                 self.backend['ship'].set(item['item'])
-                self.setupBoffFrame('space', self.backend['shipHtml'])
+                #self.setupBoffFrame('space', self.backend['shipHtml'])
             self.auto_save_queue()
 
     def importCallback(self, event=None):
@@ -3571,10 +3704,6 @@ class SETS():
         self.labelBuildBlock(parentFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.traitLabelCallback, [True, True, False, "ground"])
 
     def resetShipSettings(self):
-        # on ship change / removal
-        # Clear specs so we don't gather specs as we change
-        self.build['boffseats']['space_spec'] = [None] * 6
-
         if not self.persistent['keepTemplateOnShipChange']:
             self.build['playerShipName'] = ''
             self.copyBuildToBackend('playerShipName')
@@ -3623,7 +3752,6 @@ class SETS():
         if not environment in self.build['boffseats']: self.build['boffseats'][environment] = [None] * seats
         if not environment+'_spec' in self.build['boffseats']: self.build['boffseats'][environment+'_spec'] = [None] * seats
 
-
         if environment == 'ground':
             boffs = ['Tactical'] * seats
             boffranks = [4] * seats
@@ -3642,7 +3770,7 @@ class SETS():
                     if '-'+s in boffs[i]:
                         boffsspecs[i] = s
                         break
-                boffspecs[i] = self.boffTitleToSpec(boffs[i].replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip())
+                boffspecs[i] = self.boffTitleToCareer(boffs[i].replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip())
 
      
         for i in self.sortedBoffs(boffranks, boffspecs, boffsspecs, environment):
@@ -3717,7 +3845,9 @@ class SETS():
 
                 if rank != len(self.build['boffs'][boffSan]):
                     self.logWrite('--- {} {}{}{}->{}{}{}'.format('boff seat change error: ', boffExistingLen, '+' if changeCount > 0 else '', changeCount, rank, '!=' , str(len(self.build['boffs'][boffSan]))), 1)
-
+            else:
+                self.build['boffs'][boffSan] = [None]*rank
+            
             for j in range(rank):
                 tooltip_uuid = self.uuid_assign_for_tooltip()
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
@@ -3725,16 +3855,15 @@ class SETS():
                     self.backend['images'][boffSan][j] = image
                 else:
                     image=self.emptyImage
-                    self.build['boffs'][boffSan] = [None] * rank
+                    #self.build['boffs'][boffSan] = [None] * rank
 
                 args = [v, v2, i, environment]
                 canvas, img0, img1 = self.createButton(bSubFrame1, key=boffSan, row=1, column=j, groupKey='boffs', i=j, callback=self.boffLabelCallback, args=args, faction=True, suffix=False, image0=self.backend['images'][boffSan][j])
-                
+
                 # adds traces so universal boff stations are properly updated when selected profession or specialization is changed
                 v.trace_add("write", lambda e1, e2, e3,  pcanvas = canvas, images = (img0, img1), index = j, index2 = i, pkey = boffSan, var=v, env = environment: self.universalSeatUpdateCallback(pcanvas, images, index, index2, pkey, var, env) )
                 v2.trace_add("write", lambda e1, e2, e3,  pcanvas = canvas, images = (img0, img1), index = j, index2 = i, pkey = boffSan, var = v2, env = environment+'_spec': self.universalSeatUpdateCallback(pcanvas, images, index, index2, pkey, var, env) )
 
-    
     def setupSpaceBuildFrames(self):
         """Set up all relevant space build frames"""
         self.build['tier'] = self.backend['tier'].get()
@@ -3766,7 +3895,8 @@ class SETS():
         """Set up modifier frame in equipment picker"""
         self.precacheModifiers()
         self.clearFrame(frame)
-        n = self.rarities.index(rarity)
+        n = self.mods_per_rarity[rarity]
+        #n = self.rarities.index(rarity)
         itemVar['rarity'] = rarity
         if not len(itemVar['modifiers']) == n:
             itemVar['modifiers'] = ['']*n
