@@ -8,16 +8,19 @@ Alpha version of build management and sharing tool for STO.
 Builds can be exported to a PNG file that can be opened by another person using SETS.
 
 ## Contributing
-If you find any information or images missing, please check or update the official wiki (https://sto.fandom.com/) -- where SETS gets this information.
+If you find any information or images missing, please check or update the official wiki (https://sto.fandom.com/) -- where SETS gets this information. You can report wiki issues on the Star Trek Online Community Discord Server (https://discord.gg/eApUvTRr5q) in the #wiki-requests channel or on the STOBuilds Discord Server (https://discord.gg/stobuilds) in the #wiki-update-talk channel.
 
 For application-related issues or suggestions, please visit the github: https://github.com/STOCD/SETS/issues
 
 ## Getting Started
 ### Application (no installations required)
-- https://stobuilds.com/SETS/downloads/ for the latest app build
+- https://stobuilds.com/SETS/downloads.html for the latest app build
   - Windows 8, 10, 11 -- available
   - MacOS -- in development
   - Linux -- if requested
+
+### Script (Windows 8, 10, 11 ONLY)
+For Windows 8, 10, 11 there is the possibility to get `SETS Package` that contains everything needed for installing the script verion of the app. Get the newest version here: https://stobuilds.com/SETS/downloads.html
 
 ### Script (using the git source)
 - View the INSTALLATION.md file for detailed installation information
@@ -47,7 +50,7 @@ The majority of this are gear icons and ship images.  Gear icons tend to be very
 - `CONFIG_DIRECTORY/images/` (automatic) is used to store downloaded images.
 - `APP_DIRECTORY/images/` (optional) is checked after downloaded images.
   - This is where packaged images are initially set up.
-  - https://stobuilds.com/downloads/images.zip can be added here for a quick start
+  - https://stobuilds.com/SETS/files/images.zip can be added here for a quick start
 
 ## Configuration directory
 The configuration directory contains multiple files and folders.
