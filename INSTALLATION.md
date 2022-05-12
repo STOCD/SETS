@@ -2,10 +2,10 @@
 A Star Trek Online build tool in Python
 **Website: https://stobuilds.com/SETS/**
 **GitHub: https://github.com/STOCD/SETS**
-**Dailies (app): https://stobuilds.com/SETS/downloads/**
+**Dailies (app): https://stobuilds.com/SETS/downloads.html**
 
 ## Application (no installations required)
-- https://stobuilds.com/SETS/downloads/ for the latest app build
+- https://stobuilds.com/SETS/downloads.html for the latest app build
   - Windows 8, 10, 11 -- available
   - MacOS -- in development
   - Linux -- if requested
