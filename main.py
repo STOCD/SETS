@@ -1681,7 +1681,7 @@ class SETS():
         self.build.update(build[environment])
         if not init:
             self.clearing = False
-            self.setupCurrentBuildFrames(environment)
+            self.setupCurrentBuildFrames([environment])
             self.auto_save_queue()
 
     def reset_build_skill(self, init=False):
@@ -1697,7 +1697,7 @@ class SETS():
             self.skillCount('space')
             self.skillCount('ground')
             self.clearing = False
-            self.setupCurrentBuildFrames('skill')
+            self.setupCurrentBuildFrames(['skill'])
             self.auto_save_queue()
 
     def resetCache(self, text = None):
@@ -1764,7 +1764,7 @@ class SETS():
         self.backend['species'].trace_add('write', lambda v,i,m:self.speciesUpdateCallback())
         self.backend['specPrimary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specPrimary'))
         self.backend['specSecondary'].trace_add('write', lambda v,i,m:self.copyBackendToBuild('specSecondary'))
-        self.backend['tier'].trace_add('write', lambda v,i,m:self.setupCurrentBuildFrames('space'))
+        self.backend['tier'].trace_add('write', lambda v,i,m:self.setupCurrentBuildFrames(['space']))
         self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.clean_backend_elitecaptain())
         self.backend['ship'].trace_add('write', self.shipMenuCallback)
 
@@ -2285,7 +2285,9 @@ class SETS():
     def shipMenuCallback(self, *args):
         """Callback for ship selection menu"""
         if self.backend['ship'].get() == '' and self.persistent['keepTemplateOnShipChange'] == 1:
+            self.resetBuild('clearShip')
             return
+
         if self.persistent['keepTemplateOnShipChange'] == 0 and self.backend['ship'].get() == '':
             self.resetBuild('clearShip')
             self.backend['shipHtml'] = None
@@ -2327,7 +2329,7 @@ class SETS():
                 self.setShipImage()
                 self.shipButton.configure(text=self.ship_name_wrap(empty=True))
                 self.backend['ship'].set(item['item'])
-                self.setupCurrentBuildFrames('space')
+                self.backend['tier'].set('')
             else:
                 self.shipButton.configure(text=self.ship_name_wrap(item['item']))
                 self.backend['ship'].set(item['item'])
@@ -2341,6 +2343,7 @@ class SETS():
         initialDir = self.get_folder_location('library')
         inFilename = filedialog.askopenfilename(filetypes=[('SETS files', '*.json *.png'),('JSON files', '*.json'),('PNG image','*.png'),('All Files','*.*')], initialdir=initialDir)
         self.importByFilename(inFilename)
+        self.auto_save_queue()
 
     def get_display_window(self, title, text):
         w = Toplevel(self.window, bg=self.theme['app']['bg'])
@@ -3043,8 +3046,7 @@ class SETS():
         self.clearing = True
 
         self.buildToBackendSeries()
-        #self.reset_build_skill(init=True)
-        #self.backend['tier'].set('')
+        
         self.backend['shipHtml'] = None
         self.shipImg = self.getEmptyFactionImage()
         self.groundImg = self.getEmptyFactionImage()
@@ -3055,8 +3057,7 @@ class SETS():
 
         self.clearing = False
         
-        self.setupCurrentBuildTagFrames()
-        self.setupSpaceBuildFrames()
+        self.backend['tier'].set('')
         self.setupGroundBuildFrames()
         
         self.auto_save_queue()
@@ -3184,21 +3185,21 @@ class SETS():
 
     def setupCurrentBuildTagFrames(self, environment=None):
         if not self.clearing:
-            if environment == 'space' or environment is None:
+            if environment is None or 'space' in environment:
                 self.updateTagsFrame('space')
-            if environment == 'ground' or environment is None:
+            if environment is None or 'ground' in environment:
                 self.updateTagsFrame('ground')
-            if environment == 'skill' or environment is None:
+            if environment is None or 'skill' in environment:
                 self.updateTagsFrame('skill')
 
     def setupCurrentBuildFrames(self, environment=None):
         if not self.clearing:
             self.setupCurrentBuildTagFrames(environment)
-            if environment == 'space' or environment is None:
+            if environment is None or 'space' in environment:
                 self.setupSpaceBuildFrames()
-            if environment == 'ground' or environment is None:
+            if environment is None or 'ground' in environment:
                 self.setupGroundBuildFrames()
-            if environment == 'skill' or environment is None:
+            if environment is None or 'skill' in environment:
                 self.setupCurrentSkillBuildFrames()
 
     def setupCurrentSkillBuildFrames(self, environment=None):
@@ -3382,7 +3383,7 @@ class SETS():
         if '-X' in self.backend['tier'].get():
             self.backend['shipUniConsoles'] = self.backend['shipUniConsoles'] + 1
             self.backend['shipDevices'] = self.backend['shipDevices'] + 1
-        if 'T5-' in self.backend['tier'].get():
+        if 'T5-' in self.backend['tier'].get() and 't5uconsole' in ship:
             t5console = ship["t5uconsole"]
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
