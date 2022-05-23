@@ -838,127 +838,127 @@
 		"Engineering" : [
 			{
 				"points_required" : 5,
-				"nodes" : {
-					"Hangar Health" : "Your hangar pets have an additional 10% Maximum Hull Capacity",
-					"Battery Expertise" : "Increases the duration of most Battery and Device effects by 100%\r\n\r\nThis skill improves the duration of Starship Batteries. Improving this skill will cause the power gain received from using Batteries to last longer. This skill improves standard consumable and non-consumable (rechargeable) batteries."
-				}
+				"nodes" : [
+					{"Hangar Health" : "Your hangar pets have an additional 10% Maximum Hull Capacity"},
+					{"Battery Expertise" : "Increases the duration of most Battery and Device effects by 100%\r\n\r\nThis skill improves the duration of Starship Batteries. Improving this skill will cause the power gain received from using Batteries to last longer. This skill improves standard consumable and non-consumable (rechargeable) batteries."}
+				]		
 			},
 			{
 				"points_required" : 10,
-				"nodes" : {
-					"Maximum Hull Capacity" : "Provides an additional +10 Hull Capacity Skill",
-					"Subsystem Repair" : "Provides +50 Resistance to the duration of Subsystem Offline effects"
-				}
+				"nodes" : [
+					{"Maximum Hull Capacity" : "Provides an additional +10 Hull Capacity Skill"},
+					{"Subsystem Repair" : "Provides +50 Resistance to the duration of Subsystem Offline effects"}
+				]
 			},
 			{
 				"points_required" : 15,
-				"nodes" : {
-					"Engine Subsystem Power" : "Increases your Engines Subsystem Power by +2",
-					"Shield Subsystem Power" : "Increases your Shields Subsystem Power by +2"
-				}
+				"nodes" : [
+					{"Engine Subsystem Power" : "Increases your Engines Subsystem Power by +2"},
+					{"Shield Subsystem Power" : "Increases your Shields Subsystem Power by +2"}
+				]
 			},
 			{
 				"points_required" : 20,
-				"nodes" : {
-					"Weapon Subsystem Power" : "Increases your Weapons Subsystem Power by +2",
-					"Auxiliary Subsystem Power" : "Increases your Auxiliary Subsystem Power by +2"
-				}
+				"nodes" : [
+					{"Weapon Subsystem Power" : "Increases your Weapons Subsystem Power by +2"},
+					{"Auxiliary Subsystem Power" : "Increases your Auxiliary Subsystem Power by +2"}
+				]
 			},
 			{
 				"points_required" : 24,
-				"utimate" : true,
-				"nodes" : {
-					"EPS Corruption" : "Corrupt the electro-plasma systems of your foe, causing them to burn out components over time.\r\n\r\nActivating directed energy weapons will also cause the victim to suffer additional plasma damage, as the corrupted EPS is fed additional power.\r\n\r\n- 1 min 30 sec recharge\r\n- Affecting skills: Exotic Particle Generator, Drain Expertise\r\n- 10.2 plasma DoT for 15 sec\r\n- When target fires energy weapons, 3.6 plasma damage to self"
-				},
-				"options" : {
-					"Weakening Corruption" : "Energy Weapon activation also triggers subsystem power loss on Foe\r\n\r\nWhen target fires energy weapons, -2.6 all power for 4 sec",
-					"Ablative Corruption" : "Target does not regenerate hull and receives less hull healing\r\n\r\nSets the target's hull regeneration to 0% and halves their incoming healing",
-					"Explosive Corruption" : "The additional plasma damage triggered by weapon activation becomes and AOE that can hit other nearby foes\r\n\r\nWhen target fires energy weapons, 3.6 plasma damage to foes within 3 km"
-				}
+				"ultimate" : true,
+				"nodes" : [
+					{"EPS Corruption" : "Corrupt the electro-plasma systems of your foe, causing them to burn out components over time.\r\n\r\nActivating directed energy weapons will also cause the victim to suffer additional plasma damage, as the corrupted EPS is fed additional power.\r\n\r\n- 1 min 30 sec recharge\r\n- Affecting skills: Exotic Particle Generator, Drain Expertise\r\n- 10.2 plasma DoT for 15 sec\r\n- When target fires energy weapons, 3.6 plasma damage to self"}
+				],
+				"options" : [
+					{"Weakening Corruption" : "Energy Weapon activation also triggers subsystem power loss on Foe\r\n\r\nWhen target fires energy weapons, -2.6 all power for 4 sec"},
+					{"Ablative Corruption" : "Target does not regenerate hull and receives less hull healing\r\n\r\nSets the target's hull regeneration to 0% and halves their incoming healing"},
+					{"Explosive Corruption" : "The additional plasma damage triggered by weapon activation becomes and AOE that can hit other nearby foes\r\n\r\nWhen target fires energy weapons, 3.6 plasma damage to foes within 3 km"}
+				]
 			}
 		],
 		"Science" : [
 			{
 				"points_required" : 5,
-				"nodes" : {
-					"Sector Space Travel Speed" : "Increases maximum Sector Space Travel Speed by 25%\r\n\r\nThis skill improves your starship warp speed and turn rate in sector space, allowing the player to travel faster than Warp 9.97 before slipstream activation.",
-					"Transwarp Cooldown Reductions" : "Your Transwarp abilities recharge 50% faster"
-				}
+				"nodes" : [
+					{"Sector Space Travel Speed" : "Increases maximum Sector Space Travel Speed by 25%\r\n\r\nThis skill improves your starship warp speed and turn rate in sector space, allowing the player to travel faster than Warp 9.97 before slipstream activation."},
+					{"Transwarp Cooldown Reductions" : "Your Transwarp abilities recharge 50% faster"}
+				]
 			},
 			{
 				"points_required" : 10,
-				"nodes" : {
-					"Maximum Shield Capacity" : "Provides an additional +10 Shield Capacity Skill",
-					"Starship Stealth" : "Increase the Stealth values of your Cloaking Devices (and other similar abilities) by +100.\r\n\r\nThe distance at which enemies can detect you through Stealth is calculated using this formula: Perception - Stealth / 50 = km\r\n\r\nThis skill improves all your starship's stealth related abilities, such as cloaking devices. If you do not have any stealth related abilities available on your starship, this skill has no effect at all; it does not provide any innate stealth.\r\n\r\nThe distance at which enemies can detect you through Stealth is calculated using this formula:\r\n\r\nPerception - Stealth / 50 = km\r\nFor example, the Science skill unlock gives you +100 Stealth, increasing the range to which you are undetectable by 2km."
-				}
+				"nodes" : [
+					{"Maximum Shield Capacity" : "Provides an additional +10 Shield Capacity Skill"},
+					{"Starship Stealth" : "Increase the Stealth values of your Cloaking Devices (and other similar abilities) by +100.\r\n\r\nThe distance at which enemies can detect you through Stealth is calculated using this formula: Perception - Stealth / 50 = km\r\n\r\nThis skill improves all your starship's stealth related abilities, such as cloaking devices. If you do not have any stealth related abilities available on your starship, this skill has no effect at all; it does not provide any innate stealth.\r\n\r\nThe distance at which enemies can detect you through Stealth is calculated using this formula:\r\n\r\nPerception - Stealth / 50 = km\r\nFor example, the Science skill unlock gives you +100 Stealth, increasing the range to which you are undetectable by 2km."}
+				]
 			},
 			{
 				"points_required" : 15,
-				"nodes" : {
-					"Starship Perception" : "Doubles the benefit to Stealth Detection Rating that you gain from Auxiliary Power.\r\n\r\nStarship Perception is a Tier 3 Science skill available to all players. This skill costs 15 Science skill points.",
-					"Control Resistance" : "Provides an additional +10 Resistance Rating to Incoming Control Effects"
-				}
+				"nodes" : [
+					{"Starship Perception" : "Doubles the benefit to Stealth Detection Rating that you gain from Auxiliary Power.\r\n\r\nStarship Perception is a Tier 3 Science skill available to all players. This skill costs 15 Science skill points."},
+					{"Control Resistance" : "Provides an additional +10 Resistance Rating to Incoming Control Effects"}
+				]
 			},
 			{
 				"points_required" : 20,
-				"nodes" : {
-					"Subsystem Energy Drain Resistance" : "Provides an additional +10 Resistance Rating to Incoming Subsystem Power Drain Effects",
-					"Shield Drain Resistance" : "Provide an additional +10 Resistance Rating to Incoming Shield Drain Effects"
-				}
+				"nodes" : [
+					{"Subsystem Energy Drain Resistance" : "Provides an additional +10 Resistance Rating to Incoming Subsystem Power Drain Effects"},
+					{"Shield Drain Resistance" : "Provide an additional +10 Resistance Rating to Incoming Shield Drain Effects"}
+				]
 			},
 			{
 				"points_required" : 24,
-				"utimate" : true,
-				"nodes" : {
-					"Probability Manipulation" : "For a small window of time, you can force the universe to see things yoru way, vastly increasing the chance that every bit of damage done to your foes will be a Critical Hit.\r\n\r\n- 1 min 30 sec recharge\r\n- Affecting skills: ? (if any)\r\n- 50% crit chance for 15 seconds\r\n(Note: Will temporarily override your normal critical hit chance, including the displayed amount, while active . Does not stack with Particle Manipulator)"
-				},
-				"options" : {
-					"Probability Shell" : "Hull Healing and Shield Healing also doubled\r\n\r\n+100% Hull and Shield healing for 15 sec",
-					"Probability Penetration" : "Chance to gain a stacking Armor Penetration buff on critical hit\r\n\r\n50% chance on crit to gain a stacking 5 Armor Penetration Buff (max. 5 stacks)",
-					"Probability Collapse" : "Increases your accuracy and defense for the duration\r\n\r\n+50 Accuracy rating and 50 Defense rating buff for the duration"
-				}
+				"ultimate" : true,
+				"nodes" : [
+					{"Probability Manipulation" : "For a small window of time, you can force the universe to see things yoru way, vastly increasing the chance that every bit of damage done to your foes will be a Critical Hit.\r\n\r\n- 1 min 30 sec recharge\r\n- Affecting skills: ? (if any)\r\n- 50% crit chance for 15 seconds\r\n(Note: Will temporarily override your normal critical hit chance, including the displayed amount, while active . Does not stack with Particle Manipulator)"}
+				],
+				"options" : [
+					{"Probability Shell" : "Hull Healing and Shield Healing also doubled\r\n\r\n+100% Hull and Shield healing for 15 sec"},
+					{"Probability Penetration" : "Chance to gain a stacking Armor Penetration buff on critical hit\r\n\r\n50% chance on crit to gain a stacking 5 Armor Penetration Buff (max. 5 stacks)"},
+					{"Probability Collapse" : "Increases your accuracy and defense for the duration\r\n\r\n+50 Accuracy rating and 50 Defense rating buff for the duration"}
+				]
 			}
 		],
 		"Tactical" : [
 			{
 				"points_required" : 5,
-				"nodes" : {
-					"Starship Threat Control" : "+100% Additional Threat Generation while in Threatening Stance\r\n-100% Threat Generation while not in Threatening Stance\r\n\r\nThis skill increases the Threat generated by all your Starship's damage dealing abilities. The increase in Threat is always active and cannot be deactivated, so you must be prepared for the additional incoming damage as enemies focus on you.Note that Threat generation from this skill will have no effect against another player (PvP).",
-					"Hangar Weaponry" : "Your hangar pets deal an additional 10% Damage from all sources."
-				}
+				"nodes" : [
+					{"Starship Threat Control" : "+100% Additional Threat Generation while in Threatening Stance\r\n-100% Threat Generation while not in Threatening Stance\r\n\r\nThis skill increases the Threat generated by all your Starship's damage dealing abilities. The increase in Threat is always active and cannot be deactivated, so you must be prepared for the additional incoming damage as enemies focus on you. Note that Threat generation from this skill will have no effect against another player (PvP)."},
+					{"Hangar Weaponry" : "Your hangar pets deal an additional 10% Damage from all sources."}
+				]
 			},
 			{
 				"points_required" : 10,
-				"nodes" : {
-					"Projectile Critical Chance" : "Increase your Critical Chance by 1% for Torpedo and Mine Weapons",
-					"Projectile Critical Severity" : "Increase your Critical Severity by 5% for Torpedo and Mine Weapons"
-				}
+				"nodes" : [
+					{"Projectile Critical Chance" : "Increase your Critical Chance by 1% for Torpedo and Mine Weapons"},
+					{"Projectile Critical Severity" : "Increase your Critical Severity by 5% for Torpedo and Mine Weapons"}
+				]
 			},
 			{
 				"points_required" : 15,
-				"nodes" : {
-					"Energy Critical Chance" : "Increase your Critical Chance by 1% for Energy Weapons",
-					"Energy Critical Severity" : "Increase your Critical Severity by 5% for Energy Weapons"
-				}
+				"nodes" : [
+					{"Energy Critical Chance" : "Increase your Critical Chance by 1% for Energy Weapons"},
+					{"Energy Critical Severity" : "Increase your Critical Severity by 5% for Energy Weapons"}
+				]
 			},
 			{
 				"points_required" : 20,
-				"nodes" : {
-					"Accuracy" : "Grants an additional 2 Accuracy Rating",
-					"Defense" : "Grants an additional 2 Defense Rating"
-				}
+				"nodes" : [
+					{"Accuracy" : "Grants an additional 2 Accuracy Rating"},
+					{"Defense" : "Grants an additional 2 Defense Rating"}
+				]
 			},
 			{
 				"points_required" : 24,
-				"utimate" : true,
-				"nodes" : {
-					"Focused Frenzy" : "Mark the target foe, and devote all available resources to taking them down.  Each tiem you hit the marked foe with an energy weapon, your weapons' firing cycles will speed up progressively faster and faster.\r\n\r\n- 1 min 30 sec recharge\r\n- Affecting skills: ? (if any)\r\n- +4% firing cycle Haste for energy weapons when damaging marked foe, up to 5 stacks\r\n- Stacks expire after not hitting the target for 2.5 seconds"
-				},
-				"options" : {
-					"Frenzied Reactions" : "Chance to also reduce Bridge Officer cooldowns with each hit\r\n\r\n10% chance: -1 seconds to the current recharge time of abilities",
-					"Frenzied Assault" : "Also gain a stacking Weapon Damage Bonus with each hit\r\n\r\n+8% bonus weapon damage per Frenzy stack for 15 sec",
-					"Team Frenzy" : "Allies firing on your Marked Foe will also gain stacks of Frenzy, and associated benefits"
-				}
+				"ultimate" : true,
+				"nodes" : [
+					{"Focused Frenzy" : "Mark the target foe, and devote all available resources to taking them down.  Each tiem you hit the marked foe with an energy weapon, your weapons' firing cycles will speed up progressively faster and faster.\r\n\r\n- 1 min 30 sec recharge\r\n- Affecting skills: ? (if any)\r\n- +4% firing cycle Haste for energy weapons when damaging marked foe, up to 5 stacks\r\n- Stacks expire after not hitting the target for 2.5 seconds"}
+				],
+				"options" : [
+					{"Frenzied Reactions" : "Chance to also reduce Bridge Officer cooldowns with each hit\r\n\r\n10% chance: -1 seconds to the current recharge time of abilities"},
+					{"Frenzied Assault" : "Also gain a stacking Weapon Damage Bonus with each hit\r\n\r\n+8% bonus weapon damage per Frenzy stack for 15 sec"},
+					{"Team Frenzy" : "Allies firing on your Marked Foe will also gain stacks of Frenzy, and associated benefits"}
+				]
 			}
 		]
 	}

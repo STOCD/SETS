@@ -185,38 +185,38 @@
 		"Ground" : [
 			{
 				"points_required" : 2,
-				"nodes" : {
-					"Willpower" : "This skill increases your ability to resist incoming Control effects. Control Effects include all of the following:\r\nDisable, Stun, Root, Knock/Repel/Pull, Confuse, Placate, Run Speed Debuffs\r\nBy default, players naturally gain up to a maximum of +50 Willpower while leveling up, at a rate of +1 per Level up until reaching Level 50. Each point of Willpower provides +2 Resistance Rating for Incoming Control Effects. Having +100 Resistance will cut the effectiveness of most incoming Control Effects in half.\r\n+50 Willpower",
-					"Device Expertise" : "This skill increases the effectiveness of most consumable devices. Each point of Device Mastery skill grants a 0.5% bonus to the effectiveness of devices when activated.\r\n+100 Device Master\r\nTotal Device Effectiveness Bonus = +50%"
-				}
+				"nodes" : [
+					{"Willpower" : "This skill increases your ability to resist incoming Control effects. Control Effects include all of the following:\r\nDisable, Stun, Root, Knock/Repel/Pull, Confuse, Placate, Run Speed Debuffs\r\nBy default, players naturally gain up to a maximum of +50 Willpower while leveling up, at a rate of +1 per Level up until reaching Level 50. Each point of Willpower provides +2 Resistance Rating for Incoming Control Effects. Having +100 Resistance will cut the effectiveness of most incoming Control Effects in half.\r\n+50 Willpower"},
+					{"Device Expertise" : "This skill increases the effectiveness of most consumable devices. Each point of Device Mastery skill grants a 0.5% bonus to the effectiveness of devices when activated.\r\n+100 Device Master\r\nTotal Device Effectiveness Bonus = +50%"}
+				]
 			},
 			{
 				"points_required" : 4,
-				"nodes" : {
-					"Improved Aim" : "Improves the Ranged Damage bonus gained while using the Aim mode.\r\nBy default, Aim offers a +30% Damage Bonus with all types of Ranged Weapons, and this unlock increases that by an additional 10% Damage Bonus (+40% Total).",
-					"Improved Crouch" : "Improves the Dodge bonus gained while using the Crouch mode. When an attack is Dodged, the damage is reduced by 50%.\r\nBy default, Crouch grants a +50% chance to Dodge incoming Ranged Attacks, and this unlock increases that by an additional 10% Dodge Bonus (+60% Total)."
-				}
+				"nodes" : [
+					{"Improved Aim" : "Improves the Ranged Damage bonus gained while using the Aim mode.\r\nBy default, Aim offers a +30% Damage Bonus with all types of Ranged Weapons, and this unlock increases that by an additional 10% Damage Bonus (+40% Total)."},
+					{"Improved Crouch" : "Improves the Dodge bonus gained while using the Crouch mode. When an attack is Dodged, the damage is reduced by 50%.\r\nBy default, Crouch grants a +50% chance to Dodge incoming Ranged Attacks, and this unlock increases that by an additional 10% Dodge Bonus (+60% Total)."}
+				]
 			},
 			{
 				"points_required" : 6,
-				"nodes" : {
-					"Furious Footwork" : "Attacking with Melee grants you +20% Run Speed for 5sec. This effect is refreshed by each subsequent attack, instead of stacking",
-					"Fatal Fists" : "Attacking with Melee inflicts a debuff of -20 Damage Resistance Rating on any foe hit by your melee attack, which lasts for 5sec. This effect is refreshed by each subsequent attack, instead of stacking."
-				}
+				"nodes" : [
+					{"Furious Footwork" : "Attacking with Melee grants you +20% Run Speed for 5sec. This effect is refreshed by each subsequent attack, instead of stacking"},
+					{"Fatal Fists" : "Attacking with Melee inflicts a debuff of -20 Damage Resistance Rating on any foe hit by your melee attack, which lasts for 5sec. This effect is refreshed by each subsequent attack, instead of stacking."}
+				]
 			},
 			{
 				"points_required" : 8,
-				"nodes" : {
-					"Improved Flank Damage" : "By default, any damaging attack made from beyond a target's forward 120-degree arc will be considered a Flank, and deal additional damage. This skill allows you to deal additional damage when successfully landing a Flank on any foe.",
-					"Improved Flank Resistance" : "By default, any damaging attack made from beyond a target's forward 120-degree arc will be considered a Flank, and deal additional damage by inflicting a -35 Damage Resistance Rating Penalty. This skill reduces the resistance penalty you suffer when being flanked by 20% (-28 Total)."
-				}
+				"nodes" : [
+					{"Improved Flank Damage" : "By default, any damaging attack made from beyond a target's forward 120-degree arc will be considered a Flank, and deal additional damage. This skill allows you to deal additional damage when successfully landing a Flank on any foe."},
+					{"Improved Flank Resistance" : "By default, any damaging attack made from beyond a target's forward 120-degree arc will be considered a Flank, and deal additional damage by inflicting a -35 Damage Resistance Rating Penalty. This skill reduces the resistance penalty you suffer when being flanked by 20% (-28 Total)."}
+				]
 			},
 			{
 				"points_required" : 10,
-				"nodes" : {
-					"Offensive Mastery" : "This skill increases the base damage of your energy and melee weapons, as well as further improving your Critical Hits with all weapons.\r\n+10 Weapon Proficiency and Weapon Criticals",
-					"Defensive Mastery" : "This grants additional defensive bonuses by increasing your maximum hitpoints and the effectiveness of your personal shields and armor.\r\n+10 Endurance Training, Combat Armor and Personal Shields"
-				}
+				"nodes" : [
+					{"Offensive Mastery" : "This skill increases the base damage of your energy and melee weapons, as well as further improving your Critical Hits with all weapons.\r\n+10 Weapon Proficiency and Weapon Criticals"},
+					{"Defensive Mastery" : "This grants additional defensive bonuses by increasing your maximum hitpoints and the effectiveness of your personal shields and armor.\r\n+10 Endurance Training, Combat Armor and Personal Shields"}
+				]
 			}
 		]
 	}
