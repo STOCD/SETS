@@ -10,7 +10,6 @@ import platform
 import re
 import sys
 import textwrap
-from turtle import clear
 import urllib.parse
 import uuid
 import webbrowser
@@ -3481,21 +3480,34 @@ class SETS():
 
         if ship is None: ship = self.shipTemplate
 
-        self.backend['shipForeWeapons'] = int(ship["fore"])
-        self.backend['shipAftWeapons'] = int(ship["aft"])
-        self.backend['shipDevices'] = int(ship["devices"])
-        self.backend['shipTacConsoles'] = int(ship["consolestac"])
-        self.backend['shipEngConsoles'] = int(ship["consoleseng"])
-        self.backend['shipSciConsoles'] = int(ship["consolessci"])
+        self.backend['shipForeWeapons'] = int(ship['fore'])
+        self.backend['shipAftWeapons'] = int(ship['aft'])
+        self.backend['shipDevices'] = int(ship['devices'])
+        self.backend['shipTacConsoles'] = int(ship['consolestac'])
+        self.backend['shipEngConsoles'] = int(ship['consoleseng'])
+        self.backend['shipSciConsoles'] = int(ship['consolessci'])
         self.backend['shipUniConsoles'] = 1 if 'Innovation Effects' in ship["abilities"] else 0
         self.backend['shipHangars'] = 0 if ship["hangars"] == '' else int(ship["hangars"])
         if '-X' in self.backend['tier'].get():
             self.backend['shipUniConsoles'] = self.backend['shipUniConsoles'] + 1
             self.backend['shipDevices'] = self.backend['shipDevices'] + 1
+            if len(self.build['devices']) < self.backend['shipDevices']: self.build['devices'].append(None)
+            if len(self.build['uniConsoles']) < self.backend['shipUniConsoles']: self.build['uniConsoles'].append(None)
+        else:
+            while len(self.build['devices']) > self.backend['shipDevices']:
+                self.build['devices'] = self.build['devices'][:-1]
+            while len(self.build['uniConsoles']) > self.backend['shipUniConsoles']:
+                self.build['uniConsoles'] = self.build['uniConsoles'][:-1]
         if 'T5-' in self.backend['tier'].get() and 't5uconsole' in ship:
-            t5console = ship["t5uconsole"]
+            t5console = ship['t5uconsole']
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
+            if len(self.build[t5console+'Consoles']) < self.backend[key]: self.build[t5console+'Consoles'].append(None)
+        else:
+            t5console = ship['t5uconsole']
+            key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
+            while len(self.build[t5console+'Consoles']) > self.backend[key]:
+                self.build[t5console+'Consoles'] = self.build[t5console+'Consoles'][:-1]
 
         self.labelBuildBlock(parentFrame, "Fore Weapons", 0, 0, 1, 'foreWeapons', self.backend['shipForeWeapons'], self.itemLabelCallback, ["Ship Fore Weapon", "Pick Fore Weapon", ""])
         if ship["secdeflector"] == 1:
