@@ -3503,9 +3503,6 @@ class SETS():
             key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             self.backend[key] = self.backend[key] + 1
             if len(self.build[t5console+'Consoles']) < self.backend[key]: self.build[t5console+'Consoles'].append(None)
-        else:
-            t5console = ship['t5uconsole']
-            key = 'shipTacConsoles' if 'tac' in t5console else 'shipEngConsoles' if 'eng' in t5console else 'shipSciConsoles'
             while len(self.build[t5console+'Consoles']) > self.backend[key]:
                 self.build[t5console+'Consoles'] = self.build[t5console+'Consoles'][:-1]
 
