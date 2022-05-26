@@ -1299,8 +1299,8 @@ class SETS():
         return image
 
     def resetSkillCountAfterImport(self):
-        self.updateSkillCount('space')
-        self.updateSkillCount('ground')
+        self.update_skill_count('space')
+        self.update_skill_count('ground')
 
         self.logWriteSimple('Skill count', 'import', 3, [self.backend['skillCount']['space']['sum'], self.backend['skillCount']['groundSum'].get()])
 
@@ -1328,32 +1328,39 @@ class SETS():
                     break
             return [skillnode, skillindex, skillrank]
 
-    def updateSkillCount(self, environment):
+    def update_skill_count(self, environment):
+        """initializes the skill count in self.backend and updates it to the current skill tree -- needed during build load"""
+        
         conv = {'Tactical':'tac','Science':'sci','Engineering':'eng'}
         self.backend['skillCount']['space'] = dict()
         self.backend['skillCount']['space']['sum'] = 0
+
         if environment == 'space':
-            currentCount = {'tac':0, 'sci':0, 'eng':0}
+            current_count = {'tac':0, 'sci':0, 'eng':0}
             lskills = self.build['skilltree']['space']
+            # iterates through all possible skill nodes and increments the respective variable
             for rank in ['lieutenant', 'lieutenant commander', 'commander', 'captain', 'admiral']:
                 self.backend['skillCount']['space'][rank] = 0
                 for name in lskills:
                     snode, sindex, srank = self.getSkillnodeByName(name, rank)
                     if lskills[name] and snode != None:
-                        currentCount[snode['career']] += 1
+                        current_count[snode['career']] += 1
                         self.backend['skillCount']['space']['sum'] += 1
-                        #self.backend['skillCount']['space'+conv[snode['career']]].add(1)
                         self.backend['skillCount']['space'][rank] +=1
             for career in ['Tactical', 'Engineering', 'Science']:
-                if not self.backend['skillCount']['space'+career] == currentCount[conv[career]]:
-                    self.backend['skillCount']['space'+career].set(currentCount[conv[career]])
+                # the career-specific counts should be written as rarely as possible to prevent unnecessary trace calls
+                if not self.backend['skillCount']['space'+career] == current_count[conv[career]]:
+                    self.backend['skillCount']['space'+career].set(current_count[conv[career]])
+
         elif environment == 'ground':
-            currentCount = 0
+            current_count = 0
+            # iterates through all possible skill nodes and increments the respective variable
             for skills in self.build['skilltree']['ground']:
                 if self.build['skilltree']['ground'][skills]:
-                    currentCount += 1
-            if not self.backend['skillCount']['groundSum'] == currentCount:
-                self.backend['skillCount']['groundSum'].set(currentCount)
+                    current_count += 1
+            # the ground count should be written as rarely as possible to prevent unnecessary trace calls
+            if not self.backend['skillCount']['groundSum'] == current_count:
+                self.backend['skillCount']['groundSum'].set(current_count)
 
         
 
@@ -1723,17 +1730,17 @@ class SETS():
                 }
         if hasattr(self, 'backend'): #this shall not be executed during load because self.backend is not initalized yet
             self.backend.update(backend_skill)
-            self.backend['skillCount']['spaceEngineering'].trace_add('write', lambda a, b, c: self.skillCountChangeCallback('space', 'Engineering'))
-            self.backend['skillCount']['spaceTactical'].trace_add('write', lambda a, b, c: self.skillCountChangeCallback('space', 'Tactical'))
-            self.backend['skillCount']['spaceScience'].trace_add('write', lambda a, b, c: self.skillCountChangeCallback('space', 'Science'))
-            self.backend['skillCount']['groundSum'].trace_add('write', lambda a, b, c: self.skillCountChangeCallback('ground', 'Sum'))
+            self.backend['skillCount']['spaceEngineering'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('space', 'Engineering'))
+            self.backend['skillCount']['spaceTactical'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('space', 'Tactical'))
+            self.backend['skillCount']['spaceScience'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('space', 'Science'))
+            self.backend['skillCount']['groundSum'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('ground', 'Sum'))
         
         if not init:
             self.clearing = True
 
         if not init:
-            self.updateSkillCount('space')
-            self.updateSkillCount('ground')
+            self.update_skill_count('space')
+            self.update_skill_count('ground')
             self.clearing = False
             self.setupCurrentSkillBuildFrames()
             self.auto_save_queue()
@@ -1808,10 +1815,10 @@ class SETS():
         self.backend['tier'].trace_add('write', lambda v,i,m:self.setupCurrentBuildFrames('space'))
         self.backend['eliteCaptain'].trace_add('write', lambda v,i,m:self.clean_backend_elitecaptain())
         self.backend['ship'].trace_add('write', self.shipMenuCallback)
-        self.backend['skillCount']['spaceEngineering'].trace_add('write', lambda a, b, c: self.skillCountChangeCallback('space', 'Engineering'))
-        self.backend['skillCount']['spaceTactical'].trace_add('write', lambda a, b, c: self.skillCountChangeCallback('space', 'Tactical'))
-        self.backend['skillCount']['spaceScience'].trace_add('write', lambda a, b, c: self.skillCountChangeCallback('space', 'Science'))
-        self.backend['skillCount']['groundSum'].trace_add('write', lambda a, b, c: self.skillCountChangeCallback('ground', 'Sum'))
+        self.backend['skillCount']['spaceEngineering'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('space', 'Engineering'))
+        self.backend['skillCount']['spaceTactical'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('space', 'Tactical'))
+        self.backend['skillCount']['spaceScience'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('space', 'Science'))
+        self.backend['skillCount']['groundSum'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('ground', 'Sum'))
 
     def clean_backend_elitecaptain(self):
         pass
@@ -2405,6 +2412,13 @@ class SETS():
         t.configure(state=DISABLED)
         w.mainloop()
 
+    def skill_count_label_update_callback(self, label, environment, career):
+        """updates the label showing the current number of active skill nodes per career"""
+        if environment == 'space':
+            label.config(text=self.backend['skillCount']['space'+career].get())
+        else:
+            label.config(text=self.backend['skillCount']['groundSum'].get())
+
     def merge_file_create(self):
         eol = '\r\n'
         name = 'Merge file'
@@ -2746,7 +2760,13 @@ class SETS():
 
         return
 
-    def skillCountChangeCallback(self, environment, career):
+    def skill_count_change_callback(self, environment, career):
+        """updates the skill bonus bars on change of the respective skill count
+        
+        Parameters only determine which bar to update: 
+        - environment: space / ground 
+        - career: Tactical / Science / Engineering / Sum (always for ground)"""
+
         if self.in_splash(): return
         if (environment =='space' and len(self.backend['skillBonusBarUnlocks']['space'][career]) == 0) or \
             (environment == 'ground' and len(self.backend['skillBonusBarUnlocks']['ground']) == 0): return
@@ -2758,15 +2778,15 @@ class SETS():
                         self.backend['skillBonusBar']['space'][career][x].configure(bg=self.theme['entry_dark']['bg'])
                 else:
                     for i in range(skillcount):
-                        self.backend['skillBonusBar']['space'][career][i].configure(bg='green')
+                        self.backend['skillBonusBar']['space'][career][i].configure(bg=self.theme['app']['bg'])
                     i += 1
                     while i < 24:
                         self.backend['skillBonusBar']['space'][career][i].configure(bg=self.theme['entry_dark']['bg'])
                         i += 1
-            except IndexError:
+            except IndexError as e:
                 pass
             skillcount = self.backend['skillCount']['space'+career].get()
-            self.skillSetUltimateItem(career+'4', environment, self.backend['skillBonusBarUnlocks']['space'][career][24])
+            self.skill_set_ultimate_item(career+'4', environment, self.backend['skillBonusBarUnlocks']['space'][career][24])
             if skillcount+1 in self.backend['skillBonusBarUnlocks']['space'][career]:
                 canvastuple = self.backend['skillBonusBarUnlocks']['space'][career][skillcount+1]
                 canvastuple[0].itemconfig(canvastuple[1], image=self.emptyImage)
@@ -2782,12 +2802,12 @@ class SETS():
                         self.backend['skillBonusBar']['ground'][x].configure(bg=self.theme['entry_dark']['bg'])
                 else:
                     for i in range(skillcount):
-                        self.backend['skillBonusBar']['ground'][i].configure(bg='green')
+                        self.backend['skillBonusBar']['ground'][i].configure(bg=self.theme['app']['bg'])
                     i += 1
                     while i<10:
                         self.backend['skillBonusBar']['ground'][i].configure(bg=self.theme['entry_dark']['bg'])
                         i += 1
-            except IndexError:
+            except IndexError as e:
                 pass
             if skillcount+1 in self.backend['skillBonusBarUnlocks']['ground']:
                 canvastuple = self.backend['skillBonusBarUnlocks']['ground'][skillcount+1]
@@ -3606,13 +3626,13 @@ class SETS():
             parentFrame = self.skillSpaceBuildFrame
             self.clearFrame(parentFrame)
             self.setup_skill_tree_frame(parentFrame, 'space')
-            self.setupSkillBonusFrame(parentFrame, 'space')
+            self.setup_skill_bonus_frame(parentFrame, 'space')
 
         if environment is None or environment == 'ground':
             parentFrame = self.skillGroundBuildFrame
             self.clearFrame(parentFrame)
             self.setup_skill_tree_frame(parentFrame, 'ground')
-            self.setupSkillBonusFrame(parentFrame, 'ground')
+            self.setup_skill_bonus_frame(parentFrame, 'ground')
 
         # self.clearInfoboxFrame('skill')
 
@@ -3723,7 +3743,7 @@ class SETS():
         else:
             self.createButton(frame, '', row=row_actual, rowspan=rowspan, column=col_actual, borderwidth=1, bg=self.theme['button']['bg'], image0=self.emptyImage, sticky='ns', padx=padxCanvas, pady=padyCanvas, args=args, name='blank', anchor='center')
 
-    def skillNextUltimateTooltip(self, oldTooltip, career):
+    def skill_next_ultimate_toolip(self, oldTooltip, career):
         """returns the next tooltip option of the ultimate ability of the given career"""
         ultimateNodeOptions = [list(self.cache['skills']['space_unlocks'][career][-1]['options'][i])[0] for i in range(3)]
         if oldTooltip == '': return ultimateNodeOptions[0]
@@ -3732,32 +3752,45 @@ class SETS():
         else: nextTooltip = ultimateNodeOptions[option_index+1]
         return nextTooltip
 
-    def skill_unlock_update(self, o, v, environment, location):
-        if not environment+'_unlocks' in self.build['skilltree']:
-            self.build['skilltree'][environment+'_unlocks'] = {}
-        entry = v.get()
-        self.build['skilltree'][environment+'_unlocks'][location] = entry
-        self.auto_save_queue()
-        tooltip_uuid = self.uuid_assign_for_tooltip()
-        o.bind('<Enter>', lambda e, tooltip_uuid=tooltip_uuid, item=entry, environment=environment: self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, 'skilltree', environment))
-        o.bind('<Leave>', lambda e, tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
-
-    def skillGetBonusUnlocks(self, unlockname, environment):
-        if 'ultimate' in self.cache['skills'][environment+'_unlocks'][unlockname[:-1]][int(unlockname[-1:])] and self.cache['skills'][environment+'_unlocks'][unlockname[:-1]][int(unlockname[-1:])]['ultimate']:
-            currentUnlock = self.cache['skills'][environment+'_unlocks'][unlockname[:-1]][int(unlockname[-1:])]
+    def skill_get_bonus_unlocks(self, unlock_name, environment):
+        """returns the possible unlocks available on a specific bonus bar node
+        
+        Parameters:
+        - unlock_name: unique identifier of the bonus bar node; used as key in self.build
+        - environment: space / ground
+        
+        -> if requested node is not an ultimate node, a list is returned that contains the names of the available options
+        -> if requested node is an ultimate node, a list is returned that contains 3 items: 
+        a dict mapping the ultimate ability on its tooltip; a dict containing all 
+        ultimate options with their tooltips; a list containing the names of the ultimate options"""
+        # if requested bonus unlock is an ultimate node
+        if 'ultimate' in self.cache['skills'][environment+'_unlocks'][unlock_name[:-1]][int(unlock_name[-1:])] and self.cache['skills'][environment+'_unlocks'][unlock_name[:-1]][int(unlock_name[-1:])]['ultimate']:
+            current_unlock = self.cache['skills'][environment+'_unlocks'][unlock_name[:-1]][int(unlock_name[-1:])]
             li = []
-            li.append(currentUnlock['nodes'][0])
+            li.append(current_unlock['nodes'][0])
             optionsdict = {}
-            for q in range(3): optionsdict.update(currentUnlock['options'][q])
+            for q in range(3): optionsdict.update(current_unlock['options'][q])
             li.append(optionsdict)
-            li.append((list(currentUnlock['options'][0])[0], list(currentUnlock['options'][1])[0],list(currentUnlock['options'][2])[0]))
+            li.append((list(current_unlock['options'][0])[0], list(current_unlock['options'][1])[0],list(current_unlock['options'][2])[0]))
             return li
+        # if requested node is not an ultimate node
         else:
-            return [unlock for unlock in self.cache['skills'][environment+'_unlocks'][unlockname[:-1]][int(unlockname[-1:])]['nodes']]
+            return [unlock for unlock in self.cache['skills'][environment+'_unlocks'][unlock_name[:-1]][int(unlock_name[-1:])]['nodes']]
     
-    def skillSetUltimateItem(self, key, environment, canvastuple):
-        """Sets Ultimate Ability for given number of points incuding displayed image, tooltip binding and saving to self.build"""
+    def skill_set_ultimate_item(self, key, environment, canvastuple):
+        """Sets Ultimate Ability for current number of skill points spent -- incuding displayed image, tooltip binding and saving to self.build
+        
+        Parameters:
+        - key: unique identifier of the button; used as key in self.build
+        - environment: space / ground
+        - canvastuple: tuple containing a reference to the respective button, 
+        an identifier for the first image on it and an identifier for the second image on it
+        
+        returns a tuple containing the respective ultimate abilities name and current tooltip"""
+
         points_spend = self.backend['skillCount']['space'+key[:-1]].get()
+
+        # clears the node when it is not unlocked yet
         if points_spend < 24:
             canvastuple[0].itemconfig(canvastuple[1], image=self.emptyImage)
             canvastuple[0].unbind('<Enter>')
@@ -3765,38 +3798,57 @@ class SETS():
             self.build['skilltree']['space_unlocks'][key[:-1]+'4'] = ''
             self.auto_save_queue()
             return ('','')
-        possibleUnlocks = self.skillGetBonusUnlocks(key, environment)
+        
+        possibleUnlocks = self.skill_get_bonus_unlocks(key, environment)
         clearname_key = list(possibleUnlocks[0])[0]
         plainTooltip = [possibleUnlocks[0][clearname_key]+'<hr>']
         currentOptions = [possibleUnlocks[2][0], possibleUnlocks[2][1], possibleUnlocks[2][2]]
+
+        # ultimate ability without ultimate options
         if points_spend == 24:
             tooltip = []
             self.build['skilltree']['space_unlocks'][key] = clearname_key
             self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options'] = ['','','']
+        # ultimate ability with a single ultimate option
         elif points_spend == 25:
             if key[:-1]+'_ultimate_options' in self.build['skilltree']['space_unlocks'] and not self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options'][0] == '':
                 currentOptions = self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options']
-            newOption = self.skillNextUltimateTooltip(currentOptions[0], key[:-1])
+            newOption = self.skill_next_ultimate_toolip(currentOptions[0], key[:-1])
             self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options'] = [newOption,'','']
             tooltip = [(''+newOption+'\n',possibleUnlocks[1][newOption])]
+        # ultimate ability with two ultimate options
         elif points_spend == 26:
             if key[:-1]+'_ultimate_options' in self.build['skilltree']['space_unlocks'] and not '' in self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options'][:-1]:
                 currentOptions = self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options']
-            newOption = self.skillNextUltimateTooltip(currentOptions[1], key[:-1])
-            self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options'] = [currentOptions[1], newOption, '']
+            newOption = self.skill_next_ultimate_toolip(currentOptions[1], key[:-1])
+            self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options'] = [currentOptions[1], newOption, ''] # to guarantee that every combination of two of the three options occurs once, this pattern is used: [a,b,'']->[b,c,'']->[c,a,'']->[a,b,''] (center value gets copied to first value, center value is shifted one forwards)
             tooltip = [ (currentOptions[1], possibleUnlocks[1][currentOptions[1]]), (newOption, possibleUnlocks[1][newOption]) ]
+        # ultimate ability with all three ultimate options
         elif points_spend > 26:
             self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options'] = currentOptions
             tooltip = [ (currentOptions[0], possibleUnlocks[1][currentOptions[0]]), (currentOptions[1], possibleUnlocks[1][currentOptions[1]]), (currentOptions[2], possibleUnlocks[1][currentOptions[2]]) ]
+        
+        # setting up image and tooltip bind
         canvastuple[0].itemconfig(canvastuple[1], image=self.cache['skillBonusImages'][key[:-1]])
         tooltip_uuid = self.uuid_assign_for_tooltip()
         canvastuple[0].bind('<Enter>', lambda e, tooltip_uuid=tooltip_uuid, item=clearname_key, group_key='skilltree', environment=environment, ptooltip=plainTooltip+tooltip: self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, group_key, environment, ptooltip))
         canvastuple[0].bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
+
         return (clearname_key, plainTooltip+tooltip)
         
     
-    def bonusItemCallback(self, e, canvas, img, i, key, args):
-        """Callback function for bonus unlock buttons: switches between possible unlocks on the skill bonus bar"""
+    def bonus_item_callback(self, e, canvas, img, i, key, args):
+        """Callback function for bonus unlock buttons: switches between possible unlocks on the skill bonus bar
+        
+        Parameters:
+        - e: **unused** event object
+        - canvas: reference to the button that was clicked
+        - img: tuple containing identifiers for the possible two overlaying images on the button (canvas)
+        - i: **unused** sub key for self.build
+        - key: unique identifier of the button; used as key in self.build
+        - args: tuple containing 'skilltree' and the current environment (ground / space) """
+
+        # aborts when bonus node is not unlocked yet
         if args[-1] == 'ground': 
             cond = self.cache['skills']['ground_unlocks']['Ground'][int(key[-1:])]['points_required'] > self.backend['skillCount']['groundSum'].get()
             if cond:
@@ -3805,10 +3857,13 @@ class SETS():
             cond2 = self.cache['skills']['space_unlocks'][key[:-1]][int(key[-1:])]['points_required'] > self.backend['skillCount']['space'+key[:-1]].get()
             if cond2:
                 return
-        possibleUnlocks = self.skillGetBonusUnlocks(key, args[-1])
+
+        possibleUnlocks = self.skill_get_bonus_unlocks(key, args[-1])
+        # if bonus node is an ultimate node
         if isinstance(possibleUnlocks[-1], tuple):
-            title, tooltip = self.skillSetUltimateItem(key, args[-1], (canvas, img[0], img[1]))
+            title, tooltip = self.skill_set_ultimate_item(key, args[-1], (canvas, img[0], img[1]))
             self.setupInfoboxFrame(title, 'skilltree', args[-1], tooltip, True)
+        # if bonus not is not an ultimate node
         else:
             if key in self.build['skilltree'][args[-1]+'_unlocks'] and self.build['skilltree'][args[-1]+'_unlocks'][key] == list(possibleUnlocks[0])[0]:
                 # change to arrow down
@@ -3830,114 +3885,131 @@ class SETS():
                 canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
                 self.build['skilltree'][args[-1]+'_unlocks'][key] = clearname_key
                 self.setupInfoboxFrame(clearname_key, 'skilltree', args[-1], plainTooltip)
+        
         self.auto_save_queue()
 
-    def setupSkillBonusFrame(self, parentFrame, environment='space'):
-        if not self.cache['skills'][environment+'_unlocks']:
-            return
-        frame = Frame(parentFrame)
-        frame.grid(row=0, column=1, sticky='nsw', padx=1, pady=1)
-        frame.configure(bg=self.theme['entry_dark']['bg'])
-        frame.grid_rowconfigure(0, minsize=80)
-        parentFrame.grid_rowconfigure(0, weight=1, uniform='skillBonusFrameFullRowSpace')
-        #parentFrame.grid_columnconfigure(0, weight=1, uniform='skillBonusFrameFullColSpace')
+    def setup_skill_bonus_frame(self, parentFrame, environment='space'):
+        """creates the skill bonus bars at the right side of the skill window
+        
+        Parameters:  
+        - parentFrame: frame that the bonus bars get inserted to (self.skillSpaceBuildFrame or self.skillGroundBuildFrame)
+        - environment: space or ground"""
+        
+        if not self.cache['skills'][environment+'_unlocks']: return             # aborts when unlocks aren't cached
 
-        padxCanvas = (2,2)
-        padyCanvas = (1,1)
+        frame = Frame(parentFrame, bg=self.theme['entry_dark']['bg'])           # all bonus bars will be inserted in this frame
+        frame.grid(row=0, column=1, sticky='', padx=1, pady=1)
 
-        unlocks = self.cache['skills'][environment+'_unlocks']
+        unlocks = self.cache['skills'][environment+'_unlocks']                  # creating dictioary shortcut
 
         if environment == 'ground': self.backend['skillBonusBar']['ground'] = []
 
         col = -1
-        for group in unlocks:
+        for group in unlocks:                                                   # group distinguishes between the careers (Tactical, Science, Engineering) for space, for ground this just runs once
+
             if group.startswith('_'):
                 continue
-            if environment == 'space': 
-                self.backend['skillBonusBar']['space'][group] = []
             col += 2
-            frame.grid_columnconfigure(col, weight=1, uniform='skillBonusFrameCol' + group)
 
-            fr = Frame(frame, bg=self.theme['entry_dark']['bg'], highlightthickness=0)
-            fr.grid(row=11, column=col, sticky='ns')
-            lbs = []
-            grORsp = 2 if group == 'Ground' else 5
-            for kkkk in range(grORsp):
-                f = Label(fr, relief='flat', borderwidth=1, bg='red', highlightthickness=0.5,highlightbackground=self.theme['button_heavy']['bg'], font=self.font_tuple_merge('app', size=int(0.8*self.theme['app']['font']['size'])))
-                f.configure(bg=self.theme['entry_dark']['bg'])
-                f.grid(row=kkkk, column=0, sticky='ns')
-                lbs.append(f)
-            if not group == 'Ground':
-                self.backend['skillBonusBar']['space'][group] += lbs[::-1]
+            if environment == 'space':
+                # setting up career image below the bonus bar
+                self.backend['skillBonusBar']['space'][group] = []
+                if group+'Icon' not in self.cache['skillBonusImages']:
+                    self.cache['skillBonusImages'][group+'Icon'] = self.fetchOrRequestImage(self.wikiImages+unlocks['_icons'][group], group+' Icon', 35, 35)
+                Label(frame, image=self.cache['skillBonusImages'][group+'Icon'], bg=self.theme['app']['fg']).grid(row=12,column=col,padx=10,pady=(10,0))
             else:
-                self.backend['skillBonusBar']['ground'] += lbs[::-1]
-            if not group == 'Ground':
-                currentPointsRequired = 5
+                if 'GroundIcon' not in self.cache['skillBonusImages']:
+                    self.cache['skillBonusImages']['GroundIcon'] = self.fetchOrRequestImage(self.wikiImages+'School_-_Ground_Weapons_Icon.png', 'GroundIcon', 35, 35)
+                Label(frame, image=self.cache['skillBonusImages']['GroundIcon'], bg=self.theme['app']['fg']).grid(row=12,column=col,padx=10,pady=(10,0))
+                
+            # setting up visible counter below career image
+            skillCountLabel = Label(frame, text=0, fg=self.theme['entry']['bg'], bg=self.theme['entry']['fg'], font=self.font_tuple_merge('app', weight='bold'))
+            skillCountLabel.grid(row=13,column=col, pady=4, padx=10)
+            # add trace to the respective variable after deleting a possible duplicate trace
+            if environment == 'space':
+                if hasattr(self.backend['skillCount']['space'+group], 'trace_id'):
+                    self.backend['skillCount']['space'+group].trace_remove('write', self.backend['skillCount']['space'+group].trace_id)
+                self.backend['skillCount']['space'+group].trace_id = self.backend['skillCount']['space'+group].trace_add('write', lambda r1, r2, r3, label=skillCountLabel, env=environment, career=group: self.skill_count_label_update_callback(label, env, career))
             else:
-                currentPointsRequired = 2
+                if hasattr(self.backend['skillCount']['groundSum'], 'trace_id'):
+                    self.backend['skillCount']['groundSum'].trace_remove('write', self.backend['skillCount']['groundSum'].trace_id)
+                self.backend['skillCount']['groundSum'].trace_id = self.backend['skillCount']['groundSum'].trace_add('write', lambda r1, r2, r3, label=skillCountLabel, env=environment, career=group: self.skill_count_label_update_callback(label, env, career))
+            
+            # setting up the part of the bonus bar below the first unlock
+            current_points_required = 2 if group == 'Ground' else 5
+            bar_frame = Frame(frame, bg=self.theme['entry_dark']['bg'], highlightthickness=0)
+            bar_frame.grid(row=11, column=col, sticky='ns')
+            label_list = []
+            for current_row in range(current_points_required):
+                bar_fragment = Label(bar_frame, relief='flat', borderwidth=1, bg='red', highlightthickness=0.5,highlightbackground=self.theme['button_heavy']['bg'], font=self.font_tuple_merge('app', size=int(0.8*self.theme['app']['font']['size'])))
+                bar_fragment.configure(bg=self.theme['entry_dark']['bg'])
+                bar_fragment.grid(row=current_row, column=0, sticky='ns')
+                label_list.append(bar_fragment)
+            # [::-1] inverts the order of a list -- this is necessary because the fragments are inserted top-to-bottom, but need to be accessed bottom-to-top
+            if not group == 'Ground':
+                self.backend['skillBonusBar']['space'][group] += label_list[::-1]   
+            else:
+                self.backend['skillBonusBar']['ground'] += label_list[::-1]
 
+            # insert bonus unlock buttons
             row_total = len(unlocks[group])
             for tier in range(row_total):
-                row = (row_total - tier) * 2
-                # self.logWriteSimple('###skillbonus', '', 2, ['{}'.format(unlocks[group])], log_only=True)
-                #options = unlocks[group][tier]['nodes'].keys()
-                location = '{}{}'.format(group, tier)
-                default = ''
+
+                row_current = (row_total - tier) * 2 
+                frame.grid_rowconfigure(row_current, weight=0)           
+                build_key = '{}{}'.format(group, tier)
+                current_unlock_name = ''
                 image0 = self.emptyImage
                 current_tooltip = ''
+
+                # checks whether this unlock is already in our build
                 if environment+'_unlocks' in self.build['skilltree'] and \
-                    location in self.build['skilltree'][environment+'_unlocks']:
-                    default = self.build['skilltree'][environment+'_unlocks'][location]
+                    build_key in self.build['skilltree'][environment+'_unlocks']:
+                    current_unlock_name = self.build['skilltree'][environment+'_unlocks'][build_key]
                     if environment == 'space':
                         if not 'ultimate' in unlocks[group][tier]:
-                            if default == list(unlocks[group][tier]['nodes'][0])[0]:
+                            if current_unlock_name == list(unlocks[group][tier]['nodes'][0])[0]:
                                 image0 = self.cache['skillBonusImages']['up']
-                                current_tooltip = unlocks[group][tier]['nodes'][0][default]
-                            else:
+                                current_tooltip = unlocks[group][tier]['nodes'][0][current_unlock_name]
+                            elif current_unlock_name == list(unlocks[group][tier]['nodes'][1])[0]:
                                 image0 = self.cache['skillBonusImages']['down']
-                                current_tooltip = unlocks[group][tier]['nodes'][1][default]
+                                current_tooltip = unlocks[group][tier]['nodes'][1][current_unlock_name]
                     else:
-                        if default == list(unlocks['Ground'][tier]['nodes'][0])[0]:
+                        if current_unlock_name == list(unlocks['Ground'][tier]['nodes'][0])[0]:
                             image0 = self.cache['skillBonusImages']['up']
-                            current_tooltip = unlocks[group][tier]['nodes'][0][default]
-                        else:
+                            current_tooltip = unlocks[group][tier]['nodes'][0][current_unlock_name]
+                        elif current_unlock_name == list(unlocks['Ground'][tier]['nodes'][1])[0]:
                             image0 = self.cache['skillBonusImages']['down']
-                            current_tooltip = unlocks[group][tier]['nodes'][1][default]
-                canvas, img0, img1 = self.createButton(frame, location, callback=self.bonusItemCallback, row=row, column=col, columnspan=2, name=default, sticky='n', tooltip=current_tooltip, args=['skilltree', environment], image0=image0)
+                            current_tooltip = unlocks[group][tier]['nodes'][1][current_unlock_name]
+
+                canvas, img0, img1 = self.createButton(frame, build_key, callback=self.bonus_item_callback, row=row_current, column=col, columnspan=2, name=current_unlock_name, sticky='n', tooltip=current_tooltip, args=['skilltree', environment], image0=image0)
+                
+                # adds reference to created button (needed in self.skill_count_change_callback)
                 if environment == 'space':
                     self.backend['skillBonusBarUnlocks']['space'][group][unlocks[group][tier]['points_required']] = (canvas, img0, img1)
                 elif environment == 'ground':
                     self.backend['skillBonusBarUnlocks']['ground'][unlocks['Ground'][tier]['points_required']] = (canvas, img0, img1)
- 
-                """o = OptionMenu(frame, v, *options)
-                v.trace_add('write', lambda a, b, c, o=o, v=v, environment=environment, location=location:self.skill_unlock_update(o, v, environment, location))
-                o.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], highlightthickness=0, width=8)
-                o.configure()
-                o.configure(wraplength=60, font=self.theme['text_medium']['font_object'])
-                o.grid(row=row, column=col, columnspan=2, sticky='nsew')
-                tooltip_uuid = self.uuid_assign_for_tooltip()
-                o.bind('<Enter>', lambda e, tooltip_uuid=tooltip_uuid, item=default, environment=environment:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, 'skilltree', environment))
-                o.bind('<Leave>', lambda e, tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))"""
-                frame.grid_rowconfigure(row, weight=0)
-                if row < (row_total * 2):
-                    fr = Frame(frame, bg=self.theme['entry_dark']['bg'], highlightthickness=0)
-                    fr.grid(row=row+1, column=col, sticky='ns')
-                    lbs = []
-                    for kkk in range(unlocks[group][tier]['points_required']-currentPointsRequired):
-                        f = Label(fr, relief='flat', borderwidth=1, bg='red', highlightthickness=0.5,highlightbackground=self.theme['button_heavy']['bg'], font=self.font_tuple_merge('app', size=int(0.8*self.theme['app']['font']['size'])))
-                        f.configure(bg=self.theme['entry_dark']['bg'])
-                        f.grid(row=kkk, column=0, sticky='ns')
-                        lbs.append(f)
+
+                # inserts bonus bar inbetween the bonus unlock nodes
+                if row_current < (row_total * 2):
+                    bonus_bar_frame = Frame(frame, bg=self.theme['entry_dark']['bg'], highlightthickness=0)
+                    bonus_bar_frame.grid(row=row_current+1, column=col, sticky='ns')
+                    label_list = []
+                    # inserts as many bonus bar fragments as points are needed between this and the next unlock
+                    for steps in range(unlocks[group][tier]['points_required']-current_points_required):
+                        bar_fragment = Label(bonus_bar_frame, relief='flat', borderwidth=1, bg='red', highlightthickness=0.5,highlightbackground=self.theme['button_heavy']['bg'], font=self.font_tuple_merge('app', size=int(0.8*self.theme['app']['font']['size'])))
+                        bar_fragment.configure(bg=self.theme['entry_dark']['bg'])
+                        bar_fragment.grid(row=steps, column=0, sticky='ns')
+                        label_list.append(bar_fragment)
+                    # [::-1] inverts the order of a list -- this is necessary because the fragments are inserted top-to-bottom, but need to be accessed bottom-to-top
                     if not group == 'Ground':
-                        self.backend['skillBonusBar']['space'][group] += lbs[::-1]
+                        self.backend['skillBonusBar']['space'][group] += label_list[::-1]
                     else:
-                        self.backend['skillBonusBar']['ground'] += lbs[::-1]
-                    f = Frame(frame)
-                    f.configure(bg=self.theme['entry_dark']['bg'])
-                    f.grid(row=row+1, column=col+1, sticky='nsew')
-                    frame.grid_rowconfigure(row + 1, weight=0)
-                    currentPointsRequired = unlocks[group][tier]['points_required']
-        self.updateSkillCount(environment)
+                        self.backend['skillBonusBar']['ground'] += label_list[::-1]
+
+                    current_points_required = unlocks[group][tier]['points_required']
+
+        self.update_skill_count(environment)
 
 
 
@@ -4672,7 +4744,7 @@ class SETS():
         """Set up infobox frame with given item"""
         if item is not None and 'item' in item:
             name = item['item']
-        elif isinstance(item, str):
+        elif isinstance(item, str) and item != '':
             name = item
         else:
             self.logWriteSimple('InfoboxEmpty', environment, 4, tags=["NO NAME", key])
@@ -4844,13 +4916,6 @@ class SETS():
             mainbutton.configure(command=lambda p = "Ability: "+ name: self.openWikiPage(p))
             printed = True
 
-        """if key == 'skilltree' and name in self.cache['skills']['tooltips']:
-            desc = self.cache['skills']['tooltips'][name]
-            text.insert(END, name, 'skillhead')
-            text.insert(END, '\n'+desc, 'skillsub')
-            text.update()
-            printed = True"""
-
         if key == 'skilltree' and not printed:
             if isinstance(tooltip, list):
                 text.insert(END, name, 'skillhead')
@@ -4867,6 +4932,7 @@ class SETS():
                     text2.insert(END, content[0]+'\n', 'skillsubhead')
                     text2.insert(END, self.compensateInfoboxString(content[1])+'\n\n')
                 contentframe.grid_propagate(True)
+                mainbutton.configure(command=lambda page = 'Ability: '+name: self.openWikiPage(page))
             else:
                 text.insert(END, name, 'skillhead')
                 text.update()
