@@ -1033,6 +1033,17 @@ class SETS():
                         results.append(html[e])
         return [] if isinstance(results, int) else results
 
+    def searchJsonTableContains(self, html, field, phrases):
+        """Return Json table elements containing 1 or more phrases or partial phrases"""
+        results = []
+        for e in range(len(html)):
+            if field in html[e]:
+                for phrase in phrases:
+                    if html[e][field].find(phrase)!=-1:
+                        results.append(html[e])
+        return [] if isinstance(results, int) else results
+
+
     def precacheModifiers(self):
         """Fetch equipment modifiers"""
         if 'modifiers' in self.cache and self.cache['modifiers'] is not None and len(self.cache['modifiers']) > 0:
@@ -1111,7 +1122,7 @@ class SETS():
             return self.cache['doffs'][keyPhrase]
 
         phrases = [keyPhrase]
-        doffMatches = self.searchJsonTable(self.doffs, "shipdutytype", phrases)
+        doffMatches = self.searchJsonTableContains(self.doffs, "shipdutytype", phrases)
 
         self.cache['doffs'][keyPhrase] = {self.deWikify(doffMatches[item]['name'])+str(doffMatches[item]['powertype']): doffMatches[item] for item in range(len(doffMatches))}
         self.cache['doffNames'][keyPhrase] = {self.deWikify(doffMatches[item]['name']): '' for item in range(len(doffMatches))}
