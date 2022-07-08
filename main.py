@@ -685,6 +685,7 @@ class SETS():
 
     def deWikify(self, textBlock, leaveHTML=False):
         """ Remove wiki format marks """
+        if textBlock is None: return ''
         textBlock = self.deHTML(textBlock, leaveHTML) # required first-- the below are *secondary* filters due to wiki formatting
         textBlock = textBlock.replace('&lt;',"<")
         textBlock = textBlock.replace('&gt;',">")
@@ -1000,7 +1001,7 @@ class SETS():
         phrases = [keyPhrase] + additionalPhrases
 
         if "Kit Frame" in keyPhrase:
-            equipment = [item for item in self.infoboxes if "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
+            equipment = [item for item in self.infoboxes if item['type'] is not None and "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
         else:
             equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
 
@@ -1029,6 +1030,8 @@ class SETS():
         for e in range(len(html)):
             if field in html[e]:
                 for phrase in phrases:
+                    if html[e][field] is None:
+                        continue
                     if phrase in html[e][field]:
                         results.append(html[e])
         return [] if isinstance(results, int) else results
@@ -1039,6 +1042,8 @@ class SETS():
         for e in range(len(html)):
             if field in html[e]:
                 for phrase in phrases:
+                    if html[e][field] is None:
+                        continue
                     if html[e][field].find(phrase)!=-1:
                         results.append(html[e])
         return [] if isinstance(results, int) else results
@@ -1138,7 +1143,10 @@ class SETS():
 
         for i in range(len(self.factions)):
             name = self.factions[i]['name'] if 'name' in self.factions[i] else ''
-            playDetail = self.factions[i]['playability'].lower() if 'playability' in self.factions[i] else ''
+            if 'playability' in self.factions[i] and self.factions[i]['playability'] is not None:
+                playDetail = self.factions[i]['playability'].lower()
+            else:
+                playDetail = ''
             traits = self.factions[i]['traits'] if 'traits' in self.factions[i] else ''
 
             # Must handle multiple factions, liberated borg needs to create four entries
@@ -1173,7 +1181,7 @@ class SETS():
             if not name:
                 # other reps
                 pass
-            elif len(environment) and not name in self.cache['specsSecondary'] and not name in self.cache['specsGroundBoff']:
+            elif environment is not None and len(environment) and not name in self.cache['specsSecondary'] and not name in self.cache['specsGroundBoff']:
                 if environment == 'space' or environment == 'both':
                     self.cache['specsSecondary'][name] = description
                     if not 'secondary' in item or item['secondary'] != 'yes':
@@ -1224,17 +1232,17 @@ class SETS():
             return self.cache['shipTraits']
 
         for item in list(self.shiptraits):
-            if 'trait' in item and len(item['trait']):
+            if 'trait' in item and item['trait'] is not None and len(item['trait']):
                 self.precacheShipTraitSingle(item['trait'], item['traitdesc'], item)
-            if 'trait2' in item and len(item['trait2']):
+            if 'trait2' in item and item['trait2'] is not None and len(item['trait2']):
                 self.precacheShipTraitSingle(item['trait2'], item['traitdesc2'], item)
-            if 'trait3' in item and len(item['trait3']):
+            if 'trait3' in item and item['trait3'] is not None and len(item['trait3']):
                 self.precacheShipTraitSingle(item['trait3'], item['traitdesc3'], item)
-            if 'acctrait' in item and len(item['acctrait']):
+            if 'acctrait' in item and item['acctrait'] is not None and len(item['acctrait']):
                 self.precacheShipTraitSingle(item['acctrait'], item['acctraitdesc'], item)
 
         for item in list(self.traits):
-            if 'type' in item and item['type'].lower() == 'starship':
+            if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
                 self.precacheShipTraitSingle(item['name'], item['description'], item)
 
         self.logWriteCounter('Ship Trait', '(json)', len(self.cache['shipTraits']), ['space'])
@@ -1245,6 +1253,10 @@ class SETS():
             return
         if type != 'reputation' and type != 'activereputation' and type != 'Starship':
             type = "personal"
+
+        if desc is None: desc = ''
+        if environment is None: environment = ''
+        if type is None: type = ''
 
         if not environment in self.cache['traits']:
             self.cache['traits'][environment] = dict()
@@ -3518,7 +3530,7 @@ class SETS():
         self.backend['shipEngConsoles'] = int(ship['consoleseng'])
         self.backend['shipSciConsoles'] = int(ship['consolessci'])
         self.backend['shipUniConsoles'] = 1 if 'Innovation Effects' in ship["abilities"] else 0
-        self.backend['shipHangars'] = 0 if ship["hangars"] == '' else int(ship["hangars"])
+        self.backend['shipHangars'] = 0 if ship["hangars"] == '' or ship['hangars'] is None else int(ship["hangars"])
         if '-X' in self.backend['tier'].get():
             self.backend['shipUniConsoles'] = self.backend['shipUniConsoles'] + 1
             self.backend['shipDevices'] = self.backend['shipDevices'] + 1
