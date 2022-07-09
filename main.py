@@ -4864,7 +4864,7 @@ class SETS():
                 text.insert(END, '\n'+item['rarity']+' ', 'rarity')
                 if 'type' in html and html['type']:
                     text.insert(END, html['type'], 'rarity')
-            if html['who'] != "":
+            if html['who'] != "" and html['who'] is not None:
                 mtfr.update()
                 whotext = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['who']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=self.getDH(mtfr.winfo_width(), html['who'], "Helvetica", 10, "normal"))
                 whotext.grid(row=1, column=0)
@@ -4876,16 +4876,16 @@ class SETS():
             contentframe.grid_propagate(False)
             insertinrow = 0
             for i in range(1,9):
-                t = html["head"+str(i)].strip()
-                if t.strip() != "":
+                t = html["head"+str(i)]
+                if isinstance(t, str) and t.strip() != "":
                     self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#42afca", 12, "bold", insertinrow, text.winfo_width())
                     insertinrow = insertinrow+1
-                t = html["subhead"+str(i)].strip()
-                if t.strip() != "":
+                t = html["subhead"+str(i)]
+                if isinstance(t, str) and t.strip() != "":
                     self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#f4f400", 10, "bold", insertinrow, text.winfo_width())
                     insertinrow = insertinrow+1
-                t = html["text"+str(i)].strip()
-                if t.strip() != "":
+                t = html["text"+str(i)]
+                if isinstance(t, str) and t.strip() != "":
                     self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#ffffff", 10, "normal", insertinrow, text.winfo_width())
                     insertinrow = insertinrow+1
             mainbutton.configure(command=lambda p = html['Page']: self.openWikiPage(p))
