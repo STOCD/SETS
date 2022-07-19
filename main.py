@@ -918,6 +918,7 @@ class SETS():
         equipment = list()
         for item in self.build[key]:
             if item is not None:
+                print(self.keys, key, item)
                 equipment.append("[{0} {1} {2}]({3})".format(item["item"], item['mark'], ''.join(item['modifiers']), self.getWikiURL(self.cache['equipment'][self.keys[key]][item["item"]]['Page'])))
         return equipment[:len]
         #return ["{0} {1} {2}".format(item['item'], item['mark'], ''.join(item['modifiers'])) for item in self.build[key] if item is not None][:len]
@@ -1026,6 +1027,7 @@ class SETS():
 
     def searchJsonTable(self, html, field, phrases):
         """Return Json table elements containing 1 or more phrases"""
+        if html is None: return []
         results = []
         for e in range(len(html)):
             if field in html[e]:
@@ -1115,8 +1117,8 @@ class SETS():
         if environment == 'ground' or environment is None:
             self.precacheGroundSkills()
         
-        self.cache['skillBonusImages']['up'] = self.fetch_image('local\\arrow-up.png', 49, 46, True)
-        self.cache['skillBonusImages']['down'] = self.fetch_image('local\\arrow-down.png', 49, 64, True)
+        self.cache['skillBonusImages']['up'] = self.loadLocalImage('arrow-up.png', 49, 46, True) #self.fetch_image('local\\arrow-up.png', 49, 46, True)
+        self.cache['skillBonusImages']['down'] = self.loadLocalImage('arrow-down.png', 49, 46, True) #self.fetch_image('local\\arrow-down.png', 49, 64, True)
         self.cache['skillBonusImages']['Tactical'] = self.fetchOrRequestImage(self.wikiImages+'Focused_Frenzy_icon.png', 'Focused Frenzy', 49, 64)
         self.cache['skillBonusImages']['Science'] = self.fetchOrRequestImage(self.wikiImages+'Probability_Manipulation_icon.png', 'Probability Manipulation', 49, 64)
         self.cache['skillBonusImages']['Engineering'] = self.fetchOrRequestImage(self.wikiImages+'EPS_Corruption_icon.png', 'EPS Corruption', 49, 64)
@@ -3006,7 +3008,7 @@ class SETS():
                                          self.preformatRedditEquipment('warpCore', 1) +
                                          self.preformatRedditEquipment('shield', 1) +
                                          self.preformatRedditEquipment('devices', self.backend['shipDevices']), 5+max(self.backend['shipDevices']-1, 1)))
-        if self.backend['shipHtml']['hangars'] != '':
+        if self.backend['shipHtml']['hangars'] != '' and self.backend['shipHtml']['hangars'] is not None:
             column1.extend(self.makeRedditColumn(self.preformatRedditEquipment('hangars', self.backend['shipHtml']['hangars']), self.backend['shipHtml']['hangars']))
         if self.backend['shipHtml']['secdeflector'] == 1:
             column1.extend(self.makeRedditColumn(self.preformatRedditEquipment('secdef',1), 1))
@@ -6827,8 +6829,8 @@ class SETS():
 
         self.logWriteBreak('UI BUILD')
         self.setupUIFrames()
-        #with open('skillcache.txt','w') as fil:
-            #json.dump(self.cache['skills'], fil)
+        #with open('cache.txt','w') as fil:
+            #json.dump(self.cache['equipment'], fil)
 
     def run(self):
         if __name__ != '__main__':
