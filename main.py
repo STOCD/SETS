@@ -1978,12 +1978,16 @@ class SETS():
         i = 0
         for name,image in items_list:
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
+            name_wrap_length = 285 if self.args.nomenuicons else 255
             for col in range(3):
                 if col < 2:
                     if col == 0:
-                        subFrame = Label(frame, image=image)
+                        if not self.args.nomenuicons:
+                            subFrame = Label(frame, image=image)
+                        else:
+                            subFrame = Label(frame, text="")
                     else:
-                        subFrame = Label(frame, text=name, justify=LEFT, wraplength=255)
+                        subFrame = Label(frame, text=name, justify=LEFT, wraplength=name_wrap_length)
                     subFrame.grid(row=0, column=col, sticky='nsew')
                 else:
                     frame.grid(row=i, column=0, sticky='nsew', padx=(2,5))
@@ -6311,6 +6315,7 @@ class SETS():
         parser.add_argument('--allfetch', help='Retry images every load', action='store_true')
         parser.add_argument('--startuptab', type=str, help='space, ground, skill, settings [space is default]')
         parser.add_argument('--noautosave', help='disable autosave / autoload', action='store_true')
+        parser.add_argument('--nomenuicons', help='disable autosave / autoload', action='store_true')
 
         self.args = parser.parse_args()
 
@@ -6746,7 +6751,6 @@ class SETS():
         else:
             previous_width = self.windowWidth
             previous_height = self.windowHeight
-            previous_active_height = self.windowActiveHeight
             previous_x = self.window_topleft_x
             previous_y = self.window_topleft_y
             self.windowWidth = self.window.winfo_width()
@@ -6755,6 +6759,9 @@ class SETS():
             self.window_topleft_y = self.window.winfo_y()
 
         self.windowActiveHeight = self.windowHeight - (self.windowBarHeight + self.logoHeight + self.otherHeight)
+        if not init:
+            previous_active_height = self.windowActiveHeight
+
         self.window_outside_frame_minimum = int((self.windowWidth - 100) / 5)
         self.imageBoxX = self.window_outside_frame_minimum
         self.imageBoxY = int(self.window_outside_frame_minimum * 7 / 10)
