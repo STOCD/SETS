@@ -45,9 +45,9 @@ CLEANR = re.compile('<.*?>')
 """This section will improve display, but may require sizing adjustments to activate"""
 if sys.platform.startswith('win'):
     try:
-        ctypes.windll.shcore.SetProcessDpiAwareness(2) # windows version >= 8.1
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # windows version >= 8.1
     except:
-        ctypes.windll.user32.SetProcessDPIAware() # windows version <= 8.0
+        ctypes.windll.user32.SetProcessDPIAware()  # windows version <= 8.0
 
 class HoverButton(Button):
     """ Updates default Button to have a hover background """
@@ -762,7 +762,7 @@ class SETS():
         self.build['sciConsoles'] = [None] * int(shipHtml['consolessci'])
         self.build['uniConsoles'] = [None] * 1 if 'Innovation Effects' in shipHtml['abilities'] else [None] * 0
         self.build['devices'] = [None] * int(shipHtml['devices'])
-        
+
         # Weapons
         self.build['foreWeapons'] = [None] * int(shipHtml['fore'])
         self.build['aftWeapons'] = [None] * int(shipHtml['aft'])
@@ -778,7 +778,7 @@ class SETS():
             self.build['secdef'] = [None]
         else:
             self.build['secdef'] = []
-        
+
         # Hagars
         if 'hangars' in shipHtml and (shipHtml['hangars'] == 1 or shipHtml['hangars'] == 2):
             self.build['hagars'] = [None] * int(shipHtml['hangars'])
@@ -800,9 +800,9 @@ class SETS():
                 if element == None: newTup += (-float('inf'),)
                 else: newTup += (element,)
             return newTup
-        
+
         if  not ('boffs' in self.build and 'spaceBoff_0' in self.build['boffs'] and  'boffseats' in self.build and 'space' in self.build['boffseats']): return
-        
+
         oldBuild = copy.deepcopy(self.build)        # saving the current build. oldBuild will be "laid over" the new layout
         self.emptyShipLayout(shipHtml)              # creating an empty ship layout for the given ship
 
@@ -818,7 +818,7 @@ class SETS():
         if not 'boffs' in oldBuild and not 'boffseats' in oldBuild and not 'space' in oldBuild['boffseats'] and not 'space_spec' in oldBuild['boffseats']:
             self.logWriteSimple('old build invalid', 'the old build is missing critical data about Boff seating', 1, ['possibly missing keys:','["boffs"]','["boffseats"]','["boffseats"]["space"]','["boffseats"]["space_spec"]'])
             return
-        
+
         oldSeats = []
         newSeats = []
         for dct in [self.build,oldBuild]:           # goes over the old and the new build and creates two lists with the bridge officers
@@ -829,7 +829,7 @@ class SETS():
                 id = 'spaceBoff_'+str(currentSeat)
                 if dct == oldBuild: oldSeats.append((rank, career, spec, id))
                 elif dct == self.build: newSeats.append((rank, career, spec, id))
-        
+
         oldSeats = sorted(oldSeats, key=sortedNone, reverse=True)
         newSeats = sorted(newSeats, key=sortedNone, reverse=True)
 
@@ -839,7 +839,7 @@ class SETS():
             if oldSeat[0] == None: continue
             for withUniversalSeats in [False, True]:                                                                # ignores universal seats on the first iteration, considers them in the second
                 if oldSeat[3] in boffMapping.values(): break                                                        # aborts if current station has already been assigned a new station
-                for i in range(6):                      
+                for i in range(6):
                     if oldSeat[1] == newSeats[i][1] or (newSeats[i][1] == 'Universal' and withUniversalSeats):      # index 1 stands for 'career'
                         if not newSeats[i][3] in boffMapping:                                                       # index 3 stands for 'id'
                             boffMapping[newSeats[i][3]] = oldSeat[3]
@@ -850,7 +850,7 @@ class SETS():
             if seat[0] == None or not seat[3] in boffMapping: continue
             self.build['boffseats']['space'][int(seat[3][-1])] = seat[1] if not seat[1] == 'Universal' else universalStationPurpose[idx]
             self.build['boffseats']['space_spec'][int(seat[3][-1])] = seat[2]
-            for r in range(1, min( len(self.build['boffs'][seat[3]]), len(oldBuild['boffs'][boffMapping[seat[3]]] ) ) + 1 ): # iterates for the minimum rank of the old and new station
+            for r in range(1, min(len(self.build['boffs'][seat[3]]), len(oldBuild['boffs'][boffMapping[seat[3]]])) + 1):  # iterates for the minimum rank of the old and new station
                 ability = oldBuild['boffs'][boffMapping[seat[3]]][r-1]
                 if seat[2] == '': bofflist = self.cache['boffAbilitiesWithImages']['space'][self.build['boffseats']['space'][int(seat[3][-1])]][r]
                 else: bofflist = self.cache['boffAbilitiesWithImages']['space'][self.build['boffseats']['space'][int(seat[3][-1])]][r] + self.cache['boffAbilitiesWithImages']['space'][seat[2]][r]
@@ -889,7 +889,7 @@ class SETS():
                 c3[i] = c3[i] if c3[i] is not None else '&nbsp;'
                 result = result + "{0} | {1} | {2} | {3}\n".format(c0[i],c1[i],c2[i],c3[i])
             return result
-        
+
         # 2 columns
         if c2 == []:
             result = '**{0}** | **{1}**\n'.format(c0[0], c1[0])
@@ -899,7 +899,7 @@ class SETS():
                 c1[i] = c1[i] if c1[i] is not None else '&nbsp;'
                 result = result + "{0} | {1}\n".format(c0[i], c1[i])
             return result
-        
+
         # 3 columns
         result = '**{0}** | **{1}** | **{2}**\n'.format(c0[0],c1[0],c2[0])
         result = result + "{0} | {1} | {2}\n".format(alignment[0], alignment[1], alignment[2])
@@ -1116,7 +1116,7 @@ class SETS():
 
         if environment == 'ground' or environment is None:
             self.precacheGroundSkills()
-        
+
         self.cache['skillBonusImages']['up'] = self.loadLocalImage('arrow-up.png', 49, 46, True) #self.fetch_image('local\\arrow-up.png', 49, 46, True)
         self.cache['skillBonusImages']['down'] = self.loadLocalImage('arrow-down.png', 49, 46, True) #self.fetch_image('local\\arrow-down.png', 49, 64, True)
         self.cache['skillBonusImages']['Tactical'] = self.fetchOrRequestImage(self.wikiImages+'Focused_Frenzy_icon.png', 'Focused Frenzy', 49, 64)
@@ -1355,7 +1355,7 @@ class SETS():
 
     def update_skill_count(self, environment):
         """initializes the skill count in self.backend and updates it to the current skill tree -- needed during build load"""
-        
+
         conv = {'Tactical':'tac','Science':'sci','Engineering':'eng'}
         self.backend['skillCount']['space'] = dict()
         self.backend['skillCount']['space']['sum'] = 0
@@ -1387,7 +1387,7 @@ class SETS():
             if not self.backend['skillCount']['groundSum'] == current_count:
                 self.backend['skillCount']['groundSum'].set(current_count)
 
-        
+
 
     def copyBackendToBuild(self, key, key2=None):
         """Helper function to copy backend value to build dict"""
@@ -1759,7 +1759,7 @@ class SETS():
             self.backend['skillCount']['spaceTactical'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('space', 'Tactical'))
             self.backend['skillCount']['spaceScience'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('space', 'Science'))
             self.backend['skillCount']['groundSum'].trace_add('write', lambda a, b, c: self.skill_count_change_callback('ground', 'Sum'))
-        
+
         if not init:
             self.clearing = True
 
@@ -2332,7 +2332,7 @@ class SETS():
                         key: identifies each boff seat clearly in self.build['boffs']
                         var: StringVar containing the current profession of the station
                         environment: distincts between space and ground as well as between specialization and non-specialization seats in self.build['boffseats']"""
-        
+
         # updates self.build to contain the correct profession / specialization of the universal seat
         self.build['boffseats'][environment][i2] = var.get()
 
@@ -2352,7 +2352,7 @@ class SETS():
             canvas.itemconfig(img[0],image=self.emptyImage)
             canvas.itemconfig(img[1],image=self.emptyImage)
             self.build['boffs'][key][i]= ''
-        
+
         self.auto_save_queue()
 
 
@@ -2382,7 +2382,7 @@ class SETS():
             self.emptyShipLayout(self.backend['shipHtml'])
 
         elif self.persistent['keepTemplateOnShipChange'] == 1:
-            self.alignNewShipBuild(self.backend['shipHtml'])      
+            self.alignNewShipBuild(self.backend['shipHtml'])
 
         self.clearFrame(self.shipTierFrame)
         tier = self.backend['shipHtml']['tier']
@@ -2704,7 +2704,7 @@ class SETS():
             # Can we activate that rank?
             if environment == 'space':
                 if self.backend['skillCount']['space']['sum'] < rankReqs[rank]:
-                    return False                
+                    return False
                 if self.backend['skillCount']['space']['sum'] + 1 > maxSkills:
                     return False
             elif environment == 'ground':
@@ -2768,7 +2768,7 @@ class SETS():
             self.backend['skillCount'][environment]['sum'] += countChange
         if environment == 'space':
             career = self.skillGetFieldSkill(environment, skill_id, 'career')
-            if career == 'tac': self.backend['skillCount']['spaceTactical'].add(countChange)  
+            if career == 'tac': self.backend['skillCount']['spaceTactical'].add(countChange)
             elif career == 'eng': self.backend['skillCount']['spaceEngineering'].add(countChange)
             elif career == 'sci': self.backend['skillCount']['spaceScience'].add(countChange)
         if environment == 'ground':
@@ -2818,7 +2818,7 @@ class SETS():
                 canvastuple[0].unbind('<Enter>')
                 canvastuple[0].unbind('<Leave>')
                 self.build['skilltree']['space_unlocks'][career+str(sorted(list(self.backend['skillBonusBarUnlocks']['space'][career].keys())).index(skillcount+1))] = '' # * the term 'str(sorted(list(self.backend['skillBonusBarUnlocks']['space'][career].keys())).index(skillcount+1))' returns a string containing a number equivalent to the index of the bonus unlock node. Example: "2" is returned when the 3rd bonus unlock node from the bottom is adressed
-            
+
         elif environment=='ground':
             skillcount = self.backend['skillCount']['groundSum'].get()
             try: # this part is not needed when the bonus bar isn't created yet
@@ -2840,7 +2840,7 @@ class SETS():
                 canvastuple[0].unbind('<Enter>')
                 canvastuple[0].unbind('<Leave>')
                 self.build['skilltree']['ground_unlocks']['Ground'+str(sorted(list(self.backend['skillBonusBarUnlocks']['ground'].keys())).index(skillcount+1))] = '' # * equivalent to space above
-                
+
         self.auto_save_queue()
 
     def getGroundSkillNode(self, ptuple):
@@ -2990,7 +2990,7 @@ class SETS():
         deviceBlanks = [None] * 6
         column0 = (self.makeRedditColumn(["**Fore Weapons:**"], self.backend['shipForeWeapons']) +
                    self.makeRedditColumn(["**Aft Weapons:**"], self.backend['shipAftWeapons']) +
-                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + deviceBlanks[0:(self.backend['shipDevices']-1)], 5+max(self.backend['shipDevices']-1, 1))) 
+                   self.makeRedditColumn(["**Deflector**", "**Impulse Engines**", "**Warp Core**", "**Shields**", "**Devices**"] + deviceBlanks[0:(self.backend['shipDevices']-1)], 5+max(self.backend['shipDevices']-1, 1)))
         if self.backend['shipHtml']['hangars'] is not None and self.backend['shipHtml']['hangars'] != '':
             column0.extend(self.makeRedditColumn(["**Hangar Pets**"], self.backend['shipHtml']['hangars']))
         if self.backend['shipHtml']['secdeflector'] == 1:
@@ -3024,7 +3024,7 @@ class SETS():
                 worksheet.write(i, 0, column0[i])
             for j in range(0, len(column1)):
                 worksheet.write(j, 1, column1[j])"""
-            
+
         redditString = redditString + self.makeRedditTable(['**Basic Information**']+column0, ['**Component**']+column1, ['**Notes**']+[None]*len(column0))
         redditString = redditString + "\n\n\n## Bridge Officer Stations\n\n"
         column0 = []
@@ -3199,7 +3199,7 @@ class SETS():
         self.clearing = True
 
         self.buildToBackendSeries()
-        
+
         self.backend['shipHtml'] = None
         self.shipImg = self.getEmptyFactionImage()
         self.groundImg = self.getEmptyFactionImage()
@@ -3209,10 +3209,10 @@ class SETS():
         self.resetBuildFrames()
 
         self.clearing = False
-        
+
         self.backend['tier'].set('')
         self.setupGroundBuildFrames()
-        
+
         self.auto_save_queue()
 
     def getEmptyFactionImage(self, faction=None):
@@ -3801,7 +3801,7 @@ class SETS():
         # if requested node is not an ultimate node
         else:
             return [unlock for unlock in self.cache['skills'][environment+'_unlocks'][unlock_name[:-1]][int(unlock_name[-1:])]['nodes']]
-    
+
     def skill_set_ultimate_item(self, key, environment, canvastuple):
         """Sets Ultimate Ability for current number of skill points spent -- incuding displayed image, tooltip binding and saving to self.build
         
@@ -3823,7 +3823,7 @@ class SETS():
             self.build['skilltree']['space_unlocks'][key[:-1]+'4'] = ''
             self.auto_save_queue()
             return ('','')
-        
+
         possibleUnlocks = self.skill_get_bonus_unlocks(key, environment)
         clearname_key = list(possibleUnlocks[0])[0]
         plainTooltip = [possibleUnlocks[0][clearname_key]+'<hr>']
@@ -3852,7 +3852,7 @@ class SETS():
         elif points_spend > 26:
             self.build['skilltree']['space_unlocks'][key[:-1]+'_ultimate_options'] = currentOptions
             tooltip = [ (currentOptions[0], possibleUnlocks[1][currentOptions[0]]), (currentOptions[1], possibleUnlocks[1][currentOptions[1]]), (currentOptions[2], possibleUnlocks[1][currentOptions[2]]) ]
-        
+
         # setting up image and tooltip bind
         canvastuple[0].itemconfig(canvastuple[1], image=self.cache['skillBonusImages'][key[:-1]])
         tooltip_uuid = self.uuid_assign_for_tooltip()
@@ -3860,8 +3860,8 @@ class SETS():
         canvastuple[0].bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
 
         return (clearname_key, plainTooltip+tooltip)
-        
-    
+
+
     def bonus_item_callback(self, e, canvas, img, i, key, args):
         """Callback function for bonus unlock buttons: switches between possible unlocks on the skill bonus bar
         
@@ -3874,7 +3874,7 @@ class SETS():
         - args: tuple containing 'skilltree' and the current environment (ground / space) """
 
         # aborts when bonus node is not unlocked yet
-        if args[-1] == 'ground': 
+        if args[-1] == 'ground':
             cond = self.cache['skills']['ground_unlocks']['Ground'][int(key[-1:])]['points_required'] > self.backend['skillCount']['groundSum'].get()
             if cond:
                 return
@@ -3910,7 +3910,7 @@ class SETS():
                 canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
                 self.build['skilltree'][args[-1]+'_unlocks'][key] = clearname_key
                 self.setupInfoboxFrame(clearname_key, 'skilltree', args[-1], plainTooltip)
-        
+
         self.auto_save_queue()
 
     def setup_skill_bonus_frame(self, parentFrame, environment='space'):
@@ -3919,7 +3919,7 @@ class SETS():
         Parameters:  
         - parentFrame: frame that the bonus bars get inserted to (self.skillSpaceBuildFrame or self.skillGroundBuildFrame)
         - environment: space or ground"""
-        
+
         if not self.cache['skills'][environment+'_unlocks']: return             # aborts when unlocks aren't cached
 
         frame = Frame(parentFrame, bg=self.theme['entry_dark']['bg'])           # all bonus bars will be inserted in this frame
@@ -3946,7 +3946,7 @@ class SETS():
                 if 'GroundIcon' not in self.cache['skillBonusImages']:
                     self.cache['skillBonusImages']['GroundIcon'] = self.fetchOrRequestImage(self.wikiImages+'School_-_Ground_Weapons_Icon.png', 'GroundIcon', 35, 35)
                 Label(frame, image=self.cache['skillBonusImages']['GroundIcon'], bg=self.theme['app']['fg']).grid(row=12,column=col,padx=10,pady=(10,0))
-                
+
             # setting up visible counter below career image
             skillCountLabel = Label(frame, text=0, fg=self.theme['entry']['bg'], bg=self.theme['entry']['fg'], font=self.font_tuple_merge('app', weight='bold'))
             skillCountLabel.grid(row=13,column=col, pady=4, padx=10)
@@ -3959,7 +3959,7 @@ class SETS():
                 if hasattr(self.backend['skillCount']['groundSum'], 'trace_id'):
                     self.backend['skillCount']['groundSum'].trace_remove('write', self.backend['skillCount']['groundSum'].trace_id)
                 self.backend['skillCount']['groundSum'].trace_id = self.backend['skillCount']['groundSum'].trace_add('write', lambda r1, r2, r3, label=skillCountLabel, env=environment, career=group: self.skill_count_label_update_callback(label, env, career))
-            
+
             # setting up the part of the bonus bar below the first unlock
             current_points_required = 2 if group == 'Ground' else 5
             bar_frame = Frame(frame, bg=self.theme['entry_dark']['bg'], highlightthickness=0)
@@ -3972,7 +3972,7 @@ class SETS():
                 label_list.append(bar_fragment)
             # [::-1] inverts the order of a list -- this is necessary because the fragments are inserted top-to-bottom, but need to be accessed bottom-to-top
             if not group == 'Ground':
-                self.backend['skillBonusBar']['space'][group] += label_list[::-1]   
+                self.backend['skillBonusBar']['space'][group] += label_list[::-1]
             else:
                 self.backend['skillBonusBar']['ground'] += label_list[::-1]
 
@@ -3980,8 +3980,8 @@ class SETS():
             row_total = len(unlocks[group])
             for tier in range(row_total):
 
-                row_current = (row_total - tier) * 2 
-                frame.grid_rowconfigure(row_current, weight=0)           
+                row_current = (row_total - tier) * 2
+                frame.grid_rowconfigure(row_current, weight=0)
                 build_key = '{}{}'.format(group, tier)
                 current_unlock_name = ''
                 image0 = self.emptyImage
@@ -4008,7 +4008,7 @@ class SETS():
                             current_tooltip = unlocks[group][tier]['nodes'][1][current_unlock_name]
 
                 canvas, img0, img1 = self.createButton(frame, build_key, callback=self.bonus_item_callback, row=row_current, column=col, columnspan=2, name=current_unlock_name, sticky='n', tooltip=current_tooltip, args=['skilltree', environment], image0=image0)
-                
+
                 # adds reference to created button (needed in self.skill_count_change_callback)
                 if environment == 'space':
                     self.backend['skillBonusBarUnlocks']['space'][group][unlocks[group][tier]['points_required']] = (canvas, img0, img1)
@@ -4142,7 +4142,7 @@ class SETS():
                         break
                 boffspecs[i] = self.boffTitleToCareer(boffs[i].replace('Lieutenant', '').replace('Commander', '').replace('Ensign', '').strip())
 
-     
+
         for i in self.sortedBoffs(boffranks, boffspecs, boffsspecs, environment):
             boff = boffs[i]
             boffSan = environment+'Boff_' + str(i)  # boffSan identifies the respective boff station as first level key in self.build['boffseats']
@@ -4217,7 +4217,7 @@ class SETS():
                     self.logWrite('--- {} {}{}{}->{}{}{}'.format('boff seat change error: ', boffExistingLen, '+' if changeCount > 0 else '', changeCount, rank, '!=' , str(len(self.build['boffs'][boffSan]))), 1)
             else:
                 self.build['boffs'][boffSan] = [None]*rank
-            
+
             for j in range(rank):
                 tooltip_uuid = self.uuid_assign_for_tooltip()
                 if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
@@ -5183,7 +5183,7 @@ class SETS():
                 topframe.rowconfigure(insertrow, weight=1)
                 itemframe.grid(row=insertrow, column=insertcolumn, padx=16, sticky="w")
                 insertrow +=1
-            lvar = -1 
+            lvar = -1
             if key != "":                                                                   # searches the build for the individual checkbuttons saved value
                 if key+"|"+t.lower() in self.build[masterkey]:
                     lvar = self.build[masterkey][key+"|"+t.lower()]
@@ -6250,7 +6250,7 @@ class SETS():
                 parentframe = self.skillBuildTagFrame.nametowidget(self.skillBuildTagFrame.winfo_parent())
             self.clearFrame(parentframe)
             self.setupTagsFrame(parentframe, type)
-            
+
 
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
@@ -6814,7 +6814,7 @@ class SETS():
 
     def __init__(self) -> None:
         """Main setup function"""
-        
+
         self.init_window()
         self.init_settings()
 
