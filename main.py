@@ -1,6 +1,7 @@
 # from textwrap import fill
 # from asyncio import subprocess
 import argparse
+import copy
 import ctypes
 import datetime
 import html
@@ -10,28 +11,28 @@ import platform
 import re
 import sys
 import textwrap
+import tkinter as tk
 import urllib.parse
 import uuid
 import webbrowser
-import copy
-
 # from tkinter import *
-import tkinter as tk
-from tkinter import Tk
 from tkinter import BOTH, BOTTOM, DISABLED, END, FLAT, HORIZONTAL
-from tkinter import LEFT, NORMAL, RIGHT, TOP, VERTICAL, WORD, X, Y
+from tkinter import Canvas, Checkbutton, Entry, Frame, Label, Menu, Menubutton  # , Message
 from tkinter import DoubleVar, IntVar, StringVar
-from tkinter import Canvas, Checkbutton, Entry, Frame, Label, Menu, Menubutton  #, Message
+from tkinter import LEFT, NORMAL, RIGHT, TOP, VERTICAL, WORD, X, Y
 from tkinter import OptionMenu, PhotoImage, Radiobutton, Scale, Scrollbar, Text, Toplevel
-from tkinter import font
+from tkinter import Tk
 from tkinter import filedialog
+from tkinter import font
 from tkinter import messagebox
 from tkinter.ttk import Progressbar
+
 import PIL
+import numpy as np
+import requests
 from PIL import Image, ImageTk, ImageGrab
 from requests_html import Element, HTMLSession, HTML
-import requests
-import numpy as np
+
 #import xlsxwriter
 
 
@@ -1607,6 +1608,7 @@ class SETS():
             })
             self.build['doffs']['space']=[None]*6
             return
+
         self.build = {
             'versionJSON': self.versionJSON,
             'boffs': dict(),
@@ -1659,10 +1661,12 @@ class SETS():
         }
         # self.reset_build_part(environment='space', init=True)  # Disabled until environment slices are refactored
         # self.reset_build_part(environment='ground', init=True)  # Disabled until environment slices are refactored
-        if not type == 'keepSkills':
-            self.reset_build_skill(init=True)
-        else:
+        if type == 'keepSkills':
             self.build.update(currentSkilltree)
+        else:
+            self.reset_build_skill(init=True)
+
+
 
     def reset_build_part(self, environment='space', init=False):
         build = {}
