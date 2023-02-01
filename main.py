@@ -665,10 +665,10 @@ class SETS():
 
         if(width is not None):
             if forceAspect:
-                image = image_load.resize((width, height), Image.LANCZOS)
+                image = image_load.resize((width, height), Image.Resampling.LANCZOS)
             else:
                 image = image_load
-                image.thumbnail((width, height), resample=Image.LANCZOS)
+                image.thumbnail((width, height), resample=Image.Resampling.LANCZOS)
         else:
             image = image_load
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
@@ -726,8 +726,8 @@ class SETS():
             image = Image.open(filename)
             #self.logWrite('==={}x{} [{}]'.format(width, height, filename), 2)
             if(width is not None):
-                if forceAspect: image = image.resize((width,height),Image.LANCZOS)
-                else: image.thumbnail((width, height), resample=Image.LANCZOS)
+                if forceAspect: image = image.resize((width,height),Image.Resampling.LANCZOS)
+                else: image.thumbnail((width, height), resample=Image.Resampling.LANCZOS)
             return ImageTk.PhotoImage(image)
         return self.emptyImage
 
@@ -1001,7 +1001,7 @@ class SETS():
 
         phrases = [keyPhrase] + additionalPhrases
 
-        if "Kit Frame" in keyPhrase:
+        if "Kit Frame" in keyPhrase and self.infoboxes is not None:
             equipment = [item for item in self.infoboxes if item['type'] is not None and "Kit" in item['type'] and not "Template Demo Kit" in item['type'] and not 'Module' in item['type']]
         else:
             equipment = self.searchJsonTable(self.infoboxes, "type", phrases)
@@ -6280,7 +6280,7 @@ class SETS():
         self.setupLogoFrame()
         self.setupMenuFrame()
         self.requestWindowUpdate() #cannot force
-        self.precachePreload(limited=(self.args.faststart or self.persistent['fast_start']))
+        self.precachePreload()
 
         self.setupLibraryFrame()
         self.setupSettingsFrame()
@@ -6303,10 +6303,10 @@ class SETS():
         parser.add_argument('--configfolder', type=int, help='Set configuration folder (contains config file, state file, default library location')
         parser.add_argument('--debug', type=int, help='Set debug level (default: 0)')
         parser.add_argument('--file', type=str, help='File to import on open')
-        parser.add_argument('--nofetch', type=str, help='Do not fetch new images')
-        parser.add_argument('--allfetch', type=str, help='Retry images every load')
-        parser.add_argument('--faststart', type=str, help='EXPERIMENTAL -- skip some items at app load')
+        parser.add_argument('--nofetch', help='Do not fetch new images', action='store_true')
+        parser.add_argument('--allfetch', help='Retry images every load', action='store_true')
         parser.add_argument('--startuptab', type=str, help='space, ground, skill, settings [space is default]')
+        parser.add_argument('--noautosave', help='disable autosave / autoload', action='store_true')
 
         self.args = parser.parse_args()
 
@@ -6475,6 +6475,8 @@ class SETS():
         self.window.after(self.persistent['autosave_delay'], self.auto_save, 'template')
 
     def auto_save(self, type='state', quiet=False):
+        if self.args.noautosave: return
+
         self.autosaving = True
         if type == 'state' or type == 'all':
             self.save_json(self.get_file_location('state'), self.persistent, 'State file', quiet)
@@ -6502,6 +6504,8 @@ class SETS():
             pass
 
     def build_auto_load(self):
+        if self.args.noautosave: return
+
         configFile = self.get_file_location('autosave')
         autosave_exists = os.path.exists(configFile)
         if autosave_exists:
