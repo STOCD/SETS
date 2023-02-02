@@ -1573,7 +1573,7 @@ class SETS():
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
         self.versionJSONminimum = 0
-        self.versionJSON = 2022022811
+        self.versionJSON = 2023020215
         self.clearing = False
         if type == 'keepSkills':
             currentSkilltree = {'skilltree':self.build['skilltree']}
