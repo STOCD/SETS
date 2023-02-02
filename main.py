@@ -664,12 +664,13 @@ class SETS():
             self.logWriteTransaction('Image File', 'unidentified', '', filename, 4)
             return None
 
+        # Should be Image.Resampling.LANCZOS by 2024, but this isn't in older implementations yet
         if(width is not None):
             if forceAspect:
-                image = image_load.resize((width, height), Image.Resampling.LANCZOS)
+                image = image_load.resize((width, height), Image.ANTIALIAS)
             else:
                 image = image_load
-                image.thumbnail((width, height), resample=Image.Resampling.LANCZOS)
+                image.thumbnail((width, height), resample=Image.ANTIALIAS)
         else:
             image = image_load
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
@@ -727,8 +728,8 @@ class SETS():
             image = Image.open(filename)
             #self.logWrite('==={}x{} [{}]'.format(width, height, filename), 2)
             if(width is not None):
-                if forceAspect: image = image.resize((width,height),Image.Resampling.LANCZOS)
-                else: image.thumbnail((width, height), resample=Image.Resampling.LANCZOS)
+                if forceAspect: image = image.resize((width, height), Image.ANTIALIAS)
+                else: image.thumbnail((width, height), resample=Image.ANTIALIAS)
             return ImageTk.PhotoImage(image)
         return self.emptyImage
 
