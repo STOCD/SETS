@@ -7,8 +7,8 @@ release = platform.release()
 
 try:
     build = sys.getwindowsversion().build
-    if system == 'Windows' and release == 10 and build >= 22000:
-        release = 11
+    if system == 'Windows' and release == '10' and build >= 22000:
+        release = '11'
 except:
     build = ''
 
