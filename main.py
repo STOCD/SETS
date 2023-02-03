@@ -66,7 +66,7 @@ class HoverButton(Button):
 
 class SETS():
     """Main App Class"""
-    version = '20220413a_beta'
+    version = '20230202a_beta'
 
     daysDelayBeforeReattempt = 7
 
@@ -1573,7 +1573,7 @@ class SETS():
         """Initialize new build state"""
         # VersionJSON Should be updated when JSON format changes, currently number-as-date-with-hour in UTC
         self.versionJSONminimum = 0
-        self.versionJSON = 2023020215
+        self.versionJSON = 2022022811
         self.clearing = False
         if type == 'keepSkills':
             currentSkilltree = {'skilltree':self.build['skilltree']}
@@ -6725,7 +6725,7 @@ class SETS():
 
         self.os_system = platform.system()
         self.os_release = platform.release()
-        if self.os_system == 'Windows' and self.os_release == 10 and sys.getwindowsversion().build >= 22000:
+        if self.os_system == 'Windows' and self.os_release == '10' and sys.getwindowsversion().build >= 22000:
             self.os_release = 11
 
         self.scale = scale
