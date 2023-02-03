@@ -667,10 +667,10 @@ class SETS():
         # Should be Image.Resampling.LANCZOS by 2024, but this isn't in older implementations yet
         if(width is not None):
             if forceAspect:
-                image = image_load.resize((width, height), Image.ANTIALIAS)
+                image = image_load.resize((width, height), self.pillow_antialias)
             else:
                 image = image_load
-                image.thumbnail((width, height), resample=Image.ANTIALIAS)
+                image.thumbnail((width, height), resample=self.pillow_antialias)
         else:
             image = image_load
         self.logWriteTransaction('Image File', 'read', str(os.path.getsize(filename)), filename, 4, image.size)
@@ -728,8 +728,8 @@ class SETS():
             image = Image.open(filename)
             #self.logWrite('==={}x{} [{}]'.format(width, height, filename), 2)
             if(width is not None):
-                if forceAspect: image = image.resize((width, height), Image.ANTIALIAS)
-                else: image.thumbnail((width, height), resample=Image.ANTIALIAS)
+                if forceAspect: image = image.resize((width, height), self.pillow_antialias)
+                else: image.thumbnail((width, height), resample=self.pillow_antialias)
             return ImageTk.PhotoImage(image)
         return self.emptyImage
 
@@ -6538,6 +6538,10 @@ class SETS():
         self.resetInternals()
         self.resetSettings()
 
+        try:
+            self.pillow_antialias = Image.Resampling.LANCZOS
+        except:
+            self.pillow_antialias = Image.ANTIALIAS
         self.splashWindow = None
         self.splashProgressBar = None
         self.splashProgressBarUpdates = 0
