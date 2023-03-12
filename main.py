@@ -402,11 +402,13 @@ class SETS():
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
         cache_base = self.resource_path(self.settings['folder']['local']) if local else self.get_folder_location('cache')
         override_base = self.get_folder_location('override')
+        backup_base = self.get_folder_location('backups')
         result = None
         interval = None
         if not os.path.exists(cache_base):
             return
 
+        filenameBackup = os.path.join(*filter(None, [backup_base, designation])) + ".json"
         filenameOverride = os.path.join(*filter(None, [override_base, designation]))+".json"
         if os.path.exists(filenameOverride):
             filename = filenameOverride
@@ -422,22 +424,28 @@ class SETS():
             r = requests.get(url)
             try:
                 result = r.json()
-                self.make_filename_path(os.path.dirname(filename))
-                with open(filename, 'w') as json_file:
-                    json.dump(result, json_file)
-                    self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
+                self.saveJsonFile(filename, designation, result)
             except:
                 interval = None # do not clear cache
                 result = self.loadJsonFile(filename, url, designation, 'read')
 
         if not result:
             self.recoverCacheFolder(designation+".json", 'cache')
-            self.loadJsonFile(filename, url, designation, 'read')
+            result = self.loadJsonFile(filename, url, designation, 'read')
 
-        if result is not None and interval is not None and interval.days >= 7:
-            self.clearCacheFolder(designation + ".json")
+        if result is not None:
+            self.saveJsonFile(filenameBackup, designation, result)
+            # Needs to copy sometimes, not just move
+            #if result is not None and interval is not None and interval.days >= 7:
+            #    self.backupCacheFolder(designation + ".json")
 
         return result
+
+    def saveJsonFile(self, filename, designation, result):
+        self.make_filename_path(os.path.dirname(filename))
+        with open(filename, 'w') as json_file:
+            json.dump(result, json_file)
+            self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
 
     def loadJsonFile(self, filename, url, designation, type):
         try:
@@ -3147,7 +3155,7 @@ class SETS():
         except Exception as e:
             self.logWrite('Failed to delete %s. Reason: %s' % (file_path, e), 2)
 
-    def clearCacheFolder(self, file=None):
+    def backupCacheFolder(self, file=None):
         dir = self.get_folder_location('cache')
         dirBak = self.get_folder_location('backups')
         for filename in os.listdir(dir):
@@ -3180,7 +3188,7 @@ class SETS():
         self.logWriteSimple("settingsButtonCallback", '', 2, [type])
 
         if type == 'clearcache':
-            self.clearCacheFolder()
+            self.backupCacheFolder()
         elif type == 'clearimages':
             self.clearImagesFolder()
         elif type == 'clearfactionImages':
