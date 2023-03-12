@@ -75,9 +75,9 @@ class SETS():
     wikiImages = wikihttp+'Special:Filepath/'
 
     #query for ship cargo table on the wiki
-    ship_query = wikihttp+"Special:CargoExport?tables=Ships&&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Ctier%3Dtier%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Cexperimental%3Dexperimental%2Csecdeflector%3Dsecdeflector%2Changars%3Dhangars%2Cabilities__full%3Dabilities%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&&order+by=`_pageName`%2C`name`%2C`image`%2C`fc`%2C`faction__full`&limit=2500&format=json"
+    ship_query = wikihttp+"Special:CargoExport?tables=Ships&&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Ctier%3Dtier%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Cexperimental%3Dexperimental%2Csecdeflector%3Dsecdeflector%2Changars%3Dhangars%2Cabilities__full%3Dabilities%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&limit=2500&format=json"
     #query for ship equipment cargo table on the wiki
-    item_query = wikihttp+'Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&&order+by=%60_pageName%60%2C%60name%60%2C%60rarity%60%2C%60type%60%2C%60boundto%60&limit=5000&format=json'
+    item_query = wikihttp+'Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&limit=5000&format=json'
     #query for personal and reputation trait cargo table on the wiki
     trait_query = wikihttp+"Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&&order+by=%60_pageName%60%2C%60name%60%2C%60chartype%60%2C%60environment%60%2C%60type%60&limit=2500&format=json"
     ship_trait_query = wikihttp+"Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json"
@@ -402,6 +402,8 @@ class SETS():
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
         cache_base = self.resource_path(self.settings['folder']['local']) if local else self.get_folder_location('cache')
         override_base = self.get_folder_location('override')
+        result = None
+        interval = None
         if not os.path.exists(cache_base):
             return
 
@@ -415,19 +417,36 @@ class SETS():
             modDate = os.path.getmtime(filename)
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
             if interval.days < 7 or local:
-                with open(filename, 'r', encoding='utf-8') as json_file:
-                    json_data = json.load(json_file)
-                    self.logWriteTransaction('Cache File (json)', 'read', str(os.path.getsize(filename)), designation, 1)
-                    return json_data
-            if interval.days >= 7:
-                self.clearCacheFolder(designation+".json")
+                result = self.loadJsonFile(filename, url, designation, 'read')
         elif not local:
             r = requests.get(url)
-            self.make_filename_path(os.path.dirname(filename))
-            with open(filename, 'w') as json_file:
-                json.dump(r.json(),json_file)
-                self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
-            return r.json()
+            try:
+                result = r.json()
+                self.make_filename_path(os.path.dirname(filename))
+                with open(filename, 'w') as json_file:
+                    json.dump(result, json_file)
+                    self.logWriteTransaction('Cache File (json)', 'stored', str(os.path.getsize(filename)), designation, 1)
+            except:
+                interval = None # do not clear cache
+                result = self.loadJsonFile(filename, url, designation, 'read')
+
+        if not result:
+            self.recoverCacheFolder(designation+".json", 'cache')
+            self.loadJsonFile(filename, url, designation, 'read')
+
+        if result is not None and interval is not None and interval.days >= 7:
+            self.clearCacheFolder(designation + ".json")
+
+        return result
+
+    def loadJsonFile(self, filename, url, designation, type):
+        try:
+            with open(filename, 'r', encoding='utf-8') as json_file:
+                json_data = json.load(json_file)
+                self.logWriteTransaction('Cache File (json)', type, str(os.path.getsize(filename)), designation, 1)
+                return json_data
+        except:
+            return None
 
     def filePathSanitize(self, txt, chr_set='printable'):
         """Converts txt to a valid filename.
@@ -1235,6 +1254,7 @@ class SETS():
         if 'shipTraits' in self.cache and len(self.cache['shipTraits']) > 0:
             return self.cache['shipTraits']
 
+
         for item in list(self.shiptraits):
             if 'trait' in item and item['trait'] is not None and len(item['trait']):
                 self.precacheShipTraitSingle(item['trait'], item['traitdesc'], item)
@@ -1245,9 +1265,10 @@ class SETS():
             if 'acctrait' in item and item['acctrait'] is not None and len(item['acctrait']):
                 self.precacheShipTraitSingle(item['acctrait'], item['acctraitdesc'], item)
 
-        for item in list(self.traits):
-            if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
-                self.precacheShipTraitSingle(item['name'], item['description'], item)
+        if self.traits is not None:
+            for item in list(self.traits):
+                if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
+                    self.precacheShipTraitSingle(item['name'], item['description'], item)
 
         self.logWriteCounter('Ship Trait', '(json)', len(self.cache['shipTraits']), ['space'])
 
@@ -1280,6 +1301,9 @@ class SETS():
         """Populate in-memory cache of traits for faster loading"""
         if 'traits' in self.cache and 'space' in self.cache['traits']:
             return self.cache['traits']
+
+        if self.traits is None:
+            return None
 
         for item in list(self.traits):
             if not 'chartype' in item or item['chartype'] != 'char':
@@ -3108,6 +3132,20 @@ class SETS():
         self.redditExportDisplaySpace(redditText)
         redditWindow.title("Reddit Export")
         redditWindow.mainloop()
+
+    def recoverCacheFolder(self, filename=None, destination='cache'):
+        dir = self.get_folder_location(destination)
+        dirBak = self.get_folder_location('backups')
+
+        file_path = os.path.join(dir, filename)
+        backup_path = os.path.join(dirBak, filename)
+        try:
+            if os.path.isfile(backup_path) or os.path.islink(backup_path):
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                os.rename(backup_path, file_path)
+        except Exception as e:
+            self.logWrite('Failed to delete %s. Reason: %s' % (file_path, e), 2)
 
     def clearCacheFolder(self, file=None):
         dir = self.get_folder_location('cache')
