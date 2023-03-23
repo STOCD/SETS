@@ -808,9 +808,9 @@ class SETS():
         else:
             self.build['secdef'] = []
 
-        # Hagars
+        # Hangars
         if 'hangars' in shipHtml and (shipHtml['hangars'] == 1 or shipHtml['hangars'] == 2):
-            self.build['hagars'] = [None] * int(shipHtml['hangars'])
+            self.build['hangars'] = [None] * int(shipHtml['hangars'])
         else:
             self.build['hangars'] = []
 
@@ -2583,6 +2583,7 @@ class SETS():
             self.logWriteBreak('IMPORT PROCESSING START')
             logNote = '{} (fields:[{}=>{}]='.format(' (FORCE LOAD)' if force else '', len(buildRevisionCurrent), len(self.build))
             self.build.update(buildRevisionCurrent)
+            self.repair_build()
             logNote = logNote+'{} merged'.format(len(self.build))
 
             self.resetBackend(rebuild=True)
@@ -2598,6 +2599,14 @@ class SETS():
             return self.importByFilename(inFilename, True)
         else:
             return result
+
+    def repair_build(self):
+        """ Repair a typo that was around for a while """
+        if type(self.build) is dict \
+                and 'hagars' in self.build and type(self.build['hagars']) is list \
+                and ('hangars' not in self.build or not len(self.build['hangars'])):
+            self.build['hangars'] = self.build['hagars']
+            self.logWriteSimple('build', 'REPAIR hagars->hangars', 1)
 
     def filenameDefault(self):
         name = self.build['playerShipName'] if 'playerShipName' in self.build else ''
@@ -3497,6 +3506,7 @@ class SETS():
         # self.backend['images'][backendKey][#] is the location for (img,img)
         # args [array] contains variable infomation used for callback updating
         # internalKey is the cache sub-group (for equipment cache sub-groups)
+        item = None
 
         if width is None:
             width = self.itemBoxX
@@ -3510,8 +3520,12 @@ class SETS():
             item = name
         elif groupKey is not None:
             item = self.build[groupKey][key][buildSubKey]
-        else:
-            item = self.build[key][buildSubKey]
+        elif type(self.build) is dict and key in self.build and (type(self.build[key]) is dict or type(self.build[key]) is list):
+            try:
+                item = self.build[key][buildSubKey]
+            except:
+                item = None
+                self.logWriteSimple('createButtonERROR', '', 1, [name, key, buildSubKey, type(buildSubKey), row, column])
 
         self.logWriteSimple('createButton', '', 5, [name, key, buildSubKey, backendKey, i, row, column])
 
