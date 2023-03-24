@@ -7,6 +7,7 @@ import datetime
 import html
 import json
 import os
+import pickle
 import platform
 import re
 import sys
@@ -984,6 +985,35 @@ class SETS():
         # Add the known equipment series [optional?]
         self.logWriteBreak('precachePreload END')
 
+        self.cache_store()
+
+    def cache_store(self):
+        """ Currently does not work with the tkinter objects inline, code inactive """
+        if not self.persistent['cache_save']: return
+
+        cacheFileName = self.get_file_location('cache')
+        cacheFile_exists = os.path.exists(cacheFileName)
+        # TODO: Move cache file into backup position
+        #try:
+        if True:
+            cacheFile = open(cacheFileName, 'wb')
+            pickle.dump(self.cache, cacheFile)
+            self.logWriteTransaction(cacheFileName, 'stored', '', '', 0)
+        #except:
+        #    self.logWriteTransaction(cacheFileName, 'store-FAILURE', '', '', 0)
+
+    def cache_read(self):
+        if not self.persistent['cache_save']: return
+        cacheFileName = self.get_file_location('cache')
+        cacheFile_exists = os.path.exists(cacheFile)
+        if cacheFile_exists:
+            try:
+                cacheFile = open(cacheFileName, 'rb')
+                self.cache = pickle.load(cacheFile)
+                self.logWriteTransaction(cacheFileName, 'loaded', '', '', 0)
+            except:
+                self.logWriteTransaction(cacheFileName, 'load-FAILURE', '', '', 0)
+
     def precache_equipment_all(self, limited=False):
         """ Precache all known equipment types """
         equipment_types = [
@@ -1484,6 +1514,7 @@ class SETS():
         self.persistent = {
             'forceJsonLoad': 0,
             'fast_start': 0,
+            'cache_save': 0,
             'uiScale': 1,
             'geometry': '',
             'tooltipDelay': 2,
@@ -5995,6 +6026,7 @@ class SETS():
             'Force out of date JSON loading'        : {'col': 2, 'type': 'optionmenu', 'var_name': 'forceJsonLoad', 'boolean': True},
             'Fast start (experimental)'          : {'col': 2, 'type': 'optionmenu', 'var_name': 'fast_start', 'boolean': True},
             'Use faction-specific icons (experimental)': {'col': 2, 'type': 'optionmenu', 'var_name': 'useFactionSpecificIcons', 'boolean': True},
+            'Persistent Cache (experimental)': {'col': 2, 'type': 'optionmenu', 'var_name': 'cache_save', 'boolean': True},
             'blank2'                                : {'col': 1, 'type': 'blank'},
             'Create SETS manual settings file': {'col' : 2, 'type': 'button', 'var_name': 'exportConfigFile'},
             'Backup current caches/settings'        : {'col': 2, 'type': 'button', 'var_name': 'backupCache'},
@@ -6909,8 +6941,6 @@ class SETS():
 
         self.logWriteBreak('UI BUILD')
         self.setupUIFrames()
-        #with open('cache.txt','w') as fil:
-            #json.dump(self.cache['equipment'], fil)
 
     def run(self):
         if __name__ != '__main__':
