@@ -67,28 +67,32 @@ class HoverButton(Button):
 
 class SETS():
     """Main App Class"""
-    version = '20230323a_beta'
+    version = '20230327a_beta'
 
     daysDelayBeforeReattempt = 7
 
     #base URI
-    wikihttp = 'https://sto.fandom.com/wiki/'
-    wikiImages = wikihttp+'Special:Filepath/'
+    wikihttp_legacy = 'https://sto.fandom.com/wiki/'
+    wikihttp_current = 'https://stowiki.net/wiki/'
+    wikiImagesText = 'Special:Filepath/'
+
+    wikihttp = wikihttp_legacy
+    wikiImages = wikihttp+wikiImagesText
 
     #query for ship cargo table on the wiki
-    ship_query = wikihttp+"Special:CargoExport?tables=Ships&&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Ctier%3Dtier%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Cexperimental%3Dexperimental%2Csecdeflector%3Dsecdeflector%2Changars%3Dhangars%2Cabilities__full%3Dabilities%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&limit=2500&format=json"
+    ship_query = "Special:CargoExport?tables=Ships&&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Ctier%3Dtier%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Cexperimental%3Dexperimental%2Csecdeflector%3Dsecdeflector%2Changars%3Dhangars%2Cabilities__full%3Dabilities%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&limit=2500&format=json"
     #query for ship equipment cargo table on the wiki
-    item_query = wikihttp+'Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&limit=5000&format=json'
+    item_query = 'Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&limit=5000&format=json'
     #query for personal and reputation trait cargo table on the wiki
-    trait_query = wikihttp+"Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&limit=2500&format=json"
-    ship_trait_query = wikihttp+"Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json"
+    trait_query = "Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&limit=2500&format=json"
+    ship_trait_query = "Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json"
     #query for DOFF types and specializations
-    doff_query = wikihttp+"Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&limit=1000&offset=0&format=json"
+    doff_query = "Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&limit=1000&offset=0&format=json"
     #query for Specializations and Reps
-    reputation_query = wikihttp+'Special:CargoExport?tables=Reputation&fields=Reputation.name,Reputation.environment,Reputation.boff,Reputation.color1,Reputation.color2,Reputation.description,Reputation.icon,Reputation.link,Reputation.released,Reputation.secondary&limit=1000&offset=0&format=json'
+    reputation_query = 'Special:CargoExport?tables=Reputation&fields=Reputation.name,Reputation.environment,Reputation.boff,Reputation.color1,Reputation.color2,Reputation.description,Reputation.icon,Reputation.link,Reputation.released,Reputation.secondary&limit=1000&offset=0&format=json'
     #query for Boffskills
-    trayskill_query = wikihttp+"Special:CargoExport?tables=TraySkill&fields=TraySkill._pageName,TraySkill.name,TraySkill.activation,TraySkill.affects,TraySkill.description,TraySkill.description_long,TraySkill.rank1rank,TraySkill.rank2rank,TraySkill.rank3rank,TraySkill.recharge_base,TraySkill.recharge_global,TraySkill.region,TraySkill.system,TraySkill.targets,TraySkill.type&limit=1000&offset=0&format=json"
-    faction_query = wikihttp+"Special:CargoExport?tables=Faction&fields=Faction.playability,Faction.name,Faction._pageName,Faction.allegiance,Faction.faction,Faction.imagepeople,Faction.origin,Faction.quadrant,Faction.status,Faction.traits&limit=1000&offset=0&format=json"
+    trayskill_query = "Special:CargoExport?tables=TraySkill&fields=TraySkill._pageName,TraySkill.name,TraySkill.activation,TraySkill.affects,TraySkill.description,TraySkill.description_long,TraySkill.rank1rank,TraySkill.rank2rank,TraySkill.rank3rank,TraySkill.recharge_base,TraySkill.recharge_global,TraySkill.region,TraySkill.system,TraySkill.targets,TraySkill.type&limit=1000&offset=0&format=json"
+    faction_query = "Special:CargoExport?tables=Faction&fields=Faction.playability,Faction.name,Faction._pageName,Faction.allegiance,Faction.faction,Faction.imagepeople,Faction.origin,Faction.quadrant,Faction.status,Faction.traits&limit=1000&offset=0&format=json"
 
     #to prevent Infobox from loading the same element twice in a row
     displayedInfoboxItem = str()
@@ -362,7 +366,7 @@ class SETS():
         try:
             webbrowser.open(url, new=2, autoraise=True)
         except:
-            messagebox.showinfo(message="You'll find more information on the STO - Fandom WIKI: "+url)
+            messagebox.showinfo(message="You'll find more information on the STO - WIKI: "+url)
 
     def openWikiPage(self, pagename):
         """ Request a browser tab with provided pagename """
@@ -370,7 +374,7 @@ class SETS():
 
     def getWikiURL(self, pagename):
         """ Convert provided pagename into an URL to find the page on the wiki """
-        return "https://sto.fandom.com/wiki/"+pagename.replace(" ", "_")
+        return self.wikihttp+pagename.replace(" ", "_")
 
     def fetchOrRequestHtml(self, url, designation):
         """Request HTML document from web or fetch from local cache"""
@@ -390,7 +394,7 @@ class SETS():
             if interval.days < self.daysDelayBeforeReattempt:
                 with open(filename, 'r', encoding='utf-8') as html_file:
                     s = html_file.read()
-                    return HTML(html=s, url = 'https://sto.fandom.com/')
+                    return HTML(html=s, url = self.wikihttp )
         r = self.session.get(url)
         self.make_filename_path(os.path.dirname(filename))
         with open(filename, 'w', encoding="utf-8") as html_file:
@@ -1267,7 +1271,7 @@ class SETS():
         if not name in self.cache['shipTraitsFull']:
             if "_pageName" in item:
                 obt = "T5" if item['traitdesc'] == desc or item['traitdesc2'] == desc or item['traitdesc3'] == desc else "T6"
-                self.cache['shipTraitsFull'][name] = {"ship":item["_pageName"], "desc": self.deWikify(desc, leaveHTML=True), "image": self.imageFromInfoboxName(name), "link": "https://sto.fandom.com/wiki/"+item["_pageName"].replace(" ", "_"), "obtained": obt }
+                self.cache['shipTraitsFull'][name] = {"ship":item["_pageName"], "desc": self.deWikify(desc, leaveHTML=True), "image": self.imageFromInfoboxName(name), "link": self.wikihttp+item["_pageName"].replace(" ", "_"), "obtained": obt }
             elif "Page" in item and "name" in item:
                 if item["name"] in ["Arrest", "Command Frequency", "Demolition Teams", "Going the Extra Mile", "Non-Linear Progression", "Pedal to the Metal", "Predictive Algorithms", "Unconventional Tactics"]:
                     obt = "spec"
@@ -1284,7 +1288,7 @@ class SETS():
                 else:
                     obt = "box"
                     nm = ""
-                self.cache['shipTraitsFull'][name] = {"ship":nm, "desc": self.deWikify(desc, leaveHTML=True), "image": self.imageFromInfoboxName(name), "link": "https://sto.fandom.com/wiki/"+item["Page"].replace(" ", "_"), "obtained": obt }
+                self.cache['shipTraitsFull'][name] = {"ship":nm, "desc": self.deWikify(desc, leaveHTML=True), "image": self.imageFromInfoboxName(name), "link": self.wikihttp+item["Page"].replace(" ", "_"), "obtained": obt }
 
 
     def precacheShipTraits(self, limited=False):
@@ -1514,6 +1518,7 @@ class SETS():
         self.persistent = {
             'forceJsonLoad': 0,
             'fast_start': 0,
+            'source_new_wiki': 0,
             'cache_save': 0,
             'uiScale': 1,
             'geometry': '',
@@ -6020,6 +6025,7 @@ class SETS():
             'Open Log'                              : {'col': 2, 'type': 'button', 'var_name': 'openLog'},
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : {'col': 1, 'type': 'blank'},
+            'Use stowiki.net': {'col': 2, 'type': 'optionmenu', 'var_name': 'source_new_wiki', 'boolean': True},
             'Test image variations': {'col': 2, 'type': 'optionmenu', 'var_name': 'image_beta', 'boolean': True},
             'Auto-save build': {'col': 2, 'type': 'optionmenu', 'var_name': 'autosave', 'boolean': True},
             'In-file versions': {'col': 2, 'type': 'optionmenu', 'var_name': 'versioning', 'boolean': True},
@@ -6409,6 +6415,7 @@ class SETS():
         parser.add_argument('--startuptab', type=str, help='space, ground, skill, settings [space is default]')
         parser.add_argument('--noautosave', help='disable autosave / autoload', action='store_true')
         parser.add_argument('--nomenuicons', help='disable autosave / autoload', action='store_true')
+        parser.add_argument('--stowiki', help='switch to stowiki.net [experimental]', action='store_true')
 
         self.args = parser.parse_args()
 
@@ -6421,6 +6428,10 @@ class SETS():
 
         if self.args.configfolder is not None:
             self.settings['folder']['config'] = self.args.configfolder
+
+        if self.args.stowiki:
+            self.persistent['source_new_wiki'] = True
+            self.url_update()
 
     def config_folder_location(self):
         # This should probably be upgraded to use the appdirs module, adding rudimentary options for the moment
@@ -6559,6 +6570,9 @@ class SETS():
                 except:
                     self.logWriteTransaction('State File', 'load error', '', configFile, 1)
                     return
+
+                self.url_update()
+
                 logNote = ' (fields:['+str(len(persistentNew))+'=>'+str(len(self.persistent))+']='
                 self.persistent.update(persistentNew)
                 logNote = logNote + str(len(self.persistent)) + ')'
@@ -6568,6 +6582,14 @@ class SETS():
 
         if init:
             self.auto_save()
+
+    def url_update(self):
+        if not self.persistent['source_new_wiki']:
+            self.wikihttp = self.wikihttp_legacy
+        else:
+            self.wikihttp = self.wikihttp_current
+
+        self.wikiImages = self.wikihttp + self.wikiImagesText
 
     def auto_save_queue(self):
         if self.autosaving:
@@ -6674,14 +6696,14 @@ class SETS():
         self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", width, height)
 
     def precache_downloads(self):
-        self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes")
-        self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits")
-        self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits")
-        self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs")
-        self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list")
-        self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations")
-        self.trayskills = self.fetchOrRequestJson(SETS.trayskill_query, "trayskills")
-        self.factions = self.fetchOrRequestJson(SETS.faction_query, "factions")
+        self.infoboxes = self.fetchOrRequestJson(SETS.wikihttp+SETS.item_query, "infoboxes")
+        self.traits = self.fetchOrRequestJson(SETS.wikihttp+SETS.trait_query, "traits")
+        self.shiptraits = self.fetchOrRequestJson(SETS.wikihttp+SETS.ship_trait_query, "starship_traits")
+        self.doffs = self.fetchOrRequestJson(SETS.wikihttp+SETS.doff_query, "doffs")
+        self.ships = self.fetchOrRequestJson(SETS.wikihttp+SETS.ship_query, "ship_list")
+        self.reputations = self.fetchOrRequestJson(SETS.wikihttp+SETS.reputation_query, "reputations")
+        self.trayskills = self.fetchOrRequestJson(SETS.wikihttp+SETS.trayskill_query, "trayskills")
+        self.factions = self.fetchOrRequestJson(SETS.wikihttp+SETS.faction_query, "factions")
 
         self.r_boffAbilities = self.fetchOrRequestHtml(self.wikihttp+"Bridge_officer_and_kit_abilities", "boff_abilities")
 
@@ -6828,7 +6850,7 @@ class SETS():
         self.ui_update_log()
 
     def ui_update_log(self):
-        self.logminiWrite('{} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, self.scale, self.dpi))
+        self.logminiWrite('{} {} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, '[stowiki]' if self.persistent['source_new_wiki'] else '[fandom]', self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, self.scale, self.dpi))
 
 
     def update_window_size(self, caller='', init=False, no_geometry=False):
