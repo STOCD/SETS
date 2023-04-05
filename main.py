@@ -6030,7 +6030,7 @@ class SETS():
             'Open Log'                              : {'col': 2, 'type': 'button', 'var_name': 'openLog'},
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : {'col': 1, 'type': 'blank'},
-            'Use stowiki.net': {'col': 2, 'type': 'optionmenu', 'var_name': 'source_new_wiki', 'boolean': True},
+            'Use stowiki.net (partial)': {'col': 2, 'type': 'optionmenu', 'var_name': 'source_new_wiki', 'boolean': True},
             'Test image variations': {'col': 2, 'type': 'optionmenu', 'var_name': 'image_beta', 'boolean': True},
             'Auto-save build': {'col': 2, 'type': 'optionmenu', 'var_name': 'autosave', 'boolean': True},
             'In-file versions': {'col': 2, 'type': 'optionmenu', 'var_name': 'versioning', 'boolean': True},
