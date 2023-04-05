@@ -67,7 +67,7 @@ class HoverButton(Button):
 
 class SETS():
     """Main App Class"""
-    version = '20230327a_beta'
+    version = '20230401a_beta'
 
     daysDelayBeforeReattempt = 7
 
@@ -399,7 +399,7 @@ class SETS():
         self.make_filename_path(os.path.dirname(filename))
         with open(filename, 'w', encoding="utf-8") as html_file:
             html_file.write(r.text)
-            self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1)
+            self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1, tags=[url] if self.settings['debug'] >= 3 else None)
 
         return r.html
 
@@ -456,7 +456,7 @@ class SETS():
         try:
             with open(filename, 'r', encoding='utf-8') as json_file:
                 json_data = json.load(json_file)
-                self.logWriteTransaction('Cache File (json)', type, str(os.path.getsize(filename)), designation, 1)
+                self.logWriteTransaction('Cache File (json)', type, str(os.path.getsize(filename)), designation, 1, tags=[url] if self.settings['debug'] >= 3 else None)
                 return json_data
         except:
             return None
@@ -5488,6 +5488,7 @@ class SETS():
 
     def setFooterFrame(self, leftnote, rightnote=None):
         """Set up footer frame with given item"""
+
         leftnote = leftnote[:200]
         rightnote = rightnote[:150]
 
@@ -6242,9 +6243,12 @@ class SETS():
         self.logDisplay.yview_pickplace(END)
 
     def logFullWrite(self, notice, log_only=False):
-        self.logFull.set(self.lineTruncate(self.logFull.get()+'\n'+notice))
-        if not log_only:
-            self.progress_bar_update(text=notice)
+        try:
+            self.logFull.set(self.lineTruncate(self.logFull.get()+'\n'+notice))
+            if not log_only:
+                self.progress_bar_update(text=notice)
+        except:
+            fail = True
 
     def logminiWrite(self, notice, level=0):
         if level == 0:
@@ -6283,8 +6287,8 @@ class SETS():
         logNote = ''
         if tags:
             for tag in tags:
-                logNote = logNote + '[{:>9}]'.format(self.logTagClean(tag))
-        self.logWrite('{:>12} {:>6} count: {:>6} {:>6}'.format(title, body, str(count), logNote), 2)
+                logNote = logNote + '[{}]'.format(self.logTagClean(tag))
+        self.logWrite('# {:>6} {} {} {}'.format(str(count), body, title, logNote), 2)
 
     def logWrite(self, notice, level=0, log_only=False):
         # Level 0: Default, always added to short log note frame on UI
@@ -6293,10 +6297,17 @@ class SETS():
         # Level 1: Track interactions - network interactions, configuration actions, file transactions
         # Level 2: unconfirmed feature spam -- chatty but not intended to fully retained long term
         # Level 3+: minor detail spam -- any useful long-term diagnostic, the more spammy, the higher
+        try:
+            current_debug = self.settings['debug']
+        except:
+            current_debug = 1
         if level == 0:
-            self.setFooterFrame(notice, '')
+            try:
+                self.setFooterFrame(notice, '')
+            except:
+                fail = True
             self.logFullWrite(notice, log_only=log_only)
-        if self.settings['debug'] > 0 and self.settings['debug'] >= level:
+        if current_debug > 0 and current_debug >= level:
             self.log_write_stderr(notice)
             self.logFullWrite(notice, log_only=log_only)
 
@@ -6418,7 +6429,10 @@ class SETS():
         parser.add_argument('--stowiki', help='switch to stowiki.net [experimental]', action='store_true')
 
         self.args = parser.parse_args()
+        #self.logWriteSimple('Args', '', 1, tags=[self.args])
 
+    def arg_parser_grab_settings(self):
+        self.logWriteSimple('Args', 'grabsettings', 2, tags=[self.args])
         if self.args.debug is not None:
             self.settings['debug'] = self.args.debug
             self.logWriteSimple('Debug', 'set by arg', 1, tags=[str(self.settings['debug'])])
@@ -6583,13 +6597,15 @@ class SETS():
         if init:
             self.auto_save()
 
-    def url_update(self):
-        if not self.persistent['source_new_wiki']:
-            self.wikihttp = self.wikihttp_legacy
-        else:
+    def url_update(self, new=False):
+        self.logWriteSimple('SOURCE', 'urlupdate', 4, [self.args])
+        if new or self.args.stowiki or self.persistent['source_new_wiki']:
             self.wikihttp = self.wikihttp_current
+        else:
+            self.wikihttp = self.wikihttp_legacy
 
         self.wikiImages = self.wikihttp + self.wikiImagesText
+        self.logWriteSimple('SOURCE', '', 0, [self.wikihttp])
 
     def auto_save_queue(self):
         if self.autosaving:
@@ -6647,7 +6663,6 @@ class SETS():
     def init_settings(self):
         """Initialize session settings state"""
         self.session = HTMLSession()
-        self.args = None
 
         self.resetInternals()
         self.resetSettings()
@@ -6696,14 +6711,14 @@ class SETS():
         self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", width, height)
 
     def precache_downloads(self):
-        self.infoboxes = self.fetchOrRequestJson(SETS.wikihttp+SETS.item_query, "infoboxes")
-        self.traits = self.fetchOrRequestJson(SETS.wikihttp+SETS.trait_query, "traits")
-        self.shiptraits = self.fetchOrRequestJson(SETS.wikihttp+SETS.ship_trait_query, "starship_traits")
-        self.doffs = self.fetchOrRequestJson(SETS.wikihttp+SETS.doff_query, "doffs")
-        self.ships = self.fetchOrRequestJson(SETS.wikihttp+SETS.ship_query, "ship_list")
-        self.reputations = self.fetchOrRequestJson(SETS.wikihttp+SETS.reputation_query, "reputations")
-        self.trayskills = self.fetchOrRequestJson(SETS.wikihttp+SETS.trayskill_query, "trayskills")
-        self.factions = self.fetchOrRequestJson(SETS.wikihttp+SETS.faction_query, "factions")
+        self.infoboxes = self.fetchOrRequestJson(self.wikihttp+SETS.item_query, "infoboxes")
+        self.traits = self.fetchOrRequestJson(self.wikihttp+SETS.trait_query, "traits")
+        self.shiptraits = self.fetchOrRequestJson(self.wikihttp+SETS.ship_trait_query, "starship_traits")
+        self.doffs = self.fetchOrRequestJson(self.wikihttp+SETS.doff_query, "doffs")
+        self.ships = self.fetchOrRequestJson(self.wikihttp+SETS.ship_query, "ship_list")
+        self.reputations = self.fetchOrRequestJson(self.wikihttp+SETS.reputation_query, "reputations")
+        self.trayskills = self.fetchOrRequestJson(self.wikihttp+SETS.trayskill_query, "trayskills")
+        self.factions = self.fetchOrRequestJson(self.wikihttp+SETS.faction_query, "factions")
 
         self.r_boffAbilities = self.fetchOrRequestHtml(self.wikihttp+"Bridge_officer_and_kit_abilities", "boff_abilities")
 
@@ -6945,11 +6960,15 @@ class SETS():
     def __init__(self) -> None:
         """Main setup function"""
 
+        self.args = None
+        self.arg_parser_setup()  # First for location overrides
+        if self.args.stowiki:
+            self.url_update(new=True)
         self.init_window()
         self.init_settings()
 
         self.logWriteBreak('CONFIG')
-        self.arg_parser_setup()  # First for location overrides
+        self.arg_parser_grab_settings()
         self.state_file_load(init=True)
         self.config_file_load()  # Third to override persistent
         self.precache_theme_fonts()  # Fourth in case of new theme from configs
