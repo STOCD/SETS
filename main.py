@@ -1009,7 +1009,7 @@ class SETS():
     def cache_read(self):
         if not self.persistent['cache_save']: return
         cacheFileName = self.get_file_location('cache')
-        cacheFile_exists = os.path.exists(cacheFile)
+        cacheFile_exists = os.path.exists(cacheFileName)
         if cacheFile_exists:
             try:
                 cacheFile = open(cacheFileName, 'rb')
