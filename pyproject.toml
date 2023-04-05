@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 
@@ -38,3 +38,7 @@ dependencies = [
 [project.urls]
 homepage = "https://stobuilds.com/SETS/"
 repository = "https://github.com/STOCD/SETS"
+
+
+[tool.setuptools_scm]
+write_to = "SETS/_version.py"
