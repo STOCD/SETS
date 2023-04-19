@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.4b191'
+    version = '2023.4b192'
 
     daysDelayBeforeReattempt = 7
 
@@ -84,19 +84,20 @@ class SETS():
     wikiImages = wikihttp+wikiImagesText
 
     #query for ship cargo table on the wiki
-    ship_query = "Special:CargoExport?tables=Ships&&fields=_pageName%3DPage%2Cname%3Dname%2Cimage%3Dimage%2Cfc%3Dfc%2Ctier%3Dtier%2Ctype__full%3Dtype%2Chull%3Dhull%2Chullmod%3Dhullmod%2Cshieldmod%3Dshieldmod%2Cturnrate%3Dturnrate%2Cimpulse%3Dimpulse%2Cinertia%3Dinertia%2Cpowerall%3Dpowerall%2Cpowerweapons%3Dpowerweapons%2Cpowershields%3Dpowershields%2Cpowerengines%3Dpowerengines%2Cpowerauxiliary%3Dpowerauxiliary%2Cpowerboost%3Dpowerboost%2Cboffs__full%3Dboffs%2Cfore%3Dfore%2Caft%3Daft%2Cequipcannons%3Dequipcannons%2Cdevices%3Ddevices%2Cconsolestac%3Dconsolestac%2Cconsoleseng%3Dconsoleseng%2Cconsolessci%3Dconsolessci%2Cuniconsole%3Duniconsole%2Ct5uconsole%3Dt5uconsole%2Cexperimental%3Dexperimental%2Csecdeflector%3Dsecdeflector%2Changars%3Dhangars%2Cabilities__full%3Dabilities%2Cdisplayprefix%3Ddisplayprefix%2Cdisplayclass%3Ddisplayclass%2Cdisplaytype%3Ddisplaytype%2Cfactionlede%3Dfactionlede&limit=2500&format=json"
+    ship_query = 'Special:CargoExport?tables=Ships&fields=_pageName%3DPage,name,image,fc,tier,type,hull,hullmod,shieldmod,turnrate,impulse,inertia,powerall,powerweapons,powershields,powerengines,powerauxiliary,powerboost,boffs,fore,aft,equipcannons,devices,consolestac,consoleseng,consolessci,uniconsole,t5uconsole,experimental,secdeflector,hangars,abilities,displayprefix,displayclass,displaytype,factionlede&limit=2500&format=json'
     #query for ship equipment cargo table on the wiki
-    item_query = 'Special:CargoExport?tables=Infobox&&fields=_pageName%3DPage%2Cname%3Dname%2Crarity%3Drarity%2Ctype%3Dtype%2Cboundto%3Dboundto%2Cboundwhen%3Dboundwhen%2Cwho%3Dwho%2Chead1%3Dhead1%2Chead2%3Dhead2%2Chead3%3Dhead3%2Chead4%3Dhead4%2Chead5%3Dhead5%2Chead6%3Dhead6%2Chead7%3Dhead7%2Chead8%3Dhead8%2Chead9%3Dhead9%2Csubhead1%3Dsubhead1%2Csubhead2%3Dsubhead2%2Csubhead3%3Dsubhead3%2Csubhead4%3Dsubhead4%2Csubhead5%3Dsubhead5%2Csubhead6%3Dsubhead6%2Csubhead7%3Dsubhead7%2Csubhead8%3Dsubhead8%2Csubhead9%3Dsubhead9%2Ctext1%3Dtext1%2Ctext2%3Dtext2%2Ctext3%3Dtext3%2Ctext4%3Dtext4%2Ctext5%3Dtext5%2Ctext6%3Dtext6%2Ctext7%3Dtext7%2Ctext8%3Dtext8%2Ctext9%3Dtext9&limit=5000&format=json'
+    item_query = 'Special:CargoExport?tables=Infobox&fields=_pageName%3DPage,name,rarity,type,boundto,boundwhen,who,head1,head2,head3,head4,head5,head6,head7,head8,head9,subhead1,subhead2,subhead3,subhead4,subhead5,subhead6,subhead7,subhead8,subhead9,text1,text2,text3,text4,text5,text6,text7,text8,text9&limit=5000&format=json'
     #query for personal and reputation trait cargo table on the wiki
-    trait_query = "Special:CargoExport?tables=Traits&&fields=_pageName%3DPage%2Cname%3Dname%2Cchartype%3Dchartype%2Cenvironment%3Denvironment%2Ctype%3Dtype%2Cisunique%3Disunique%2Cmaster%3Dmaster%2Cdescription%3Ddescription%2Crequired__full%3Drequired%2Cpossible__full%3Dpossible&limit=2500&format=json"
-    ship_trait_query = "Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json"
+    # Traits.required,Traits.possible removed -- stowiki format unusual and we are not referencing it
+    trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&limit=2500&format=json'
+    ship_trait_query = 'Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json'
     #query for DOFF types and specializations
-    doff_query = "Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&limit=1000&offset=0&format=json"
+    doff_query = 'Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&limit=1000&offset=0&format=json'
     #query for Specializations and Reps
     reputation_query = 'Special:CargoExport?tables=Reputation&fields=Reputation.name,Reputation.environment,Reputation.boff,Reputation.color1,Reputation.color2,Reputation.description,Reputation.icon,Reputation.link,Reputation.released,Reputation.secondary&limit=1000&offset=0&format=json'
     #query for Boffskills
-    trayskill_query = "Special:CargoExport?tables=TraySkill&fields=TraySkill._pageName,TraySkill.name,TraySkill.activation,TraySkill.affects,TraySkill.description,TraySkill.description_long,TraySkill.rank1rank,TraySkill.rank2rank,TraySkill.rank3rank,TraySkill.recharge_base,TraySkill.recharge_global,TraySkill.region,TraySkill.system,TraySkill.targets,TraySkill.type&limit=1000&offset=0&format=json"
-    faction_query = "Special:CargoExport?tables=Faction&fields=Faction.playability,Faction.name,Faction._pageName,Faction.allegiance,Faction.faction,Faction.imagepeople,Faction.origin,Faction.quadrant,Faction.status,Faction.traits&limit=1000&offset=0&format=json"
+    trayskill_query = 'Special:CargoExport?tables=TraySkill&fields=TraySkill._pageName,TraySkill.name,TraySkill.activation,TraySkill.affects,TraySkill.description,TraySkill.description_long,TraySkill.rank1rank,TraySkill.rank2rank,TraySkill.rank3rank,TraySkill.recharge_base,TraySkill.recharge_global,TraySkill.region,TraySkill.system,TraySkill.targets,TraySkill.type&limit=1000&offset=0&format=json'
+    faction_query = 'Special:CargoExport?tables=Faction&fields=Faction.playability,Faction.name,Faction._pageName,Faction.allegiance,Faction.faction,Faction.imagepeople,Faction.origin,Faction.quadrant,Faction.status,Faction.traits&limit=1000&offset=0&format=json'
 
     #to prevent Infobox from loading the same element twice in a row
     displayedInfoboxItem = str()
@@ -412,6 +413,7 @@ class SETS():
         cache_base = self.resource_path(self.settings['folder']['local']) if local else self.get_folder_location('cache')
         override_base = self.get_folder_location('override')
         backup_base = self.get_folder_location('backups')
+        backup_loaded = False
         result = None
         interval = None
         if not os.path.exists(cache_base):
@@ -430,29 +432,31 @@ class SETS():
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
             if interval.days < 7 or local:
                 result = self.loadJsonFile(filename, url, designation, 'read')
+                backup_loaded = True
         elif not local:
             r = requests.get(url)
             try:
                 result = r.json()
+                self.logWriteSimple("fetchOrRequestJson", "save", 3, [filename, designation, url])
                 self.saveJsonFile(filename, designation, result)
-                self.logWriteSimple("fetchOrRequestJson", "save", 4, [filename, designation])
+
             except:
                 interval = None # do not clear cache
                 self.logWriteSimple("fetchOrRequestJson", "FAIL", 3, [filename, designation, url])
                 result = None
 
-
-        if not result:
-            self.recoverCacheFolder(designation+".json", 'cache')
-            result = self.loadJsonFile(filename, url, designation, 'read')
-            self.logWriteSimple("fetchOrRequestJson", "file-load", 3, [filename, designation])
-
-        if result is not None:
+        if result is not None and not backup_loaded:
             self.saveJsonFile(filenameBackup, designation, result)
             self.logWriteSimple("fetchOrRequestJson", "file-cache-save", 4, [filename, designation])
             # Needs to copy sometimes, not just move
             #if result is not None and interval is not None and interval.days >= 7:
             #    self.backupCacheFolder(designation + ".json")
+
+        if not result:
+            self.recoverCacheFolder(designation+".json", 'cache')
+            result = self.loadJsonFile(filename, url, designation, 'read')
+            backup_loaded = True
+            self.logWriteSimple("fetchOrRequestJson", "file-load", 3, [filename, designation])
 
         return result
 
@@ -1012,7 +1016,7 @@ class SETS():
         if True:
             cacheFile = open(cacheFileName, 'wb')
             pickle.dump(self.cache, cacheFile)
-            self.logWriteTransaction(cacheFileName, 'stored', '', '', 0)
+            self.logWriteTransaction(cacheFileName, 'stored-pickle', '', '', 0)
         #except:
         #    self.logWriteTransaction(cacheFileName, 'store-FAILURE', '', '', 0)
 
@@ -1280,7 +1284,10 @@ class SETS():
 
         if not name in self.cache['shipTraitsFull']:
             if "_pageName" in item:
-                obt = "T5" if item['traitdesc'] == desc or item['traitdesc2'] == desc or item['traitdesc3'] == desc else "T6"
+                obt = "T5" if ('traitdesc' in item and item['traitdesc'] == desc) \
+                              or ('traitdesc2' in item and item['traitdesc2'] == desc) \
+                              or ('traitdesc3' in item and item['traitdesc3'] == desc) \
+                    else "T6"
                 self.cache['shipTraitsFull'][name] = {"ship":item["_pageName"], "desc": self.deWikify(desc, leaveHTML=True), "image": self.imageFromInfoboxName(name), "link": self.wikihttp+item["_pageName"].replace(" ", "_"), "obtained": obt }
             elif "Page" in item and "name" in item:
                 if item["name"] in ["Arrest", "Command Frequency", "Demolition Teams", "Going the Extra Mile", "Non-Linear Progression", "Pedal to the Metal", "Predictive Algorithms", "Unconventional Tactics"]:

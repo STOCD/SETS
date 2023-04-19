@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SETS"
-version = "2023.4b191"
+version = "2023.4b192"
 authors = [
   { name="Mara 'Sizer' Morrigan", email="mara.mos714@gmail.com" },
   { name="Stephen Hill", email="stephen@zosimple.net" },
