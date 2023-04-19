@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.4b10'
+    version = '2023.4b190'
 
     daysDelayBeforeReattempt = 7
 
@@ -415,6 +415,7 @@ class SETS():
         result = None
         interval = None
         if not os.path.exists(cache_base):
+            self.logWriteSimple("fetchOrRequestJson", "PATHFAIL", 3, [cache_base])
             return
 
         filenameBackup = os.path.join(*filter(None, [backup_base, designation])) + ".json"
@@ -434,16 +435,21 @@ class SETS():
             try:
                 result = r.json()
                 self.saveJsonFile(filename, designation, result)
+                self.logWriteSimple("fetchOrRequestJson", "save", 4, [filename, designation])
             except:
                 interval = None # do not clear cache
-                result = self.loadJsonFile(filename, url, designation, 'read')
+                self.logWriteSimple("fetchOrRequestJson", "FAIL", 3, [filename, designation, url])
+                result = None
+
 
         if not result:
             self.recoverCacheFolder(designation+".json", 'cache')
             result = self.loadJsonFile(filename, url, designation, 'read')
+            self.logWriteSimple("fetchOrRequestJson", "file-load", 3, [filename, designation])
 
         if result is not None:
             self.saveJsonFile(filenameBackup, designation, result)
+            self.logWriteSimple("fetchOrRequestJson", "file-cache-save", 4, [filename, designation])
             # Needs to copy sometimes, not just move
             #if result is not None and interval is not None and interval.days >= 7:
             #    self.backupCacheFolder(designation + ".json")
@@ -1348,14 +1354,12 @@ class SETS():
         if 'traits' in self.cache and 'space' in self.cache['traits']:
             return self.cache['traits']
 
-        if self.traits is None:
-            return None
-
-        for item in list(self.traits):
-            if not 'chartype' in item or item['chartype'] != 'char':
-                continue
-            if 'type' in item and 'name' in item and 'description' in item and 'environment' in item:
-                self.precacheTraitSingle(item['name'], item['description'], item['environment'], item['type'])
+        if self.traits is not None:
+            for item in list(self.traits):
+                if not 'chartype' in item or item['chartype'] != 'char':
+                    continue
+                if 'type' in item and 'name' in item and 'description' in item and 'environment' in item:
+                    self.precacheTraitSingle(item['name'], item['description'], item['environment'], item['type'])
 
         for type in self.cache['traitsWithImages']:
             for environment in self.cache['traitsWithImages'][type]:
@@ -6320,6 +6324,7 @@ class SETS():
         sys.stderr.write('{}: '.format(now))
         sys.stderr.write('{}'.format(text))
         sys.stderr.write('\n')
+        sys.stderr.flush
 
     def requestWindowUpdateHold(self, count=50):
         if count == 0:
@@ -6505,17 +6510,27 @@ class SETS():
 
     def get_folder_location(self, subfolder=None):
         file_path = self.config_folder_location()
-
         if subfolder is not None and subfolder in self.settings['folder']:
-            file_path = os.path.join(file_path, self.settings['folder'][subfolder])
+            file_path = os.path.join(file_path, self.settings['folder'][subfolder]) + self.get_folder_suffix(subfolder)
         self.make_filename_path(file_path)
 
         if not os.path.exists(file_path):
             file_path = ''
             if subfolder in self.settings['folder']:
-                file_path = self.settings['folder'][subfolder]
+                file_path = self.settings['folder'][subfolder] + self.get_folder_suffix(subfolder)
 
         return file_path
+
+    def get_folder_suffix(self, subfolder):
+        """ Avoid storage overlaps between wiki sources """
+        if subfolder == 'cache' or subfolder == 'backups':
+            if self.args.stowiki or self.persistent['source_new_wiki']:
+                self.logWriteBreak("STOWIKI-SUFFIX", 3)
+                return '_stowiki'
+            else:
+                self.logWriteBreak("FANDOM-SUFFIX", 3)
+        else:
+            return ''
 
     def get_file_location(self, file_type):
         file_args = None
