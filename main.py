@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.4b190'
+    version = '2023.4b191'
 
     daysDelayBeforeReattempt = 7
 
@@ -6511,7 +6511,8 @@ class SETS():
     def get_folder_location(self, subfolder=None):
         file_path = self.config_folder_location()
         if subfolder is not None and subfolder in self.settings['folder']:
-            file_path = os.path.join(file_path, self.settings['folder'][subfolder]) + self.get_folder_suffix(subfolder)
+            file_path = os.path.join(file_path, self.settings['folder'][subfolder])
+            if file_path is not None: file_path += self.get_folder_suffix(subfolder)
         self.make_filename_path(file_path)
 
         if not os.path.exists(file_path):
@@ -6529,8 +6530,8 @@ class SETS():
                 return '_stowiki'
             else:
                 self.logWriteBreak("FANDOM-SUFFIX", 3)
-        else:
-            return ''
+
+        return ''
 
     def get_file_location(self, file_type):
         file_args = None
