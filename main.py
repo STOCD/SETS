@@ -84,6 +84,11 @@ class SETS():
     wikiImages = wikihttp+wikiImagesText
 
     #query for ship cargo table on the wiki
+    
+    """-------------------------------------
+    MANUAL OVERRIDE FOR SHIP CARGO HARDCODED
+    ------------------------------------------"""
+
     ship_query = 'Special:CargoExport?tables=Ships&fields=_pageName%3DPage,name,image,fc,tier,type,hull,hullmod,shieldmod,turnrate,impulse,inertia,powerall,powerweapons,powershields,powerengines,powerauxiliary,powerboost,boffs,fore,aft,equipcannons,devices,consolestac,consoleseng,consolessci,uniconsole,t5uconsole,experimental,secdeflector,hangars,abilities,displayprefix,displayclass,displaytype,factionlede&limit=2500&format=json'
     #query for ship equipment cargo table on the wiki
     item_query = 'Special:CargoExport?tables=Infobox&fields=_pageName%3DPage,name,rarity,type,boundto,boundwhen,who,head1,head2,head3,head4,head5,head6,head7,head8,head9,subhead1,subhead2,subhead3,subhead4,subhead5,subhead6,subhead7,subhead8,subhead9,text1,text2,text3,text4,text5,text6,text7,text8,text9&limit=5000&format=json'
@@ -6742,7 +6747,7 @@ class SETS():
         self.traits = self.fetchOrRequestJson(self.wikihttp+SETS.trait_query, "traits")
         self.shiptraits = self.fetchOrRequestJson(self.wikihttp+SETS.ship_trait_query, "starship_traits")
         self.doffs = self.fetchOrRequestJson(self.wikihttp+SETS.doff_query, "doffs")
-        self.ships = self.fetchOrRequestJson(self.wikihttp+SETS.ship_query, "ship_list")
+        self.ships = self.fetchOrRequestJson(self.wikihttp_current+SETS.ship_query, "ship_list") # manual override to have new ships available while other cargo tables are still drawn from the old wiki
         self.reputations = self.fetchOrRequestJson(self.wikihttp+SETS.reputation_query, "reputations")
         self.trayskills = self.fetchOrRequestJson(self.wikihttp+SETS.trayskill_query, "trayskills")
         self.factions = self.fetchOrRequestJson(self.wikihttp+SETS.faction_query, "factions")
