@@ -13,7 +13,7 @@ A Star Trek Online build tool in Python
 ## Installing for the script (if not using Application version)
 All versions:
 - Start with a folder you want to install SETS into (this will create a `SETS` folder at your current location)
-- Download the base image cache: <https://stobuilds.com/SETS/downloads/images.zip>
+- Download the base image cache: <https://stobuilds.com/SETS/files/images.zip>
 
 
 ### Windows:
