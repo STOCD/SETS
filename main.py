@@ -117,13 +117,14 @@ class SETS():
                        "Intelligence Officer": "Predictive Algorithms",
                        "Strategist": "Unconventional Tactics"}
 
-    #available recruits and their respective starship traits
+    # available recruits and their respective starship traits
     recruits = {"Klingon Recruit": "Hunter's Instinct",
                 "Delta Recruit": "Temporal Insight",
                 "Temporal Agent": "Critical Systems"}
 
-    #conversion from self.build['equipment'] keys to self.cache['equipment'] keys
-    keys = {"foreWeapons": "Ship Fore Weapon",
+    keys = {
+            # conversion from self.build keys to self.cache['equipment'] keys
+            "foreWeapons": "Ship Fore Weapon",
             "aftWeapons": "Ship Aft Weapon",
             "deflector": "Ship Deflector Dish",
             "engines": "Impulse Engine",
@@ -143,8 +144,18 @@ class SETS():
             "groundWeapons": "Ground Weapon",
             "groundDevices": "Ground Device",
             "groundKitModules": "Kit Module",
-            "hangars": "Hangar Bay"
-
+            "hangars": "Hangar Bay",
+            
+            # conversion from self.build keys to self.cache keys
+            'starshipTrait': 'shipTraits',
+            'personalSpaceTrait': 'traits',
+            'personalSpaceTrait2': 'traits',
+            'spaceRepTrait': 'traits',
+            'activeRepTrait': 'traits',
+            'personalGroundTrait': 'traits',
+            'personalGroundTrait2': 'traits',
+            'groundRepTrait': 'traits',
+            'groundActiveRepTrait': 'traits',
     }
 
     # Needs fonts, padx, pady, possibly others
@@ -929,6 +940,7 @@ class SETS():
         v['image'] = image
         win.destroy()
 
+    # deprecated
     def makeRedditTable(self, c0, c1, c2:list = [], c3:list = [], alignment:list = [":---", ":---", ":---"]):
         """Creates Markdown formatted table from lists containing the column elements and an alignment list"""
         # 4 columns
@@ -963,15 +975,16 @@ class SETS():
             result = result + "{0} | {1} | {2}\n".format(c0[i],c1[i],c2[i])
         return result
 
+    # deprecated
     def makeRedditColumn(self, c0, length):
         if length == 0: return []
         return c0+['&nbsp;']*(length-len(c0))+['--------------']
 
-    def preformatRedditEquipment(self, key,len): #self.cache['equipment'][key][name]
+    # deprecated
+    def preformatRedditEquipment(self, key, len): #self.cache['equipment'][key][name]
         equipment = list()
         for item in self.build[key]:
             if item is not None:
-                print(self.keys, key, item)
                 equipment.append("[{0} {1} {2}]({3})".format(item["item"], item['mark'], ''.join(item['modifiers']), self.getWikiURL(self.cache['equipment'][self.keys[key]][item["item"]]['Page'])))
         return equipment[:len]
         #return ["{0} {1} {2}".format(item['item'], item['mark'], ''.join(item['modifiers'])) for item in self.build[key] if item is not None][:len]
@@ -2639,11 +2652,11 @@ class SETS():
             self.logWriteBreak('IMPORT PROCESSING START')
             logNote = '{} (fields:[{}=>{}]='.format(' (FORCE LOAD)' if force else '', len(buildRevisionCurrent), len(self.build))
             self.build.update(buildRevisionCurrent)
-            self.repair_build()
             logNote = logNote+'{} merged'.format(len(self.build))
 
             self.resetBackend(rebuild=True)
             self.resetBuildFrames()
+            self.repair_build()
             self.setupCurrentBuildFrames()
             self.resetSkillCountAfterImport()
 
@@ -2657,12 +2670,34 @@ class SETS():
             return result
 
     def repair_build(self):
-        """ Repair a typo that was around for a while """
+        """- Repair a typo that was around for a while 
+        - removes excess entries from equipment lists in self.build to fit the current ships slot numbers"""
+
         if type(self.build) is dict \
                 and 'hagars' in self.build and type(self.build['hagars']) is list \
-                and ('hangars' not in self.build or not len(self.build['hangars'])):
+                and ('hangars' not in self.build or not len(self.build['hangars'])):                                   
             self.build['hangars'] = self.build['hagars']
             self.logWriteSimple('build', 'REPAIR hagars->hangars', 1)
+
+        if self.backend['shipHtml'] is not None:
+            shipHtml = self.backend['shipHtml']
+            variable_slots = {
+                'foreWeapons': 'fore',
+                'aftWeapons': 'aft',
+                'secdef': 'secdeflector',
+                'experimental': 'experimental',
+                'engConsoles': 'consoleseng',
+                'sciConsoles': 'consolessci',
+                'tacConsoles': 'consolestac',
+                'hangars': 'hangars'
+            }
+            for key in variable_slots.keys():
+                self.build[key] = self.build[key][:shipHtml[variable_slots[key]]]
+            if '-X' in self.build['tier']: extra_slot = 1
+            else: extra_slot = 0
+            self.build['devices'] = self.build['devices'][:shipHtml['devices']+extra_slot]
+            if 'Innovation Effects' in shipHtml['abilities']: extra_slot += 1
+            self.build['uniConsoles'] = self.build['uniConsoles'][:extra_slot]
 
     def filenameDefault(self):
         name = self.build['playerShipName'] if 'playerShipName' in self.build else ''
@@ -2949,12 +2984,13 @@ class SETS():
 
         self.auto_save_queue()
 
-    def getGroundSkillNode(self, ptuple):
+    def get_ground_skill_node(self, ptuple):
         ptree, pside = ptuple
         for skill in self.cache['skills']['ground']:
             if skill['tree']==ptree and skill['side']==pside:
                 return skill
 
+    # deprecated
     def redditExportDisplayGroundSkills(self, textframe: Text):
         if not len(self.build['skilltree']['ground'])==20:
             return
@@ -2963,7 +2999,7 @@ class SETS():
         column1 = list()
         grsktr = [(0,""), (0,"l"), (0,"r"), (1,""), (1,"l"), (1,"r"), (2,""), (2,"r"), (3,""), (3,"l")]
         for t in grsktr:
-            node = self.getGroundSkillNode(t)
+            node = self.get_ground_skill_node(t)
             column0 = column0 + ["[**{0}**]({1})".format(node["nodes"][0]['name'], node["link"])]
             column0 = column0 + self.makeRedditColumn(["**x**"] if self.build['skilltree']["ground"][node["nodes"][0]['name']] == True else [None], 1)
             column1 = column1 + ["[**{0}**]({1})".format(node["nodes"][1]['name'], node["link"])]
@@ -2974,6 +3010,7 @@ class SETS():
         textframe.insert(END, redditstring)
         textframe.configure(state=DISABLED)
 
+    # deprecated
     def redditExportDisplaySpaceSkills(self, textframe: Text):
         if not len(self.build['skilltree']["space"]) == 90:
             return
@@ -3012,6 +3049,7 @@ class SETS():
         textframe.insert(END, redditstring)
         textframe.configure(state=DISABLED)
 
+    # deprecated
     def redditExportDisplayGround(self, textframe:Text):
         if not self.build['eliteCaptain']:
             elite = 'No'
@@ -3080,6 +3118,396 @@ class SETS():
         textframe.insert(END, redditString)
         textframe.configure(state=DISABLED)
 
+    def create_reddit_table(self, table: list, alignment: list = []):
+        """creates for reddit markdown preformatted table from 2-dimensional list-matrix 
+        - outer list contains lists that each represent a row of the table
+        - first inner lists length determines number of columns
+        - list may only be filled with strings
+        - empty and missing entries will be empty fields"""
+
+        if not isinstance(table[0], list): 
+            raise TypeError('Input parameter \"table\" has to be a list containing lists, forming a matrix')
+        n_rows = len(table)
+        n_cols = len(table[0])
+        text = '|'
+        for col in range(0, n_cols):
+            text += f'{table[0][col]}|'
+        text += '\n|'
+        if alignment == []:
+            for col in range(0, n_cols):
+                text += ':-|'
+        else:
+            for token in alignment:
+                text += token + '|'
+        for row in range(1, n_rows):
+            text += '\n|'
+            for col in range(0, n_cols):
+                try:
+                    if table[row][col] is not None and not table[row][col] == '':
+                        text += table[row][col] + '|'
+                    else:
+                        text += '&nbsp;|'
+                except IndexError:
+                    text += '&nbsp;|'
+        return text
+                
+    def reddit_equipment_table_section(self, key, headline, additional_columns=1, single=False):
+        """returns list matrix containing all equipment items of given key
+        (preformatted for reddit export)
+        - key as in self.build[key]
+        - single=True for creating a single row without dash delimiter"""
+        section = [['**'+headline+'**']]
+
+        # single-line
+        if single:
+            item = self.build[key][0]
+            section[0].append((f'''[{item['item']} {item['mark']} {''.join(item['modifiers'])}]'''
+                f'''({self.getWikiURL(self.cache['equipment'][self.keys[key]][item['item']]['Page'])})'''))
+            return section
+
+        # multi-line
+        for i in range(0, len(self.build[key])-1):
+            section.append(['&nbsp;'])
+        section.append(['--------------', '--------------'] + ['&nbsp;']*additional_columns)
+        for i, item in enumerate(self.build[key]):
+            if item is not None:
+                section[i].append((f'''[{item['item']} {item['mark']} {''.join(item['modifiers'])}]'''
+                    f'''({self.getWikiURL(self.cache['equipment'][self.keys[key]][item['item']]['Page'])})'''))
+                section[i] += ['&nbsp;'] * additional_columns
+            else:
+                section[i] += ['&nbsp;'] * (additional_columns + 1 )
+        return section
+
+    def reddit_boff_table_section(self, key, headline, additional_columns=1):
+        """returns list matrix containing all boff abilities of given key
+        (preformatted for reddit export)
+        - key as in self.build['boffs'][key]
+        - headline = rank and profession of the boff"""
+        section = [['**'+headline+'**']]
+        for i in range(0, len(self.build['boffs'][key])-1):
+            section.append(['&nbsp;'])
+        section.append(['--------------', '--------------'] + ['&nbsp;']*additional_columns)
+        for i, ability in enumerate(self.build['boffs'][key]):
+            if ability is not None:
+                section[i].append((f'''[{ability}]({self.getWikiURL('Ability: '+ability)})'''))
+                section[i] += ['&nbsp;'] * additional_columns
+            else:
+                section[i] += ['&nbsp;'] * (additional_columns + 1)
+        return section
+
+
+    def reddit_trait_table_section(self, key, show_descriptions=False, subkey=''):
+        """returns list matrix containing all traits of given key
+        (preformatted for reddit export)
+        - key as in self.build[key]
+        - trait descriptions optional
+        - optional subkey as in self.cache[][subkey][]"""
+        section = []
+        for trait in self.build[key]:
+            if trait is None: continue
+            if show_descriptions:
+                if subkey != '':
+                    raw_desc = self.cache[self.keys[key]][subkey][trait['item']].strip()
+                else:
+                    raw_desc = self.cache[self.keys[key]][trait['item']].strip()
+                desc = self.compensateInfoboxString(raw_desc).replace('\n', ' ')
+            else:
+                desc = '&nbsp;'
+            section.append([f'''[{trait['item']}]({self.getWikiURL('Trait: '+trait['item'])})''', desc, '&nbsp;'])
+        return section
+
+    def reddit_space_skill_table_section(self, skill_node):
+        """returns list matrix containing a representation of the given space skill
+        - skill_node is the skill dict found in self.cache['skills']['space'][rank], that contains
+        information about a single skill
+        - environment: space or ground"""
+
+        sktr = self.build['skilltree']['space'] # shortcut
+        dashes = ['--------------'] * 4
+
+        # All three nodes are the same skill (levels 1, 2, 3 respectively)
+        if skill_node['linear'] == 0:
+            skill_name = f'''[**{skill_node['skill']}**]({skill_node['link']})'''
+            basic = '**x**' if sktr[skill_node['skill'] + ' 1'] else '&nbsp;'
+            improved = '**x**' if sktr[skill_node['skill'] + ' 2'] else '&nbsp;'
+            advanced = '**x**' if sktr[skill_node['skill'] + ' 3'] else '&nbsp;'
+            section = [[skill_name, basic, improved, advanced], dashes]
+
+        # Two nodes are the same skill (levels 1, 2 respectively), the third is a different skill
+        elif skill_node['linear'] == 1:
+            basic_name = f'''[{skill_node['skill'][0]}]({skill_node['link'][0]})'''
+            improved_name = f'''[Improved {skill_node['skill'][0]}]({skill_node['link'][1]})'''
+            advanced_name = f'''[{skill_node['skill'][2]}]({skill_node['link'][2]})'''
+            basic = '**x**' if sktr[skill_node['skill'][0] + ' 1'] else '&nbsp;'
+            improved = '**x**' if sktr[skill_node['skill'][1] + ' 2'] else '&nbsp;'
+            advanced = '**x**' if sktr[skill_node['skill'][2]] else '&nbsp;'
+            section = [['&nbsp;', basic_name, improved_name, advanced_name],
+                       [f'**{basic_name}**', basic, improved, advanced], dashes]
+
+        # All three nodes are different skills
+        elif skill_node['linear'] == 2:
+            basic_name = f'''[{skill_node['skill'][0]}]({skill_node['link']})'''
+            improved_name = f'''[{skill_node['skill'][1]}]({skill_node['link']})'''
+            advanced_name = f'''[{skill_node['skill'][2]}]({skill_node['link']})'''
+            basic = '**x**' if sktr[skill_node['skill'][0]] else '&nbsp;'
+            improved = '**x**' if sktr[skill_node['skill'][1]] else '&nbsp;'
+            advanced = '**x**' if sktr[skill_node['skill'][2]] else '&nbsp;'
+            section = [['&nbsp;', basic_name, improved_name, advanced_name],
+                       [f'**{basic_name}**', basic, improved, advanced], dashes]
+
+        return section
+    
+    def reddit_export_space_equipment(self, textframe: Text): 
+        """creates Reddit export text from current space build and displays it inside given Text widget"""
+        if self.backend['shipHtml'] == None or self.backend['shipHtml'] == '': return
+        if not self.build['eliteCaptain']: elite = 'No'
+        elif self.build['eliteCaptain']: elite = 'Yes'
+        else: elite = 'You should not be seeing this... PANIC!'
+
+        # General info
+        r_str = ('''# SPACE\n\n**Basic Information** | **Data** \n:--- | :--- \n'''
+            	f'''*Ship Name* | {self.backend['playerShipName'].get()} \n'''
+                f'''*Ship Class* | {self.build['ship']} \n'''
+                f'''*Ship Tier* | {self.build['tier']} \n'''
+                f'''*Player Career* | {self.build['career']} \n'''
+                f'''*Elite Captain* | {elite} \n'''
+                f'''*Primary Specialization* | {self.build['specPrimary']} \n'''
+                f'''*Secondary Specialization* | {self.build['specSecondary']}\n\n\n''')
+        
+        # Description
+        if self.build['playerShipDesc'] != '':
+            r_str += f'''## Build Description\n\n{self.build['playerShipDesc']}\n\n\n'''
+        
+        # Ship Equipment
+        r_str += '## Ship Equipment\n\n'
+        equip_list = [['****Basic Information****', '****Component****', '****Notes****']]
+        equip_list += self.reddit_equipment_table_section('foreWeapons', 'Fore Weapons')
+        equip_list += self.reddit_equipment_table_section('aftWeapons', 'Aft Weapons')
+        equip_list += self.reddit_equipment_table_section('deflector', 'Deflector', single=True)
+        if self.backend['shipHtml']['secdeflector'] == 1:
+            equip_list += self.reddit_equipment_table_section('secdef', 'Secondary Deflector', single=True)
+        equip_list += self.reddit_equipment_table_section('engines', 'Impulse Engines', single=True)
+        if "Warbird" in self.build['ship'] or "Aves" in self.build['ship']:
+            singularity_core = self.build['warpCore'][0]
+            singularity_core_text = (f'''[{singularity_core['item']} {singularity_core['mark']} '''
+                f'''{''.join(singularity_core['modifiers'])}]'''
+                f'''({self.getWikiURL(self.cache['equipment']['Singularity'][singularity_core['item']]['Page'])})''')
+            equip_list += [['**Singularity Core**', singularity_core_text , '&nbsp']]
+        else:
+            equip_list += self.reddit_equipment_table_section('warpCore', 'Warp Core', single=True)
+        equip_list += self.reddit_equipment_table_section('devices', 'Devices')
+        if self.backend['shipHtml']['experimental'] == 1:
+            equip_list += self.reddit_equipment_table_section('experimental', 'Experimental Weapon')
+        if len(self.build['uniConsoles']) > 0:
+            equip_list += self.reddit_equipment_table_section('uniConsoles', 'Universal Consoles')
+        equip_list += self.reddit_equipment_table_section('engConsoles', 'Engineering Consoles')
+        equip_list += self.reddit_equipment_table_section('sciConsoles', 'Science Consoles')
+        equip_list += self.reddit_equipment_table_section('tacConsoles', 'Tactical Consoles')
+        if self.backend['shipHtml']['hangars'] is not None and self.backend['shipHtml']['hangars'] != '':
+            equip_list += self.reddit_equipment_table_section('hangars', 'Hangars')
+        r_str += self.create_reddit_table(equip_list)
+
+        # Bridge officer stations
+        r_str += '\n\n\n## Bridge Officer Stations\n\n'
+        boff_list = [['****Profession****', '****Power****', '****Notes****']]
+        for spaceboff in self.build['boffs'].keys():
+            if "spaceboff" in spaceboff.lower():
+                boff_name = self.backend['shipHtml']['boffs'][int(spaceboff[-1])].replace("-", " / ")
+                boff_list += self.reddit_boff_table_section(spaceboff, boff_name)
+        r_str += self.create_reddit_table(boff_list)
+        
+        # Duty officers
+        r_str += '\n\n\n## Active Space Duty Officers\n\n'
+        doff_list = [['****Specialization****', '****Power****', '****Notes****']]
+        for spacedoff in self.build['doffs']['space']:
+            if spacedoff is not None:
+                doff_list.append([spacedoff['spec'], spacedoff['effect'], '&nbsp;'])
+        r_str += self.create_reddit_table(doff_list)
+
+        # Traits
+        show_desc = self.persistent['showRedditDescriptions'] == 'Yes'
+        r_str += '\n\n\n##    Traits\n\n'
+
+        trait_list = [['****Starship Traits****', '****Description****', '****Notes****']]
+        trait_list += self.reddit_trait_table_section('starshipTrait', show_desc)
+        r_str += self.create_reddit_table(trait_list)
+        r_str += '\n\n&#x200B;\n\n'
+
+        trait_list = [['****Personal Space Traits****', '****Description****', '****Notes****']]
+        trait_list += self.reddit_trait_table_section('personalSpaceTrait', show_desc, subkey='space')
+        trait_list += self.reddit_trait_table_section('personalSpaceTrait2', show_desc, subkey='space')
+        r_str += self.create_reddit_table(trait_list)
+        r_str += '\n\n&#x200B;\n\n'
+
+        trait_list = [['****Space Reputation Traits****', '****Description****', '****Notes****']]
+        trait_list += self.reddit_trait_table_section('spaceRepTrait', show_desc, subkey='space')
+        r_str += self.create_reddit_table(trait_list)
+        r_str += '\n\n&#x200B;\n\n'
+
+        trait_list = [['****Active Space Reputation Traits****', '****Description****', '****Notes****']]
+        trait_list += self.reddit_trait_table_section('activeRepTrait', show_desc, subkey='space')
+        r_str += self.create_reddit_table(trait_list)
+
+        
+        # insertion into textframe
+        textframe.configure(state=NORMAL)
+        textframe.delete('1.0', END)
+        textframe.insert(END, r_str)
+        textframe.configure(state=DISABLED)
+
+    def reddit_export_ground_equipment(self, textframe: Text):
+        """creates Reddit export text from current ground build and displays it inside given Text widget"""
+        if not self.build['eliteCaptain']: elite = 'No'
+        elif self.build['eliteCaptain']: elite = 'Yes'
+        else: elite = 'You should not be seeing this... PANIC!'
+
+        # general information
+        r_str = (f'''# **Ground**\n\n**Basic Information** | **Data** \n:--- | :--- \n'''
+                f'''*Player Name* | {self.backend['playerName'].get()} \n'''
+                f'''*Player Species* | {self.build['species']} \n'''
+                f'''*Player Career* | {self.build['career']} \n'''
+                f'''*Elite Captain* | {elite} \n'''
+                f'''*Primary Specialization* | {self.build['specPrimary']} \n'''
+                f'''*Secondary Specialization* | {self.build['specSecondary']}\n\n\n''')
+        if self.build['playerDesc'] != '':
+            r_str += f''''## Build Description\n\n{self.build['playerDesc']}\n\n\n'''
+
+        # Equipment
+        r_str += '## Personal Equipment\n\n'
+        components = (('Kit:', 'groundKit'), ('Body Armor:', 'groundArmor'), ('EV Suit:', 'groundEV'),
+                      ('Shields:', 'groundShield'), ('Weapons:', 'groundWeapons'))
+        equip_list = [['&nbsp;', '****Component****', '****Notes****']]
+        for name, key in components:
+            equip_list += self.reddit_equipment_table_section(key, name, single=True)
+        equip_list += self.reddit_equipment_table_section('groundDevices', 'Devices:')
+        r_str += self.create_reddit_table(equip_list)
+
+        r_str += '\n\n\n## Kit Modules\n\n'
+        kit_list = [['****Name****', '****Notes****']]
+        for kit in self.build['groundKitModules']:
+            if kit is not None:
+                kit_name = (f'''[{kit['item']} {kit['mark']} '''
+                    f'''{''.join(kit['modifiers'])}]'''
+                    f'''({self.getWikiURL(self.cache['equipment']['Kit Module'][kit['item']]['Page'])})''')
+                kit_list += [[kit_name, '&nbsp;']]
+        r_str += self.create_reddit_table(kit_list)
+
+        # Traits
+        show_desc = self.persistent['showRedditDescriptions'] == 'Yes'
+        r_str += '\n\n\n## Traits\n\n'
+
+        trait_list = [['****Personal Ground Traits****', '****Description****', '****Notes****']]
+        trait_list += self.reddit_trait_table_section('personalGroundTrait', show_desc, subkey='ground')
+        trait_list += self.reddit_trait_table_section('personalGroundTrait2', show_desc, subkey='ground')
+        r_str += self.create_reddit_table(trait_list)
+        r_str += '\n\n&#x200B;\n\n'
+
+        trait_list = [['****Ground Reputation Traits****', '****Description****', '****Notes****']]
+        trait_list += self.reddit_trait_table_section('groundRepTrait', show_desc, subkey='ground')
+        r_str += self.create_reddit_table(trait_list)
+        r_str += '\n\n&#x200B;\n\n'
+
+        trait_list = [['****Active Ground Reputation Traits****', '****Description****', '****Notes****']]
+        trait_list += self.reddit_trait_table_section('groundActiveRepTrait', show_desc, subkey='ground')
+        r_str += self.create_reddit_table(trait_list)
+
+        # Duty Officers
+        r_str += '\n\n\n## Active Ground Duty Officers\n\n'
+        doff_list = [['****Specialization****', '****Power****', '****Notes****']]
+        for spacedoff in self.build['doffs']['ground']:
+            if spacedoff is not None:
+                doff_list.append([spacedoff['spec'], spacedoff['effect'], '&nbsp;'])
+        r_str += self.create_reddit_table(doff_list)
+
+        # Away Team
+        r_str += '\n\n\n## Away Team\n\n'
+        away_list = [['****Profession****', '****Power****', '****Notes****']]
+        for groundboff in self.build['boffs'].keys():
+            if 'groundboff' in groundboff.lower():
+                boffname = (f'''#{int(groundboff[-1])+1}: '''
+                            f'''{self.build['boffseats']['ground'][int(groundboff[-1])]} / ''' 
+                            f'''{self.build['boffseats']['ground_spec'][int(groundboff[-1])]}''')
+                away_list += self.reddit_boff_table_section(groundboff, boffname)
+        r_str += self.create_reddit_table(away_list)
+
+        # insertion into textframe
+        textframe.configure(state=NORMAL)
+        textframe.delete('1.0', END)
+        textframe.insert(END, r_str)
+        textframe.configure(state=DISABLED)
+
+    def reddit_export_space_skills(self, textframe: Text):
+        """creates Reddit export text from current space skill tree and displays it inside given Text widget"""
+        # skills
+        if not len(self.build['skilltree']['space']) == 90: return
+        r_str = '## **Space Skills**\n\n'
+        skill_list = [['&nbsp;', '****Base:****', '****Improved:****', '****Advanced:****']]
+        for rank in self.cache['skills']['space']:
+            for skill in self.cache['skills']['space'][rank]:
+                skill_list += self.reddit_space_skill_table_section(skill)
+        r_str += self.create_reddit_table(skill_list, [':-', ':-:', ':-:', ':-:'])
+        
+        # unlocks
+        unlocks = {'Tactical':[], 'Science':[], 'Engineering':[]}
+        build_data = self.build['skilltree']['space_unlocks'] # shortcut
+        for profession in unlocks.keys():
+            for j in ('0', '1', '2', '3', '4'):
+                if (profession+j) in build_data.keys() and build_data[profession+j] != '':
+                    unlocks[profession].append(build_data[profession+j])
+                else: break
+        if (len(unlocks['Tactical']) + len(unlocks['Science']) + len(unlocks['Engineering'])) > 0:
+            r_str += '\n\n## Unlocks:\n\n'
+            for profession in unlocks.keys():
+                if len(unlocks[profession]) > 0:
+                    r_str += f'**{profession}:**\n'
+                    for unlock in unlocks[profession]:
+                        r_str += f'- {unlock}\n'
+                    if f'{profession}_ultimate_options' in build_data.keys() and \
+                            len(build_data[f'{profession}_ultimate_options']) > 0 and \
+                            build_data[f'{profession}_ultimate_options'][0] != '':
+                        for ult in build_data[f'{profession}_ultimate_options']:
+                            if ult != '':
+                                r_str += f'- {ult}\n'
+                    r_str += '\n\n'
+
+        # insertion into text frame
+        textframe.configure(state=NORMAL)
+        textframe.delete('1.0', END)
+        textframe.insert(END, r_str)
+        textframe.configure(state=DISABLED)
+
+    def reddit_export_ground_skills(self, textframe: Text):
+        """creates Reddit export text from current ground skill tree and displays it inside given Text widget"""
+        # skills
+        if not len(self.build['skilltree']['ground'])==20: return
+        r_str = '## Ground Skills\n\n'
+        ground_data = self.build['skilltree']['ground'] # shortcut
+        dashes = ['--------------'] * 2
+        skill_list = [['****Basic:****', '****Improved:****']]
+        grsktr = [(0,""), (0,"l"), (0,"r"), (1,""), (1,"l"), (1,"r"), (2,""), (2,"r"), (3,""), (3,"l")]
+        for t in grsktr:
+            node = self.get_ground_skill_node(t)
+            basic_name = f'''[**{node['nodes'][0]['name']}**]({node['link']})'''
+            improved_name = f'''[**{node['nodes'][1]['name']}**]({node['link']})'''
+            basic = '**x**' if ground_data[node['nodes'][0]['name']] else '&nbsp;'
+            improved = '**x**' if ground_data[node['nodes'][1]['name']] else '&nbsp;'
+            skill_list += [[basic_name, improved_name], [basic, improved], dashes]
+        r_str += self.create_reddit_table(skill_list)
+
+        # unlocks
+        if self.build['skilltree']['ground_unlocks']: # evaluates to False if dict is empty
+            if self.build['skilltree']['ground_unlocks']['Ground0'] != '':
+                r_str += '\n\n## Unlocks\n\n'
+                for unlock in self.build['skilltree']['ground_unlocks'].values():
+                    r_str += f'- {unlock}\n'
+
+        # insertion into text frame
+        textframe.configure(state=NORMAL)
+        textframe.delete('1.0', END)
+        textframe.insert(END, r_str)
+        textframe.configure(state=DISABLED)
+    
+    # deprecated
     def redditExportDisplaySpace(self, textframe: Text):
         if self.backend['shipHtml'] == None or self.backend['shipHtml'] == '':
             return
@@ -3181,29 +3609,28 @@ class SETS():
         textframe.insert(END, redditString)
         textframe.configure(state=DISABLED)
 
-    def exportRedditCallback(self, event=None):
+    def export_reddit_callback(self, event=None):
         if self.in_splash():
             return
         redditWindow = Toplevel(self.window, bg=self.theme["app"]["bg"])
+        redditWindow.title("Reddit Export")
         redditWindow.grab_set()
         borderframe = Frame(redditWindow, bg=self.theme["app"]["fg"])
         borderframe.pack(fill=BOTH, expand=True, padx=15, pady=15)
         redditText = Text(borderframe, bg=self.theme["app"]["fg"], fg="#ffffff", relief="flat")
         btfr = Frame(borderframe)
         btfr.pack(side='top', fill='x')
-        redditbtspace = HoverButton(btfr,text="SPACE", font=self.theme['button_medium']['font_object'],  bg=self.theme['button_medium']['bg'],fg=self.theme['button_medium']['fg'], activebackground=self.theme['button_medium']['hover'], padx = 0, command=lambda: self.redditExportDisplaySpace(redditText))
-        redditbtground = HoverButton(btfr, text="GROUND", font =self.theme['button_medium']['font_object'], bg=self.theme['button_medium']['bg'], fg=self.theme['button_medium']['fg'], activebackground=self.theme['button_medium']['hover'],padx = 0, command=lambda: self.redditExportDisplayGround(redditText))
-        redditbtsskill = HoverButton(btfr, text="SPACE SKILLS", font =self.theme['button_medium']['font_object'], bg=self.theme['button_medium']['bg'], fg=self.theme['button_medium']['fg'], activebackground=self.theme['button_medium']['hover'],padx = 0, command=lambda: self.redditExportDisplaySpaceSkills(redditText))
-        redditbtgskill = HoverButton(btfr, text="GROUND SKILLS", font =self.theme['button_medium']['font_object'], bg=self.theme['button_medium']['bg'], fg=self.theme['button_medium']['fg'], activebackground=self.theme['button_medium']['hover'], padx= 0, command=lambda: self.redditExportDisplayGroundSkills(redditText))
-        redditbtspace.grid(row=0,column=0,sticky="nsew")
-        redditbtground.grid(row=0,column=1,sticky="nsew")
-        redditbtsskill.grid(row=0, column=2, sticky="nsew")
-        redditbtgskill.grid(row=0, column=3, sticky="nsew")
-        for i in range(0, 4):
-            btfr.grid_columnconfigure(i,weight=1)
+        switch_buttons = {
+            'default': {'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 
+                'pad_x': 0, 'sticky': 'nsew'},
+            'SPACE': {'type': 'button_block', 'callback': lambda: self.reddit_export_space_equipment(redditText)},
+            'GROUND': {'type': 'button_block', 'callback': lambda: self.reddit_export_ground_equipment(redditText)},
+            'SPACE SKILLS': {'type': 'button_block', 'callback': lambda: self.reddit_export_space_skills(redditText)},
+            'GROUND SKILLS': {'type': 'button_block', 'callback': lambda: self.reddit_export_ground_skills(redditText)}
+        }
+        self.create_item_block(btfr, theme=switch_buttons, shape='row', elements=1)
         redditText.pack(fill=BOTH, expand=True)
-        self.redditExportDisplaySpace(redditText)
-        redditWindow.title("Reddit Export")
+        self.reddit_export_space_equipment(redditText)
         redditWindow.mainloop()
 
     def recoverCacheFolder(self, filename=None, destination='cache'):
@@ -4522,6 +4949,9 @@ class SETS():
         text = text.replace('<li> ', '\n*')
         text = text.replace(' <li>', '\n*')
         text = text.replace('<li>', '\n*')
+        text = text.replace('</li>', '')
+        text = text.replace('<ul>', '')
+        text = text.replace('</ul>', '')
         text = text.replace(" *", "*")
         text = text.replace("<small>", "")
         text = text.replace("</small>", "")
@@ -4890,7 +5320,7 @@ class SETS():
 
 
 
-    def setupInfoboxFrame(self, item, key, environment='space', tooltip=None, duplicateTooltipDisplay=False): #qwer <- thats for me to get here quickly lol
+    def setupInfoboxFrame(self, item, key, environment='space', tooltip=None, duplicateTooltipDisplay=False): 
         """Set up infobox frame with given item"""
         if item is not None and 'item' in item:
             name = item['item']
@@ -5571,8 +6001,8 @@ class SETS():
         buttonSettings.grid(row=0, column=col, sticky='nsew')
         settingsMenuSettings = {
             'default': {'sticky': 'n', 'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
-            'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.exportRedditCallback},
-            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback},
+            'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.export_reddit_callback},
+            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback}, # libraray button
             'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback, 'image': self.three_bars},
         }
 
