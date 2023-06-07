@@ -4986,11 +4986,27 @@ class SETS():
 
         return text
 
-    def formattedInsert(self, ptext: str, pfamily, psize, pweight):
+    def formatted_insert(self, ptext: str, pfamily, psize, pweight):
+        """inserts text into text widget and formats it according to inline formatting tokens
+        - called on Tkinter Text widget -> example_text_widget.formatted_insert(parameters)
+
+        Parameters:
+        - ptext: str -> text to be inserted; can make use of following inline formatting tokens:
+            - '''''[text]''''' (text surrounded by five apostrophes) -> bold and italic
+            - '''[text]''' (text surrounded by three apostrophes) -> bold
+            - ''[text]'' (text surrounded by two apostrophes) -> italic
+            - <b>[text]</b> -> bold
+            - <u>[text]</u> -> underlined
+        - pfamily; psize; pweight -> font options"""
+        # !!! self is an object of class tk.Text inside this function !!!
+
+        # no formatting tokens found
         if not "''" in ptext and not "<" in ptext:
             self.insert(END, ptext)
             return
 
+        # removes first two entries from a list and reduces the numbers in the remaining entries by index
+        # used to compensate index displacements resulting from removing text from the beginning of the string
         def subtr(li: list, index):
             try:
                 del li[0]
@@ -5001,7 +5017,11 @@ class SETS():
                 li[element] = li[element]-index
             return li
 
-        t = ptext
+        # working copy of ptext; inside this formatting tokens will be one by one replaced with pipes to 
+        # retain indices while preventing one token to be marked twice
+        t = ptext 
+
+        # identifies occurrences of the five-apostrophe formatting token
         bolditalic = list()
         while "'''''" in t:
             if len(bolditalic) > 0:
@@ -5010,6 +5030,8 @@ class SETS():
                 bolditalic.append(ptext.find("'''''"))
             t = ptext[bolditalic[-1]+5:]
         t = ptext.replace("'''''", "|||||")
+
+        # identifies occurrences of the three-apostrophe formatting token
         bold = list()
         while "'''" in t:
             if len(bold) > 0:
@@ -5018,6 +5040,8 @@ class SETS():
                 bold.append(ptext.replace("'''''", "|||||").find("'''"))
             t = ptext[bold[-1]+3:].replace("'''''","|||||")
         t = ptext.replace("'''''", "|||||").replace("'''","|||")
+
+        # identifies occurrences of the two-apostrophe formatting token
         italic = list()
         while "''" in t:
             if len(italic) > 0:
@@ -5025,6 +5049,8 @@ class SETS():
             else:
                 italic.append(ptext.replace("'''''", "|||||").replace("'''", "|||").find("''"))
             t = ptext[italic[-1]+2:].replace("'''''","|||||").replace("'''","|||")
+        
+        # identifies occurrences of the <b> formatting token
         bold2 = list()
         t = ptext
         while "<b>" in t:
@@ -5035,6 +5061,8 @@ class SETS():
                 bold2.append(ptext.find("<b>"))
                 bold2.append(ptext.find("</b>"))
             t = ptext[bold2[-1]+4:]
+
+        # identifies occurrences of the <u> formatting token
         underlined = list()
         t = ptext
         while "<u>" in t:
@@ -5045,17 +5073,26 @@ class SETS():
                 underlined.append(ptext.find("<u>"))
                 underlined.append(ptext.find("</u>"))
             t = ptext[underlined[-1]+4:]
+
+        # summarizes and sorts formatting tokens
         l = bolditalic + bold + italic + bold2 + underlined
         l.sort()
+
+        # configures font options
         self.tag_configure('bolditalic', font=(pfamily, psize, "bold", "italic"))
         self.tag_configure('bold', font=(pfamily, psize, "bold"))
         self.tag_configure('italic', font=(pfamily, psize, pweight, "italic"))
         self.tag_configure('underlined', underline=True, font=(pfamily, psize, pweight))
+
         if len(l) > 0:
             passtext = ptext
+
+            # empties list l and text passtext while inserting the text into the frame
             while len(l)>0:
                 i1 = l[0]
                 i2: int
+                
+                # inserts bold and italic text
                 if len(bolditalic) > 0 and i1 == bolditalic[0]:
                     i2 = bolditalic[1]
                     self.insert(END, passtext[:i1])
@@ -5067,6 +5104,8 @@ class SETS():
                     italic = subtr(italic, i2+5)
                     bold2 = subtr(bold2, i2+5)
                     underlined = subtr(underlined, i2+5)
+
+                # inserts bold text (apostrophe formatting)
                 elif len(bold) > 0 and i1 == bold[0]:
                     i2 = bold[1]
                     self.insert(END, passtext[:i1])
@@ -5078,6 +5117,8 @@ class SETS():
                     italic = subtr(italic, i2+3)
                     bold2 = subtr(bold2, i2+3)
                     underlined = subtr(underlined, i2+3)
+
+                # inserts italic text
                 elif len(italic) > 0 and i1 == italic[0] :
                     i2 = italic[1]
                     self.insert(END, passtext[:i1])
@@ -5089,6 +5130,8 @@ class SETS():
                     italic = subtr(italic, i2+2)
                     bold2 = subtr(bold2, i2+2)
                     underlined = subtr(underlined, i2+2)
+
+                # inserts bold text (html formatting)
                 elif len(bold2) > 0 and i1 == bold2[0]:
                     i2 = bold2[1]
                     self.insert(END, passtext[:i1])
@@ -5100,6 +5143,8 @@ class SETS():
                     italic = subtr(italic, i2+4)
                     bold2 = subtr(bold2, i2+4)
                     underlined = subtr(underlined, i2+4)
+
+                # inserts underlined text
                 elif len(underlined) > 0 and i1 == underlined[0] :
                     i2 = underlined[1]
                     self.insert(END, passtext[:i1])
@@ -5111,27 +5156,61 @@ class SETS():
                     italic = subtr(italic, i2+4)
                     bold2 = subtr(bold2, i2+4)
                     underlined = subtr(underlined, i2+4)
+
+            # inserts remaining text
             self.insert(END, passtext)
+
+        # inserts the whole text if after all operations no valid formatting tags remain    
         else:
             self.insert(END, ptext)
 
+    # makes formatted_insert available to use on tk.Text widget
+    tk.Text.formatted_insert = formatted_insert
 
-    tk.Text.formattedInsert = formattedInsert
+    def insert_infobox_paragraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, 
+            framewidth):
+        """Inserts Infobox paragraph into a frame (Recursive function); creates indentation if needed
+        Parameters:
+        - inframe: Frame -> text is inserted into this frame; must be managed by grid
+        - ptext: str -> the text to be inserted; can include following formatting tags:
+            - : (colon) in the beginning of a line indentates the line
+            - * (asterisk) in the beginning of a line creates an indentated bullet point
+            - html encoded lists (<ul>, </ul>, <li>, </li>) are supported as well
+        - pfamily: str; pcolor: str; psize: int; pweight -> font options
+        - gridrow: int -> determines in which row of the grid the paragraph gets inserted
+        - framewidth: int -> total width of the infobox, required for measuring linebreaks and text height"""
+        # Recursion structure:
+        # First the starting point of the first indentation block is identified and the text up to this point
+        # is stored in 'inserttext1' which will be inserted into the infobox during this run of the function. 
+        # Then the ending point of the first indentation block is identified. The text between the starting
+        # and ending point is cleansed of the tokens defining this indentation block and stored in 'passtext'. 
+        # The function now creates an indented frame calls itself passing the new frame and 'passtext' on.
+        # The text behind the first indendation block is stored in 'inserttext2'. The function then creates
+        # an unindented frame below the indented frame and calls itself passing the new frame and 'inserttext2'. 
+        # !!! This function will not indent a bullet list before the first simple indentation. However there
+        # is currently no infobox in the game that would require this. !!!
 
-    def insertInfoboxParagraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, framewidth):
-        """Inserts Infobox paragraph into a frame"""
-        mainframe = Frame(inframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
+        # sets up frame that will contain all the text widgets and frames
+        mainframe = Frame(inframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                highlightcolor=self.theme['tooltip']['highlight'])
         mainframe.grid(row=gridrow,column=0, sticky="nsew")
         inframe.rowconfigure(gridrow, weight=0)
         inframe.rowconfigure(gridrow+1, weight=1)
         inframe.columnconfigure(0, weight=1)
         inframe.columnconfigure(1, weight=1)
+
         ptext = ptext.strip()
-        if ("\n:" in ptext or ptext.startswith(":")) and not ptext.startswith("*") and not ptext.startswith("<ul>"):
+
+        # determines start end end point of first simple indentation block
+        if ("\n:" in ptext or ptext.startswith(":")) and not ptext.startswith("*") and \
+                not ptext.startswith("<ul>"):
+            
             inserttext1 = ""
             inserttext2 = ""
             passtext = ""
+
             occs = [i.start() for i in re.finditer('\n:', ptext)]
+            # given text starts with simple indentation
             if ptext.startswith(":"):
                 end=0
                 if occs == []:
@@ -5158,6 +5237,8 @@ class SETS():
                 else:
                     passtext = ptext[1:end].replace("\n:","\n")
                     inserttext2 = ptext[end+1:]
+            
+            # given text contains simple indentation
             else:
                 start = occs[0]
                 end = 0
@@ -5176,12 +5257,17 @@ class SETS():
                 else:
                     passtext = ptext[start+2:end].replace("\n:", "\n")
                     inserttext2 = ptext[end+1:]
+
+        # determines start and end point of first html list              
         elif ("<ul>" in ptext or ptext.startswith("<ul>")) and not ptext.startswith("*"):
             inserttext1 = ""
             inserttext2 = ""
             passtext = ""
+
             occs = [i.start() for i in re.finditer('<ul>', ptext)]
             occs2 = [i.start() for i in re.finditer('</ul>', ptext)]
+
+            # given text starts with html list
             if ptext.startswith("<ul>"):
                 end = 0
                 if len(occs)>1:
@@ -5205,6 +5291,8 @@ class SETS():
                     passtext = ptext[:end]
                     inserttext2 = ptext[end+5:]
                 else: passtext=ptext[4:]
+
+            # given text contains html list
             else:
                 start = occs[0]
                 end = 0
@@ -5230,11 +5318,16 @@ class SETS():
                     passtext = ptext[start+4:end]
                     inserttext2 = ptext[end+5:]
                 else: passtext=ptext[start:]
+
+        # determines start and end point of bullet list
         elif "\n*" in ptext or ptext.startswith("*"):
             inserttext1 = ""
             inserttext2 = ""
             passtext = ""
-            occs = [i.start() for i in re.finditer('\n\*', ptext)]
+
+            occs = [i.start() for i in re.finditer('\n\*', ptext)] # the asterisk has to be escaped in re strings
+            
+            # given text starts with bullet list
             if ptext.startswith("*"):
                 end=0
                 if occs == []:
@@ -5260,6 +5353,8 @@ class SETS():
                 else:
                     passtext = ptext[0:end+1].replace("\n*","\n• ").replace("*","• ")
                     inserttext2 = ptext[end+1:]
+            
+            # given text contains bullet list
             else:
                 start = occs[0]
                 end = 0
@@ -5278,24 +5373,34 @@ class SETS():
                 else:
                     passtext = ptext[start+1:end].replace("\n*", "\n• ").replace("*","• ")
                     inserttext2 = ptext[end+1:]
+
+        # handles the trivial case (no indentation tokens found in the given text)
         elif (not ("\n:" or "*" or "<ul>" or "<li>") in ptext) and not ptext.startswith(":"):
             inserttext1 = ptext
             inserttext2 = ""
             passtext = ""
-        rowinsert=0
+
+
+        rowinsert=0 
+        # inserts not indented text into textframe
         if not inserttext1 == "":
-            maintext = Text(mainframe, bg=self.theme['tooltip']['bg'], fg=pcolor, wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], font=(pfamily, psize, pweight), height=self.getDH(framewidth, inserttext1, pfamily, psize, pweight))
+            maintext = Text(mainframe, bg=self.theme['tooltip']['bg'], fg=pcolor, wrap=WORD, 
+                    highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], 
+                    relief=self.theme['tooltip']['relief'], font=(pfamily, psize, pweight), 
+                    height=self.getDH(framewidth, inserttext1, pfamily, psize, pweight))
             maintext.grid(row=rowinsert,column=0)
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
             inframe.update()
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
-            maintext.formattedInsert(inserttext1, pfamily, psize, pweight)
+            maintext.formatted_insert(inserttext1, pfamily, psize, pweight)
             maintext.configure(state=DISABLED)
             rowinsert = rowinsert+1
+        # passes text to be indented on to another iteration of this function but with an indented frame
         if not passtext == "":
-            lineframe = Frame(mainframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
+            lineframe = Frame(mainframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                    highlightcolor=self.theme['tooltip']['highlight'])
             lineframe.grid(row=rowinsert, column=0, sticky="nsew")
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
@@ -5305,23 +5410,30 @@ class SETS():
             lineframe.columnconfigure(0, weight=1, minsize=12)
             lineframe.columnconfigure(1, weight=7)
             lineframe.columnconfigure(2, weight=1)
-            daughterframe = Frame(lineframe, bg=self.theme['tooltip']['bg'], highlightcolor=self.theme['tooltip']['highlight'], highlightthickness=0)
+            daughterframe = Frame(lineframe, bg=self.theme['tooltip']['bg'], 
+                    highlightcolor=self.theme['tooltip']['highlight'], highlightthickness=0)
             daughterframe.grid(row=0, column=1, sticky="nsew")
-            self.insertInfoboxParagraph(daughterframe, passtext, pfamily, pcolor, psize, pweight, 0, framewidth-12)
+            self.insert_infobox_paragraph(daughterframe, passtext, pfamily, pcolor, psize, pweight, 0, 
+                    framewidth-12)
             rowinsert = rowinsert + 1
+        # passes text after first indentation block on to another iteration of this function
         if not inserttext2 == "":
-            lineframe = Frame(mainframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
+            lineframe = Frame(mainframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                    highlightcolor=self.theme['tooltip']['highlight'])
             lineframe.grid(row=rowinsert, column=0, sticky="nsew")
             mainframe.rowconfigure(rowinsert, weight=0)
             mainframe.rowconfigure(rowinsert+1, weight=0)
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
-            self.insertInfoboxParagraph(lineframe, inserttext2, pfamily, pcolor, psize, pweight, 0, framewidth)
+            self.insert_infobox_paragraph(lineframe, inserttext2, pfamily, pcolor, psize, pweight, 0, 
+                    framewidth)
 
 
 
     def setupInfoboxFrame(self, item, key, environment='space', tooltip=None, duplicateTooltipDisplay=False): 
         """Set up infobox frame with given item"""
+
+        # prevents the same infobox to render twice or empty items to be displayed
         if item is not None and 'item' in item:
             name = item['item']
         elif isinstance(item, str) and item != '':
@@ -5329,12 +5441,14 @@ class SETS():
         else:
             self.logWriteSimple('InfoboxEmpty', environment, 4, tags=["NO NAME", key])
             return
+        if name == '': return
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key, item])
         if name != '' and self.displayedInfoboxItem == name and not duplicateTooltipDisplay:
             self.logWriteSimple('Infobox', 'displayed', 2, [environment])
             return
         self.displayedInfoboxItem = name
 
+        # selects the frame of the respective tab
         if environment == 'skill' or key == 'skilltree':
             frame = self.skillInfoboxFrame
         elif environment == 'ground':
@@ -5346,6 +5460,8 @@ class SETS():
         if environment != 'skill' and key is not None and key != '' and key != 'skilltree':
             self.precacheEquipment(key)
 
+        # sets the color for corresponding rarity
+        # - equipment
         raritycolor = '#ffffff'
         if 'rarity' in item:
             if item["rarity"].lower() == "epic":
@@ -5359,32 +5475,44 @@ class SETS():
             elif item["rarity"].lower() == "uncommon":
                 raritycolor = "#00cc00"
 
-        self.clearFrame(frame)
-
-        mainbutton = HoverButton(frame, text="Stats & Other Info", highlightbackground=self.theme['tooltip']['bg'],  highlightthickness=1, activebackground=self.theme['button_heavy']['hover'])
-        mainbutton.pack(fill=X, expand=False, side=TOP)
-        mtfr = Frame(frame, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-        mtfr.pack(fill="both",expand=False,side=TOP)
-        text = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=3.5)
-
+        # - skills
+        # also prepares input for computing
         skillcolor_by_career = {'tac': '#c83924', 'eng': '#c59129', 'sci': '#1265a3'}
         skillcolor = self.theme['tooltip']['subhead']['fg']
         if environment == 'skill' and isinstance(key, tuple):
             (skill_rank, skill_row, skillindex) = key
             skill_environment = 'ground' if skill_rank is None else 'space'
             skill_career = self.skillGetFieldSkill(skill_environment, key, 'career')
-            skillcolor = skillcolor_by_career[skill_career] if skill_career in skillcolor_by_career else self.theme['tooltip']['subhead']['fg']
+            if skill_career in skillcolor_by_career: skillcolor = skillcolor_by_career[skill_career]  
+            else: skillcolor = self.theme['tooltip']['subhead']['fg']
 
-        text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], font=self.font_tuple_create('tooltip_head'))
+        self.clearFrame(frame)
+
+        # creates the link button above the infobox and the frame housing the infobox
+        mainbutton = HoverButton(frame, text="Stats & Other Info", highlightbackground=self.theme['tooltip']['bg'],
+                highlightthickness=1, activebackground=self.theme['button_heavy']['hover'])
+        mainbutton.pack(fill=X, expand=False, side=TOP)
+        mtfr = Frame(frame, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                highlightcolor=self.theme['tooltip']['highlight']) # main text frame
+        mtfr.pack(fill="both",expand=False,side=TOP)
+        
+        # creates and configuring the text field that will contain the headline section
+        text = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, 
+                highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], 
+                relief=self.theme['tooltip']['relief'], height=3.5)
+        text.tag_configure('head', foreground=self.theme['tooltip']['head']['fg'], 
+                font=self.font_tuple_create('tooltip_head'))
         text.tag_configure('name', foreground=raritycolor, font=self.font_tuple_create('tooltip_name'))
         text.tag_configure('rarity', foreground=raritycolor, font=self.font_tuple_create('tooltip_body'))
-        text.tag_configure('subhead', foreground=self.theme['tooltip']['subhead']['fg'], font=self.font_tuple_create('tooltip_subhead'))
-        text.tag_configure('starshipTraitHead', foreground=self.theme['tooltip']['head1']['fg'], font=self.font_tuple_create('tooltip_head'))
+        text.tag_configure('subhead', foreground=self.theme['tooltip']['subhead']['fg'], 
+                font=self.font_tuple_create('tooltip_subhead'))
+        text.tag_configure('starshipTraitHead', foreground=self.theme['tooltip']['head1']['fg'], 
+                font=self.font_tuple_create('tooltip_head'))
         text.tag_configure('skillhead', foreground=skillcolor, font=self.font_tuple_create('tooltip_name'))
         text.tag_configure('skillsub', foreground=skillcolor, font=self.font_tuple_create('tooltip_head'))
-
-
         text.grid(row=0, column=0)
+        
+        #configures the main text frame
         mtfr.rowconfigure(0, weight=0)
         mtfr.rowconfigure(2, weight=0, minsize=8)
         mtfr.rowconfigure(1, weight=0)
@@ -5392,11 +5520,11 @@ class SETS():
         mtfr.columnconfigure(0, weight=1)
         mtfr.columnconfigure(1, weight=1)
 
-        printed = bool(False)
-        if name == '':
-                return
+        printed = bool(False) # will be set to true once the infobox is created
 
+        # creates infobox for space or ground equipment item
         if key in self.cache['equipment'] and name in self.cache['equipment'][key]:
+            # inserts and configures the headline section
             text.insert(END, name, 'name')
             mkt = False
             modt = False
@@ -5406,16 +5534,23 @@ class SETS():
             if 'modifiers' in item and item['modifiers']:
                 text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
                 modt = True
-            text.update()
+            text.update() # necessary to allow measurement of text height and width
             if mkt and not modt:
-                lines = self.getDH(text.winfo_width(), name+' '+item['mark'], "Helvetica", 15, "bold", "equipmenthead")
+                lines = self.getDH(text.winfo_width(), name+' '+item['mark'], "Helvetica", 15, "bold", 
+                        "equipmenthead")
             elif not mkt and modt:
-                lines = self.getDH(text.winfo_width(), name+' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), "Helvetica", 15, "bold", "equipmenthead")
+                lines = self.getDH(text.winfo_width(), 
+                        name+' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 
+                        "Helvetica", 15, "bold", "equipmenthead")
             elif mkt and modt:
-                lines = self.getDH(text.winfo_width(), name+' '+item['mark']+' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), "Helvetica", 15, "bold", "equipmenthead")
+                lines = self.getDH(text.winfo_width(), 
+                        name+' '+item['mark']+' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 
+                        "Helvetica", 15, "bold", "equipmenthead")
             elif not mkt and not modt:
                 lines = self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", 'equipmenthead')
             text.configure(height=lines)
+
+            # inserts additional information (rarity, type and equip limitations) if necessary
             html = self.cache['equipment'][key][name]
             if 'rarity' in item and item['rarity']:
                 text.insert(END, '\n'+item['rarity']+' ', 'rarity')
@@ -5423,122 +5558,207 @@ class SETS():
                     text.insert(END, html['type'], 'rarity')
             if html['who'] != "" and html['who'] is not None:
                 mtfr.update()
-                whotext = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['who']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], height=self.getDH(mtfr.winfo_width(), html['who'], "Helvetica", 10, "normal"))
+                whotext = Text(mtfr, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['who']['fg'], 
+                        wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], 
+                        relief=self.theme['tooltip']['relief'], height=self.getDH(mtfr.winfo_width(), 
+                        html['who'], "Helvetica", 10, "normal"))
                 whotext.grid(row=1, column=0)
                 whotext.insert(END, html["who"])
                 whotext.configure(state=DISABLED)
+            
+            # placeholder
             Frame(mtfr, background=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight']).grid(row=2,column=0,sticky="nsew")
+            
+            # create frame containing the infobox components headX, subheadX, textX
             contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=3, column=0, sticky="nsew")
-            contentframe.grid_propagate(False)
+            contentframe.grid_propagate(False)  # fixes the size of contentframe to prevent tkinter from 
+                                                # calculating size changes which would reduce performance
+            
+            # inserts infobox components headX, subheadX, textX one by one
             insertinrow = 0
             for i in range(1,9):
                 t = html["head"+str(i)]
                 if isinstance(t, str) and t.strip() != "":
-                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#42afca", 12, "bold", insertinrow, text.winfo_width())
+                    self.insert_infobox_paragraph(contentframe, self.compensateInfoboxString(t.strip()), 
+                            "Helvetica", "#42afca", 12, "bold", insertinrow, text.winfo_width())
                     insertinrow = insertinrow+1
                 t = html["subhead"+str(i)]
                 if isinstance(t, str) and t.strip() != "":
-                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#f4f400", 10, "bold", insertinrow, text.winfo_width())
+                    self.insert_infobox_paragraph(contentframe, self.compensateInfoboxString(t.strip()), 
+                            "Helvetica", "#f4f400", 10, "bold", insertinrow, text.winfo_width())
                     insertinrow = insertinrow+1
                 t = html["text"+str(i)]
                 if isinstance(t, str) and t.strip() != "":
-                    self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(t.strip()), "Helvetica", "#ffffff", 10, "normal", insertinrow, text.winfo_width())
+                    self.insert_infobox_paragraph(contentframe, self.compensateInfoboxString(t.strip()), 
+                            "Helvetica", "#ffffff", 10, "normal", insertinrow, text.winfo_width())
                     insertinrow = insertinrow+1
-            mainbutton.configure(command=lambda p = html['Page']: self.openWikiPage(p))
+        
+            mainbutton.configure(command=lambda p = html['Page']: self.openWikiPage(f'{p}#{name}'))
             contentframe.grid_propagate(True)
             printed = True
 
-        if (name in self.cache['shipTraits'])and not printed:
-            text.insert(END, name+"\n", 'starshipTraitHead')
-            text.insert(END, "Starship Trait\n", 'head')
-            if self.cache['shipTraitsFull'][name]["obtained"] == "T5" or self.cache['shipTraitsFull'][name]["obtained"] == "T6":
-                obtaintext = "This Starship Trait can be obtained from the "+self.cache['shipTraitsFull'][name]["obtained"]+" Mastery of the "+self.cache['shipTraitsFull'][name]["ship"]
-            elif self.cache['shipTraitsFull'][name]["obtained"] == "spec":
-                obtaintext = "This Starship Trait can be obtained from the Captain Specialization system by completing the "+self.cache['shipTraitsFull'][name]["ship"]+" specialization."
-            elif self.cache['shipTraitsFull'][name]["obtained"] == "recr":
-                obtaintext = 'This Starship Trait can be obtained from a "'+self.cache['shipTraitsFull'][name]["ship"]+'" character.'
+        # creates infobox for starship traits
+        if not printed and (name in self.cache['shipTraits']):
+            # inserts and configures the headline section
+            text.insert(END, name+'\n', 'starshipTraitHead')
+            text.insert(END, 'Starship Trait\n', 'head')
+            obtained_token = self.cache['shipTraitsFull'][name]['obtained']
+            if obtained_token == "T5" or obtained_token == "T6":
+                obtaintext = (f'''This Starship Trait can be obtained from the {obtained_token} Mastery of '''
+                              f'''the {self.cache['shipTraitsFull'][name]['ship']}''')
+            elif obtained_token == "spec":
+                obtaintext = ('This Starship Trait can be obtained from the Captain Specialization system by '
+                        f'''completing the {self.cache['shipTraitsFull'][name]['ship']} specialization.''')
+            elif obtained_token == "recr":
+                obtaintext = ('This Starship Trait can be obtained from a "'
+                        f'''{self.cache['shipTraitsFull'][name]['ship']}" character.''')
             else:
-                obtaintext = "This Starship Trait is obtained from a reward pack."
-            text.insert(END, obtaintext, "subhead")
+                obtaintext = 'This Starship Trait is obtained from a reward pack.'
+            text.insert(END, obtaintext, 'subhead')
             text.update()
-            text.configure(height=self.getDH(text.winfo_width(), name+"\n"+"StarshipTrait\n"+obtaintext, "Helvetica", 15, "bold", "traithead"))
-            Frame(mtfr, background=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight']).grid(row=2,column=0,sticky="nsew")
-            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-            contentframe.grid(row=3, column=0, sticky="nsew")
+            text.configure(height=self.getDH(text.winfo_width(), name+'\nStarshipTrait\n'+obtaintext, 
+                    'Helvetica', 15, 'bold', 'traithead'))
+            
+            # placeholder
+            Frame(mtfr, background=self.theme['tooltip']['bg'], highlightthickness=0, 
+                    highlightcolor=self.theme['tooltip']['highlight']).grid(row=2,column=0,sticky='nsew')
+            
+            # inserts text
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                    highlightcolor=self.theme['tooltip']['highlight'])
+            contentframe.grid(row=3, column=0, sticky='nsew')
             contentframe.grid_propagate(False)
-            self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['shipTraits'][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
+            self.insert_infobox_paragraph(contentframe, 
+                    self.compensateInfoboxString(self.cache['shipTraits'][name].strip()), 'Helvetiva', 
+                    '#ffffff', 10, 'normal', 0, text.winfo_width())
             contentframe.grid_propagate(True)
-            mainbutton.configure(command=lambda url = self.cache['shipTraitsFull'][name]['link']: self.openURL(url))
+            mainbutton.configure(command=lambda url = self.cache['shipTraitsFull'][name]['link']: 
+                    self.openURL(f'{url}#Starship_Mastery'))
             printed = True
 
-        if (environment in self.cache['traits'] and name in self.cache['traits'][environment]) and not printed:
-            text.insert(END, name+"\n", 'starshipTraitHead')
+        # creates infobox for personal and reputation traits
+        if not printed and environment in self.cache['traits'] and name in self.cache['traits'][environment]:
+            # inserts and configures the headline section
+            text.insert(END, name+'\n', 'starshipTraitHead')
             text.update()
-            text.configure(height=self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", "personaltrait"))
-            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-            contentframe.grid(row=2, column=0, sticky="nsew")
+            text.configure(height=self.getDH(text.winfo_width(), name, 'Helvetica', 15, 'bold', 'personaltrait'))
+            
+            # creates frame for text and inserts infobox text
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                    highlightcolor=self.theme['tooltip']['highlight'])
+            contentframe.grid(row=2, column=0, sticky='nsew')
             contentframe.grid_propagate(False)
-            self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['traits'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
+            self.insert_infobox_paragraph(contentframe, 
+                    self.compensateInfoboxString(self.cache['traits'][environment][name].strip()), 
+                    'Helvetiva', '#ffffff', 10, 'normal', 0, text.winfo_width())
             contentframe.grid_propagate(True)
-            mainbutton.configure(command=lambda p = "Trait: "+ name: self.openWikiPage(p))
+            mainbutton.configure(command=lambda p = f'Trait: {name}': self.openWikiPage(p))
             printed = True
 
-        if (environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]) and not printed:
+        # creates infobox for boffs
+        if not printed and (environment in self.cache['boffTooltips'] and name in self.cache['boffTooltips'][environment]):
+            # inserts and configures the headline section
             text.insert(END, name, 'starshipTraitHead')
-            text.update()
-            text.configure(height=self.getDH(text.winfo_width(), name, "Helvetica", 15, "bold", "boff"))
-            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-            contentframe.grid(row=2, column=0, sticky="nsew")
+            text.update() 
+            text.configure(height=self.getDH(text.winfo_width(), name, 'Helvetica', 15, 'bold', 'boff'))
+            
+            # creates frame for text and inserts infobox text
+            contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                    highlightcolor=self.theme['tooltip']['highlight'])
+            contentframe.grid(row=2, column=0, sticky='nsew')
             contentframe.grid_propagate(False)
-            self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(self.cache['boffTooltips'][environment][name].strip()), "Helvetiva", "#ffffff", 10, "normal", 0, text.winfo_width())
+            self.insert_infobox_paragraph(contentframe, 
+                    self.compensateInfoboxString(self.cache['boffTooltips'][environment][name].strip()), 
+                    'Helvetiva', '#ffffff', 10, 'normal', 0, text.winfo_width())
             contentframe.grid_propagate(True)
-            mainbutton.configure(command=lambda p = "Ability: "+ name: self.openWikiPage(p))
+            mainbutton.configure(command=lambda p = 'Ability: '+ name: self.openWikiPage(p))
             printed = True
 
-        if key == 'skilltree' and not printed:
+        # creates infobox for skills
+        if not printed and key == 'skilltree':
+            # creates infobox for ultimate ability
+            # in this case tooltip contains a list, first element is a string with the basic description; 
+            # after that one tuple containing head and description for each selected ultimate enhancement
             if isinstance(tooltip, list):
+                # creates and configures headline section
                 text.insert(END, name, 'skillhead')
                 text.update()
-                text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
-                contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-                contentframe.grid(row=2, column=0, sticky="nsew")
+                text.configure(height=self.getDH(text.winfo_width(),name, 'Helvetica', 15, 'bold','skill'))
+                
+                # creates frame containing infobox text
+                contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                        highlightcolor=self.theme['tooltip']['highlight'])
+                contentframe.grid(row=2, column=0, sticky='nsew')
                 contentframe.grid_propagate(False)
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(tooltip[0]), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
-                text2 = Text(contentframe, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], relief=self.theme['tooltip']['relief'], font=(self.font_tuple_create('app')))
+                
+                # inserts basic description
+                self.insert_infobox_paragraph(contentframe, self.compensateInfoboxString(tooltip[0]), 
+                        'Helvetica', '#ffffff', 10, 'normal', 0, text.winfo_width())
+                
+                # creates Text field for ultimate enhancement descriptions
+                text2 = Text(contentframe, bg=self.theme['tooltip']['bg'], fg=self.theme['tooltip']['fg'], 
+                        wrap=WORD, highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], 
+                        relief=self.theme['tooltip']['relief'], font=(self.font_tuple_create('app')))
                 text2.grid(column=0, row=1)
-                text2.tag_configure('skillsubhead', foreground=self.theme['tooltip']['subhead']['fg'], font=self.font_tuple_create('tooltip_subhead'), underline=True)
+                text2.tag_configure('skillsubhead', foreground=self.theme['tooltip']['subhead']['fg'], 
+                        font=self.font_tuple_create('tooltip_subhead'), underline=True)
+                
+                # inserts description for each selected ultimate enhacement
                 for content in tooltip[1:]:
                     text2.insert(END, content[0]+'\n', 'skillsubhead')
                     text2.insert(END, self.compensateInfoboxString(content[1])+'\n\n')
+
                 contentframe.grid_propagate(True)
                 mainbutton.configure(command=lambda page = 'Ability: '+name: self.openWikiPage(page))
+            
+            # creates infobox for bonus bar unlocks
+            # in this case tooltip contains a string with the description
             else:
+                # creates and configures headline section
                 text.insert(END, name, 'skillhead')
                 text.update()
-                text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
-                contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-                contentframe.grid(row=2, column=0, sticky="nsew")
+                text.configure(height=self.getDH(text.winfo_width(),name, 'Helvetica', 15, 'bold','skill'))
+                
+                # creates frame containing infobox text
+                contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                        highlightcolor=self.theme['tooltip']['highlight'])
+                contentframe.grid(row=2, column=0, sticky='nsew')
                 contentframe.grid_propagate(False)
-                self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(tooltip), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+
+                # inserts description
+                self.insert_infobox_paragraph(contentframe, self.compensateInfoboxString(tooltip), 
+                        'Helvetica', '#ffffff', 10, 'normal', 0, text.winfo_width())
+
                 contentframe.grid_propagate(True)
                 mainbutton.configure(command=lambda page = 'Skill: '+name: self.openWikiPage(page))
+
             printed = True
 
-        if environment == "skill" and isinstance(key, tuple):
+
+        # creates infobox for skill nodes
+        # in this case key is a tuple containing the rank of the skill, a zero-indexed numeric identifier of 
+        # the skill-group (top to bottom in the sets UI) and a zero-indexed numeric identifier of the skill 
+        # level for identification within the group
+        if environment == 'skill' and isinstance(key, tuple):
             skillcareer_by_career = {'tac': 'Tactical', 'eng': 'Engineering', 'sci': 'Science'}
 
-            skillprofession = skillcareer_by_career[skill_career]+' ' if skill_career in skillcareer_by_career else ''
-            skill_linear = self.skillGetFieldSkill(skill_environment, key, 'linear')
-            skill_skill = self.skillGetFieldSkill(skill_environment, key, 'skill')
-            skill_gdesc = self.skillGetFieldSkill(skill_environment, key, 'gdesc')
-            skill_desc = self.skillGetFieldNode(skill_environment, key, 'desc')
-            skill_link = self.skillGetFieldSkill(skill_environment, key, 'link')
+            # requires information about the skill
+            if skill_career in skillcareer_by_career: skillprofession = skillcareer_by_career[skill_career]+' '
+            else: skillprofession = ''
+            skill_linear = self.skillGetFieldSkill(skill_environment, key, 'linear') # shape of skill group
+            skill_skill = self.skillGetFieldSkill(skill_environment, key, 'skill') # name
+            skill_gdesc = self.skillGetFieldSkill(skill_environment, key, 'gdesc') # group description
+            skill_desc = self.skillGetFieldNode(skill_environment, key, 'desc') # single node description
+            skill_link = self.skillGetFieldSkill(skill_environment, key, 'link') # link
 
+            # adapt variables to compensate empty fields from the requisition above
             if not skill_linear:
                 skill_linear = 0
             if not skill_skill:
                 skill_skill = name
+
+            # identify skill level (Basic, Improved, Advanced)
             skill_name_last_word = name.split()[-1]
             if skill_name_last_word == '3':
                 skill_level = 'Advanced '
@@ -5547,29 +5767,33 @@ class SETS():
             else:
                 skill_level = ''
 
+            # extracts correct data if above required data is a list
             if skill_linear > 0:
                 skill_gdesc = skill_gdesc[skillindex] if len(skill_gdesc) >= skillindex else ''
                 skill_skill = skill_skill[skillindex] if len(skill_skill) >= skillindex else ''
                 skill_link = skill_link[skillindex] if len(skill_link) >= skillindex else ''
 
+            # insert title and subtitle and configures height
             text.insert(END, skill_level+skill_skill, 'skillhead')
-
             text.insert(END, '\n'+skillprofession+skill_environment.title()+' Skill', 'skillsub')
             text.update()
             if self.build['skilltree'][skill_environment][name]:
-                text.insert(END, "\nSkill is active!", "subhead")
-                text.configure(height=self.getDH(text.winfo_width(),name.title(), "Helvetica", 15, "bold","skill")+1)
+                text.insert(END, '\nSkill is active!', 'subhead')
+                text.configure(height=self.getDH(text.winfo_width(),name.title(), 'Helvetica', 15, 'bold','skill')+1)
             else:
-                text.configure(height=self.getDH(text.winfo_width(),name, "Helvetica", 15, "bold","skill"))
+                text.configure(height=self.getDH(text.winfo_width(),name, 'Helvetica', 15, 'bold','skill'))
+            
+            # creates frame containing infobox text and inserts the text
             contentframe = Frame(mtfr, bg=self.theme['tooltip']['bg'], highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'])
-            contentframe.grid(row=2, column=0, sticky="nsew")
+            contentframe.grid(row=2, column=0, sticky='nsew')
             contentframe.grid_propagate(False)
-            self.insertInfoboxParagraph(contentframe, self.compensateInfoboxString(skill_gdesc+"<hr>"+skill_desc.strip()), "Helvetica", "#ffffff", 10, "normal", 0, text.winfo_width())
+            self.insert_infobox_paragraph(contentframe, self.compensateInfoboxString(skill_gdesc+'<hr>'+skill_desc.strip()), 'Helvetica', '#ffffff', 10, 'normal', 0, text.winfo_width())
             contentframe.grid_propagate(True)
+            
             mainbutton.configure(command=lambda url = skill_link: self.openURL(url))
             printed=True
 
-        text.configure(state=DISABLED)
+        text.configure(state=DISABLED) # disables editing of infobox
         #frame.pack_propagate(True) Preset width means we don't need to turn this back on
 
 
