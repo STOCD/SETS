@@ -4059,12 +4059,47 @@ class SETS():
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args, context_menu=True)
 
 
-    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None, row=0, column=0, columnspan=1, rowspan=1, highlightthickness=theme['icon_off']['hlthick'], highlightbackground=theme['icon_off']['hlbg'], borderwidth=0, width=None, height=None, bg=theme['icon_off']['bg'], padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center', faction=False, suffix='', context_menu=False):
-        """ Button building (including click and tooltip binds) """
-        # self.build[key][buildSubKey] is the build code for callback updating and image identification
-        # self.backend['images'][backendKey][#] is the location for (img,img)
-        # args [array] contains variable infomation used for callback updating
-        # internalKey is the cache sub-group (for equipment cache sub-groups)
+    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None,
+                     row=0, column=0, columnspan=1, rowspan=1,
+                     highlightthickness=theme['icon_off']['hlthick'], highlightbackground=theme['icon_off']['hlbg'],
+                     borderwidth=0, width=None, height=None, bg=theme['icon_off']['bg'], padx=2, pady=2,
+                     image0Name=None, image1Name=None, image0=None, image1=None,
+                     disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None,
+                     ='center', faction=False, suffix='', context_menu=False):
+        """
+        Add a button to supplied frame and return button object information
+
+        Includes tooltip and click animation
+        The majority of the parameters are pass-through settings for the canvas/grid, I'll attempt to outline functional parameters for now
+
+        :param parentFrame: The Frame to insert the button on
+        :param width: If empty, width will default to itemBoxX
+        :param height: If empty, height will default to itemBoxY
+        :param callback: the callback function
+        :param args: [array] contains variable information used for callback updating
+        :param tooltip: Tooltip to provide
+
+        self.build is the structure containing our settings
+        Selecting the object is a bit of a twisty maze due to how the structure grew up, this could use a rebuild
+        This is a hack designed to allow the same function to work with all of the original item structures
+        :param name: direct item name -- may be some legacy/unused usage in function
+        :param i: buildSubKey [shared space with name that may be deprecated for name]
+        :param key: self.build[groupKey][key][buildSubKey] or self.build[key][buildSubKey], also backendKey
+        :param groupKey: self.build[groupKey][key][buildSubkey]
+
+        self.backend['images'][backendKey][i] has [image0, image1] set for the GUI image, not saved to build
+        Can be specified by infobox name, actual image, and will attempt to look up the item name as well
+        Can probably be simpler -- this tied together a mix of different sources
+        :param image0Name: used to look up an infobox image by name [instead of image0]
+        :param image1Name: used to look up an infobox image by name [instead of image1]
+        :param image0: provided image0 image [I think this is base icon]
+        :param image1: provided image1 image [I think this is the border]
+
+        :return: Canvas object containing button logic, base image, border image
+
+        internalKey is the cache sub-group (for equipment cache sub-groups)
+        :todo: This should probably become a class so it can just be adjusted and passed around instead of this lengthy parameter set
+        """
         item = None
 
         if width is None:
