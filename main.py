@@ -2054,7 +2054,10 @@ class SETS():
         - title: title of the picker window
         - itemVar: contains empty item with preset rarity and mark
         - items_list: this list contains all items of the category that the clicked slot belongs to
-        - top_bar_functions: list of functions that create additional functionality inside the picker window"""
+        - top_bar_functions: list of functions that create additional functionality inside the picker window
+
+        Features: sorting, width management
+        """
         
         # create and set up window
         pickWindow = Toplevel(self.window)
@@ -2364,7 +2367,8 @@ class SETS():
         - item_initial: contains empty item with preset rarity and mark
         - type: 'trait' / 'item' / 'boffs
         - title: title of the picker window
-        - extra_frames: list of functions that create additional functionality inside the picker window"""
+        - extra_frames: list of functions that create additional functionality inside the picker window
+        """
 
         item_var = item_initial if item_initial is not None else self.getEmptyItem()
         additional = [self.setupSearchFrame] # self.setupSearchFrame creates the search bar inside pickerGUI
