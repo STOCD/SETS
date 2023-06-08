@@ -4139,6 +4139,7 @@ class SETS():
         if height is None:
             height = self.itemBoxY
 
+        # Determine where our object's data group is located, needs a major refactor globally
         buildSubKey = name if name is not None else i
         backendKey = name if name is not None else key
 
@@ -4155,6 +4156,7 @@ class SETS():
 
         self.logWriteSimple('createButton', '', 5, [name, key, buildSubKey, backendKey, i, row, column])
 
+        # Determine the image source and attach to backend
         if type(item) is dict and item is not None:
             if image0Name is None and 'item' in item:
                 image0Name = item['item']
@@ -4181,6 +4183,7 @@ class SETS():
             image0 = image0 if image0 is not None else self.emptyImage
             image1 = image1 if image1 is not None else self.emptyImage
 
+        # Create the button and initialize tooltip/callbacks functions
         canvas = Canvas(parentFrame, highlightthickness=highlightthickness, highlightbackground=highlightbackground, borderwidth=borderwidth, width=width, height=height, bg=bg, relief=relief)
         canvas.grid(row=row, column=column, columnspan=columnspan, rowspan=rowspan, sticky=sticky, padx=padx, pady=pady)
         anchorWidth = width / 2 if anchor == 'center' else 0
