@@ -324,6 +324,10 @@ class SETS():
             'fg': '#ffffff',  # self.theme['icon_on']['fg']
             'relief': 'groove',  # self.theme['icon_on']['relief']
         },
+        'context_menu': {
+            'activebackground': '#dddddd',
+            'activeforeground': '#000000'
+        }
     }
 
     def encodeBuildInImage(self, src, message, dest):
@@ -2044,12 +2048,19 @@ class SETS():
         return items_list
 
     def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
-        """Open a picker window"""
+        """Open a picker window and return selected item
+        
+        Parameters:
+        - title: title of the picker window
+        - itemVar: contains empty item with preset rarity and mark
+        - items_list: this list contains all items of the category that the clicked slot belongs to
+        - top_bar_functions: list of functions that create additional functionality inside the picker window"""
+        
+        # create and set up window
         pickWindow = Toplevel(self.window)
         pickWindow.resizable(True,True) #vertical resize only
         pickWindow.transient(self.window)
         pickWindow.title(title)
-
         (windowwidth,windowheight) = self.pickerDimensions()
         sizeWindow = '{}x{}'.format(windowwidth, windowheight)
         pickWindow.geometry(sizeWindow+self.pickerLocation(windowheight))
@@ -2060,6 +2071,7 @@ class SETS():
             origVar[key] = itemVar[key]
         pickWindow.protocol('WM_DELETE_WINDOW', lambda:self.pickerCloseCallback(pickWindow,origVar,itemVar))
 
+        # set up top frame with top_bar_functions and clear button
         container = Frame(pickWindow)
         content = dict()
         if top_bar_functions is not None:
@@ -2068,17 +2080,19 @@ class SETS():
         self.setupClearSlotFrame(container, itemVar, pickWindow)
         container.pack(fill=X, expand=False)
 
+        # adds scrollbar
         container2 = Frame(pickWindow)
         container2.pack(fill=BOTH, expand=True)
         (canvas, scrollable_frame) = self.windowAddScrollbar(container2, pickWindow)
 
+        # sort the items list
         try:
             items_list.sort()
         except:
             self.logWriteSimple('pickerGUI', 'TRY_EXCEPT', 1, tags=['item_list.sort() failed in '+title])
 
-        i = 0
-        for name,image in items_list:
+        # adds every item from the items list to the picker window
+        for i, (name, image) in enumerate(items_list):
             frame = Frame(scrollable_frame, relief='ridge', borderwidth=1)
             name_wrap_length = 285 if self.args.nomenuicons else 255
             for col in range(3):
@@ -2094,16 +2108,19 @@ class SETS():
                 else:
                     frame.grid(row=i, column=0, sticky='nsew', padx=(2,5))
 
-                subFrame.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
+                # if the user clicks on this item from the list, it stores the item in itemVar which is returned
+                subFrame.bind('<Button-1>', lambda e,name=name,image=image,v=itemVar,win=pickWindow:
+                        self.setVarAndQuit(e,name,image,v,win))
                 subFrame.bind('<MouseWheel>', lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
 
-            content[name] = (frame, i, 0)
-            i += 1
+            content[name] = (frame, i, 0) # adds item to content dict which is searched by the search bar
 
+        # finalizing
         pickWindow.title('{} ({} options)'.format(title, i-1))
         pickWindow.wait_visibility()    #Implemented for Linux
         pickWindow.grab_set()
         pickWindow.wait_window()
+
         return itemVar
 
     def pickerCloseCallback(self, window, origVar, currentVar):
@@ -2257,53 +2274,112 @@ class SETS():
         items_list = self.restrictItemsList(items_list)  # What restrictions exist for traits?
         self.picker_getresult(canvas, img, i, key, args, items_list, type='trait', title='Pick trait')
 
-    def picker_getresult(self, canvas, img, i, key, args, items_list, item_initial=None, type=None, title='Pick', extra_frames=None):
+    def clear_slot(self, canvas: Canvas, key: str, i: int, type: str, img: tuple):
+        """clears equipment / boff / trait slot; applies changes to self.build
+        Parameters:
+        - canvas: the canvas that acts as slot (-button)
+        - key: identifies the slot type as in self.build[key] (self.build['boffs'][key] for boff slots)
+        - i: index within slot type; 0 identifies the first item in the slot type group, 1 identifies the
+            second and so on (self.build[key][i])
+        - type: 'trait' / 'item' / 'boffs'
+        - img: tuple containing the identifiers for the two image layers (item image and rarity image)"""
+        canvas.itemconfig(img[0],image=self.emptyImage)
+        canvas.itemconfig(img[1],image=self.emptyImage)
+        if type == 'boffs':
+            self.build['boffs'][key][i] = ''
+        else:
+            self.build[key][i] = None
+        canvas.unbind('<Enter>')
+        canvas.unbind('<Leave>')
+
+    def set_slot(self, canvas: Canvas, item: dict, key: str, i: int, type: str, img: tuple, args):
+        """inserts item into equipment / boff / trait slot; applies changes to self.build
+        Parameters:
+        - canvas: the canvas that acts as slot (-button)
+        - item: item dictionary
+        - key: identifies the slot type as in self.build[key] (self.build['boffs'][key] for boff slots)
+        - i: index within slot type; 0 identifies the first item in the slot type group, 1 identifies the
+            second and so on (self.build[key][i])
+        - type: 'trait' / 'item' / 'boffs'
+        - img: tuple containing the identifiers for the two image layers (item image and rarity image)
+        - args: variable information depending on type
+            - for equipment (type = 'item'): list-> First: type_key as in self.cache['equipment'][type_key],
+            Second *Not used*: title for picker window, Third *not used*: empty string
+            - for boffs: list -> First: StringVar containing the profession of the seat, Second: StringVar 
+            containing the specialization of the seat, Third: index of the seat, Fourth: 'space' or 'ground'
+            - for traits: list -> First: True if slot holds ground reputation traits, Second: True if slot 
+            holds active reputation traits, Third: True if slot holds starship traits, Fourth: 'space' or 
+            'ground'"""
         tooltip_uuid = self.uuid_assign_for_tooltip()
+        name = item['item']
+        backend_key = '{}_{}'.format(name, i)
+        self.backend['images'][backend_key] = item['image']  # index needed for item duplicate display
+        canvas.itemconfig(img[0], image=item['image'])
+
+        if type == 'item':
+            group_key = args[0]
+            if 'rarity' in self.cache['equipment'][group_key][name]:
+                rarityDefaultItem = self.cache['equipment'][group_key][name]['rarity']
+            else:
+                rarityDefaultItem = self.rarities[0]
+
+            if 'rarity' not in item or item['item'] == '' or item['rarity'] == '':
+                item['rarity'] = rarityDefaultItem
+
+            image1 = self.imageFromInfoboxName(item['rarity'])
+            self.backend['images'][backend_key+item['rarity']] = image1
+            canvas.itemconfig(img[1], image=image1)
+        else:
+            group_key = ''
+
+        environment = args[3] if args is not None and len(args) >= 4 else 'space'
+        canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:
+                self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, group_key, environment))
+        canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
+        item.pop('image')
+        if type == 'boffs':
+            self.build['boffs'][key][i] = name
+        else:
+            self.build[key][i] = item
+
+    def picker_getresult(self, canvas, img, i, key, args, items_list, item_initial=None, type=None, 
+            title='Pick', extra_frames=None):
+        """opens picker and handles results
+
+        Parameters:
+        - canvas: the canvas that acts as slot (-button); here the user left-clicks on to open the picker
+        - img: tuple containing the identifiers for the two image layers (item image and rarity image)
+        - key: identifies the slot type as in self.build[key] (self.build['boffs'][key] for boff slots)
+        - i: index within slot type; 0 identifies the first item in the slot type group, 1 identifies the
+            second and so on (self.build[key][i])
+        - args: list containing variable information depending on type
+            - for equipment (type = 'item'): list-> First: type_key as in self.cache['equipment'][type_key],
+            Second *Not used*: title for picker window, Third *not used*: empty string
+            - for boffs: list -> First: StringVar containing the profession of the seat, Second: StringVar 
+            containing the specialization of the seat, Third: index of the seat, Fourth: 'space' or 'ground'
+            - for traits: list -> First: True if slot holds ground reputation traits, Second: True if slot 
+            holds active reputation traits, Third: True if slot holds starship traits, Fourth: 'space' or 
+            'ground'
+        - items_list: this list contains all items of the category that the clicked slot belongs to
+        - item_initial: contains empty item with preset rarity and mark
+        - type: 'trait' / 'item' / 'boffs
+        - title: title of the picker window
+        - extra_frames: list of functions that create additional functionality inside the picker window"""
+
         item_var = item_initial if item_initial is not None else self.getEmptyItem()
-        additional = [self.setupSearchFrame]
+        additional = [self.setupSearchFrame] # self.setupSearchFrame creates the search bar inside pickerGUI
         if extra_frames:
             additional += extra_frames
-        self.tooltip_tracking['X'] = True
+
+        self.tooltip_tracking['X'] = True # disables infobox
         item = self.pickerGui(title, item_var, items_list, additional)
-        self.tooltip_tracking['X'] = False
+        self.tooltip_tracking['X'] = False # enables infobox
+
         if 'item' in item and len(item['item']):
-            name = item['item']
-            if name == 'X':  # Clear slot
-                canvas.itemconfig(img[0],image=self.emptyImage)
-                canvas.itemconfig(img[1],image=self.emptyImage)
-                if type == 'boffs':
-                    self.build['boffs'][key][i] = ''
-                else:
-                    self.build[key][i] = None
-            else:
-                backend_key = '{}_{}'.format(name, i)
-                self.backend['images'][backend_key] = item['image']  # index needed for item duplicate display
-                canvas.itemconfig(img[0], image=item['image'])
-
-                if type == 'item':
-                    group_key = args[0]
-                    if 'rarity' in self.cache['equipment'][group_key][name]:
-                        rarityDefaultItem = self.cache['equipment'][group_key][name]['rarity']
-                    else:
-                        rarityDefaultItem = self.rarities[0]
-
-                    if 'rarity' not in item or item['item'] == '' or item['rarity'] == '':
-                        item['rarity'] = rarityDefaultItem
-
-                    image1 = self.imageFromInfoboxName(item['rarity'])
-                    self.backend['images'][backend_key+item['rarity']] = image1
-                    canvas.itemconfig(img[1], image=image1)
-                else:
-                    group_key = ''
-
-                environment = args[3] if args is not None and len(args) >= 4 else 'space'
-                canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, group_key, environment))
-                canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid: self.setupInfoboxFrameLeave(tooltip_uuid))
-                item.pop('image')
-                if type == 'boffs':
-                    self.build['boffs'][key][i] = name
-                else:
-                    self.build[key][i] = item
+            if item['item'] == 'X':  # Clear slot
+                self.clear_slot(canvas, key, i, type, img)
+            else: # item choosen -> slot item
+                self.set_slot(canvas, item, key, i, type, img, args)
             self.auto_save_queue()
 
     def font_dict_create(self, name):
@@ -3980,10 +4056,10 @@ class SETS():
             bg ='gray' if not disabled else 'black'
             padx = (25 + 3 * 2) if disabled else 2
 
-            self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args)
+            self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args, context_menu=True)
 
 
-    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None, row=0, column=0, columnspan=1, rowspan=1, highlightthickness=theme['icon_off']['hlthick'], highlightbackground=theme['icon_off']['hlbg'], borderwidth=0, width=None, height=None, bg=theme['icon_off']['bg'], padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center', faction=False, suffix=''):
+    def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None, row=0, column=0, columnspan=1, rowspan=1, highlightthickness=theme['icon_off']['hlthick'], highlightbackground=theme['icon_off']['hlbg'], borderwidth=0, width=None, height=None, bg=theme['icon_off']['bg'], padx=2, pady=2, image0Name=None, image1Name=None, image0=None, image1=None, disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None, anchor='center', faction=False, suffix='', context_menu=False):
         """ Button building (including click and tooltip binds) """
         # self.build[key][buildSubKey] is the build code for callback updating and image identification
         # self.backend['images'][backendKey][#] is the location for (img,img)
@@ -4057,6 +4133,8 @@ class SETS():
 
             if callback is not None:
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
+            if context_menu:
+                canvas.bind('<Button-3>', lambda e: self.context_menu_callback(e, canvas, key, i, type, (img0, img1), args))
             if name != 'blank':
                 canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, internalKey, environment, tooltip))
                 canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
@@ -5901,6 +5979,53 @@ class SETS():
 
         text.configure(state=DISABLED)
 
+    def context_menu_callback(self, event, canvas: Canvas, key: str, i: int, type: str, img: tuple, args):
+        """openens context menu
+        Parameters:
+        - event: click event
+        - canvas: the canvas that acts as slot (-button)
+        - key: identifies the slot type as in self.build[key] (self.build['boffs'][key] for boff slots)
+        - i: index within slot type; 0 identifies the first item in the slot type group, 1 identifies the
+            second and so on (self.build[key][i])
+        - type: 'trait' / 'item' / 'boffs'
+        - img: tuple containing the identifiers for the two image layers (item image and rarity image)
+        - args: variable information depending on type"""
+        self.cm_current_data = {
+            'canvas': canvas,
+            'key': key,
+            'i': i,
+            'type': type,
+            'img': img,
+            'args': args
+        }
+        self.context_menu.tk_popup(event.x_root, event.y_root)
+
+    def context_menu_copy(self):
+        """stores the item inside the slot the context menu was opened on"""
+        return
+        item = self.build[self.cm_current_data['key']][self.cm_current_data['i']]
+        if isinstance(item, dict): 
+            self.cm_item = item
+            self.cm_item['image'] = self.cache['equipmentWithImages'][self.cm_current_data['args'][0]][item['item']]
+        else: self.cm_item = None
+        print(self.cm_item)
+    
+    def context_menu_paste(self):
+        """slots the copied item into the slot the context menu was opened on"""
+        return
+        print(self.cm_item)
+        if self.cm_item is not None:
+            self.set_slot(self.cm_current_data['canvas'], self.cm_item, self.cm_current_data['key'], 
+                self.cm_current_data['i'], self.cm_current_data['type'], self.cm_current_data['img'], 
+                self.cm_current_data['args'])
+
+    def context_menu_clear(self):
+        """clears slot that the context menu was opened on"""
+        self.clear_slot(self.cm_current_data['canvas'], self.cm_current_data['key'], self.cm_current_data['i'], 
+                self.cm_current_data['type'], self.cm_current_data['img'])
+
+    def context_menu_edit(self):
+        pass
 
     def radiobuttonVarUpdateCallbackToggle(self, varObj, choice):
         """Insert the radio setting -- typically used from the frame to widen the click zone"""
@@ -6226,7 +6351,7 @@ class SETS():
         settingsMenuSettings = {
             'default': {'sticky': 'n', 'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.export_reddit_callback},
-            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback}, # libraray button
+            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback}, # library button 
             'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback, 'image': self.three_bars},
         }
 
@@ -7048,6 +7173,15 @@ class SETS():
     def setupUIFrames(self):
         defaultFont = font.nametofont('TkDefaultFont')
         defaultFont.configure(family=self.theme['app']['font']['family'], size=self.theme['app']['font']['size'])
+
+        # create context menu and set up variables
+        self.cm_current_data = dict()
+        self.context_menu = Menu(self.window, tearoff=False, **self.theme['context_menu'])
+        self.context_menu.add_command(label='Copy item', command=self.context_menu_copy)
+        self.context_menu.add_command(label='Paste item', command=self.context_menu_paste)
+        self.context_menu.add_command(label='Edit slot', command=self.context_menu_edit)
+        self.context_menu.add_command(label='Clear slot', command=self.context_menu_clear)
+        self.cm_item = None
 
         self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'])
         self.containerFrame.pack(fill=BOTH, expand=True)
