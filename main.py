@@ -4037,7 +4037,23 @@ class SETS():
             self.setupModFrame(modFrame, rarity=self.persistent['rarityDefault'], itemVar=itemVar)
 
     def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
-        """Set up n-element line of ship equipment"""
+        """
+        Set up n-element line of ship equipment icons/buttons
+
+        A shortcut for placing a group of items together
+        :param key: The name of the backend image store to be used
+        :param n: the number of elements to be added
+        :param frame: The frame to attach this list to (will expect grid)
+        :param row: frame grid row
+        :param col: frame grid col
+        :param cspan: frame grid cspan
+
+        :param name: text label for the list
+        :param callback: callback function to use for the buttons
+        :param args: callback args to use for the buttons
+        :param disabledCount: a hack to allow disabling elements at the end of the list [no click response]
+
+        """
         self.backend['images'][key] = [None] * n
 
         cFrame = Frame(frame, bg=self.theme['frame']['bg'])
@@ -4070,7 +4086,8 @@ class SETS():
         Add a button to supplied frame and return button object information
 
         Includes tooltip and click animation
-        The majority of the parameters are pass-through settings for the canvas/grid, I'll attempt to outline functional parameters for now
+        The majority of the parameters are pass-through settings for the canvas/grid
+        I'll attempt to outline functional parameters for now
 
         :param parentFrame: The Frame to insert the button on
         :param width: If empty, width will default to itemBoxX
@@ -4078,6 +4095,7 @@ class SETS():
         :param callback: the callback function
         :param args: [array] contains variable information used for callback updating
         :param tooltip: Tooltip to provide
+        :param context_menu: Include standard context menu
 
         self.build is the structure containing our settings
         Selecting the object is a bit of a twisty maze due to how the structure grew up, this could use a rebuild
