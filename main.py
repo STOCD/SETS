@@ -2247,7 +2247,17 @@ class SETS():
         label.grid(row=1, column=0, sticky='n')
 
     def itemLabelCallback(self, e, canvas, img, i, key, args):
-        """Common callback for ship equipment labels"""
+        """
+        Open picker for specified data
+
+        :param canvas: object to open picker at
+        :param img: pass-through data
+        :param i: pass-through data identifier
+        :param key: pass-through data identifier
+        :param args: data list -- args[0] will be the canvas object type used to load the list cache, pass-through
+
+        This function provides the clicking action for most equipment buttons
+        """
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":[]}
 
@@ -4085,7 +4095,7 @@ class SETS():
                      borderwidth=0, width=None, height=None, bg=theme['icon_off']['bg'], padx=2, pady=2,
                      image0Name=None, image1Name=None, image0=None, image1=None,
                      disabled=False, args=None, sticky='nse', relief=FLAT, tooltip=None,
-                     ='center', faction=False, suffix='', context_menu=False):
+                     anchor='center', faction=False, suffix='', context_menu=False):
         """
         Add a button to supplied frame and return button object information
 
