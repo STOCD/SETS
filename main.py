@@ -401,10 +401,13 @@ class SETS():
         """ Convert provided pagename into an URL to find the page on the wiki """
         return self.wikihttp+pagename.replace(" ", "_")
 
-    def fetchOrRequestHtml(self, url, designation):
+    def fetchOrRequestHtml(self, url, designation, url_header=None, source=None):
         """Request HTML document from web or fetch from local cache"""
-        cache_base = self.get_folder_location('cache')
-        override_base = self.get_folder_location('override')
+        if url_header is None:
+            url_header = self.get_url_header(source)
+        url_full = url_header + url
+        cache_base = self.get_folder_location('cache', source=source)
+        override_base = self.get_folder_location('override', source=source)
         if not os.path.exists(cache_base):
             return
 
@@ -419,20 +422,32 @@ class SETS():
             if interval.days < self.daysDelayBeforeReattempt:
                 with open(filename, 'r', encoding='utf-8') as html_file:
                     s = html_file.read()
+                    self.logWriteTransaction('Cache File (html)', 'read', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
                     return HTML(html=s, url = self.wikihttp )
-        r = self.session.get(url)
+        r = self.session.get(url_full)
         self.make_filename_path(os.path.dirname(filename))
         with open(filename, 'w', encoding="utf-8") as html_file:
             html_file.write(r.text)
-            self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1, tags=[url] if self.settings['debug'] >= 3 else None)
+            self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
 
         return r.html
 
-    def fetchOrRequestJson(self, url, designation, local=False):
+    def get_url_header(self, source=None):
+        if source == 'fandom':
+            return self.wikihttp_legacy
+        elif source == 'stowiki':
+            return self.wikihttp_current
+        else:
+            return ''
+
+    def fetchOrRequestJson(self, url, designation, local=False, url_header=None, source=None):
         """Request HTML document from web or fetch from local cache specifically for JSON formats"""
-        cache_base = self.resource_path(self.settings['folder']['local']) if local else self.get_folder_location('cache')
-        override_base = self.get_folder_location('override')
-        backup_base = self.get_folder_location('backups')
+        if url_header is None:
+            url_header = self.get_url_header(source)
+        url_full = url_header + url
+        cache_base = self.resource_path(self.settings['folder']['local']) if local else self.get_folder_location('cache', source=source)
+        override_base = self.get_folder_location('override', source=source)
+        backup_base = self.get_folder_location('backups', source=source)
         backup_loaded = False
         result = None
         interval = None
@@ -451,18 +466,18 @@ class SETS():
             modDate = os.path.getmtime(filename)
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
             if interval.days < 7 or local:
-                result = self.loadJsonFile(filename, url, designation, 'read')
+                result = self.loadJsonFile(filename, url_full, designation, 'read')
                 backup_loaded = True
         elif not local:
-            r = requests.get(url)
+            r = requests.get(url_full)
             try:
                 result = r.json()
-                self.logWriteSimple("fetchOrRequestJson", "save", 3, [filename, designation, url])
+                self.logWriteSimple("fetchOrRequestJson", "save", 3, [filename, designation, url_full])
                 self.saveJsonFile(filename, designation, result)
 
             except:
                 interval = None # do not clear cache
-                self.logWriteSimple("fetchOrRequestJson", "FAIL", 3, [filename, designation, url])
+                self.logWriteSimple("fetchOrRequestJson", "FAIL", 3, [filename, designation, url_full])
                 result = None
 
         if result is not None and not backup_loaded:
@@ -474,7 +489,7 @@ class SETS():
 
         if not result:
             self.recoverCacheFolder(designation+".json", 'cache')
-            result = self.loadJsonFile(filename, url, designation, 'read')
+            result = self.loadJsonFile(filename, url_full, designation, 'read')
             backup_loaded = True
             self.logWriteSimple("fetchOrRequestJson", "file-load", 3, [filename, designation])
 
@@ -1155,7 +1170,7 @@ class SETS():
         if 'modifiers' in self.cache and self.cache['modifiers'] is not None and len(self.cache['modifiers']) > 0:
             return
 
-        modPage = self.fetchOrRequestHtml(self.wikihttp+"Modifier", "modifiers").find("div.mw-parser-output", first=True).html
+        modPage = self.r_modifiers.find("div.mw-parser-output", first=True).html
         mods = re.findall(r"(<td.*?>(<b>)*\[.*?](</b>)*</td>)", modPage)
         self.cache['modifiers'] = list(set([re.sub(r"<.*?>",'',mod[0]) for mod in mods]))
         self.logWriteCounter('Modifiers', '(json)', len(self.cache['modifiers']))
@@ -7383,29 +7398,44 @@ class SETS():
             except:
                 self.logWriteTransaction('makedirs', 'failed', '', filePath, 1)
 
-    def get_folder_location(self, subfolder=None):
+    def get_folder_location(self, subfolder=None, source=None):
+        """Provide a location to use (optional subfolder)"""
         file_path = self.config_folder_location()
+        suffix = self.get_folder_suffix(subfolder, source)
         if subfolder is not None and subfolder in self.settings['folder']:
             file_path = os.path.join(file_path, self.settings['folder'][subfolder])
-            if file_path is not None: file_path += self.get_folder_suffix(subfolder)
+            if file_path is not None: file_path += suffix
         self.make_filename_path(file_path)
 
         if not os.path.exists(file_path):
             file_path = ''
             if subfolder in self.settings['folder']:
-                file_path = self.settings['folder'][subfolder] + self.get_folder_suffix(subfolder)
+                file_path = self.settings['folder'][subfolder] + suffix
 
         return file_path
 
-    def get_folder_suffix(self, subfolder):
-        """ Avoid storage overlaps between wiki sources """
+    def get_folder_suffix(self, subfolder, source=None):
+        """ Provide a folder suffix to avoid storage overlaps between wiki sources
+
+        -:return: text (blank or a text suffix)
+        """
         if subfolder == 'cache' or subfolder == 'backups':
-            if self.args.stowiki or self.persistent['source_new_wiki']:
-                self.logWriteBreak("STOWIKI-SUFFIX", 3)
-                return '_stowiki'
+            if source is not None:
+                # merged sources portion
+                if source == 'stowiki':
+                    self.logWriteBreak("STOWIKI-SUFFIX", 4)
+                    return '_stowiki'
+                elif source == 'fandom':
+                    self.logWriteBreak("FANDOM-SUFFIX", 4)
+                    return '_fandom'
             else:
-                self.logWriteBreak("FANDOM-SUFFIX", 3)
-                return '_fandom'
+                # legacy portion, retain till retired
+                if self.args.stowiki or self.persistent['source_new_wiki']:
+                    self.logWriteBreak("STOWIKI-SUFFIX", 4)
+                    return '_stowiki'
+                else:
+                    self.logWriteBreak("FANDOM-SUFFIX", 4)
+                    return '_fandom'
 
         return ''
 
@@ -7607,16 +7637,36 @@ class SETS():
         self.emptyImageFaction['dominion'] = self.fetchOrRequestImage(self.wikiImages+"Dominion_Emblem.png", "dominion_emblem", width, height)
 
     def precache_downloads(self):
-        self.infoboxes = self.fetchOrRequestJson(self.wikihttp+SETS.item_query, "infoboxes")
-        self.traits = self.fetchOrRequestJson(self.wikihttp+SETS.trait_query, "traits")
-        self.shiptraits = self.fetchOrRequestJson(self.wikihttp+SETS.ship_trait_query, "starship_traits")
-        self.doffs = self.fetchOrRequestJson(self.wikihttp+SETS.doff_query, "doffs")
-        self.ships = self.fetchOrRequestJson(self.wikihttp_current+SETS.ship_query, "ship_list") # manual override to have new ships available while other cargo tables are still drawn from the old wiki
-        self.reputations = self.fetchOrRequestJson(self.wikihttp+SETS.reputation_query, "reputations")
-        self.trayskills = self.fetchOrRequestJson(self.wikihttp+SETS.trayskill_query, "trayskills")
-        self.factions = self.fetchOrRequestJson(self.wikihttp+SETS.faction_query, "factions")
+        """Determine which data to precache and run precaching"""
+        if self.args.allwiki or self.persistent['source_all_wiki'] or \
+                (self.args.stowiki or self.persistent['source_new_wiki']):
+            self.precache_downloads_group('stowiki')
 
-        self.r_boffAbilities = self.fetchOrRequestHtml(self.wikihttp+"Bridge_officer_and_kit_abilities", "boff_abilities")
+        if self.args.allwiki or self.persistent['source_all_wiki'] or \
+                not (self.args.stowiki or self.persistent['source_new_wiki']):
+            self.precache_downloads_group('fandom')
+
+    def precache_downloads_group(self, group):
+        """Precache each category for a specific source group
+
+        TODO: modify URL/Image functions to use source tags
+        TODO: merge instead of setting [currently the last load is kept]
+        """
+        self.logWriteSimple('precache', 'group', 3, [group])
+
+        self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes", source=group)
+        self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits", source=group)
+        self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits", source=group)
+        self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs", source=group)
+        self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list", source=group, url_header=self.wikihttp_current)
+        # manual override to have new ships available while other cargo tables are still drawn from the old wiki
+
+        self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations", source=group)
+        self.trayskills = self.fetchOrRequestJson(SETS.trayskill_query, "trayskills", source=group)
+        self.factions = self.fetchOrRequestJson(SETS.faction_query, "factions", source=group)
+
+        self.r_boffAbilities = self.fetchOrRequestHtml("Bridge_officer_and_kit_abilities", "boff_abilities", source=group)
+        self.r_modifiers = self.fetchOrRequestHtml("Modifier", "modifiers", source=group)
 
         #r_species = self.fetchOrRequestHtml(self.wikihttp+"Category:Player_races", "species")
         #self.speciesNames = [e.text for e in r_species.find('#mw-pages .mw-category-group .to_hasTooltip') if 'Guide' not in e.text and 'Player' not in e.text]
