@@ -1555,7 +1555,8 @@ class SETS():
         self.persistent = {
             'forceJsonLoad': 0,
             'fast_start': 0,
-            'source_new_wiki': 0,
+            'source_new_wiki': False,
+            'source_all_wiki': False,
             'cache_save': 0,
             'uiScale': 1,
             'geometry': '',
@@ -6895,7 +6896,7 @@ class SETS():
             'Open Log'                              : {'col': 2, 'type': 'button', 'var_name': 'openLog'},
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : {'col': 1, 'type': 'blank'},
-            'Use stowiki.net (partial)': {'col': 2, 'type': 'optionmenu', 'var_name': 'source_new_wiki', 'boolean': True},
+            'Use both wiki (stowiki primary)': {'col': 2, 'type': 'optionmenu', 'var_name': 'source_all_wiki', 'boolean': True},
             'Test image variations': {'col': 2, 'type': 'optionmenu', 'var_name': 'image_beta', 'boolean': True},
             'Auto-save build': {'col': 2, 'type': 'optionmenu', 'var_name': 'autosave', 'boolean': True},
             'In-file versions': {'col': 2, 'type': 'optionmenu', 'var_name': 'versioning', 'boolean': True},
@@ -7306,6 +7307,7 @@ class SETS():
         parser.add_argument('--noautosave', help='disable autosave / autoload', action='store_true')
         parser.add_argument('--nomenuicons', help='disable autosave / autoload', action='store_true')
         parser.add_argument('--stowiki', help='switch to stowiki.net [experimental]', action='store_true')
+        parser.add_argument('--allwiki', help='Use both wikis, stowiki primary', action='store_true')
 
         self.args = parser.parse_args()
         #self.logWriteSimple('Args', '', 1, tags=[self.args])
@@ -7322,8 +7324,12 @@ class SETS():
         if self.args.configfolder is not None:
             self.settings['folder']['config'] = self.args.configfolder
 
-        if self.args.stowiki:
+        if self.args.allwiki or self.args.stowiki:
             self.persistent['source_new_wiki'] = True
+
+            if self.args.allwiki:
+                self.persistent['source_all_wiki'] = True
+
             self.url_update()
 
     def config_folder_location(self):
@@ -7400,6 +7406,7 @@ class SETS():
                 return '_stowiki'
             else:
                 self.logWriteBreak("FANDOM-SUFFIX", 3)
+                return '_fandom'
 
         return ''
 
@@ -7755,7 +7762,11 @@ class SETS():
         self.ui_update_log()
 
     def ui_update_log(self):
-        self.logminiWrite('{} {} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, '[stowiki]' if self.persistent['source_new_wiki'] else '[fandom]', self.os_system, self.os_release, self.window.winfo_screenwidth(), self.window.winfo_screenheight(), self.windowWidth, self.windowHeight, self.scale, self.dpi))
+        self.logminiWrite('{} {} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, \
+                                                                             '[allwiki]' if self.persistent['source_all_wiki'] else '[stowiki]' if self.persistent['source_new_wiki'] else '[fandom]', \
+                                                                             self.os_system, self.os_release, \
+                                                                             self.window.winfo_screenwidth(), self.window.winfo_screenheight(), \
+                                                                             self.windowWidth, self.windowHeight, self.scale, self.dpi))
 
 
     def update_window_size(self, caller='', init=False, no_geometry=False):
