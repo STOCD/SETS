@@ -4089,7 +4089,6 @@ class SETS():
 
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, i=i, callback=callback, args=args, context_menu=True)
 
-
     def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None,
                      row=0, column=0, columnspan=1, rowspan=1,
                      highlightthickness=theme['icon_off']['hlthick'], highlightbackground=theme['icon_off']['hlbg'],
@@ -7763,7 +7762,7 @@ class SETS():
 
     def ui_update_log(self):
         self.logminiWrite('{} {} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, \
-                                                                             '[allwiki]' if self.persistent['source_all_wiki'] else '[stowiki]' if self.persistent['source_new_wiki'] else '[fandom]', \
+                                                                             '[allwiki]' if self.persistent['source_all_wiki'] or self.args.allwiki else '[stowiki]' if self.persistent['source_new_wiki'] or self.args.stowiki else '[fandom]', \
                                                                              self.os_system, self.os_release, \
                                                                              self.window.winfo_screenwidth(), self.window.winfo_screenheight(), \
                                                                              self.windowWidth, self.windowHeight, self.scale, self.dpi))
