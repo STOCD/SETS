@@ -1097,11 +1097,11 @@ class SETS():
 
         if not keyPhrase in self.cache['equipment']:
             self.cache['equipment'][keyPhrase] = {}
-            self.cache['equipmentWithImages'][keyPhrase] = []
+            self.cache['equipmentWithImages'][keyPhrase] = {}
 
         if not name in self.cache['equipment'][keyPhrase]:
             self.cache['equipment'][keyPhrase][name] = item
-            self.cache['equipmentWithImages'][keyPhrase].append((name, self.imageFromInfoboxName(name)))
+            self.cache['equipmentWithImages'][keyPhrase][name] = self.imageFromInfoboxName(name)
 
 
     def precacheEquipment(self, keyPhrase):
@@ -2277,8 +2277,7 @@ class SETS():
         self.precacheEquipment(args[0])
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":[]}
 
-        # items_list = [ (item.replace(args[2], ''), self.imageFromInfoboxName(item)) for item in list(self.cache['equipment'][args[0]].keys())]
-        items_list = self.cache['equipmentWithImages'][args[0]]
+        items_list = list(self.cache['equipmentWithImages'][args[0]].items())
         items_list = self.restrictItemsList(items_list)  # Most restrictions should come from the ship
 
         self.picker_getresult(canvas, img, i, key, args, items_list, item_initial=itemVar, type='item', title='Pick', extra_frames=[self.setupRarityFrame])
@@ -4219,7 +4218,7 @@ class SETS():
             if callback is not None:
                 canvas.bind('<Button-1>', lambda e,canvas=canvas,img=(img0, img1),i=buildSubKey,args=args,key=key,callback=callback:callback(e,canvas,img,i,key,args))
             if context_menu:
-                canvas.bind('<Button-3>', lambda e: self.context_menu_callback(e, canvas, key, i, type, (img0, img1), args))
+                canvas.bind('<Button-3>', lambda e: self.context_menu_callback(e, canvas, key, i, 'item', (img0, img1), args))
             if name != 'blank':
                 canvas.bind('<Enter>', lambda e,tooltip_uuid=tooltip_uuid,item=item,internalKey=internalKey,environment=environment,tooltip=tooltip:self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, internalKey, environment, tooltip))
                 canvas.bind('<Leave>', lambda e,tooltip_uuid=tooltip_uuid:self.setupInfoboxFrameLeave(tooltip_uuid))
@@ -5595,7 +5594,6 @@ class SETS():
 
     def setupInfoboxFrame(self, item, key, environment='space', tooltip=None, duplicateTooltipDisplay=False): 
         """Set up infobox frame with given item"""
-
         # prevents the same infobox to render twice or empty items to be displayed
         if item is not None and 'item' in item:
             name = item['item']
@@ -6064,7 +6062,7 @@ class SETS():
 
         text.configure(state=DISABLED)
 
-    def context_menu_callback(self, event, canvas: Canvas, key: str, i: int, type: str, img: tuple, args):
+    def context_menu_callback(self, event, canvas: Canvas, key: str, i: int, type:str, img: tuple, args):
         """openens context menu
         Parameters:
         - event: click event
@@ -6075,6 +6073,7 @@ class SETS():
         - type: 'trait' / 'item' / 'boffs'
         - img: tuple containing the identifiers for the two image layers (item image and rarity image)
         - args: variable information depending on type"""
+        # saves information about current slot
         self.cm_current_data = {
             'canvas': canvas,
             'key': key,
@@ -6083,26 +6082,28 @@ class SETS():
             'img': img,
             'args': args
         }
+        # shows the menu
         self.context_menu.tk_popup(event.x_root, event.y_root)
 
     def context_menu_copy(self):
         """stores the item inside the slot the context menu was opened on"""
-        return
         item = self.build[self.cm_current_data['key']][self.cm_current_data['i']]
         if isinstance(item, dict): 
             self.cm_item = item
             self.cm_item['image'] = self.cache['equipmentWithImages'][self.cm_current_data['args'][0]][item['item']]
+            self.cm_item_slot = self.cm_current_data['key']
         else: self.cm_item = None
-        print(self.cm_item)
     
     def context_menu_paste(self):
         """slots the copied item into the slot the context menu was opened on"""
-        return
-        print(self.cm_item)
-        if self.cm_item is not None:
-            self.set_slot(self.cm_current_data['canvas'], self.cm_item, self.cm_current_data['key'], 
+        if self.cm_item is not None and \
+                    self.paste_restriction(self.cm_item_slot, self.cm_current_data['key'], self.cm_item['item']):
+            # pass a copy of self.cm_item to allow for multiple pastes - 
+            # set_slot otherwise deletes self.cm_item['image'] which is required for each paste process
+            self.set_slot(self.cm_current_data['canvas'], copy.copy(self.cm_item), self.cm_current_data['key'], 
                 self.cm_current_data['i'], self.cm_current_data['type'], self.cm_current_data['img'], 
                 self.cm_current_data['args'])
+            if self.cm_last_canvas is None: self.cm_last_canvas = self.cm_current_data['canvas']
 
     def context_menu_clear(self):
         """clears slot that the context menu was opened on"""
@@ -6111,6 +6112,42 @@ class SETS():
 
     def context_menu_edit(self):
         pass
+
+    def paste_restriction(self, old_slot, new_slot, name):
+        """checks whether the item can fit into the new slot
+        
+        Parameters:
+        - :param old_slot: key of the old slot
+        - :param new_slot: key of the new slot
+        - :param name: name of the item that was tried to paste"""
+
+        # same slot
+        if old_slot == new_slot: return True 
+
+        # tac, sci and eng consoles can also be slotted in uni console slots
+        if (old_slot == 'tacConsoles' or old_slot == 'sciConsoles' or old_slot == 'engConsoles') \
+                and new_slot == 'uniConsoles': 
+            return True
+
+        # uni consoles can be slotted in tac, sci and eng slots; 
+        # self.cache['equipment']['Ship ... Console'] contains all valid items for that slot including uni consoles
+        if old_slot == 'uniConsoles':
+            if new_slot == 'tacConsoles' and name in self.cache['equipment']['Ship Tactical Console'].keys():
+                return True
+            if new_slot == 'sciConsoles' and name in self.cache['equipment']['Ship Science Console'].keys():
+                return True
+            if new_slot == 'engConsoles' and name in self.cache['equipment']['Ship Engineering Console'].keys():
+                return True
+            return False
+
+        # some fore weapons can also be slotted in aft and vice versa
+        if (old_slot == 'foreWeapons' or old_slot == 'aftWeapons') and \
+                (new_slot == 'foreWeapons' or new_slot == 'aftWeapons'):
+            if name in self.cache['equipment'][self.keys[new_slot]].keys():
+                return True
+
+        # if none of the above applies the item is incompatible with the new slot
+        return False
 
     def radiobuttonVarUpdateCallbackToggle(self, varObj, choice):
         """Insert the radio setting -- typically used from the frame to widen the click zone"""
@@ -6436,7 +6473,7 @@ class SETS():
         settingsMenuSettings = {
             'default': {'sticky': 'n', 'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.export_reddit_callback},
-            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback}, # library button 
+            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback }, # library button  self.focusLibraryFrameCallback
             'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback, 'image': self.three_bars},
         }
 
@@ -6445,7 +6482,6 @@ class SETS():
 
         for i in range(5):
             self.menuFrame.grid_columnconfigure(i, weight=1, uniform="mainCol")
-
 
     def setupTierFrame(self, tier):
         #l = Label(self.shipTierFrame, text="Tier:", fg=self.theme['label']['fg'], bg=self.theme['label']['bg'], font=self.theme['text_small']['font_object'])
@@ -7260,13 +7296,15 @@ class SETS():
         defaultFont.configure(family=self.theme['app']['font']['family'], size=self.theme['app']['font']['size'])
 
         # create context menu and set up variables
-        self.cm_current_data = dict()
         self.context_menu = Menu(self.window, tearoff=False, **self.theme['context_menu'])
         self.context_menu.add_command(label='Copy item', command=self.context_menu_copy)
         self.context_menu.add_command(label='Paste item', command=self.context_menu_paste)
         self.context_menu.add_command(label='Edit slot', command=self.context_menu_edit)
         self.context_menu.add_command(label='Clear slot', command=self.context_menu_clear)
+        self.cm_current_data = dict()
         self.cm_item = None
+        self.cm_item_slot = None
+        self.cm_last_canvas = None
 
         self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'])
         self.containerFrame.pack(fill=BOTH, expand=True)
