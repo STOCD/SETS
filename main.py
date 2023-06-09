@@ -158,6 +158,10 @@ class SETS():
             'groundActiveRepTrait': 'traits',
     }
 
+    item_filter_list = {
+        'Ship Aft Weapon': ['cannon', 'dual'],
+    }
+
     # Needs fonts, padx, pady, possibly others
     theme = theme_default = {
         'name': 'SETS_default',
@@ -2058,10 +2062,36 @@ class SETS():
 
         return (canvas, scrollable_frame)
 
-    def restrictItemsList(self, items_list, tagsForRequirement = None):
-        # Infobox 'who' denotes restrictions [for future imlementation]
+    def item_list_filter(self, items_list, args=None, tagsForRequirement=None):
+        """Return a list of items for the picker to provide"""
+        # TODO: filter ship types allowed to use ["who" from infobox], needs ship type sent from upstream
+
+        if args is not None and type(args) is list:
+            category = args[0]
+
+        if category in self.item_filter_list:
+            removals = self.item_filter_list[category]
+
+            if category == "Ship Aft Weapon":
+                items_list = self.item_list_filter_remove(items_list, removals)
 
         return items_list
+
+    def item_list_filter_remove(self, items_list, removals):
+        new_list = []
+        for item in items_list:
+            add = True
+            self.logWriteSimple("List Filter", "removals", level=4, tags=item)
+            for check in removals:
+                if check in item[0].lower():
+                    add = False
+                    self.logWriteSimple("item filter", "remove", level=3, tags=[item[0]])
+                    break
+            if add:
+                self.logWriteSimple("item filter", "add", level=4, tags=[item[0]])
+                new_list.append(item)
+
+        return new_list
 
     def pickerGui(self, title, itemVar, items_list, top_bar_functions=None, x=None, y=None):
         """Open a picker window and return selected item
@@ -2242,6 +2272,9 @@ class SETS():
 
 
     def splash_window_interior(self, parentFrame):
+        splash_full_log = 1
+        center_column = 0
+
         OuterFrame = Frame(parentFrame, bg=self.theme['frame']['bg'])
         OuterFrame.grid(row=0, column=0)
         parentFrame.grid_rowconfigure(0, weight=1)
@@ -2252,25 +2285,30 @@ class SETS():
         imageLabel = Canvas(OuterFrame, bg=self.theme['button']['bg'])
         imageLabel.configure(borderwidth=0, highlightthickness=0)
         imageLabel.create_image(self.splash_image_w / 2, self.splash_image_h / 2, anchor="center", image=self.images['splash_image'])
-        imageLabel.grid(row=0, column=0, sticky='nsew', padx=0, pady=0)
+        imageLabel.grid(row=0, column=center_column, sticky='nsew', padx=0, pady=0)
 
         self.splashProgressBar = Progressbar(OuterFrame, orient='horizontal', mode='indeterminate', length=self.splash_image_w)
-        self.splashProgressBar.grid(row=0, column=0, sticky='sw')
+        self.splashProgressBar.grid(row=0, column=center_column, sticky='sw')
 
         self.splashText = StringVar()
-        label = Label(OuterFrame, height=4, textvariable=self.splashText, bg=self.theme['frame']['bg'], fg=self.theme['frame']['fg'], wraplength=400)
-        label.grid(row=1, column=0, sticky='n')
-        label.grid(row=1, column=0, sticky='n')
+        if splash_full_log:
+            frame = Frame(OuterFrame, bg=self.theme['frame']['bg'])
+            frame.grid(row=0, column=1, sticky='nsew')
+            self.log_window_interior(frame)
+        else:
+            label = Label(OuterFrame, height=4, textvariable=self.splashText, bg=self.theme['frame']['bg'], fg=self.theme['frame']['fg'], wraplength=400)
+            label.grid(row=1, column=center_column, sticky='nw')
+
 
     def itemLabelCallback(self, e, canvas, img, i, key, args):
         """
         Open picker for specified data
 
-        :param canvas: object to open picker at
-        :param img: pass-through data
-        :param i: pass-through data identifier
-        :param key: pass-through data identifier
-        :param args: data list -- args[0] will be the canvas object type used to load the list cache, pass-through
+        -:param canvas: object to open picker at
+        -:param img: pass-through data
+        -:param i: pass-through data identifier
+        -:param key: pass-through data identifier
+        -:param args: data list -- args[0] will be the canvas object type used to load the list cache, pass-through
 
         This function provides the clicking action for most equipment buttons
         """
@@ -2278,7 +2316,7 @@ class SETS():
         itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":[]}
 
         items_list = list(self.cache['equipmentWithImages'][args[0]].items())
-        items_list = self.restrictItemsList(items_list)  # Most restrictions should come from the ship
+        items_list = self.item_list_filter(items_list, args=args)  # Most restrictions should come from the ship
 
         self.picker_getresult(canvas, img, i, key, args, items_list, item_initial=itemVar, type='item', title='Pick', extra_frames=[self.setupRarityFrame])
 
@@ -2299,7 +2337,7 @@ class SETS():
             items_list = self.cache['traitsWithImages'][traitType][args[3]]
             self.logWriteSimple('traitLabelCallback', '', 4, tags=[traitType, args[3], str(len(items_list))])
 
-        items_list = self.restrictItemsList(items_list)  # What restrictions exist for traits?
+        items_list = self.item_list_filter(items_list)  # What restrictions exist for traits?
         self.picker_getresult(canvas, img, i, key, args, items_list, type='trait', title='Pick trait')
 
     def clear_slot(self, canvas: Canvas, key: str, i: int, type: str, img: tuple):
@@ -2535,7 +2573,7 @@ class SETS():
         if spec2 is not None and spec2 != '':
             items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][spec2][rank]
 
-        items_list = self.restrictItemsList(items_list) # need to send boffseat spec/spec2
+        items_list = self.item_list_filter(items_list) # need to send boffseat spec/spec2
         self.picker_getresult(canvas, img, i, key, args, items_list, type='boffs', title='Pick ability')
 
     def universalSeatUpdateCallback(self, canvas, img, i, i2, key, var, environment):
@@ -4070,17 +4108,17 @@ class SETS():
         Set up n-element line of ship equipment icons/buttons
 
         A shortcut for placing a group of items together
-        :param key: The name of the backend image store to be used
-        :param n: the number of elements to be added
-        :param frame: The frame to attach this list to (will expect grid)
-        :param row: frame grid row
-        :param col: frame grid col
-        :param cspan: frame grid cspan
+        -:param key: The name of the backend image store to be used
+        -:param n: the number of elements to be added
+        -:param frame: The frame to attach this list to (will expect grid)
+        -:param row: frame grid row
+        -:param col: frame grid col
+        -:param cspan: frame grid cspan
 
-        :param name: text label for the list
-        :param callback: callback function to use for the buttons
-        :param args: callback args to use for the buttons
-        :param disabledCount: a hack to allow disabling elements at the end of the list [no click response]
+        -:param name: text label for the list
+        -:param callback: callback function to use for the buttons
+        -:param args: callback args to use for the buttons
+        -:param disabledCount: a hack to allow disabling elements at the end of the list [no click response]
 
         """
         self.backend['images'][key] = [None] * n
@@ -4117,34 +4155,34 @@ class SETS():
         The majority of the parameters are pass-through settings for the canvas/grid
         I'll attempt to outline functional parameters for now
 
-        :param parentFrame: The Frame to insert the button on
-        :param width: If empty, width will default to itemBoxX
-        :param height: If empty, height will default to itemBoxY
-        :param callback: the callback function
-        :param args: [array] contains variable information used for callback updating
-        :param tooltip: Tooltip to provide
-        :param context_menu: Include standard context menu
+        -:param parentFrame: The Frame to insert the button on
+        -:param width: If empty, width will default to itemBoxX
+        -:param height: If empty, height will default to itemBoxY
+        -:param callback: the callback function
+        -:param args: [array] contains variable information used for callback updating
+        -:param tooltip: Tooltip to provide
+        -:param context_menu: Include standard context menu
 
         self.build is the structure containing our settings
         Selecting the object is a bit of a twisty maze due to how the structure grew up, this could use a rebuild
         This is a hack designed to allow the same function to work with all of the original item structures
-        :param name: direct item name -- may be some legacy/unused usage in function
-        :param i: buildSubKey [shared space with name that may be deprecated for name]
-        :param key: self.build[groupKey][key][buildSubKey] or self.build[key][buildSubKey], also backendKey
-        :param groupKey: self.build[groupKey][key][buildSubkey]
+        -:param name: direct item name -- may be some legacy/unused usage in function
+        -:param i: buildSubKey [shared space with name that may be deprecated for name]
+        -:param key: self.build[groupKey][key][buildSubKey] or self.build[key][buildSubKey], also backendKey
+        -:param groupKey: self.build[groupKey][key][buildSubkey]
 
         self.backend['images'][backendKey][i] has [image0, image1] set for the GUI image, not saved to build
         Can be specified by infobox name, actual image, and will attempt to look up the item name as well
         Can probably be simpler -- this tied together a mix of different sources
-        :param image0Name: used to look up an infobox image by name [instead of image0]
-        :param image1Name: used to look up an infobox image by name [instead of image1]
-        :param image0: provided image0 image [I think this is base icon]
-        :param image1: provided image1 image [I think this is the border]
+        -:param image0Name: used to look up an infobox image by name [instead of image0]
+        -:param image1Name: used to look up an infobox image by name [instead of image1]
+        -:param image0: provided image0 image [I think this is base icon]
+        -:param image1: provided image1 image [I think this is the border]
 
         :return: Canvas object containing button logic, base image, border image
 
         internalKey is the cache sub-group (for equipment cache sub-groups)
-        :todo: This should probably become a class so it can just be adjusted and passed around instead of this lengthy parameter set
+        todo: This should probably become a class so it can just be adjusted and passed around instead of this lengthy parameter set
         """
         item = None
 
@@ -7687,7 +7725,8 @@ class SETS():
     def precache_downloads_group(self, group):
         """Precache each category for a specific source group
 
-        TODO: modify URL/Image functions to use source tags
+        TODO: modify URL/Image functions to use source tags, add source tags
+        TODO: OR split references to support multiple sets of each of the below
         TODO: merge instead of setting [currently the last load is kept]
         """
         self.logWriteSimple('precache', 'group', 3, [group])
@@ -7819,6 +7858,7 @@ class SETS():
         # modulo to reduce time / flashing UI spent on updating
         if text is not None:
             self.splashText.set(text[:300])
+            self.logDisplayUpdate()
         if self.splashProgressBarUpdates % self.updateOnStep == 0 or self.splashProgressBarUpdates % self.updateOnStep + weight > self.updateOnHeavyStep:
             self.splashProgressBar.step(weight)
             self.requestWindowUpdate()
