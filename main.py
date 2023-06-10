@@ -4120,7 +4120,8 @@ class SETS():
 
         # create and mount mark option menu
         marks = copy.copy(self.marks)
-        marks.remove(mark.get())
+        if mark.get() in marks:
+            marks.remove(mark.get())
         mark_option = OptionMenu(topbar_frame, mark, mark.get(), *marks)
         mark_option.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
                 highlightthickness=0)
