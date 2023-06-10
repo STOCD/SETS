@@ -2077,6 +2077,8 @@ class SETS():
         """Return a list of items for the picker to provide"""
         # TODO: filter ship types allowed to use ["who" from infobox], needs ship type sent from upstream
 
+        category = None
+
         if args is not None and type(args) is list:
             category = args[0]
 
