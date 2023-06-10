@@ -209,7 +209,7 @@ class SETS():
         'button': {
             'bg': '#3a3a3a',  # self.theme['button']['bg']
             'fg': '#b3b3b3',  # self.theme['button']['fg']
-            'hover': '#555555',    # self.theme['button']['hover']
+            'activebackground': '#555555',    # self.theme['button']['activebackground']
         },
         'label': {
             'bg': '#b3b3b3',  # self.theme['label']['bg']
@@ -1423,6 +1423,7 @@ class SETS():
                 self.logWriteCounter('Trait', '(json)', len(self.cache['traitsWithImages'][type][environment]), [environment, type])
 
     def setListIndex(self, list, index, value):
+        """helper function that sets 'list's entry at 'index' to 'value'"""
         list[index] = value
 
     def uri_sanitize_stowiki(self, name):
@@ -2125,10 +2126,7 @@ class SETS():
         pickWindow.geometry(sizeWindow+self.pickerLocation(windowheight))
         #pickWindow.minsize(windowwidth, windowheight)
 
-        origVar = dict()
-        for key in itemVar:
-            origVar[key] = itemVar[key]
-        pickWindow.protocol('WM_DELETE_WINDOW', lambda:self.pickerCloseCallback(pickWindow,origVar,itemVar))
+        pickWindow.protocol('WM_DELETE_WINDOW', lambda:self.pickerCloseCallback(pickWindow, itemVar))
 
         # set up top frame with top_bar_functions and clear button
         container = Frame(pickWindow)
@@ -2182,9 +2180,8 @@ class SETS():
 
         return itemVar
 
-    def pickerCloseCallback(self, window, origVar, currentVar):
-        for key in origVar:
-            currentVar[key] = origVar[key]
+    def pickerCloseCallback(self, window, currentVar):
+        currentVar['item'] = 'Y'
 
         self.windowCloseCallback(window)
 
@@ -2323,12 +2320,11 @@ class SETS():
         This function provides the clicking action for most equipment buttons
         """
         self.precacheEquipment(args[0])
-        itemVar = {"item":'',"image":self.emptyImage, "rarity": self.persistent['rarityDefault'], "mark": self.persistent['markDefault'], "modifiers":[]}
 
         items_list = list(self.cache['equipmentWithImages'][args[0]].items())
         items_list = self.item_list_filter(items_list, args=args)  # Most restrictions should come from the ship
 
-        self.picker_getresult(canvas, img, i, key, args, items_list, item_initial=itemVar, type='item', title='Pick', extra_frames=[self.setupRarityFrame])
+        self.picker_getresult(canvas, img, i, key, args, items_list, type='item', title='Pick', extra_frames=[self.setupRarityFrame])
 
 
     def traitLabelCallback(self, e, canvas, img, i, key, args):
@@ -2380,7 +2376,8 @@ class SETS():
         - img: tuple containing the identifiers for the two image layers (item image and rarity image)
         - args: variable information depending on type
             - for equipment (type = 'item'): list-> First: type_key as in self.cache['equipment'][type_key],
-            Second *Not used*: title for picker window, Third *not used*: empty string
+            Second *Not used*: title for picker window, Third *not used*: empty string, 
+            Fourth: 'space' or 'ground'
             - for boffs: list -> First: StringVar containing the profession of the seat, Second: StringVar 
             containing the specialization of the seat, Third: index of the seat, Fourth: 'space' or 'ground'
             - for traits: list -> First: True if slot holds ground reputation traits, Second: True if slot 
@@ -2444,7 +2441,10 @@ class SETS():
         - extra_frames: list of functions that create additional functionality inside the picker window
         """
 
-        item_var = item_initial if item_initial is not None else self.getEmptyItem()
+        if type == 'item' and isinstance(self.build[key][i], dict) and self.build[key][i]:
+            item_var = self.build[key][i]
+        else:
+            item_var = item_initial if item_initial is not None else self.getEmptyItem()
         additional = [self.setupSearchFrame] # self.setupSearchFrame creates the search bar inside pickerGUI
         if extra_frames:
             additional += extra_frames
@@ -2456,6 +2456,8 @@ class SETS():
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':  # Clear slot
                 self.clear_slot(canvas, key, i, type, img)
+            if item['item'] == 'Y': # close picker -> do nothing
+                return
             else: # item choosen -> slot item
                 self.set_slot(canvas, item, key, i, type, img, args)
             self.auto_save_queue()
@@ -4074,7 +4076,7 @@ class SETS():
 
     def setupClearSlotFrame(self, frame, itemVar, pickWindow):
         topbarFrame = Frame(frame)
-        clearSlotButton = HoverButton(topbarFrame, text='Clear Slot', padx=5, bg=self.theme['button']['bg'], fg=self.theme['button']['fg'], activebackground=self.theme['button']['hover'])
+        clearSlotButton = HoverButton(topbarFrame, text='Clear Slot', padx=5, **self.theme['button'])
         clearSlotButton.grid(row=0, column=0, sticky='nsew', padx=(10,15), pady=5)
         clearSlotButton.bind('<Button-1>', lambda e,name='X',image=self.emptyImage,v=itemVar,win=pickWindow:self.setVarAndQuit(e,name,image,v,win))
         topbarFrame.grid_columnconfigure(0, weight=1)
@@ -4091,29 +4093,67 @@ class SETS():
         searchText.trace_add('write', lambda v,i,m,content=content,frame=frame:self.applyContentFilter(frame, content, searchText.get()))
         topbarFrame.pack(fill=BOTH, expand=False, side=TOP)
 
-    def setupRarityFrame(self,frame,itemVar,content):
-        topbarFrame = Frame(frame)
-        mark = StringVar()
-        if 'markDefault' in self.persistent and self.persistent['markDefault'] is not None:
-            mark.set(self.persistent['markDefault'])
-        topbarFrame.grid_columnconfigure(0, weight=2, uniform='setupRarityFrameColumns')
-        topbarFrame.grid_columnconfigure(1, weight=1, uniform='setupRarityFrameColumns')
-        topbarFrame.grid_columnconfigure(2, weight=2, uniform='setupRarityFrameColumns')
-        markOption = OptionMenu(topbarFrame, mark, *self.marks)
-        markOption.grid(row=0, column=0, sticky='nsew')
-        rarity = StringVar(value=self.persistent['rarityDefault'])
-        rarityOption = OptionMenu(topbarFrame, rarity, *self.rarities)
-        rarityOption.grid(row=0, column=2, sticky='nsew')
-        modFrame = Frame(topbarFrame)
-        modFrame.grid(row=1, column=0, columnspan=3, sticky='nsew')
-        mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=itemVar))
-        rarity.trace_add('write', lambda v,i,m,frame=modFrame:self.setupModFrame(frame, rarity=rarity.get(), itemVar=itemVar))
-        topbarFrame.pack(side=TOP)
-        if 'rarity' in itemVar and itemVar['rarity']:
-            self.setupModFrame(modFrame, rarity=itemVar['rarity'], itemVar=itemVar)
-        elif 'rarityDefault' in self.persistent and self.persistent['rarityDefault']:
-            self.setupModFrame(modFrame, rarity=self.persistent['rarityDefault'], itemVar=itemVar)
+    def setupRarityFrame(self,frame,item_var,content=None):
+        """inserts rarity, mark and modifier dropdown menus into frame
+        
+        Parameters:
+        - :param frame: frame housing the menus
+        - :param item_var: current item
+        - :param content: does nothing"""
+        
+        # sets up frame
+        topbar_frame = Frame(frame, bg=self.theme['app']['fg'])
+        topbar_frame.grid_columnconfigure(0, weight=2, uniform='setupRarityFrameColumns')
+        topbar_frame.grid_columnconfigure(1, weight=1, uniform='setupRarityFrameColumns')
+        topbar_frame.grid_columnconfigure(2, weight=2, uniform='setupRarityFrameColumns')
 
+        mark = StringVar() # will save the value the mark option menu is currently set to
+        # get mark preset value
+        if 'mark' in item_var and item_var['mark']: 
+            mark.set(item_var['mark'])
+        # get mark default value
+        elif 'markDefault' in self.persistent and self.persistent['markDefault'] is not None:
+            mark.set(self.persistent['markDefault'])
+            item_var['mark'] = self.persistent['markDefault']
+
+        # create and mount mark option menu
+        marks = copy.copy(self.marks)
+        marks.remove(mark.get())
+        mark_option = OptionMenu(topbar_frame, mark, mark.get(), *marks)
+        mark_option.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
+                highlightthickness=0)
+        mark_option.grid(row=0, column=0, sticky='nsew')
+
+        rarity = StringVar()
+        # get rarity preset value
+        if 'rarity' in item_var and item_var['rarity']:
+            rarity.set(item_var['rarity'])
+        # get rarity default value
+        elif 'markDefault' in self.persistent and self.persistent['rarityDefault'] is not None: 
+            rarity.set(self.persistent['rarityDefault'])
+            item_var['rarity'] = self.persistent['rarityDefault']
+
+        # create and mount rarity option menu
+        rarities = copy.copy(self.rarities)
+        rarities.remove(rarity.get())
+        rarity_option = OptionMenu(topbar_frame, rarity, rarity.get(), *rarities)
+        rarity_option.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
+                highlightthickness=0)
+        rarity_option.grid(row=0, column=2, sticky='nsew')
+
+        mod_frame = Frame(topbar_frame, bg=self.theme['app']['fg'])
+        mod_frame.grid(row=1, column=0, columnspan=3, sticky='nsew')
+        topbar_frame.pack(side=TOP)
+        
+        # add traces
+        mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=item_var))
+        rarity.trace_add('write', lambda v,i,m,frame=mod_frame:
+                self.setupModFrame(frame, rarity=rarity.get(), item_var=item_var))
+
+        # initial set up of mods
+        if 'rarity' in item_var and item_var['rarity']:
+            self.setupModFrame(mod_frame, rarity=item_var['rarity'], item_var=item_var)
+    
     def labelBuildBlock(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
         """
         Set up n-element line of ship equipment icons/buttons
@@ -4232,7 +4272,8 @@ class SETS():
             if image0 is None:
                 image0=self.imageFromInfoboxName(image0Name, suffix=suffix, faction=faction) if image0Name is not None else self.emptyImage
             if image1 is None:
-                image1=self.imageFromInfoboxName(image1Name, suffix=suffix, faction=faction) if image1Name is not None else self.emptyImage
+                image1 = self.cache['overlays'][image1Name.lower()] if image1Name is not None else self.emptyImage
+                #image1=self.imageFromInfoboxName(image1Name, suffix=suffix, faction=faction) if image1Name is not None else self.emptyImage
 
             if name == 'blank':
                 pass  # no backend/image
@@ -5024,23 +5065,38 @@ class SETS():
         self.setupGroundTraitFrame()
         self.clearInfoboxFrame('ground')
 
-    def setupModFrame(self, frame, rarity, itemVar):
-        """Set up modifier frame in equipment picker"""
+    def setupModFrame(self, frame, rarity, item_var):
+        """Set up modifier frame in equipment picker and stores the changed rarity
+        
+        Parameters:
+        - :param frame: frame housing the menus
+        - :param rarity: current rarity; determines number of mods
+        - :param item_var: current item"""
+        
+        # store current rarity
+        item_var['rarity'] = rarity
+
         self.precacheModifiers()
         self.clearFrame(frame)
-        n = self.mods_per_rarity[rarity]
-        #n = self.rarities.index(rarity)
-        itemVar['rarity'] = rarity
-        if not len(itemVar['modifiers']) == n:
-            itemVar['modifiers'] = ['']*n
 
-        mods = sorted(self.cache['modifiers'])
+        # adjust number of available mods
+        n = self.mods_per_rarity[rarity]
+        if len(item_var['modifiers']) < n:
+            item_var['modifiers'] += [''] * (n - len(item_var['modifiers']))
+        elif len(item_var['modifiers']) > n:
+            item_var['modifiers'] = item_var['modifiers'][:len(item_var['modifiers'])]
+
+        # set up and mount mod option menus including traces
+        mods = [''] + sorted(self.cache['modifiers'])
         for i in range(n):
-            v = StringVar()
-            if i < len(itemVar['modifiers']):
-                v.set(itemVar['modifiers'][i])
-            v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=itemVar,v=v:self.setListIndex(itemVar['modifiers'],i,v.get()))
-            OptionMenu(frame, v, *mods).grid(row=0, column=i, sticky='new')
+            v = StringVar(value=item_var['modifiers'][i])
+            v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=item_var,v=v:
+                    self.setListIndex(item_var['modifiers'],i,v.get()))
+            o = OptionMenu(frame, v, v.get(), *mods)
+            o.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
+                highlightthickness=0)
+            px = (0, 1) if i == 0 else (1, 0) if i == n-1 else 1
+            o.grid(row=0, column=i, sticky='nsew', padx=px, pady=(4,0))
             frame.grid_columnconfigure(i, weight=1, uniform='setupModFrame')
 
     def getURL(self, name):
@@ -5653,10 +5709,14 @@ class SETS():
             return
         if name == '': return
         self.logWriteSimple('Infobox', environment, 4, tags=[name, key, item])
-        if name != '' and self.displayedInfoboxItem == name and not duplicateTooltipDisplay:
+        try:
+            name_plus = f'''{name}{item['rarity']}{item['mark']}{''.join(item['modifiers'])}'''
+        except (TypeError, KeyError):
+            name_plus = name
+        if name != '' and self.displayedInfoboxItem == name_plus and not duplicateTooltipDisplay:
             self.logWriteSimple('Infobox', 'displayed', 2, [environment])
             return
-        self.displayedInfoboxItem = name
+        self.displayedInfoboxItem = name_plus
 
         # selects the frame of the respective tab
         if environment == 'skill' or key == 'skilltree':
@@ -6121,7 +6181,11 @@ class SETS():
             second and so on (self.build[key][i])
         - type: 'trait' / 'item' / 'boffs'
         - img: tuple containing the identifiers for the two image layers (item image and rarity image)
-        - args: variable information depending on type"""
+        - args: variable information depending on type
+            - for equipment (type = 'item'): list-> First: type_key as in self.cache['equipment'][type_key],
+            Second *Not used*: title for picker window, Third *not used*: empty string, 
+            Fourth: 'space' or 'ground'
+        """
         # saves information about current slot
         self.cm_current_data = {
             'canvas': canvas,
@@ -6138,7 +6202,7 @@ class SETS():
         """stores the item inside the slot the context menu was opened on"""
         item = self.build[self.cm_current_data['key']][self.cm_current_data['i']]
         if isinstance(item, dict): 
-            self.cm_item = item
+            self.cm_item = copy.copy(item) # insert a copy not a reference
             self.cm_item['image'] = self.cache['equipmentWithImages'][self.cm_current_data['args'][0]][item['item']]
             self.cm_item_slot = self.cm_current_data['key']
         else: self.cm_item = None
@@ -6152,15 +6216,81 @@ class SETS():
             self.set_slot(self.cm_current_data['canvas'], copy.copy(self.cm_item), self.cm_current_data['key'], 
                 self.cm_current_data['i'], self.cm_current_data['type'], self.cm_current_data['img'], 
                 self.cm_current_data['args'])
-            if self.cm_last_canvas is None: self.cm_last_canvas = self.cm_current_data['canvas']
+            self.auto_save_queue()
 
     def context_menu_clear(self):
         """clears slot that the context menu was opened on"""
         self.clear_slot(self.cm_current_data['canvas'], self.cm_current_data['key'], self.cm_current_data['i'], 
                 self.cm_current_data['type'], self.cm_current_data['img'])
+        self.auto_save_queue()
 
     def context_menu_edit(self):
-        pass
+        """opens edit window for current slot"""
+
+        # configure window
+        edit_window = Toplevel(self.window, padx=10, pady=10, bg=self.theme['app']['bg'])
+        edit_window.transient(self.window)
+        edit_window.title('Edit Rarity, Mark and Modifiers')
+        content_frame = Frame(edit_window, bg=self.theme['app']['fg'], padx=5, pady=5)
+        content_frame.pack()
+
+        # use copy of current item to allow for discarding the changes
+        item = copy.copy(self.build[self.cm_current_data['key']][self.cm_current_data['i']])
+        
+        # inserts option menus and their logic
+        self.setupRarityFrame(content_frame, item)
+
+        # setting up buttons
+        button_frame = Frame(content_frame, bg=self.theme['app']['fg'])
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+        button_frame.pack(side=TOP, fill=X)
+        close_button = HoverButton(button_frame, text='Close', padx=5, pady=5, **self.theme['button'])
+        save_button = HoverButton(button_frame, text='Save', padx=5, pady=5, **self.theme['button'])
+        close_button.bind('<Button-1>', lambda e: edit_window.destroy())
+        save_button.bind('<Button-1>', lambda e: self.store_item_and_quit(item, self.cm_current_data,
+                edit_window))
+        close_button.grid(row=0, column=0, sticky='ew', padx=(0, 5), pady=(5, 0))
+        save_button.grid(row=0, column=1, sticky='ew', padx=0, pady=(5, 0))
+
+
+        # finalizing
+        edit_window.wait_visibility()    #Implemented for Linux
+        edit_window.grab_set()
+        edit_window.update()
+        edit_window.geometry((f'''{edit_window.winfo_width()}x{edit_window.winfo_height()}'''
+                f'''{self.pickerLocation(edit_window.winfo_width(), edit_window.winfo_height())}'''))
+        edit_window.resizable(True, False)
+        edit_window.wait_window()
+        self.auto_save_queue()
+
+    def store_item_and_quit(self, item, slot, window):
+        """
+        stores equipment item to self.build[key][index], updates hover event and closes window
+        
+        Parameters:
+        - :param item: item dict to be stored
+        - :param slot: slot information of the affected slot
+        - :param window: window to be closed
+        """
+        # see self.context_menu_callback for info about contents of parameter 'slot'
+
+        # store item
+        self.build[slot['key']][slot['i']] = item
+
+        # update hover bindings
+        tooltip_uuid = self.uuid_assign_for_tooltip()
+        environment = slot['args'][3] if len(slot['args']) >= 4 else 'space'
+        slot['canvas'].bind('<Enter>', lambda e:
+                self.setupInfoboxFrameTooltipDraw(tooltip_uuid, item, slot['args'][0], environment))
+        slot['canvas'].bind('<Leave>', lambda e: self.setupInfoboxFrameLeave(tooltip_uuid))
+
+        # update rarity overlay
+        slot['canvas'].itemconfig(slot['img'][1], image=self.cache['overlays'][item['rarity'].lower()])
+
+        # close window
+        window.destroy()
+
 
     def paste_restriction(self, old_slot, new_slot, name):
         """checks whether the item can fit into the new slot
@@ -6363,7 +6493,7 @@ class SETS():
         tagwindow.wait_visibility()
         tagwindow.grab_set()
         tagwindow.update()
-        tagwindow.geometry(self.pickerLocation(width=tagwindow.winfo_width(), height=tagwindow.winfo_height(), anchor='nw'))
+        tagwindow.geometry(f'{tagwindow.winfo_width()}x{tagwindow.winfo_height()}')
         tagwindow.wait_window()
 
 
@@ -6520,7 +6650,7 @@ class SETS():
         settingsMenuSettings = {
             'default': {'sticky': 'n', 'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.export_reddit_callback},
-            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback }, # library button  self.focusLibraryFrameCallback
+            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback}, # library button  self.focusLibraryFrameCallback
             'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback, 'image': self.three_bars},
         }
 
@@ -7079,7 +7209,7 @@ class SETS():
             'fg': self.theme['button']['fg'],
             'label_fg': self.theme['label']['fg'],
             'bg': self.theme['button']['bg'],
-            'abg': self.theme['button']['hover'],
+            'abg': self.theme['button']['activebackground'],
             'label_bg': self.theme['label']['bg'],
             'pad_x': 2,
             'pad_y': 2,
@@ -7348,10 +7478,9 @@ class SETS():
         self.context_menu.add_command(label='Paste item', command=self.context_menu_paste)
         self.context_menu.add_command(label='Edit slot', command=self.context_menu_edit)
         self.context_menu.add_command(label='Clear slot', command=self.context_menu_clear)
-        self.cm_current_data = dict()
-        self.cm_item = None
-        self.cm_item_slot = None
-        self.cm_last_canvas = None
+        self.cm_current_data = dict() # will contain information about the button right clicked on
+        self.cm_item = None # will contain the copied item
+        self.cm_item_slot = None # will contain the slot the item was copied from
 
         self.containerFrame = Frame(self.window, bg=self.theme['app']['bg'])
         self.containerFrame.pack(fill=BOTH, expand=True)
