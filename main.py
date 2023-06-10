@@ -4127,6 +4127,11 @@ class SETS():
         rarity = StringVar(value='')
         # get rarity preset value
         if 'rarity' in item_var and item_var['rarity']:
+            # backwards compatability
+            if item_var['rarity'] == 'Very rare':
+                item_var['rarity'] = 'Very Rare'
+            elif item_var['rarity'] == 'Ultra rare':
+                item_var['rarity'] = 'Ultra Rare'
             rarity.set(item_var['rarity'])
         # get rarity default value
         elif 'markDefault' in self.persistent and self.persistent['rarityDefault'] is not None: 
