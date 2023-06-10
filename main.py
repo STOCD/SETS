@@ -1041,6 +1041,7 @@ class SETS():
         self.perf('cache-traits');self.precacheTraits(limited=limited);self.perf('cache-traits', 'stop')
         self.perf('cache-shiptraits');self.precacheShipTraits(limited=limited);self.perf('cache-shiptraits', 'stop')
         self.perf('cache-equipment');self.precache_equipment_all(limited=limited);self.perf('cache-equipment', 'stop')
+        self.perf('cache-overlays'); self.precache_overlays(); self.perf('cache-overlays', 'stop')
         # Add the known equipment series [optional?]
         self.logWriteBreak('precachePreload END')
 
@@ -1085,6 +1086,14 @@ class SETS():
             for type in equipment_types:
                 self.precacheEquipment(type)
         return
+
+    def precache_overlays(self):
+        """adds rarity overlays to slef.backend['images']"""
+        self.cache
+        for rarity in ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra Rare', 'Epic']:
+            image = self.fetchOrRequestImage(f'''{self.wikiImages}{rarity.replace(' ', '_')}_icon.png''', rarity.lower(), self.itemBoxX, self.itemBoxY)
+            self.cache['overlays'][rarity.lower()] = image
+
 
     def precacheIconCleanup(self):
         """ preliminary gathering for self-cleaning icon folder """
@@ -1927,6 +1936,7 @@ class SETS():
                 'skillBonusImages': dict(),
                 'factions': dict(),
                 'modifiers': None,
+                'overlays': dict()
             }
 
     def resetBackend(self, rebuild=False):
@@ -2379,7 +2389,7 @@ class SETS():
         tooltip_uuid = self.uuid_assign_for_tooltip()
         name = item['item']
         backend_key = '{}_{}'.format(name, i)
-        self.backend['images'][backend_key] = item['image']  # index needed for item duplicate display
+        #self.backend['images'][backend_key] = item['image']  # index needed for item duplicate display
         canvas.itemconfig(img[0], image=item['image'])
 
         if type == 'item':
@@ -2392,8 +2402,9 @@ class SETS():
             if 'rarity' not in item or item['item'] == '' or item['rarity'] == '':
                 item['rarity'] = rarityDefaultItem
 
-            image1 = self.imageFromInfoboxName(item['rarity'])
-            self.backend['images'][backend_key+item['rarity']] = image1
+            #image1 = self.imageFromInfoboxName(item['rarity'])
+            #self.backend['images'][backend_key+item['rarity']] = image1
+            image1 = self.cache['overlays'][item['rarity'].lower()]
             canvas.itemconfig(img[1], image=image1)
         else:
             group_key = ''
@@ -4155,29 +4166,29 @@ class SETS():
         The majority of the parameters are pass-through settings for the canvas/grid
         I'll attempt to outline functional parameters for now
 
-        -:param parentFrame: The Frame to insert the button on
-        -:param width: If empty, width will default to itemBoxX
-        -:param height: If empty, height will default to itemBoxY
-        -:param callback: the callback function
-        -:param args: [array] contains variable information used for callback updating
-        -:param tooltip: Tooltip to provide
-        -:param context_menu: Include standard context menu
+        - :param parentFrame: The Frame to insert the button on
+        - :param width: If empty, width will default to itemBoxX
+        - :param height: If empty, height will default to itemBoxY
+        - :param callback: the callback function
+        - :param args: [array] contains variable information used for callback updating
+        - :param tooltip: Tooltip to provide
+        - :param context_menu: Include standard context menu
 
         self.build is the structure containing our settings
         Selecting the object is a bit of a twisty maze due to how the structure grew up, this could use a rebuild
         This is a hack designed to allow the same function to work with all of the original item structures
-        -:param name: direct item name -- may be some legacy/unused usage in function
-        -:param i: buildSubKey [shared space with name that may be deprecated for name]
-        -:param key: self.build[groupKey][key][buildSubKey] or self.build[key][buildSubKey], also backendKey
-        -:param groupKey: self.build[groupKey][key][buildSubkey]
+        - :param name: direct item name -- may be some legacy/unused usage in function
+        - :param i: buildSubKey [shared space with name that may be deprecated for name]
+        - :param key: self.build[groupKey][key][buildSubKey] or self.build[key][buildSubKey], also backendKey
+        - :param groupKey: self.build[groupKey][key][buildSubkey]
 
         self.backend['images'][backendKey][i] has [image0, image1] set for the GUI image, not saved to build
         Can be specified by infobox name, actual image, and will attempt to look up the item name as well
         Can probably be simpler -- this tied together a mix of different sources
-        -:param image0Name: used to look up an infobox image by name [instead of image0]
-        -:param image1Name: used to look up an infobox image by name [instead of image1]
-        -:param image0: provided image0 image [I think this is base icon]
-        -:param image1: provided image1 image [I think this is the border]
+        - :param image0Name: used to look up an infobox image by name [instead of image0]
+        - :param image1Name: used to look up an infobox image by name [instead of image1]
+        - :param image0: provided image0 image [I think this is base icon]
+        - :param image1: provided image1 image [I think this is the border]
 
         :return: Canvas object containing button logic, base image, border image
 
@@ -6169,14 +6180,12 @@ class SETS():
 
         # uni consoles can be slotted in tac, sci and eng slots; 
         # self.cache['equipment']['Ship ... Console'] contains all valid items for that slot including uni consoles
-        if old_slot == 'uniConsoles':
-            if new_slot == 'tacConsoles' and name in self.cache['equipment']['Ship Tactical Console'].keys():
-                return True
-            if new_slot == 'sciConsoles' and name in self.cache['equipment']['Ship Science Console'].keys():
-                return True
-            if new_slot == 'engConsoles' and name in self.cache['equipment']['Ship Engineering Console'].keys():
-                return True
-            return False
+        if new_slot == 'tacConsoles' and name in self.cache['equipment']['Ship Tactical Console'].keys():
+            return True
+        if new_slot == 'sciConsoles' and name in self.cache['equipment']['Ship Science Console'].keys():
+            return True
+        if new_slot == 'engConsoles' and name in self.cache['equipment']['Ship Engineering Console'].keys():
+            return True
 
         # some fore weapons can also be slotted in aft and vice versa
         if (old_slot == 'foreWeapons' or old_slot == 'aftWeapons') and \
