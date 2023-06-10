@@ -2444,7 +2444,7 @@ class SETS():
         """
 
         if type == 'item' and isinstance(self.build[key][i], dict) and self.build[key][i]:
-            item_var = self.build[key][i]
+            item_var = copy.copy(self.build[key][i])
         else:
             item_var = item_initial if item_initial is not None else self.getEmptyItem()
         additional = [self.setupSearchFrame] # self.setupSearchFrame creates the search bar inside pickerGUI
@@ -2458,7 +2458,7 @@ class SETS():
         if 'item' in item and len(item['item']):
             if item['item'] == 'X':  # Clear slot
                 self.clear_slot(canvas, key, i, type, img)
-            if item['item'] == 'Y': # close picker -> do nothing
+            elif item['item'] == 'Y': # close picker -> do nothing
                 return
             else: # item choosen -> slot item
                 self.set_slot(canvas, item, key, i, type, img, args)
