@@ -1572,8 +1572,8 @@ class SETS():
         self.yesNo = ["Yes", "No"]
         self.universalTypes = ['Tactical', 'Engineering', 'Science' ]
         self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
-        self.rarities = ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra rare', 'Epic']
-        self.mods_per_rarity = {'Common':0, 'Uncommon':1, 'Rare':2, 'Very rare':3, 'Ultra rare':4, 'Epic':5, '':0}
+        self.rarities = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Ultra Rare', 'Epic']
+        self.mods_per_rarity = {'Common':0, 'Uncommon':1, 'Rare':2, 'Very Rare':3, 'Ultra Rare':4, 'Epic':5, '':0}
         self.factionNames = [ 'Federation', 'Dominion', 'DSC Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
         self.exportOptions = [ 'PNG', 'Json' ]
         self.boffSortOptions = [ 'release', 'ranks', 'spec', 'spec2' ]
@@ -4107,7 +4107,7 @@ class SETS():
         topbar_frame.grid_columnconfigure(1, weight=1, uniform='setupRarityFrameColumns')
         topbar_frame.grid_columnconfigure(2, weight=2, uniform='setupRarityFrameColumns')
 
-        mark = StringVar() # will save the value the mark option menu is currently set to
+        mark = StringVar(value='') # will save the value the mark option menu is currently set to
         # get mark preset value
         if 'mark' in item_var and item_var['mark']: 
             mark.set(item_var['mark'])
@@ -4124,7 +4124,7 @@ class SETS():
                 highlightthickness=0)
         mark_option.grid(row=0, column=0, sticky='nsew')
 
-        rarity = StringVar()
+        rarity = StringVar(value='')
         # get rarity preset value
         if 'rarity' in item_var and item_var['rarity']:
             rarity.set(item_var['rarity'])
@@ -4135,7 +4135,7 @@ class SETS():
 
         # create and mount rarity option menu
         rarities = copy.copy(self.rarities)
-        rarities.remove(rarity.get())
+        if rarity.get() != '': rarities.remove(rarity.get())
         rarity_option = OptionMenu(topbar_frame, rarity, rarity.get(), *rarities)
         rarity_option.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
                 highlightthickness=0)
@@ -5081,15 +5081,16 @@ class SETS():
 
         # adjust number of available mods
         n = self.mods_per_rarity[rarity]
-        if len(item_var['modifiers']) < n:
-            item_var['modifiers'] += [''] * (n - len(item_var['modifiers']))
-        elif len(item_var['modifiers']) > n:
-            item_var['modifiers'] = item_var['modifiers'][:len(item_var['modifiers'])]
+        if 'modifiers' in item_var:
+            if len(item_var['modifiers']) < n:
+                item_var['modifiers'] += [''] * (n - len(item_var['modifiers']))
+            elif len(item_var['modifiers']) > n:
+                item_var['modifiers'] = item_var['modifiers'][:len(item_var['modifiers'])]
 
         # set up and mount mod option menus including traces
         mods = [''] + sorted(self.cache['modifiers'])
         for i in range(n):
-            v = StringVar(value=item_var['modifiers'][i])
+            v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=item_var,v=v:
                     self.setListIndex(item_var['modifiers'],i,v.get()))
             o = OptionMenu(frame, v, v.get(), *mods)
