@@ -2313,11 +2313,11 @@ class SETS():
         """
         Open picker for specified data
 
-        -:param canvas: object to open picker at
-        -:param img: pass-through data
-        -:param i: pass-through data identifier
-        -:param key: pass-through data identifier
-        -:param args: data list -- args[0] will be the canvas object type used to load the list cache, pass-through
+        - :param canvas: object to open picker at
+        - :param img: pass-through data
+        - :param i: pass-through data identifier
+        - :param key: pass-through data identifier
+        - :param args: data list -- args[0] will be the canvas object type used to load the list cache, pass-through
 
         This function provides the clicking action for most equipment buttons
         """
@@ -4167,17 +4167,17 @@ class SETS():
         Set up n-element line of ship equipment icons/buttons
 
         A shortcut for placing a group of items together
-        -:param key: The name of the backend image store to be used
-        -:param n: the number of elements to be added
-        -:param frame: The frame to attach this list to (will expect grid)
-        -:param row: frame grid row
-        -:param col: frame grid col
-        -:param cspan: frame grid cspan
+        - :param key: The name of the backend image store to be used
+        - :param n: the number of elements to be added
+        - :param frame: The frame to attach this list to (will expect grid)
+        - :param row: frame grid row
+        - :param col: frame grid col
+        - :param cspan: frame grid cspan
 
-        -:param name: text label for the list
-        -:param callback: callback function to use for the buttons
-        -:param args: callback args to use for the buttons
-        -:param disabledCount: a hack to allow disabling elements at the end of the list [no click response]
+        - :param name: text label for the list
+        - :param callback: callback function to use for the buttons
+        - :param args: callback args to use for the buttons
+        - :param disabledCount: a hack to allow disabling elements at the end of the list [no click response]
 
         """
         self.backend['images'][key] = [None] * n
