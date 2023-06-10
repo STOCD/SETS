@@ -2082,7 +2082,7 @@ class SETS():
         if args is not None and type(args) is list:
             category = args[0]
 
-        if category in self.item_filter_list:
+        if category is not None and category in self.item_filter_list:
             removals = self.item_filter_list[category]
 
             if category == "Ship Aft Weapon":
@@ -7874,6 +7874,7 @@ class SETS():
         TODO: modify URL/Image functions to use source tags, add source tags
         TODO: OR split references to support multiple sets of each of the below
         TODO: merge instead of setting [currently the last load is kept]
+        OPTION: check all references for the below, can those locations be rebuilt to include filtering and multi-source easily instead of merging?
         """
         self.logWriteSimple('precache', 'group', 3, [group])
 
