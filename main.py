@@ -4145,7 +4145,8 @@ class SETS():
 
         # create and mount rarity option menu
         rarities = copy.copy(self.rarities)
-        if rarity.get() != '': rarities.remove(rarity.get())
+        if rarity.get() != '' and rarity.get() in rarities:
+            rarities.remove(rarity.get())
         rarity_option = OptionMenu(topbar_frame, rarity, rarity.get(), *rarities)
         rarity_option.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
                 highlightthickness=0)
