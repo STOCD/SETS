@@ -326,7 +326,7 @@ class SETS():
         'icon_on': {
             'bg': 'yellow',  # self.theme['icon_on']['bg']
             'fg': '#ffffff',  # self.theme['icon_on']['fg']
-            'relief': 'groove',  # self.theme['icon_on']['relief']
+            'relief': 'raised',  # self.theme['icon_on']['relief']
         },
         'context_menu': {
             'activebackground': '#dddddd',
@@ -805,6 +805,8 @@ class SETS():
 
     def loadLocalImage(self, filename, width = None, height = None, forceAspect=False):
         """Request image from web or fetch from local cache"""
+        width = int(width)
+        height = int(height)
         cache_base = self.settings['folder']['local']
         cache_base = self.resource_path(cache_base)
         self.make_filename_path(cache_base)
@@ -1244,11 +1246,11 @@ class SETS():
         if environment == 'ground' or environment is None:
             self.precacheGroundSkills()
 
-        self.cache['skillBonusImages']['up'] = self.loadLocalImage('arrow-up.png', 49, 46, True) #self.fetch_image('local\\arrow-up.png', 49, 46, True)
-        self.cache['skillBonusImages']['down'] = self.loadLocalImage('arrow-down.png', 49, 46, True) #self.fetch_image('local\\arrow-down.png', 49, 64, True)
-        self.cache['skillBonusImages']['Tactical'] = self.fetchOrRequestImage(self.wikiImages+'Focused_Frenzy_icon.png', 'Focused Frenzy', 49, 64)
-        self.cache['skillBonusImages']['Science'] = self.fetchOrRequestImage(self.wikiImages+'Probability_Manipulation_icon.png', 'Probability Manipulation', 49, 64)
-        self.cache['skillBonusImages']['Engineering'] = self.fetchOrRequestImage(self.wikiImages+'EPS_Corruption_icon.png', 'EPS Corruption', 49, 64)
+        self.cache['skillBonusImages']['up'] = self.loadLocalImage('arrow-up.png', self.itemBoxX, self.itemBoxY, True) #self.fetch_image('local\\arrow-up.png', 49, 46, True)
+        self.cache['skillBonusImages']['down'] = self.loadLocalImage('arrow-down.png', self.itemBoxX, self.itemBoxY, True) #self.fetch_image('local\\arrow-down.png', 49, 64, True)
+        self.cache['skillBonusImages']['Tactical'] = self.fetchOrRequestImage(self.wikiImages+'Focused_Frenzy_icon.png', 'Focused Frenzy', self.itemBoxX, self.itemBoxY)
+        self.cache['skillBonusImages']['Science'] = self.fetchOrRequestImage(self.wikiImages+'Probability_Manipulation_icon.png', 'Probability Manipulation', self.itemBoxX, self.itemBoxY)
+        self.cache['skillBonusImages']['Engineering'] = self.fetchOrRequestImage(self.wikiImages+'EPS_Corruption_icon.png', 'EPS Corruption', self.itemBoxX, self.itemBoxY)
 
     def precacheDoffs(self, keyPhrase):
         """Populate in-memory cache of doff lists for faster loading"""
