@@ -7535,7 +7535,7 @@ class SETS():
     def arg_parser_setup(self):
         parser = argparse.ArgumentParser(description='A Star Trek Online build tool')
         parser.add_argument('--configfile', type=int, help='Set configuration file (must be .JSON)')
-        parser.add_argument('--configfolder', type=int, help='Set configuration folder (contains config file, state file, default library location')
+        parser.add_argument('--configfolder', type=str, help='Set configuration folder (contains config file, state file, default library location')
         parser.add_argument('--debug', type=int, help='Set debug level (default: 0)')
         parser.add_argument('--file', type=str, help='File to import on open')
         parser.add_argument('--nofetch', help='Do not fetch new images', action='store_true')
