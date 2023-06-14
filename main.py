@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.6b90'
+    version = '2023.6b140'
 
     daysDelayBeforeReattempt = 7
 
@@ -896,12 +896,19 @@ class SETS():
         self.emptyShipLayout(shipHtml)              # creating an empty ship layout for the given ship
 
         # putting in the equipment
-        for elem in ['tacConsoles','engConsoles','sciConsoles','uniConsoles','devices','foreWeapons','aftWeapons','experimental','secdef','hangars','deflector', 'engines', 'warpCore', 'shield']:
+        for elem in ['tacConsoles','engConsoles','sciConsoles','uniConsoles','devices','foreWeapons','aftWeapons','experimental','secdef','hangars','deflector', 'engines', 'shield']:
             for index in range(len(self.build[elem])):
                 try:
                     self.build[elem][index] = oldBuild[elem][index]
                 except IndexError:
                     self.build[elem][index] = [None]
+        if 'Warbird' in oldBuild['ship'] or 'Aves' in oldBuild['ship'] and \
+            not ('Warbird' in self.build['ship'] or 'Aves' in self.build['ship']):
+            self.build['warpCore'][0] = None
+        elif 'Warbird' in self.build['ship'] or 'Aves' in self.build['ship'] and \
+            not ('Warbird' in oldBuild['ship'] or 'Aves' in oldBuild['ship']):
+            self.build['warpCore'][0] = None
+
 
         # putting in the boffs
         if not 'boffs' in oldBuild and not 'boffseats' in oldBuild and not 'space' in oldBuild['boffseats'] and not 'space_spec' in oldBuild['boffseats']:
@@ -921,7 +928,6 @@ class SETS():
 
         oldSeats = sorted(oldSeats, key=sortedNone, reverse=True)
         newSeats = sorted(newSeats, key=sortedNone, reverse=True)
-
         boffMapping = dict()                        # this dictionary will contain the information on which boff seat on the old build will be which on the new build: "<newSeatID>":"<oldSeatID>"
         universalStationPurpose = ['']*6            # if a seat gets assigned to an universal seat the career that this universal seat needs to be is saved here
         for oldSeat in oldSeats:                    # this tries to give every old seat a new seat. higher rank seats will be considered first.
@@ -941,8 +947,8 @@ class SETS():
             self.build['boffseats']['space_spec'][int(seat[3][-1])] = seat[2]
             for r in range(1, min(len(self.build['boffs'][seat[3]]), len(oldBuild['boffs'][boffMapping[seat[3]]])) + 1):  # iterates for the minimum rank of the old and new station
                 ability = oldBuild['boffs'][boffMapping[seat[3]]][r-1]
-                if seat[2] == '': bofflist = self.cache['boffAbilitiesWithImages']['space'][self.build['boffseats']['space'][int(seat[3][-1])]][r]
-                else: bofflist = self.cache['boffAbilitiesWithImages']['space'][self.build['boffseats']['space'][int(seat[3][-1])]][r] + self.cache['boffAbilitiesWithImages']['space'][seat[2]][r]
+                if seat[2] == '': bofflist = self.cache['boffAbilitiesWithImages']['space'][self.build['boffseats']['space'][int(seat[3][-1])]][r].items()
+                else: bofflist = list(self.cache['boffAbilitiesWithImages']['space'][self.build['boffseats']['space'][int(seat[3][-1])]][r].items()) + list(self.cache['boffAbilitiesWithImages']['space'][seat[2]][r].items())
                 for thisisshit in bofflist:
                     if thisisshit[0] == ability:
                         self.build['boffs'][seat[3]][r-1] = ability
@@ -1091,10 +1097,12 @@ class SETS():
 
     def precache_overlays(self):
         """adds rarity overlays to slef.backend['images']"""
-        self.cache
+        if not 'overlays' in self.cache:
+            self.cache['overlays'] = dict()
         for rarity in ['Common', 'Uncommon', 'Rare', 'Very rare', 'Ultra Rare', 'Epic']:
             image = self.fetchOrRequestImage(f'''{self.wikiImages}{rarity.replace(' ', '_')}_icon.png''', rarity.lower(), self.itemBoxX, self.itemBoxY)
             self.cache['overlays'][rarity.lower()] = image
+            self.logWriteSimple('precache_overlays', '', 4, tags=[rarity])
 
 
     def precacheIconCleanup(self):
@@ -1252,6 +1260,18 @@ class SETS():
         self.cache['skillBonusImages']['Science'] = self.fetchOrRequestImage(self.wikiImages+'Probability_Manipulation_icon.png', 'Probability Manipulation', self.itemBoxX, self.itemBoxY)
         self.cache['skillBonusImages']['Engineering'] = self.fetchOrRequestImage(self.wikiImages+'EPS_Corruption_icon.png', 'EPS Corruption', self.itemBoxX, self.itemBoxY)
 
+    def cache_skill_image(self, skill_id, imagename):
+        """
+        stores skill image to cache: self.cache['skill_images'][skill_id]
+        """
+        if not 'skill_images' in self.cache:
+            self.cache['skill_images'] = dict()
+        if not skill_id in self.cache['skill_images']:
+            url = self.wikiImages+imagename+'.png'
+            self.cache['skill_images'][skill_id] = self.fetchOrRequestImage(url, imagename, 
+                    self.itemBoxX, self.itemBoxY)
+            self.logWriteSimple('cache_skill_image', '', 4, tags=[skill_id, imagename])
+
     def precacheDoffs(self, keyPhrase):
         """Populate in-memory cache of doff lists for faster loading"""
         if keyPhrase in self.cache['doffs']:
@@ -1326,12 +1346,12 @@ class SETS():
 
     def precacheShipTraitSingle(self, name, desc, item):
         name = self.deWikify(name)
-        if not 'cache' in self.cache['shipTraitsWithImages']:
-            self.cache['shipTraitsWithImages']['cache'] = []
+        if not 'shipTraitsWithImages' in self.cache:
+            self.cache['shipTraitsWithImages'] = dict()
 
         if not name in self.cache['shipTraits']:
             self.cache['shipTraits'][name] = self.deWikify(desc, leaveHTML=True)
-            self.cache['shipTraitsWithImages']['cache'].append((name,self.imageFromInfoboxName(name)))
+            self.cache['shipTraitsWithImages'][name] = self.imageFromInfoboxName(name)
             self.logWriteSimple('precacheShipTrait', '', 5, tags=[name])
 
         if not name in self.cache['shipTraitsFull']:
@@ -1400,12 +1420,12 @@ class SETS():
         if not type in self.cache['traitsWithImages']:
             self.cache['traitsWithImages'][type] = dict()
         if not environment in self.cache['traitsWithImages'][type]:
-            self.cache['traitsWithImages'][type][environment] = []
+            self.cache['traitsWithImages'][type][environment] = dict()
 
         if not name in self.cache['traits'][environment]:
             self.cache['traits'][environment][name] = self.deWikify(desc, leaveHTML=True)
 
-            self.cache['traitsWithImages'][type][environment].append((name,self.imageFromInfoboxName(name)))
+            self.cache['traitsWithImages'][type][environment][name] = self.imageFromInfoboxName(name)
             self.logWriteSimple('precacheTrait', '', 4, tags=[type, environment, name, '|'+str(len(desc))+'|'])
 
     def precacheTraits(self, limited=False):
@@ -1457,6 +1477,48 @@ class SETS():
             return self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon",width,height)
         else:
             self.logWriteSimple('fromInfoboxName', name, 4, [image.width(), image.height()])
+        return image
+
+    def get_cached_image(self, name, args):
+        """
+        returns item image from cache; works for equipment and traits; does not work for overlays and boffs
+        
+        Parameters:
+        - :param name: name of the item
+        - :param args: contains variable information about the item
+            - for equipment: list-> First: type_key as in self.cache['equipment'][type_key],
+            Second *Not used*: title for picker window, Third *not used*: empty string, 
+            Fourth (not always supplied): 'space' or 'ground'
+            - for boffs: list -> First: StringVar containing the profession of the seat, Second: StringVar 
+            containing the specialization of the seat, Third: index of the seat, Fourth: 'space' or 'ground'
+            - for traits: list -> First: True if slot holds ground reputation traits, Second: True if slot 
+            holds active reputation traits, Third: True if slot holds starship traits, Fourth: 'space' or 
+            'ground'
+        """
+        image = self.emptyImage
+        if name is None or name == '': return image
+        try:
+            if args[1] == 'skill': 
+                image = self.cache['skill_images'][args[0]] 
+                #self.imageFromInfoboxName(name, suffix=suffix, faction=name) if name is not None else self.emptyImage
+            elif isinstance(args[0], StringVar): # boffs
+                image = self.emptyImage # emptyImage because boff images are handled in setupBoffFrame
+            elif len(args) == 4 and args[3] == 'space' and args[2] == True:
+                image = self.cache['shipTraitsWithImages'][name]
+            elif len(args) == 4 and (args[3] == 'space' or args[3] == 'ground') and \
+                    isinstance(args[0], bool):
+                trait_type = 'personal'
+                if args[1]:
+                    trait_type = 'activereputation'
+                elif args[0]:
+                    trait_type = 'reputation'
+                image = self.cache['traitsWithImages'][trait_type][args[3]][name]
+            elif args[0] in self.keys.values():
+                image = self.cache['equipmentWithImages'][args[0]][name]
+            elif args[0] == 'Singularity Engine':
+                image = self.cache['equipmentWithImages']['Singularity'][name]
+        except KeyError: 
+            self.logWriteSimple('get_cached_image', f'"{name}" not in cache -> probably wrong capitalization')
         return image
 
     def resetSkillCountAfterImport(self):
@@ -2002,7 +2064,7 @@ class SETS():
 
 
     def boffTitleToCareer(self, title):
-        return  "Tactical" if "Tactical" in title else "Science" if 'Science' in title else "Engineering" if "Engineering" in title else "Universal"
+        return  "Tactical" if "Tactical" in title else "Science" if 'Science' in title else "Engineering" if "Engineering" in title else 'Universal'
 
     def clearFrame(self, frame):
         for widget in frame.winfo_children():
@@ -2336,7 +2398,7 @@ class SETS():
         items_list=None
         if args[2]:
             self.precacheShipTraits()
-            items_list = self.cache['shipTraitsWithImages']['cache']
+            items_list = self.cache['shipTraitsWithImages'].items()
         else:
             self.precacheTraits()
             traitType = "personal"
@@ -2344,7 +2406,7 @@ class SETS():
                 traitType = "activereputation"
             elif args[0]:
                 traitType = "reputation"
-            items_list = self.cache['traitsWithImages'][traitType][args[3]]
+            items_list = self.cache['traitsWithImages'][traitType][args[3]].items()
             self.logWriteSimple('traitLabelCallback', '', 4, tags=[traitType, args[3], str(len(items_list))])
 
         items_list = self.item_list_filter(items_list)  # What restrictions exist for traits?
@@ -2518,12 +2580,12 @@ class SETS():
         if not category in self.cache['boffAbilitiesWithImages'][environment]:
             self.cache['boffAbilitiesWithImages'][environment][category] = dict()
         if not type in self.cache['boffAbilitiesWithImages'][environment][category]:
-            self.cache['boffAbilitiesWithImages'][environment][category][type] = []
+            self.cache['boffAbilitiesWithImages'][environment][category][type] = dict()
 
         if not name in self.cache['boffAbilities'][environment][type]:
             self.cache['boffAbilities'][environment][type][name] = 'yes'
 
-            self.cache['boffAbilitiesWithImages'][environment][category][type].append((name,self.imageFromInfoboxName(name, faction=1)))
+            self.cache['boffAbilitiesWithImages'][environment][category][type][name] = self.imageFromInfoboxName(name, faction=1)
 
             self.logWriteSimple('precacheBoffAbilities', 'Single', 4, tags=[environment, category, str(type), name, '|'+str(len(desc))+'|'])
 
@@ -2562,7 +2624,7 @@ class SETS():
                             self.precacheBoffAbilitiesSingle(cname, environment, rank1+i, category, desc)
                             if i == 2 and tds[rank1+i].text.strip() in ['I', 'II']:
                                 self.precacheBoffAbilitiesSingle(cname, environment, rank1+i+1, category, desc)
-                            self.logWriteSimple('precacheBoffAbilities', '', 4, tags=[environment, category, str(rank1+i)])
+                            self.logWriteSimple('precacheBoffAbilities', '', 4, tags=[cname, environment, category, str(rank1+i)])
 
         self.logWriteCounter('Boff ability', '(json)', len(self.cache['boffTooltips']['space']), ['space'])
         self.logWriteCounter('Boff ability', '(json)', len(self.cache['boffTooltips']['ground']), ['ground'])
@@ -2581,14 +2643,9 @@ class SETS():
         rank = i + 1
 
         self.logWriteSimple('spaceBoffLabel', 'Callback', 3, tags=[environment, spec, spec2, i, key])
-
-        if spec == 'universal':
-            for specType in self.universalTypes:
-                items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][specType][rank]
-        else:
-            items_list = self.cache['boffAbilitiesWithImages'][environment][spec][rank]
+        items_list = list(self.cache['boffAbilitiesWithImages'][environment][spec][rank].items())
         if spec2 is not None and spec2 != '':
-            items_list = items_list + self.cache['boffAbilitiesWithImages'][environment][spec2][rank]
+            items_list = items_list + list(self.cache['boffAbilitiesWithImages'][environment][spec2][rank].items())
 
         items_list = self.item_list_filter(items_list) # need to send boffseat spec/spec2
         self.picker_getresult(canvas, img, i, key, args, items_list, type='boffs', title='Pick ability')
@@ -2611,11 +2668,11 @@ class SETS():
         cleanEnvironment = environment[:-5] if '_spec' in environment else environment
         clear = True
         if self.build['boffseats'][invertedEnvironment][i2] != '' and self.build['boffseats'][invertedEnvironment][i2] != None:
-            for power in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][invertedEnvironment][i2]][i+1]:
+            for power in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][invertedEnvironment][i2]][i+1].items():
                 if power[0] == self.build['boffs'][key][i]:
                     clear = False
         if self.build['boffseats'][environment][i2] != '' and self.build['boffseats'][environment][i2] != None:
-            for power2 in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][environment][i2]][i+1]:
+            for power2 in self.cache['boffAbilitiesWithImages'][cleanEnvironment][self.build['boffseats'][environment][i2]][i+1].items():
                 if power2[0] == self.build['boffs'][key][i]:
                     clear = False
         if clear:
@@ -2647,11 +2704,11 @@ class SETS():
         self.build['ship'] = self.backend['ship'].get()
         self.backend['shipHtml'] = self.getShipFromName(self.ships, self.build['ship'])
 
-        if self.persistent['keepTemplateOnShipChange'] == 0:
+        if not self.persistent['keepTemplateOnShipChange']:
             self.resetBuild('clearShip')
             self.emptyShipLayout(self.backend['shipHtml'])
 
-        elif self.persistent['keepTemplateOnShipChange'] == 1:
+        elif self.persistent['keepTemplateOnShipChange']:
             self.alignNewShipBuild(self.backend['shipHtml'])
 
         self.clearFrame(self.shipTierFrame)
@@ -2668,8 +2725,8 @@ class SETS():
         # restrict by faction if not KDF unlocked?
         item = self.pickerGui('Pick Starship', itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
-            self.resetShipSettings()
             if item['item'] == 'X':
+                self.resetShipSettings()
                 item['item'] = ''
                 self.build['ship'] = item['item']
                 self.backend['shipHtml'] = None
@@ -2677,7 +2734,9 @@ class SETS():
                 self.shipButton.configure(text=self.ship_name_wrap(empty=True))
                 self.backend['ship'].set(item['item'])
                 self.backend['tier'].set('')
+            elif item['item'] == 'Y': return
             else:
+                self.resetShipSettings()
                 self.shipButton.configure(text=self.ship_name_wrap(item['item']))
                 self.backend['ship'].set(item['item'])
                 #self.setupBoffFrame('space', self.backend['shipHtml'])
@@ -3074,7 +3133,7 @@ class SETS():
             elif career == 'sci': self.backend['skillCount']['spaceScience'].add(countChange)
         if environment == 'ground':
             self.backend['skillCount']['groundSum'].add(countChange)
-        self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
+        #self.backend['images'][backendName] = [self.backend['images'][backendName][0], image1]
 
         canvas.itemconfig(img[1],image=image1)
 
@@ -4183,7 +4242,7 @@ class SETS():
         - :param disabledCount: a hack to allow disabling elements at the end of the list [no click response]
 
         """
-        self.backend['images'][key] = [None] * n
+        #self.backend['images'][key] = [None] * n
 
         cFrame = Frame(frame, bg=self.theme['frame']['bg'])
         cFrame.grid(row=row, column=col, columnspan=cspan, sticky='nsew', padx=10)
@@ -4222,6 +4281,14 @@ class SETS():
         - :param height: If empty, height will default to itemBoxY
         - :param callback: the callback function
         - :param args: [array] contains variable information used for callback updating
+            - for equipment: list-> First: type_key as in self.cache['equipment'][type_key],
+            Second *Not used*: title for picker window, Third *not used*: empty string, 
+            Fourth: 'space' or 'ground'
+            - for boffs: list -> First: StringVar containing the profession of the seat, Second: StringVar 
+            containing the specialization of the seat, Third: index of the seat, Fourth: 'space' or 'ground'
+            - for traits: list -> First: True if slot holds ground reputation traits, Second: True if slot 
+            holds active reputation traits, Third: True if slot holds starship traits, Fourth: 'space' or 
+            'ground'
         - :param tooltip: Tooltip to provide
         - :param context_menu: Include standard context menu
 
@@ -4281,11 +4348,13 @@ class SETS():
 
         if not disabled:
             if image0 is None:
-                image0=self.imageFromInfoboxName(image0Name, suffix=suffix, faction=faction) if image0Name is not None else self.emptyImage
+                #image0=self.imageFromInfoboxName(image0Name, suffix=suffix, faction=faction) if image0Name is not None else self.emptyImage
+                image0 = self.get_cached_image(image0Name, args)
+                
             if image1 is None:
                 image1 = self.cache['overlays'][image1Name.lower()] if image1Name is not None else self.emptyImage
                 #image1=self.imageFromInfoboxName(image1Name, suffix=suffix, faction=faction) if image1Name is not None else self.emptyImage
-
+            """
             if name == 'blank':
                 pass  # no backend/image
             elif name:
@@ -4294,6 +4363,7 @@ class SETS():
                 if not backendKey in self.backend['images']:
                     self.backend['images'][backendKey] = [None] * 4
                 self.backend['images'][backendKey][i] = [image0, image1]
+            """
         else:
             image0 = image0 if image0 is not None else self.emptyImage
             image1 = image1 if image1 is not None else self.emptyImage
@@ -4371,7 +4441,7 @@ class SETS():
             self.labelBuildBlock(parentFrame, "Secondary", 1, 1, 1, 'secdef', 1, self.itemLabelCallback, ["Ship Secondary Deflector", "Pick Secdef", ""])
         self.labelBuildBlock(parentFrame, "Deflector", 0, 1, 1, 'deflector', 1, self.itemLabelCallback, ["Ship Deflector Dish", "Pick Deflector", ""])
         self.labelBuildBlock(parentFrame, "Engines", 2, 1, 1, 'engines', 1, self.itemLabelCallback, ["Impulse Engine", "Pick Engine", ""])
-        self.labelBuildBlock(parentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.itemLabelCallback, ["Singularity Engine" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp ", "Pick Core", ""])
+        self.labelBuildBlock(parentFrame, "Core", 3, 1, 1, 'warpCore', 1, self.itemLabelCallback, ["Singularity Engine" if "Warbird" in self.build['ship'] or "Aves" in self.build['ship'] else "Warp", "Pick Core", ""])
         self.labelBuildBlock(parentFrame, "Shield", 4, 1, 1, 'shield' , 1, self.itemLabelCallback, ["Ship Shields", "Pick Shield", ""])
         self.labelBuildBlock(parentFrame, "Aft Weapons", 1, 0, 1, 'aftWeapons', self.backend['shipAftWeapons'], self.itemLabelCallback, ["Ship Aft Weapon", "Pick aft weapon", ""])
         if ship["experimental"] == 1:
@@ -4477,7 +4547,7 @@ class SETS():
         # self.clearInfoboxFrame('skill')
 
     def setup_skill_tree_frame(self, parentFrame, environment='space'):
-        self.precacheSkills(environment)
+        #self.precacheSkills(environment)
         if not self.cache['skills'][environment]:
             return
 
@@ -4574,8 +4644,8 @@ class SETS():
 
             if not name in self.build['skilltree'][environment]:
                 self.build['skilltree'][environment][name] = False
-            if not backendName in self.backend['images']:
-                self.backend['images'][backendName] = [ ]
+            
+            self.cache_skill_image(skill_id, imagename)
 
             (image1, bg, relief) = self.get_theme_skill_icon(self.build['skilltree'][environment][name])
 
@@ -4979,7 +5049,7 @@ class SETS():
             bSubFrame0 = Frame(bFrame, bg=self.theme['frame']['bg'])
             bSubFrame0.pack(fill=BOTH, pady=(2,0))
 
-            self.backend['images'][boffSan] = [None] * rank
+            #self.backend['images'][boffSan] = [None] * rank
 
             # does nothing, it's original purpose should be covered in universalSeatUpdateCallback()
             """if spec != 'Universal' and spec != self.build['boffseats'][environment][i]:
@@ -5034,16 +5104,26 @@ class SETS():
                 self.build['boffs'][boffSan] = [None]*rank
 
             for j in range(rank):
-                tooltip_uuid = self.uuid_assign_for_tooltip()
-                if boffSan in self.build['boffs'] and self.build['boffs'][boffSan][j] is not None:
-                    image=self.imageFromInfoboxName(self.build['boffs'][boffSan][j], faction = 1)
-                    self.backend['images'][boffSan][j] = image
+                c_ability = self.build['boffs'][boffSan][j]
+                spec = self.build['boffseats'][environment][i]
+                sspec = self.build['boffseats'][environment+'_spec'][i]
+                if boffSan in self.build['boffs'] and c_ability is not None:
+                    #image=self.imageFromInfoboxName(c_ability, faction = 1)
+                    #self.backend['images'][boffSan][j] = image
+                    
+                    if c_ability in self.cache['boffAbilitiesWithImages'][environment][spec][j+1].keys():
+                        image = self.cache['boffAbilitiesWithImages'][environment][spec][j+1][c_ability]
+                    elif sspec != '' and sspec is not None and c_ability in self.cache['boffAbilitiesWithImages'][environment][sspec][j+1].keys():
+                        image = self.cache['boffAbilitiesWithImages'][environment][sspec][j+1][c_ability]
+                    else:
+                        image = self.emptyImage
+                        self.logWriteSimple('setupBoffFrame', 'Boff ability missing image', 1, [environment, boffSan, c_ability])
                 else:
                     image=self.emptyImage
                     #self.build['boffs'][boffSan] = [None] * rank
 
                 args = [v, v2, i, environment]
-                canvas, img0, img1 = self.createButton(bSubFrame1, key=boffSan, row=1, column=j, groupKey='boffs', i=j, callback=self.boffLabelCallback, args=args, faction=True, suffix=False, image0=self.backend['images'][boffSan][j])
+                canvas, img0, img1 = self.createButton(bSubFrame1, key=boffSan, row=1, column=j, groupKey='boffs', i=j, callback=self.boffLabelCallback, args=args, faction=True, suffix=False, image0=image)
 
                 # adds traces so universal boff stations are properly updated when selected profession or specialization is changed
                 v.trace_add("write", lambda e1, e2, e3,  pcanvas = canvas, images = (img0, img1), index = j, index2 = i, pkey = boffSan, var=v, env = environment: self.universalSeatUpdateCallback(pcanvas, images, index, index2, pkey, var, env) )
@@ -7851,7 +7931,7 @@ class SETS():
     def setup_empty_images(self):
         self.emptyImageFaction = dict()
         self.emptyImage = self.fetchOrRequestImage(self.wikiImages+"Common_icon.png", "no_icon")
-        self.epicImage = self.fetchOrRequestImage(self.wikiImages+"Epic.png", "Epic")
+        self.epicImage = self.fetchOrRequestImage(self.wikiImages+"Epic.png", "Epic", self.itemBoxX*1.53125, self.itemBoxY*1.53125)
         self.three_bars = self.loadLocalImage('hamburger_icon.png', width=self.itemBoxX, height=self.itemBoxY_default / 2)
 
         width = self.imageBoxX * 2 / 3
