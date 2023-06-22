@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.6b220'
+    version = '2023.6b221'
 
     daysDelayBeforeReattempt = 7
 
@@ -97,6 +97,7 @@ class SETS():
     trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&limit=2500&format=json'
     starship_trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&where=Traits.type=%27Starship%27&limit=2500&format=json'
     ship_trait_query = 'Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json'
+    starship_trait_stowiki_query = 'Special:CargoExport?tables=StarshipTraits&fields=StarshipTraits._pageName,StarshipTraits.name,StarshipTraits.short,StarshipTraits.type,StarshipTraits.detailed&limit=2500&format=json'
     #query for DOFF types and specializations
     doff_query = 'Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations._pageName,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&limit=1000&offset=0&format=json'
     #query for Specializations and Reps
@@ -112,6 +113,9 @@ class SETS():
     stowiki_name_updates = {
         'Console - Tactical - Vulnerability Locator': 'Console - Advanced Tactical - Vulnerability Locator',
         'Console - Tactical - Vulnerability Exploiter': 'Console - Advanced Tactical - Vulnerability Exploiter',
+        'Active - Temporal Surge': 'Active: Temporal Surge',
+        "Heart Of Sol": "Heart of Sol",
+        "Tricks Of The Trade": "Tricks of the Trade",
     }
 
     #available specializations and their respective starship traits
@@ -1479,27 +1483,28 @@ class SETS():
         if 'shipTraits' in self.cache and len(self.cache['shipTraits']) > 0:
             return self.cache['shipTraits']
 
+        if not self.args.fandom and not self.persistent['source_old_wiki']:
+            if self.starship_traits_direct_stowiki is not None:
+                for item in list(self.starship_traits_direct_stowiki):
+                    if 'name' in item and item['name'] is not None:
+                        self.precache_ship_trait_single(item['name'], item['detailed'], item)
 
-        for item in list(self.shiptraits):
-            if 'trait' in item and item['trait'] is not None and len(item['trait']):
-                self.precache_ship_trait_single(item['trait'], item['traitdesc'], item)
-            if 'trait2' in item and item['trait2'] is not None and len(item['trait2']):
-                self.precache_ship_trait_single(item['trait2'], item['traitdesc2'], item)
-            if 'trait3' in item and item['trait3'] is not None and len(item['trait3']):
-                self.precache_ship_trait_single(item['trait3'], item['traitdesc3'], item)
-            if 'acctrait' in item and item['acctrait'] is not None and len(item['acctrait']):
-                self.precache_ship_trait_single(item['acctrait'], item['acctraitdesc'], item)
+        else:
+            # fandom legacy methods
+            for item in list(self.shiptraits):
+                if 'trait' in item and item['trait'] is not None and len(item['trait']):
+                    self.precache_ship_trait_single(item['trait'], item['traitdesc'], item)
+                if 'trait2' in item and item['trait2'] is not None and len(item['trait2']):
+                    self.precache_ship_trait_single(item['trait2'], item['traitdesc2'], item)
+                if 'trait3' in item and item['trait3'] is not None and len(item['trait3']):
+                    self.precache_ship_trait_single(item['trait3'], item['traitdesc3'], item)
+                if 'acctrait' in item and item['acctrait'] is not None and len(item['acctrait']):
+                    self.precache_ship_trait_single(item['acctrait'], item['acctraitdesc'], item)
 
-        if self.traits is not None:
-            for item in list(self.traits):
-                if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
-                    self.precache_ship_trait_single(item['name'], item['description'], item)
-
-        # self.starship_traits is a redundancy to allow pulling from legacy wiki until populated
-        if self.starship_traits is not None:
-            for item in list(self.starship_traits):
-                if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
-                    self.precache_ship_trait_single(item['name'], item['description'], item)
+            if self.traits is not None:
+                for item in list(self.traits):
+                    if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
+                        self.precache_ship_trait_single(item['name'], item['description'], item)
 
         self.logWriteCounter('Ship Trait', '(json)', len(self.cache['shipTraits']), ['space'])
 
@@ -3058,6 +3063,7 @@ class SETS():
                 groups_to_update = [
                     'tacConsoles',
                     'uniConsoles',
+                    'starshipTrait'
                 ]
 
                 for group in groups_to_update:
@@ -8124,11 +8130,18 @@ class SETS():
 
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes", source=group)
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits", source=group)
-        # self.starship_traits is a redundancy to allow pulling from legacy wiki until populated
-        self.starship_traits = None
+        # self.starship_traits_* is a redundancy to allow pulling from legacy wiki until populated
+        self.starship_traits_direct_fandom = None
+        self.starship_traits_direct_stowiki = None
         if group == "stowiki":
-            self.starship_traits = self.fetchOrRequestJson(SETS.starship_trait_query, "starship_direct_traits", source=group, url_header=self.wikihttp_legacy)
-            self.logWriteCounter('Traits', '(json)', len(self.starship_traits), ['starship'])
+            #Deprecated with new table
+            #self.starship_traits_direct_fandom = self.fetchOrRequestJson(SETS.starship_trait_query, "starship_direct_traits_fandom", source=group, url_header=self.wikihttp_legacy)
+            #self.logWriteCounter('Traits', '(json)', len(self.starship_traits_direct_fandom), ['fandom starship'])
+
+            # stowiki uses this to replace the shiptraits and the traits->starship
+            self.starship_traits_direct_stowiki = self.fetchOrRequestJson(SETS.starship_trait_stowiki_query, "starship_direct_traits_stowiki", source=group)
+            self.logWriteCounter('Traits', '(json)', len(self.starship_traits_direct_stowiki), ['stowiki starship'])
+
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits", source=group)
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs", source=group)
         self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list", source=group)
