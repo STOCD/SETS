@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.6b140'
+    version = '2023.6b220'
 
     daysDelayBeforeReattempt = 7
 
@@ -80,7 +80,7 @@ class SETS():
     wikihttp_current = 'https://stowiki.net/wiki/'
     wikiImagesText = 'Special:Filepath/'
 
-    wikihttp = wikihttp_legacy
+    wikihttp = wikihttp_current
     wikiImages = wikihttp+wikiImagesText
 
     #query for ship cargo table on the wiki
@@ -95,6 +95,7 @@ class SETS():
     #query for personal and reputation trait cargo table on the wiki
     # Traits.required,Traits.possible removed -- stowiki format unusual and we are not referencing it
     trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&limit=2500&format=json'
+    starship_trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&where=Traits.type=%27Starship%27&limit=2500&format=json'
     ship_trait_query = 'Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json'
     #query for DOFF types and specializations
     doff_query = 'Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations._pageName,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&limit=1000&offset=0&format=json'
@@ -106,6 +107,12 @@ class SETS():
 
     #to prevent Infobox from loading the same element twice in a row
     displayedInfoboxItem = str()
+
+    # Names that changed in stowiki.  Format is {'Fandom name": 'Stowiki name'}
+    stowiki_name_updates = {
+        'Console - Tactical - Vulnerability Locator': 'Console - Advanced Tactical - Vulnerability Locator',
+        'Console - Tactical - Vulnerability Exploiter': 'Console - Advanced Tactical - Vulnerability Exploiter',
+    }
 
     #available specializations and their respective starship traits
     specializations = {'Constable': 'Arrest',
@@ -1425,7 +1432,7 @@ class SETS():
         if not name in self.cache['shipTraits']:
             self.cache['shipTraits'][name] = self.deWikify(desc, leaveHTML=True)
             self.cache['shipTraitsWithImages'][name] = self.imageFromInfoboxName(name)
-            self.logWriteSimple('precacheShipTrait', '', 5, tags=[name])
+            self.logWriteSimple('precacheShipTrait', '', 4, tags=[name])
 
         if not name in self.cache['shipTraitsFull']:
             if '_pageName' in item:
@@ -1485,6 +1492,12 @@ class SETS():
 
         if self.traits is not None:
             for item in list(self.traits):
+                if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
+                    self.precache_ship_trait_single(item['name'], item['description'], item)
+
+        # self.starship_traits is a redundancy to allow pulling from legacy wiki until populated
+        if self.starship_traits is not None:
+            for item in list(self.starship_traits):
                 if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
                     self.precache_ship_trait_single(item['name'], item['description'], item)
 
@@ -1732,8 +1745,7 @@ class SETS():
         self.persistent = {
             'forceJsonLoad': 0,
             'fast_start': 0,
-            'source_new_wiki': False,
-            'source_all_wiki': False,
+            'source_old_wiki': False,
             'cache_save': 0,
             'uiScale': 1,
             'geometry': '',
@@ -3011,7 +3023,9 @@ class SETS():
 
     def repair_build(self):
         """- Repair a typo that was around for a while 
-        - removes excess entries from equipment lists in self.build to fit the current ships slot numbers"""
+        - removes excess entries from equipment lists in self.build to fit the current ships slot numbers
+        - naming updates for wiki change
+        """
 
         if type(self.build) is dict \
                 and 'hagars' in self.build and type(self.build['hagars']) is list \
@@ -3038,6 +3052,17 @@ class SETS():
             self.build['devices'] = self.build['devices'][:shipHtml['devices']+extra_slot]
             if 'Innovation Effects' in shipHtml['abilities']: extra_slot += 1
             self.build['uniConsoles'] = self.build['uniConsoles'][:extra_slot]
+
+            # converts to newer names, must be saved to retain updates
+            groups_to_update = [
+                'tacConsoles',
+                'uniConsoles',
+            ]
+
+            for group in groups_to_update:
+                for item in self.build[group]:
+                    if item['item'] in self.stowiki_name_updates:
+                        item['item'] = self.stowiki_name_updates[item['item']]
 
     def filenameDefault(self):
         name = self.build['playerShipName'] if 'playerShipName' in self.build else ''
@@ -7350,7 +7375,6 @@ class SETS():
             'Open Log'                              : {'col': 2, 'type': 'button', 'var_name': 'openLog'},
             'Open Splash Window': {'col': 2, 'type': 'button', 'var_name': 'openSplash'},
             'blank1'                                : {'col': 1, 'type': 'blank'},
-            'Use both wiki (stowiki primary)': {'col': 2, 'type': 'optionmenu', 'var_name': 'source_all_wiki', 'boolean': True},
             'Test image variations': {'col': 2, 'type': 'optionmenu', 'var_name': 'image_beta', 'boolean': True},
             'Auto-save build': {'col': 2, 'type': 'optionmenu', 'var_name': 'autosave', 'boolean': True},
             'In-file versions': {'col': 2, 'type': 'optionmenu', 'var_name': 'versioning', 'boolean': True},
@@ -7763,6 +7787,7 @@ class SETS():
         parser.add_argument('--nomenuicons', help='disable autosave / autoload', action='store_true')
         parser.add_argument('--stowiki', help='switch to stowiki.net [experimental]', action='store_true')
         parser.add_argument('--allwiki', help='Use both wikis, stowiki primary', action='store_true')
+        parser.add_argument('--fandom', help='Use legacy wiki (fandom based)', action='store_true')
 
         self.args = parser.parse_args()
         #self.logWriteSimple('Args', '', 1, tags=[self.args])
@@ -7779,12 +7804,8 @@ class SETS():
         if self.args.configfolder is not None:
             self.settings['folder']['config'] = self.args.configfolder
 
-        if self.args.allwiki or self.args.stowiki:
-            self.persistent['source_new_wiki'] = True
-
-            if self.args.allwiki:
-                self.persistent['source_all_wiki'] = True
-
+        if self.args.fandom:
+            self.persistent['source_old_wiki'] = True
             self.url_update()
 
     def config_folder_location(self):
@@ -7871,12 +7892,12 @@ class SETS():
                     return '_fandom'
             else:
                 # legacy portion, retain till retired
-                if self.args.stowiki or self.persistent['source_new_wiki']:
-                    self.logWriteBreak("STOWIKI-SUFFIX", 4)
-                    return '_stowiki'
-                else:
+                if self.args.fandom or self.persistent['source_old_wiki']:
                     self.logWriteBreak("FANDOM-SUFFIX", 4)
                     return '_fandom'
+                else:
+                    self.logWriteBreak("STOWIKI-SUFFIX", 4)
+                    return '_stowiki'
 
         return ''
 
@@ -7937,7 +7958,11 @@ class SETS():
 
                 self.get_debug_current()
         else:
-            self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, 1)
+            if self.fileConfigName != ".config.json":
+                logLevel = 1
+            else:
+                logLevel = 4
+            self.logWriteTransaction('Config File', 'not found or zero size', '', configFile, logLevel)
 
     def state_file_load(self, init=False):
         # Currently JSON, but ideally changed to a user-commentable format (YAML, TOML, etc)
@@ -7966,10 +7991,10 @@ class SETS():
 
     def url_update(self, new=False):
         self.logWriteSimple('SOURCE', 'urlupdate', 4, [self.args])
-        if new or self.args.stowiki or self.persistent['source_new_wiki']:
-            self.wikihttp = self.wikihttp_current
-        else:
+        if not new and (self.args.fandom or self.persistent['source_old_wiki']):
             self.wikihttp = self.wikihttp_legacy
+        else:
+            self.wikihttp = self.wikihttp_current
 
         self.wikiImages = self.wikihttp + self.wikiImagesText
         self.logWriteSimple('SOURCE', '', 0, [self.wikihttp])
@@ -8079,13 +8104,12 @@ class SETS():
 
     def precache_downloads(self):
         """Determine which data to precache and run precaching"""
-        if self.args.allwiki or self.persistent['source_all_wiki'] or \
-                (self.args.stowiki or self.persistent['source_new_wiki']):
+        if self.args.fandom or self.persistent['source_old_wiki']:
+            self.precache_downloads_group('fandom')
+        else:
             self.precache_downloads_group('stowiki')
 
-        if self.args.allwiki or self.persistent['source_all_wiki'] or \
-                not (self.args.stowiki or self.persistent['source_new_wiki']):
-            self.precache_downloads_group('fandom')
+
 
     def precache_downloads_group(self, group):
         """Precache each category for a specific source group
@@ -8099,14 +8123,19 @@ class SETS():
 
         self.infoboxes = self.fetchOrRequestJson(SETS.item_query, "infoboxes", source=group)
         self.traits = self.fetchOrRequestJson(SETS.trait_query, "traits", source=group)
+        # self.starship_traits is a redundancy to allow pulling from legacy wiki until populated
+        self.starship_traits = None
+        if group == "stowiki":
+            self.starship_traits = self.fetchOrRequestJson(SETS.starship_trait_query, "starship_direct_traits", source=group, url_header=self.wikihttp_legacy)
+            self.logWriteCounter('Traits', '(json)', len(self.starship_traits), ['starship'])
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits", source=group)
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs", source=group)
-        self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list", source=group, url_header=self.wikihttp_current)
+        self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list", source=group)
         # manual override to have new ships available while other cargo tables are still drawn from the old wiki
 
         self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations", source=group)
         self.trayskills = self.fetchOrRequestJson(SETS.trayskill_query, "trayskills", source=group)
-        self.factions = self.fetchOrRequestJson(SETS.faction_query, "factions", source=group)
+        self.factions = self.fetchOrRequestJson(SETS.faction_query, "factions", source=group, url_header=self.wikihttp_legacy)
 
         self.r_boffAbilities = self.fetchOrRequestHtml("Bridge_officer_and_kit_abilities", "boff_abilities", source=group)
         self.r_modifiers = self.fetchOrRequestHtml("Modifier", "modifiers", source=group)
@@ -8256,7 +8285,7 @@ class SETS():
 
     def ui_update_log(self):
         self.logminiWrite('{} {} | {} {} @ {}x{} | {}x{} (x{}) {}dpi'.format(self.version, \
-                                                                             '[allwiki]' if self.persistent['source_all_wiki'] or self.args.allwiki else '[stowiki]' if self.persistent['source_new_wiki'] or self.args.stowiki else '[fandom]', \
+                                                                             '[fandom]' if self.args.fandom or self.persistent['source_old_wiki'] else '[stowiki]', \
                                                                              self.os_system, self.os_release, \
                                                                              self.window.winfo_screenwidth(), self.window.winfo_screenheight(), \
                                                                              self.windowWidth, self.windowHeight, self.scale, self.dpi))
