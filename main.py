@@ -3053,16 +3053,17 @@ class SETS():
             if 'Innovation Effects' in shipHtml['abilities']: extra_slot += 1
             self.build['uniConsoles'] = self.build['uniConsoles'][:extra_slot]
 
-            # converts to newer names, must be saved to retain updates
-            groups_to_update = [
-                'tacConsoles',
-                'uniConsoles',
-            ]
+            if not self.args.fandom and not self.persistent['source_old_wiki']:
+                # converts to newer names, must be saved to retain updates
+                groups_to_update = [
+                    'tacConsoles',
+                    'uniConsoles',
+                ]
 
-            for group in groups_to_update:
-                for item in self.build[group]:
-                    if item['item'] in self.stowiki_name_updates:
-                        item['item'] = self.stowiki_name_updates[item['item']]
+                for group in groups_to_update:
+                    for item in self.build[group]:
+                        if item['item'] in self.stowiki_name_updates:
+                            item['item'] = self.stowiki_name_updates[item['item']]
 
     def filenameDefault(self):
         name = self.build['playerShipName'] if 'playerShipName' in self.build else ''
