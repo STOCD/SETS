@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.6b231'
+    version = '2023.6b232'
 
     daysDelayBeforeReattempt = 7
 
@@ -3068,7 +3068,7 @@ class SETS():
 
                 for group in groups_to_update:
                     for item in self.build[group]:
-                        if 'item' in item and item['item'] is not None and item['item'] in self.stowiki_name_updates:
+                        if item is not None and 'item' in item and item['item'] is not None and item['item'] in self.stowiki_name_updates:
                             item['item'] = self.stowiki_name_updates[item['item']]
 
     def filenameDefault(self):
