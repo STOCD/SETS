@@ -8149,7 +8149,7 @@ class SETS():
 
         self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations", source=group)
         self.trayskills = self.fetchOrRequestJson(SETS.trayskill_query, "trayskills", source=group)
-        self.factions = self.fetchOrRequestJson(SETS.faction_query, "factions", source=group, url_header=self.wikihttp_legacy)
+        self.factions = self.fetchOrRequestJson(SETS.faction_query, "factions", source=group)
 
         self.r_boffAbilities = self.fetchOrRequestHtml("Bridge_officer_and_kit_abilities", "boff_abilities", source=group)
         self.r_modifiers = self.fetchOrRequestHtml("Modifier", "modifiers", source=group)
