@@ -5261,7 +5261,7 @@ class SETS():
                 changeCount = rank - boffExistingLen
                 if boffExistingLen < rank:
                     for add in range(changeCount):
-                        self.build['boffs'][boffSan].append([None])
+                        self.build['boffs'][boffSan].append(None)
                 elif boffExistingLen > rank:
                     self.build['boffs'][boffSan] = self.build['boffs'][boffSan][slice(rank)]
 
