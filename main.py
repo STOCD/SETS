@@ -5469,6 +5469,7 @@ class SETS():
         text = text.replace('<br>', '\n')
         text = text.replace('<br/>', '\n')
         text = text.replace('<br />', '\n')
+        text = text.replace('<br/ >', '\n')
         text = text.replace('<hr/>', "\n––––––––––––––––––––––––––––––\n")
         text = text.replace('<hr>', "\n––––––––––––––––––––––––––––––\n")
         text = text.replace('<hr />', "\n––––––––––––––––––––––––––––––\n")
