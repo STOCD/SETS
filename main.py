@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.6b232'
+    version = '2023.7b50'
 
     daysDelayBeforeReattempt = 7
 
@@ -97,7 +97,7 @@ class SETS():
     trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&limit=2500&format=json'
     starship_trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&where=Traits.type=%27Starship%27&limit=2500&format=json'
     ship_trait_query = 'Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json'
-    starship_trait_stowiki_query = 'Special:CargoExport?tables=StarshipTraits&fields=StarshipTraits._pageName,StarshipTraits.name,StarshipTraits.short,StarshipTraits.type,StarshipTraits.detailed&limit=2500&format=json'
+    starship_trait_stowiki_query = 'Special:CargoExport?tables=StarshipTraits&fields=StarshipTraits._pageName,StarshipTraits.name,StarshipTraits.short,StarshipTraits.type,StarshipTraits.detailed,StarshipTraits.obtained&limit=2500&format=json'
     #query for DOFF types and specializations
     doff_query = 'Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations._pageName,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&limit=1000&offset=0&format=json'
     #query for Specializations and Reps
@@ -484,7 +484,14 @@ class SETS():
                 result = self.loadJsonFile(filename, url_full, designation, 'read')
                 backup_loaded = True
         elif not local:
-            r = requests.get(url_full)
+            try:
+                r = requests.get(url_full, timeout=16)
+            except requests.exceptions.Timeout:
+                # retry once if downloading takes longer than 16 seconds
+                try:
+                    r = requests.get(url_full, timeout=16)
+                except requests.exceptions.Timeout:
+                    r = None
             try:
                 result = r.json()
                 self.logWriteSimple("fetchOrRequestJson", "save", 3, [filename, designation, url_full])
@@ -5469,7 +5476,6 @@ class SETS():
         text = text.replace('<br>', '\n')
         text = text.replace('<br/>', '\n')
         text = text.replace('<br />', '\n')
-        text = text.replace('<br/ >', '\n')
         text = text.replace('<hr/>', "\n––––––––––––––––––––––––––––––\n")
         text = text.replace('<hr>', "\n––––––––––––––––––––––––––––––\n")
         text = text.replace('<hr />', "\n––––––––––––––––––––––––––––––\n")
