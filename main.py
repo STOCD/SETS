@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.7b50'
+    version = '2023.7b60'
 
     daysDelayBeforeReattempt = 7
 
@@ -84,11 +84,6 @@ class SETS():
     wikiImages = wikihttp+wikiImagesText
 
     #query for ship cargo table on the wiki
-    
-    """-------------------------------------
-    MANUAL OVERRIDE FOR SHIP CARGO HARDCODED
-    ------------------------------------------"""
-
     ship_query = 'Special:CargoExport?tables=Ships&fields=_pageName%3DPage,name,image,fc,tier,type,hull,hullmod,shieldmod,turnrate,impulse,inertia,powerall,powerweapons,powershields,powerengines,powerauxiliary,powerboost,boffs,fore,aft,equipcannons,devices,consolestac,consoleseng,consolessci,uniconsole,t5uconsole,experimental,secdeflector,hangars,abilities,displayprefix,displayclass,displaytype,factionlede&limit=2500&format=json'
     #query for ship equipment cargo table on the wiki
     item_query = 'Special:CargoExport?tables=Infobox&fields=_pageName%3DPage,name,rarity,type,boundto,boundwhen,who,head1,head2,head3,head4,head5,head6,head7,head8,head9,subhead1,subhead2,subhead3,subhead4,subhead5,subhead6,subhead7,subhead8,subhead9,text1,text2,text3,text4,text5,text6,text7,text8,text9&limit=5000&format=json'
@@ -97,7 +92,7 @@ class SETS():
     trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&limit=2500&format=json'
     starship_trait_query = 'Special:CargoExport?tables=Traits&fields=Traits._pageName%3DPage,Traits.name,Traits.chartype,Traits.environment,Traits.type,Traits.isunique,Traits.master,Traits.description&where=Traits.type=%27Starship%27&limit=2500&format=json'
     ship_trait_query = 'Special:CargoExport?tables=Mastery&fields=Mastery._pageName,Mastery.trait,Mastery.traitdesc,Mastery.trait2,Mastery.traitdesc2,Mastery.trait3,Mastery.traitdesc3,Mastery.acctrait,Mastery.acctraitdesc&limit=1000&offset=0&format=json'
-    starship_trait_stowiki_query = 'Special:CargoExport?tables=StarshipTraits&fields=StarshipTraits._pageName,StarshipTraits.name,StarshipTraits.short,StarshipTraits.type,StarshipTraits.detailed,StarshipTraits.obtained&limit=2500&format=json'
+    starship_trait_stowiki_query = 'Special:CargoExport?tables=StarshipTraits&fields=StarshipTraits._pageName,StarshipTraits.name,StarshipTraits.short,StarshipTraits.type,StarshipTraits.detailed,StarshipTraits.obtained,StarshipTraits.basic&limit=2500&format=json'
     #query for DOFF types and specializations
     doff_query = 'Special:CargoExport?tables=Specializations&fields=Specializations.name,Specializations._pageName,Specializations.shipdutytype,Specializations.department,Specializations.description,Specializations.powertype,Specializations.white,Specializations.green,Specializations.blue,Specializations.purple,Specializations.violet,Specializations.gold&limit=1000&offset=0&format=json'
     #query for Specializations and Reps
@@ -119,19 +114,35 @@ class SETS():
     }
 
     #available specializations and their respective starship traits
-    specializations = {'Constable': 'Arrest',
-                       'Command Officer': 'Command Frequency',
-                       'Commando': 'Demolition Teams',
-                       'Miracle Worker': 'Going the Extra Mile',
-                       'Temporal Operative': 'Non-Linear Progression',
-                       'Pilot': 'Pedal to the Metal',
-                       'Intelligence Officer': 'Predictive Algorithms',
-                       'Strategist': 'Unconventional Tactics'}
+    specializations = {'Arrest': 'Constable',
+                       'Command Frequency': 'Command Officer',
+                        'Demolition Teams': 'Commando',
+                       'Going the Extra Mile': 'Miracle Worker',
+                       'Non-Linear Progression': 'Temporal Operative',
+                       'Pedal to the Metal': 'Pilot',
+                       'Predictive Algorithms': 'Intelligence Officer',
+                       'Unconventional Tactics': 'Strategist'}
 
     # available recruits and their respective starship traits
-    recruits = {'Klingon Recruit': "Hunter's Instinct",
-                'Delta Recruit': 'Temporal Insight',
-                'Temporal Agent': 'Critical Systems'}
+    recruits = {"Hunter's Instinct": 'Klingon Recruit',
+                'Temporal Insight': 'Delta Recruit',
+                'Critical Systems': 'Temporal Agent'}
+
+    # Starship Traits obtained from Reward packs
+    reward_pack_starship_traits = (
+        'Confederation Furor', 'Programmable Matter Enhancements', 'Carrier Wave Shield Hacking',
+        'Directed Dilithium Burn', 'One Impossible Thing at a Time', 'Onboard Dilithium Recrystallizer',
+        'Regeneration Cycle', 'Concealed Repairs', 'Need-to-Know Basis', 'Nano Infestation',
+        'Punch It!', 'Pilfered Power', 'Parting Gift',
+
+        'Attack Pattern Delta Prime', 'Point Defense Protocols', 'Scramble Fighters'
+    )
+
+    # Starship Traits obtained from a mission
+    mission_starship_traits = ('The Best Defense')
+
+    # Starship Traits obtained from phoenix prize pack
+    phoenix_starship_traits = ('Theta Radiation Infused Evasive Maneuvers')
 
     keys = {
             # conversion from self.build keys to self.cache['equipment'] keys
@@ -1428,7 +1439,7 @@ class SETS():
         self.logWriteCounter('Specs-Ground', '(json)', len(self.cache['specsGroundBoff']))
 
     def precache_ship_trait_single(self, name, desc, item):
-        """
+        """ TODO why supply the description when you supply the item?
         stores ship trait into cache including image
 
         Parameters:
@@ -1445,43 +1456,70 @@ class SETS():
             self.cache['shipTraitsWithImages'][name] = self.imageFromInfoboxName(name)
             self.logWriteSimple('precacheShipTrait', '', 4, tags=[name])
 
-        if not name in self.cache['shipTraitsFull']:
-            if '_pageName' in item:
-                if ('traitdesc' in item and item['traitdesc'] == desc) \
-                        or ('traitdesc2' in item and item['traitdesc2'] == desc) \
-                        or ('traitdesc3' in item and item['traitdesc3'] == desc):
-                    obt = 'T5' 
-                else:
-                    obt = 'T6'
-                self.cache['shipTraitsFull'][name] = {
-                    'ship': item['_pageName'],
-                    'desc': self.deWikify(desc, leaveHTML=True),
-                    'image': self.imageFromInfoboxName(name),
-                    'link': self.wikihttp+item['_pageName'].replace(' ', '_'),
-                    'obtained': obt 
-                    }
-            elif 'Page' in item and 'name' in item:
-                if item['name'] in self.specializations.values():
-                    obt = 'spec'
-                    for spec in self.specializations:
-                        if self.specializations[spec] == item['name']:
-                            nm = spec
-                            break
-                elif item['name'] in self.recruits.values():
-                    obt = 'recr'
-                    for recr in self.recruits:
-                        if self.recruits[recr] == item['name']:
-                            nm = recr
-                            break
-                else:
-                    obt = 'box'
-                    nm = ''
-                self.cache['shipTraitsFull'][name] = {
-                    'ship': nm, 
-                    'desc': self.deWikify(desc, leaveHTML=True), 
-                    'image': self.imageFromInfoboxName(name), 
-                    'link': self.wikihttp+item['Page'].replace(' ', '_'), 
-                    'obtained': obt
+        # fandom sourced: extracting from Mastery cargo table
+        if self.args.fandom or self.persistent['source_old_wiki']:
+            if not name in self.cache['shipTraitsFull']:
+                if '_pageName' in item:
+                    if ('traitdesc' in item and item['traitdesc'] == desc) \
+                            or ('traitdesc2' in item and item['traitdesc2'] == desc) \
+                            or ('traitdesc3' in item and item['traitdesc3'] == desc):
+                        obt = 'T5' 
+                    else:
+                        obt = 'T6'
+                    self.cache['shipTraitsFull'][name] = {
+                        'ship': item['_pageName'],
+                        'desc': self.deWikify(desc, leaveHTML=True),
+                        'image': self.imageFromInfoboxName(name),
+                        'link': self.wikihttp+item['_pageName'].replace(' ', '_'),
+                        'obtained': obt 
+                        }
+                elif 'Page' in item and 'name' in item:
+                    if item['name'] in self.specializations.keys():
+                        obt = 'spec'
+                        nm = self.specializations[item['name']]
+                    elif item['name'] in self.recruits.keys():
+                        obt = 'recr'
+                        nm = self.recruits[item['name']]
+                    else:
+                        obt = 'box'
+                        nm = ''
+                    self.cache['shipTraitsFull'][name] = {
+                        'ship': nm, 
+                        'desc': self.deWikify(desc, leaveHTML=True), 
+                        'image': self.imageFromInfoboxName(name), 
+                        'link': self.wikihttp+item['Page'].replace(' ', '_'), 
+                        'obtained': obt
+                        }
+
+        # stowiki sourced: extracting from Starship Traits cargo table    
+        else:
+            if not name in self.cache['shipTraitsFull']:
+                if '_pageName' in item:
+                    ship = None
+                    if name in self.specializations.keys():
+                        obt = 'specialization'
+                        ship = self.specializations[name]
+                    elif name in self.recruits.keys():
+                        obt = 'recruit'
+                        ship = self.recruits[name]
+                    elif name in self.reward_pack_starship_traits:
+                        obt = 'reward pack'
+                    elif name in self.mission_starship_traits:
+                        obt = 'mission'
+                    elif name in self.phoenix_starship_traits:
+                        obt = 'phoenix'
+                    else:
+                        obt = 'ship'
+                        if item['obtained'] is not None and not r'{{{obtained}}}' in item['obtained']:
+                            pattern = re.compile('\[\[(.*?)\]\]')
+                            res = pattern.findall(item['obtained'])
+                            ship = [s for s in res if not ':' in s and not 'File' in s]
+                    self.cache['shipTraitsFull'][name] = {
+                        'ship': ship,
+                        'detailed': self.deWikify(item['detailed'], leaveHTML=True),
+                        'basic': self.deWikify(item['basic'], leaveHTML=True),
+                        'link': self.getWikiURL(item['_pageName']),
+                        'obtained': obt
                     }
 
 
@@ -5960,6 +5998,22 @@ class SETS():
             mainframe.columnconfigure(1, weight=1)
             self.insert_infobox_paragraph(lineframe, inserttext2, pfamily, pcolor, psize, pweight, 0, 
                     framewidth)
+    
+
+    def format_ship_list(self, li):
+        """formats list of ships into readable string
+        
+        Parameters:
+        - :param li: list containing ships
+        """
+        if li is None or len(li) == 0:
+            return ''
+        if len(li) == 1:
+            return str(li[0])
+        if len (li) == 2:
+            return f'{li[0]} or the {li[1]}'
+        if len(li) > 2:
+            return f'''{', the '.join(li[:-1])} or the {li[-1]}'''
 
 
 
@@ -6136,21 +6190,45 @@ class SETS():
 
         # creates infobox for starship traits
         if not printed and (name in self.cache['shipTraits']):
+            trait = self.cache['shipTraitsFull'][name]
             # inserts and configures the headline section
             text.insert(END, name+'\n', 'starshipTraitHead')
             text.insert(END, 'Starship Trait\n', 'head')
-            obtained_token = self.cache['shipTraitsFull'][name]['obtained']
-            if obtained_token == "T5" or obtained_token == "T6":
-                obtaintext = (f'''This Starship Trait can be obtained from the {obtained_token} Mastery of '''
-                              f'''the {self.cache['shipTraitsFull'][name]['ship']}''')
-            elif obtained_token == "spec":
-                obtaintext = ('This Starship Trait can be obtained from the Captain Specialization system by '
-                        f'''completing the {self.cache['shipTraitsFull'][name]['ship']} specialization.''')
-            elif obtained_token == "recr":
-                obtaintext = ('This Starship Trait can be obtained from a "'
-                        f'''{self.cache['shipTraitsFull'][name]['ship']}" character.''')
+            obtained_token = trait['obtained']
+            # old wiki obtain text
+            if self.args.fandom or self.persistent['source_old_wiki']:
+                if obtained_token == "T5" or obtained_token == "T6":
+                    obtaintext = (f'''This Starship Trait can be obtained from the {obtained_token} Mastery '''
+                                f'''of the {trait['ship']}''')
+                elif obtained_token == "spec":
+                    obtaintext = ('This Starship Trait can be obtained from the Captain Specialization '
+                            f'''system by completing the {trait['ship']} specialization.''')
+                elif obtained_token == "recr":
+                    obtaintext = ('This Starship Trait can be obtained from a "'
+                            f'''{trait['ship']}" character.''')
+                else:
+                    obtaintext = 'This Starship Trait is obtained from a reward pack.'
+            # new wiki obtain text
             else:
-                obtaintext = 'This Starship Trait is obtained from a reward pack.'
+                if obtained_token == 'specialization':
+                    obtaintext = ('This Starship Trait can be obtained from the captain specialization '
+                            f'''system by completing the {trait['ship']} specialization.''')
+                elif obtained_token == 'recruit':
+                    obtaintext = ('This Starship Trait can be obtained from a "'
+                            f'''{trait['ship']}" character.''')
+                elif obtained_token == 'reward pack':
+                    obtaintext = 'This Starship Trait is obtained from a reward pack.'
+                elif obtained_token == 'mission':
+                    obtaintext = 'This Starship Trait is a mission reward.'
+                elif obtained_token == 'phoenix':
+                    obtaintext = 'This Starship Trait is obtained from the Phoenix Prize Packs.'
+                elif obtained_token == 'ship':
+                    formatted_shiplist = self.format_ship_list(trait['ship'])
+                    if formatted_shiplist == '':
+                        obtaintext = 'This Starship Trait is obtained from a Starship Mastery.'
+                    else:
+                        obtaintext = ('This Starship Trait is obtained from the Starship Mastery of the '
+                                f'''{formatted_shiplist}.''')
             text.insert(END, obtaintext, 'subhead')
             text.update()
             text.configure(height=self.getDH(text.winfo_width(), name+'\nStarshipTrait\n'+obtaintext, 
@@ -6165,11 +6243,16 @@ class SETS():
                     highlightcolor=self.theme['tooltip']['highlight'])
             contentframe.grid(row=3, column=0, sticky='nsew')
             contentframe.grid_propagate(False)
-            self.insert_infobox_paragraph(contentframe, 
-                    self.compensateInfoboxString(self.cache['shipTraits'][name].strip()), 'Helvetiva', 
-                    '#ffffff', 10, 'normal', 0, text.winfo_width())
+            # old wiki
+            if self.args.fandom or self.persistent['source_old_wiki']:
+                desc_text = self.compensateInfoboxString(self.cache['shipTraits'][name].strip())
+            #new wiki
+            else:
+                desc_text = self.compensateInfoboxString(f'''{trait['basic']}\n{trait['detailed']}'''.strip())
+            self.insert_infobox_paragraph(contentframe, desc_text, 'Helvetiva', '#ffffff', 10, 'normal', 
+                    0, text.winfo_width())
             contentframe.grid_propagate(True)
-            mainbutton.configure(command=lambda url = self.cache['shipTraitsFull'][name]['link']: 
+            mainbutton.configure(command=lambda url = trait['link']: 
                     self.openURL(f'{url}#Starship_Mastery'))
             printed = True
 
@@ -8152,7 +8235,6 @@ class SETS():
         self.shiptraits = self.fetchOrRequestJson(SETS.ship_trait_query, "starship_traits", source=group)
         self.doffs = self.fetchOrRequestJson(SETS.doff_query, "doffs", source=group)
         self.ships = self.fetchOrRequestJson(SETS.ship_query, "ship_list", source=group)
-        # manual override to have new ships available while other cargo tables are still drawn from the old wiki
 
         self.reputations = self.fetchOrRequestJson(SETS.reputation_query, "reputations", source=group)
         self.trayskills = self.fetchOrRequestJson(SETS.trayskill_query, "trayskills", source=group)
