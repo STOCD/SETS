@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.7b60'
+    version = '2023.7b120'
 
     daysDelayBeforeReattempt = 7
 
@@ -5507,38 +5507,39 @@ class SETS():
 
     def compensateInfoboxString(self, text):
         text = self.deWikify(text, leaveHTML=True)
-        text = text.replace("<p>","")
+        text = text.replace('<p>','')
         text = text.replace('<br>\n', '\n')
         text = text.replace('<br/>\n', '\n')
         text = text.replace('<br />\n', '\n')
         text = text.replace('<br>', '\n')
         text = text.replace('<br/>', '\n')
         text = text.replace('<br />', '\n')
-        text = text.replace('<hr/>', "\n––––––––––––––––––––––––––––––\n")
-        text = text.replace('<hr>', "\n––––––––––––––––––––––––––––––\n")
-        text = text.replace('<hr />', "\n––––––––––––––––––––––––––––––\n")
+        text = text.replace('<hr/>', '\n––––––––––––––––––––––––––––––\n')
+        text = text.replace('<hr>', '\n––––––––––––––––––––––––––––––\n')
+        text = text.replace('<hr />', '\n––––––––––––––––––––––––––––––\n')
         text = text.replace('<li> ', '\n*')
         text = text.replace(' <li>', '\n*')
         text = text.replace('<li>', '\n*')
         text = text.replace('</li>', '')
         text = text.replace('<ul>', '')
         text = text.replace('</ul>', '')
-        text = text.replace(" *", "*")
-        text = text.replace("<small>", "")
-        text = text.replace("</small>", "")
-        text = text.replace("<sub>", "")
-        text = text.replace("</sub>", "")
-        text = text.replace("<sup>", "")
-        text = text.replace("</sup>", "")
+        text = text.replace(' *', '*')
+        text = text.replace('**', ':*')
+        text = text.replace('<small>', '')
+        text = text.replace('</small>', '')
+        text = text.replace('<sub>', '')
+        text = text.replace('</sub>', '')
+        text = text.replace('<sup>', '')
+        text = text.replace('</sup>', '')
         color = list()
         t=text
         while '<font color=' in t:
             if len(color) > 0:
                 color.append(text.find('<font color=', color[-1]+7))
-                color.append(text.find("</font>", color[-1]))
+                color.append(text.find('</font>', color[-1]))
             else:
-                color.append(text.find("<font color="))
-                color.append(text.find("</font>"))
+                color.append(text.find('<font color='))
+                color.append(text.find('</font>'))
             t = t[color[-1]:]
         while len(color)>0:
             try:
@@ -5546,7 +5547,7 @@ class SETS():
             except IndexError:
                 text = text[:color[-1]]
             try:
-                text = text[:color[-2]]+text[text.find(">", color[-2])+1:]
+                text = text[:color[-2]]+text[text.find('>', color[-2])+1:]
             except IndexError:
                 text = text[:color[-2]]
             try:
@@ -5758,8 +5759,6 @@ class SETS():
         # The function now creates an indented frame calls itself passing the new frame and 'passtext' on.
         # The text behind the first indendation block is stored in 'inserttext2'. The function then creates
         # an unindented frame below the indented frame and calls itself passing the new frame and 'inserttext2'. 
-        # !!! This function will not indent a bullet list before the first simple indentation. However there
-        # is currently no infobox in the game that would require this. !!!
 
         # sets up frame that will contain all the text widgets and frames
         mainframe = Frame(inframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
@@ -5953,8 +5952,8 @@ class SETS():
 
 
         rowinsert=0 
-        # inserts not indented text into textframe
-        if not inserttext1 == "":
+        # inserts not indented text into textframe if text does not contain a bullet list
+        if not inserttext1 == "" and not '*' in inserttext1:
             maintext = Text(mainframe, bg=self.theme['tooltip']['bg'], fg=pcolor, wrap=WORD, 
                     highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], 
                     relief=self.theme['tooltip']['relief'], font=(pfamily, psize, pweight), 
@@ -5967,6 +5966,18 @@ class SETS():
             mainframe.columnconfigure(1, weight=1)
             maintext.formatted_insert(inserttext1, pfamily, psize, pweight)
             maintext.configure(state=DISABLED)
+            rowinsert = rowinsert+1
+        # passes text to be indented on to another iteration of this function if text contains a bullet list
+        elif not inserttext1 == '' and '*' in inserttext1:
+            lineframe = Frame(mainframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
+                    highlightcolor=self.theme['tooltip']['highlight'])
+            lineframe.grid(row=rowinsert, column=0, sticky="nsew")
+            mainframe.rowconfigure(rowinsert, weight=0)
+            mainframe.rowconfigure(rowinsert+1, weight=0)
+            mainframe.columnconfigure(0, weight=1)
+            mainframe.columnconfigure(1, weight=1)
+            self.insert_infobox_paragraph(lineframe, inserttext1, pfamily, pcolor, psize, pweight, 0, 
+                    framewidth)
             rowinsert = rowinsert+1
         # passes text to be indented on to another iteration of this function but with an indented frame
         if not passtext == "":
@@ -6083,7 +6094,7 @@ class SETS():
                 highlightthickness=1, activebackground=self.theme['button_heavy']['hover'])
         mainbutton.pack(fill=X, expand=False, side=TOP)
         mtfr = Frame(frame, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
-                highlightcolor=self.theme['tooltip']['highlight']) # main text frame
+                highlightcolor=self.theme['tooltip']['highlight'], padx=2, pady=2) # main text frame
         mtfr.pack(fill="both",expand=False,side=TOP)
         
         # creates and configuring the text field that will contain the headline section
@@ -6248,7 +6259,7 @@ class SETS():
                 desc_text = self.compensateInfoboxString(self.cache['shipTraits'][name].strip())
             #new wiki
             else:
-                desc_text = self.compensateInfoboxString(f'''{trait['basic']}\n{trait['detailed']}'''.strip())
+                desc_text = self.compensateInfoboxString(f'''{trait['basic']}<hr>{trait['detailed']}'''.strip())
             self.insert_infobox_paragraph(contentframe, desc_text, 'Helvetiva', '#ffffff', 10, 'normal', 
                     0, text.winfo_width())
             contentframe.grid_propagate(True)
