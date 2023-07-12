@@ -5506,6 +5506,13 @@ class SETS():
     getDH = getDisplayedTextHeight
 
     def compensateInfoboxString(self, text):
+        """
+        Performs various replacements to clean up the infobox text and make it ready for displaying.
+
+        Parameters:
+        - :param text: text to clean up
+        """        
+        # html replacements
         text = self.deWikify(text, leaveHTML=True)
         text = text.replace('<p>','')
         text = text.replace('<br>\n', '\n')
@@ -5523,14 +5530,18 @@ class SETS():
         text = text.replace('</li>', '')
         text = text.replace('<ul>', '')
         text = text.replace('</ul>', '')
-        text = text.replace(' *', '*')
-        text = text.replace('**', ':*')
         text = text.replace('<small>', '')
         text = text.replace('</small>', '')
         text = text.replace('<sub>', '')
         text = text.replace('</sub>', '')
         text = text.replace('<sup>', '')
         text = text.replace('</sup>', '')
+
+        # aligns bullet list declarations
+        text = text.replace(' *', '*')
+        text = text.replace('**', ':*')
+
+        # replaces <font> tags
         color = list()
         t=text
         while '<font color=' in t:
@@ -5555,7 +5566,18 @@ class SETS():
                 del color[-1]
             except IndexError:
                 pass
-
+        
+        # removing some weird Star Trek LD reference that breaks the infobox
+        reference = (r'* Starfleet Error Code: ##INVALID_CODE ERR PARSING @╣v◙5##@╣v◙5##464Y15┴¢ª┴é@@@δ↓LÑm'
+                     r'????###├x6zα┘▄9N464Y15┴¢ª┴é@@@δ↓LÑm????###├x6zα┘▄9N@justδ↓LaÑm???seat?##6strappedzα┘▄'
+                     r'to anN464impulse enginem????###├x6zα┘▄9N@δ↓##464Y1i5┴¢ªchoose┴é@@meδ↓LÑm????###├x6zα┘▄'
+                     r'9N464Y15┴¢ª┴é@@@δ↓LÑmbeautiful????###├flowerx??##6zα┘▄9N433774LÑm????###├x6zα┘▄9N@δ↓#'
+                      '#464Y15┴¢ª┴é@@@δ↓LÑm????###├x6\n: ??##6#├x6zα┘▄9N@δ↓##464Y15┴¢ª┴é@@@δ↓LÑm????###├x6I '
+                     r'WILL BURNY15┴¢??  ??##6zα┘▄9N464LÑm????###├x6zα┘▄9N@δ↓##464Y15┴¢??###├x6YOUR HEARTÑm??'
+                     r"??##  429Y15┴¢ª┴é@@@δ↓LÑm????###├x6IN A FIRE↓##433*''sic''*")
+        if reference in text:
+            text = text.replace(reference, '')
+        
         return text
 
     def formatted_insert(self, ptext: str, pfamily, psize, pweight):
