@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.7b120'
+    version = '2023.7b121'
 
     daysDelayBeforeReattempt = 7
 
@@ -1438,120 +1438,122 @@ class SETS():
         self.logWriteCounter('Specs2', '(json)', len(self.cache['specsSecondary']))
         self.logWriteCounter('Specs-Ground', '(json)', len(self.cache['specsGroundBoff']))
 
-    def precache_ship_trait_single(self, name, desc, item):
-        """ TODO why supply the description when you supply the item?
-        stores ship trait into cache including image
+    def precache_ship_trait_single(self, name, item):
+        """
+        Stores ship trait into cache including image.
 
         Parameters:
         - :param name: name of the trait
-        - :param desc: description of the trait
         - :param item: trait item as extracted from the cargo table
         """
         name = self.deWikify(name)
         if not 'shipTraitsWithImages' in self.cache:
             self.cache['shipTraitsWithImages'] = dict()
 
-        if not name in self.cache['shipTraits']:
-            self.cache['shipTraits'][name] = self.deWikify(desc, leaveHTML=True)
-            self.cache['shipTraitsWithImages'][name] = self.imageFromInfoboxName(name)
-            self.logWriteSimple('precacheShipTrait', '', 4, tags=[name])
+        if not name in self.cache['shipTraitsFull']:
+            if '_pageName' in item:
+                ship = None
+                if name in self.specializations.keys():
+                    obt = 'specialization'
+                    ship = self.specializations[name]
+                elif name in self.recruits.keys():
+                    obt = 'recruit'
+                    ship = self.recruits[name]
+                elif name in self.reward_pack_starship_traits:
+                    obt = 'reward pack'
+                elif name in self.mission_starship_traits:
+                    obt = 'mission'
+                elif name in self.phoenix_starship_traits:
+                    obt = 'phoenix'
+                else:
+                    obt = 'ship'
+                    if item['obtained'] is not None and not r'{{{obtained}}}' in item['obtained']:
+                        pattern = re.compile('\[\[(.*?)\]\]')
+                        res = pattern.findall(item['obtained'])
+                        ship = [s for s in res if not ':' in s and not 'File' in s]
+                self.cache['shipTraitsFull'][name] = {
+                    'ship': ship,
+                    'detailed': self.deWikify(item['detailed'], leaveHTML=True),
+                    'basic': self.deWikify(item['basic'], leaveHTML=True),
+                    'link': self.getWikiURL(item['_pageName']),
+                    'obtained': obt
+                }
+                self.cache['shipTraitsWithImages'][name] = self.imageFromInfoboxName(name)
 
-        # fandom sourced: extracting from Mastery cargo table
-        if self.args.fandom or self.persistent['source_old_wiki']:
+    def precache_ship_trait_group_fandom(self, item):
+        """
+        Caches the ship traits of a single ship.
+
+        Parameters:
+        - :param item: dict containing the ships traits and descriptions
+        """
+        # Starship Traits from the Traits cargo table
+        if 'Page' in item and 'name' in item:
+            name = item['name']
             if not name in self.cache['shipTraitsFull']:
-                if '_pageName' in item:
-                    if ('traitdesc' in item and item['traitdesc'] == desc) \
-                            or ('traitdesc2' in item and item['traitdesc2'] == desc) \
-                            or ('traitdesc3' in item and item['traitdesc3'] == desc):
-                        obt = 'T5' 
-                    else:
-                        obt = 'T6'
-                    self.cache['shipTraitsFull'][name] = {
-                        'ship': item['_pageName'],
-                        'desc': self.deWikify(desc, leaveHTML=True),
-                        'image': self.imageFromInfoboxName(name),
-                        'link': self.wikihttp+item['_pageName'].replace(' ', '_'),
-                        'obtained': obt 
-                        }
-                elif 'Page' in item and 'name' in item:
-                    if item['name'] in self.specializations.keys():
-                        obt = 'spec'
-                        nm = self.specializations[item['name']]
-                    elif item['name'] in self.recruits.keys():
-                        obt = 'recr'
-                        nm = self.recruits[item['name']]
-                    else:
-                        obt = 'box'
-                        nm = ''
-                    self.cache['shipTraitsFull'][name] = {
-                        'ship': nm, 
-                        'desc': self.deWikify(desc, leaveHTML=True), 
-                        'image': self.imageFromInfoboxName(name), 
-                        'link': self.wikihttp+item['Page'].replace(' ', '_'), 
-                        'obtained': obt
-                        }
+                desc = item['description']
+                if name in self.specializations.keys():
+                    obt = 'spec'
+                    nm = self.specializations[name]
+                elif name in self.recruits.keys():
+                    obt = 'recr'
+                    nm = self.recruits[name]
+                else:
+                    obt = 'box'
+                    nm = ''
+                self.cache['shipTraitsFull'][name] = {
+                    'ship': nm, 
+                    'desc': self.deWikify(desc, leaveHTML=True), 
+                    'image': self.imageFromInfoboxName(name), 
+                    'link': self.getWikiURL(item['Page']), 
+                    'obtained': obt
+                }
+                return
 
-        # stowiki sourced: extracting from Starship Traits cargo table    
-        else:
-            if not name in self.cache['shipTraitsFull']:
-                if '_pageName' in item:
-                    ship = None
-                    if name in self.specializations.keys():
-                        obt = 'specialization'
-                        ship = self.specializations[name]
-                    elif name in self.recruits.keys():
-                        obt = 'recruit'
-                        ship = self.recruits[name]
-                    elif name in self.reward_pack_starship_traits:
-                        obt = 'reward pack'
-                    elif name in self.mission_starship_traits:
-                        obt = 'mission'
-                    elif name in self.phoenix_starship_traits:
-                        obt = 'phoenix'
-                    else:
-                        obt = 'ship'
-                        if item['obtained'] is not None and not r'{{{obtained}}}' in item['obtained']:
-                            pattern = re.compile('\[\[(.*?)\]\]')
-                            res = pattern.findall(item['obtained'])
-                            ship = [s for s in res if not ':' in s and not 'File' in s]
-                    self.cache['shipTraitsFull'][name] = {
-                        'ship': ship,
-                        'detailed': self.deWikify(item['detailed'], leaveHTML=True),
-                        'basic': self.deWikify(item['basic'], leaveHTML=True),
-                        'link': self.getWikiURL(item['_pageName']),
-                        'obtained': obt
-                    }
-
+        # Starship Traits form the Mastery cargo table
+        types = {'trait':'traitdesc', 'trait2':'traitdesc2', 'trait3':'traitdesc3', 'acctrait':'acctraitdesc'}
+        for source in types.keys():
+            if source in item and item[source] is not None and item[source]:
+                name = item[source]
+                if not name in self.cache['shipTraitsFull']:
+                    if '_pageName' in item:
+                        desc = item[types[source]]
+                        obt = 'T6' if source == 'acctrait' else 'T5'
+                        self.cache['shipTraitsFull'][name] = {
+                            'ship': item['_pageName'],
+                            'desc': self.deWikify(desc, leaveHTML=True),
+                            'image': self.imageFromInfoboxName(name),
+                            'link': self.getWikiURL(item['_pageName']),
+                            'obtained': obt
+                        }
 
     def precacheShipTraits(self, limited=False):
-        """Populate in-memory cache of ship traits for faster loading"""
-        if 'shipTraits' in self.cache and len(self.cache['shipTraits']) > 0:
-            return self.cache['shipTraits']
+        """
+        Populate in-memory cache of ship traits for faster loading
+
+        Parameters:
+        - :param limited: does nothing
+        """
+        if 'shipTraitsFull' in self.cache and len(self.cache['shipTraitsFull']) > 0:
+            return
 
         if not self.args.fandom and not self.persistent['source_old_wiki']:
             if self.starship_traits_direct_stowiki is not None:
                 for item in list(self.starship_traits_direct_stowiki):
                     if 'name' in item and item['name'] is not None:
-                        self.precache_ship_trait_single(item['name'], item['detailed'], item)
+                        self.precache_ship_trait_single(item['name'], item)
 
+        # fandom legacy methods
         else:
-            # fandom legacy methods
             for item in list(self.shiptraits):
-                if 'trait' in item and item['trait'] is not None and len(item['trait']):
-                    self.precache_ship_trait_single(item['trait'], item['traitdesc'], item)
-                if 'trait2' in item and item['trait2'] is not None and len(item['trait2']):
-                    self.precache_ship_trait_single(item['trait2'], item['traitdesc2'], item)
-                if 'trait3' in item and item['trait3'] is not None and len(item['trait3']):
-                    self.precache_ship_trait_single(item['trait3'], item['traitdesc3'], item)
-                if 'acctrait' in item and item['acctrait'] is not None and len(item['acctrait']):
-                    self.precache_ship_trait_single(item['acctrait'], item['acctraitdesc'], item)
+                self.precache_ship_trait_group_fandom(item)
 
             if self.traits is not None:
                 for item in list(self.traits):
                     if 'type' in item and item['type'] is not None and item['type'].lower() == 'starship':
-                        self.precache_ship_trait_single(item['name'], item['description'], item)
+                        self.precache_ship_trait_group_fandom(item)
 
-        self.logWriteCounter('Ship Trait', '(json)', len(self.cache['shipTraits']), ['space'])
+        self.logWriteCounter('Ship Trait', '(json)', len(self.cache['shipTraitsFull']), ['space'])
 
     def precacheTraitSingle(self, name, desc, environment, type):
         name = self.deWikify(name)
@@ -3578,8 +3580,11 @@ class SETS():
         # single-line
         if single:
             item = self.build[key][0]
-            section[0].append((f'''[{item['item']} {item['mark']} {''.join(item['modifiers'])}]'''
-                f'''({self.getWikiURL(self.cache['equipment'][self.keys[key]][item['item']]['Page'])})'''))
+            if item is not None:
+                section[0].append((f'''[{item['item']} {item['mark']} {''.join(item['modifiers'])}]'''
+                    f'''({self.getWikiURL(self.cache['equipment'][self.keys[key]][item['item']]['Page'])})'''))
+            else:
+                section[0].append('&nbsp;')
             return section
 
         # multi-line
@@ -4006,11 +4011,11 @@ class SETS():
         redditString = redditString + "\n&#x200B;\n\n"
         try:
             column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['starshipTrait'] if trait is not None], 6)
-            if self.persistent['showRedditDescriptions']=="Yes":column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['shipTraits'][trait['item']].strip()).replace("\n", " ") for trait in self.build['starshipTrait'] if trait is not None], 6)
+            if self.persistent['showRedditDescriptions']=="Yes":column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['shipTraitsFull'][trait['item']]['desc'].strip()).replace("\n", " ") for trait in self.build['starshipTrait'] if trait is not None], 6)
             else: column1 = [None]*len(column0)
             redditString = redditString + self.makeRedditTable(['**Starship Traits**']+column0, ['**Description**']+column1, ['**Notes**']+[None]*len(column0))
         except KeyError:
-            redditString = redditString + "1 or more starship traits missing from the self.cache['shipTraits'] dictionary"
+            redditString = redditString + "1 or more starship traits missing from the self.cache['shipTraitsFull'] dictionary"
         redditString = redditString + "\n&#x200B;\n\n"
         column0 = self.makeRedditColumn(["[{0}]({1})".format(trait['item'], self.getWikiURL("Trait: "+trait['item'])) for trait in self.build['spaceRepTrait'] if trait is not None], 5)
         if self.persistent['showRedditDescriptions']=="Yes": column1 = self.makeRedditColumn([self.compensateInfoboxString(self.cache['traits']["space"][trait['item']].strip()).replace("\n", " ") for trait in self.build['spaceRepTrait'] if trait is not None], 5)
@@ -6222,7 +6227,7 @@ class SETS():
             printed = True
 
         # creates infobox for starship traits
-        if not printed and (name in self.cache['shipTraits']):
+        if not printed and (name in self.cache['shipTraitsFull']):
             trait = self.cache['shipTraitsFull'][name]
             # inserts and configures the headline section
             text.insert(END, name+'\n', 'starshipTraitHead')
@@ -6278,7 +6283,7 @@ class SETS():
             contentframe.grid_propagate(False)
             # old wiki
             if self.args.fandom or self.persistent['source_old_wiki']:
-                desc_text = self.compensateInfoboxString(self.cache['shipTraits'][name].strip())
+                desc_text = self.compensateInfoboxString(self.cache['shipTraitsFull'][name]['desc'].strip())
             #new wiki
             else:
                 desc_text = self.compensateInfoboxString(f'''{trait['basic']}<hr>{trait['detailed']}'''.strip())
@@ -6510,11 +6515,8 @@ class SETS():
             text.insert(END, ' '+('' if item['modifiers'][0] is None else ' '.join(item['modifiers'])), 'name')
         text.insert(END, '\n')
 
-        #if 'tooltip' in item and item['tooltip']:
-        #    text.insert(END, html['tooltip'])
-
-        if name in self.cache['shipTraits']:
-            text.insert(END, self.cache['shipTraits'][name])
+        if name in self.cache['shipTraitsFull']:
+            text.insert(END, self.cache['shipTraitsFull'][name]['desc'])
 
         if tooltip is not None: text.insert(END, tooltip)
 
