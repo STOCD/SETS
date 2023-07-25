@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.7b121'
+    version = '2023.7b250'
 
     daysDelayBeforeReattempt = 7
 
@@ -5586,17 +5586,22 @@ class SETS():
         return text
 
     def formatted_insert(self, ptext: str, pfamily, psize, pweight):
-        """inserts text into text widget and formats it according to inline formatting tokens
+        """
+        Inserts text into text widget and formats it according to inline formatting tokens.
+        Does not support nested formatting tags.
         - called on Tkinter Text widget -> example_text_widget.formatted_insert(parameters)
 
         Parameters:
-        - ptext: str -> text to be inserted; can make use of following inline formatting tokens:
+        - :param ptext: str -> text to be inserted; can make use of following inline formatting tokens:
             - '''''[text]''''' (text surrounded by five apostrophes) -> bold and italic
             - '''[text]''' (text surrounded by three apostrophes) -> bold
             - ''[text]'' (text surrounded by two apostrophes) -> italic
             - <b>[text]</b> -> bold
             - <u>[text]</u> -> underlined
-        - pfamily; psize; pweight -> font options"""
+        - :param pfamily: -> font options
+        - :param psize: -> font options
+        - :param pweight: -> font options
+        """
         # !!! self is an object of class tk.Text inside this function !!!
 
         # no formatting tokens found
@@ -5606,15 +5611,17 @@ class SETS():
 
         # removes first two entries from a list and reduces the numbers in the remaining entries by index
         # used to compensate index displacements resulting from removing text from the beginning of the string
-        def subtr(li: list, index):
-            try:
-                del li[0]
-                del li[0]
-            except:
+        def subtr(li: list, index, delete = False):
+            if len(li) >= 2:
+                if delete:
+                    del li[0]
+                    del li[0]
+                for element in range(0, len(li)):
+                    li[element] = li[element]-index
+                return li
+            else:
                 return list()
-            for element in range(0, len(li)):
-                li[element] = li[element]-index
-            return li
+            
 
         # working copy of ptext; inside this formatting tokens will be one by one replaced with pipes to 
         # retain indices while preventing one token to be marked twice
@@ -5693,12 +5700,19 @@ class SETS():
                 
                 # inserts bold and italic text
                 if len(bolditalic) > 0 and i1 == bolditalic[0]:
+                    if not l[1] == bolditalic[1]:
+                        # aborts if nested formatting is detected
+                        self.insert(END, passtext)
+                        self.logWriteSimple('tk.Text.formatted_insert', 
+                                'Nested inline formatting tokens are not supported!')
+                        return
+
                     i2 = bolditalic[1]
                     self.insert(END, passtext[:i1])
                     self.insert(END, passtext[i1+5:i2], "bolditalic")
                     passtext = passtext[i2+5:]
-                    l = subtr(l, i2+5)
-                    bolditalic = subtr(bolditalic, i2+5)
+                    l = subtr(l, i2+5, True)
+                    bolditalic = subtr(bolditalic, i2+5, True)
                     bold = subtr(bold, i2+5)
                     italic = subtr(italic, i2+5)
                     bold2 = subtr(bold2, i2+5)
@@ -5706,55 +5720,83 @@ class SETS():
 
                 # inserts bold text (apostrophe formatting)
                 elif len(bold) > 0 and i1 == bold[0]:
+                    if not l[1] == bold[1]:
+                        # aborts if nested formatting is detected
+                        self.insert(END, passtext)
+                        self.logWriteSimple('tk.Text.formatted_insert', 
+                                'Nested inline formatting tokens are not supported!')
+                        return
+
                     i2 = bold[1]
                     self.insert(END, passtext[:i1])
                     self.insert(END, passtext[i1+3:i2], "bold")
                     passtext = passtext[i2+3:]
-                    l = subtr(l, i2+3)
+                    l = subtr(l, i2+3, True)
                     bolditalic = subtr(bolditalic, i2+3)
-                    bold = subtr(bold, i2+3)
+                    bold = subtr(bold, i2+3, True)
                     italic = subtr(italic, i2+3)
                     bold2 = subtr(bold2, i2+3)
                     underlined = subtr(underlined, i2+3)
 
                 # inserts italic text
-                elif len(italic) > 0 and i1 == italic[0] :
+                elif len(italic) > 0 and i1 == italic[0]:
+                    if not l[1] == italic[1]:
+                        # aborts if nested formatting is detected
+                        self.insert(END, passtext)
+                        self.logWriteSimple('tk.Text.formatted_insert', 
+                                'Nested inline formatting tokens are not supported!')
+                        return
+
                     i2 = italic[1]
                     self.insert(END, passtext[:i1])
                     self.insert(END, passtext[i1+2:i2], "italic")
                     passtext = passtext[i2+2:]
-                    l = subtr(l, i2+2)
+                    l = subtr(l, i2+2, True)
                     bolditalic = subtr(bolditalic, i2+2)
                     bold = subtr(bold, i2+2)
-                    italic = subtr(italic, i2+2)
+                    italic = subtr(italic, i2+2, True)
                     bold2 = subtr(bold2, i2+2)
                     underlined = subtr(underlined, i2+2)
 
                 # inserts bold text (html formatting)
                 elif len(bold2) > 0 and i1 == bold2[0]:
+                    if not l[1] == bold2[1]:
+                        # aborts if nested formatting is detected
+                        self.insert(END, passtext)
+                        self.logWriteSimple('tk.Text.formatted_insert', 
+                                'Nested inline formatting tokens are not supported!')
+                        return
+
                     i2 = bold2[1]
                     self.insert(END, passtext[:i1])
                     self.insert(END, passtext[i1+3:i2], "bold")
                     passtext = passtext[i2+4:]
-                    l = subtr(l, i2+4)
+                    l = subtr(l, i2+4, True)
                     bolditalic = subtr(bolditalic, i2+4)
                     bold = subtr(bold, i2+4)
                     italic = subtr(italic, i2+4)
-                    bold2 = subtr(bold2, i2+4)
+                    bold2 = subtr(bold2, i2+4, True)
                     underlined = subtr(underlined, i2+4)
 
                 # inserts underlined text
-                elif len(underlined) > 0 and i1 == underlined[0] :
+                elif len(underlined) > 0 and i1 == underlined[0]:
+                    if not l[1] == underlined[1]:
+                        # aborts if nested formatting is detected
+                        self.insert(END, passtext)
+                        self.logWriteSimple('tk.Text.formatted_insert', 
+                                'Nested inline formatting tokens are not supported!')
+                        return
+
                     i2 = underlined[1]
                     self.insert(END, passtext[:i1])
                     self.insert(END, passtext[i1+3:i2], "underlined")
                     passtext = passtext[i2+4:]
-                    l = subtr(l, i2+4)
+                    l = subtr(l, i2+4, True)
                     bolditalic = subtr(bolditalic, i2+4)
                     bold = subtr(bold, i2+4)
                     italic = subtr(italic, i2+4)
                     bold2 = subtr(bold2, i2+4)
-                    underlined = subtr(underlined, i2+4)
+                    underlined = subtr(underlined, i2+4, True)
 
             # inserts remaining text
             self.insert(END, passtext)
