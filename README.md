@@ -8,7 +8,7 @@ Alpha version of build management and sharing tool for STO.
 Builds can be exported to a PNG file that can be opened by another person using SETS.
 
 ## Contributing
-If you find any information or images missing, please check or update the official wiki (https://sto.fandom.com/) -- where SETS gets this information. You can report wiki issues on the Star Trek Online Community Discord Server (https://discord.gg/eApUvTRr5q) in the #wiki-requests channel or on the STOBuilds Discord Server (https://discord.gg/stobuilds) in the #wiki-update-talk channel.
+If you find any information or images missing, please check or update the official wiki (https://stowiki.net and the old wiki: https://sto.fandom.com/) -- where SETS gets this information. You can report wiki issues on the Star Trek Online Community Discord Server (https://discord.gg/eApUvTRr5q) in the #wiki-requests channel or on the STOBuilds Discord Server (https://discord.gg/stobuilds) in the #wiki-update-talk channel.
 
 For application-related issues or suggestions, please visit the github: https://github.com/STOCD/SETS/issues
 
@@ -50,7 +50,7 @@ The majority of this are gear icons and ship images.  Gear icons tend to be very
 - `CONFIG_DIRECTORY/images/` (automatic) is used to store downloaded images.
 - `APP_DIRECTORY/images/` (optional) is checked after downloaded images.
   - This is where packaged images are initially set up.
-  - https://stobuilds.com/SETS/files/images.zip can be added here for a quick start
+  - https://stobuilds.com/SETS/files/images.exe can be added here for a quick start
 
 ## Configuration directory
 The configuration directory contains multiple files and folders.
