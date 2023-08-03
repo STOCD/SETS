@@ -15,7 +15,7 @@ For application-related issues or suggestions, please visit the github: https://
 ## Getting Started
 ### Application (no installations required)
 - https://stobuilds.com/SETS/downloads.html for the latest app build
-  - Windows 8, 10, 11 -- available
+  - Windows 8, 10, 11 -- currently not available
   - MacOS -- in development
   - Linux -- if requested
 
