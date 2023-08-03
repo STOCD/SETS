@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.7b250'
+    version = '2023.8b30'
 
     daysDelayBeforeReattempt = 7
 
@@ -2334,7 +2334,7 @@ class SETS():
         pickWindow = Toplevel(self.window)
         pickWindow.resizable(True,True) #vertical resize only
         pickWindow.transient(self.window)
-        pickWindow.title(title)
+        pickWindow.title(f'{title} ({len(items_list)} options)')
         (windowwidth,windowheight) = self.pickerDimensions()
         sizeWindow = '{}x{}'.format(windowwidth, windowheight)
         pickWindow.geometry(sizeWindow+self.pickerLocation(windowheight))
@@ -2387,7 +2387,6 @@ class SETS():
             content[name] = (frame, i, 0) # adds item to content dict which is searched by the search bar
 
         # finalizing
-        pickWindow.title('{} ({} options)'.format(title, i-1))
         pickWindow.wait_visibility()    #Implemented for Linux
         pickWindow.grab_set()
         pickWindow.wait_window()
@@ -2788,7 +2787,7 @@ class SETS():
                 for tr in trs:
                     tds = tr.find('td')
                     rank1 = 1
-                    for i in [0, 1, 2]:
+                    for i in [0, 1, 2, 3]:
                         if len(tds)>0 and tds[rank1+i].text.strip() != '':
                             cname = tds[0].text.strip()
                             desc = tds[5].text.strip()
