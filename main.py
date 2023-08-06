@@ -71,7 +71,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.8b30'
+    version = '2023.8b60'
 
     daysDelayBeforeReattempt = 7
 
@@ -3057,6 +3057,11 @@ class SETS():
             self.build.update(buildRevisionCurrent)
             logNote = logNote+'{} merged'.format(len(self.build))
 
+            # fixes empty tier field bug
+            if not self.build['tier']:
+                shipHTML = self.getShipFromName(self.ships, self.build['ship'])
+                self.build['tier'] = f"T{shipHTML['tier']}"
+
             self.resetBackend(rebuild=True)
             self.resetBuildFrames()
             self.repair_build()
@@ -3073,19 +3078,24 @@ class SETS():
             return result
 
     def repair_build(self):
-        """- Repair a typo that was around for a while 
+        """- repairs a typo that was around for a while 
         - removes excess entries from equipment lists in self.build to fit the current ships slot numbers
         - naming updates for wiki change
         """
 
-        if type(self.build) is dict \
-                and 'hagars' in self.build and type(self.build['hagars']) is list \
-                and ('hangars' not in self.build or not len(self.build['hangars'])):                                   
-            self.build['hangars'] = self.build['hagars']
+        # typo
+        if type(self.build) is dict:
+            if 'hagars' in self.build and type(self.build['hagars']) is list:
+                if 'hangars' not in self.build or not len(self.build['hangars']):                                  
+                    self.build['hangars'] = self.build['hagars']
+            if 'hagars' in self.build:
+                self.build.pop('hagars')
             self.logWriteSimple('build', 'REPAIR hagars->hangars', 1)
-
+        
         if self.backend['shipHtml'] is not None:
             shipHtml = self.backend['shipHtml']
+            
+            # excess entries
             variable_slots = {
                 'foreWeapons': 'fore',
                 'aftWeapons': 'aft',
@@ -3104,6 +3114,7 @@ class SETS():
             if 'Innovation Effects' in shipHtml['abilities']: extra_slot += 1
             self.build['uniConsoles'] = self.build['uniConsoles'][:extra_slot]
 
+            # naming updates
             if not self.args.fandom and not self.persistent['source_old_wiki']:
                 # converts to newer names, must be saved to retain updates
                 groups_to_update = [
@@ -3115,7 +3126,8 @@ class SETS():
                 for group in groups_to_update:
                     for item in self.build[group]:
                         if item is not None and 'item' in item and item['item'] is not None and item['item'] in self.stowiki_name_updates:
-                            item['item'] = self.stowiki_name_updates[item['item']]
+                            item['item'] = self.stowiki_name_updates[item['item']]    
+
 
     def filenameDefault(self):
         name = self.build['playerShipName'] if 'playerShipName' in self.build else ''
@@ -7075,7 +7087,7 @@ class SETS():
         settingsMenuSettings = {
             'default': {'sticky': 'n', 'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
             'Export reddit': {'type': 'button_block', 'var_name': 'exportRedditButton', 'callback': self.export_reddit_callback},
-            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : lambda: print((self.build['playerShipDesc']))}, # library button  self.focusLibraryFrameCallback
+            'Library'   : { 'type' : 'button_block', 'var_name' : 'libraryButton', 'callback' : self.focusLibraryFrameCallback}, # library button  self.focusLibraryFrameCallback
             'Settings'  : { 'type' : 'button_block', 'var_name' : 'settingsButton', 'callback' : self.focusSettingsFrameCallback, 'image': self.three_bars},
         }
 
