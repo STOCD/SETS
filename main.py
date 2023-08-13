@@ -26,7 +26,7 @@ from tkinter import Tk
 from tkinter import filedialog
 from tkinter import font
 from tkinter import messagebox
-from tkinter.ttk import Progressbar
+from tkinter.ttk import Progressbar, Combobox
 
 import PIL
 import numpy as np
@@ -65,13 +65,58 @@ class HoverButton(Button):
     def on_leave(self, e):
         self['background'] = self.defaultBackground
 
+class FilteredCombobox(Combobox):
+    """
+    Custom tkinter Combobox that only shows entries in the list that contain the word in the entry 
+    field. The list is shown with a short delay after a word was typed into the entry field.
+    """
+    
+    def __init__(self, master, values, delay:int=750, **kw):
+        """
+        Creates a new Combobox with filtering ability. Parameters match Combobox parameters.
+        """
+        Combobox.__init__(self, master=master, values=values, **kw)
+        self._delay = delay
+        self._value_store = values
+        self.bind('<KeyRelease>', func=lambda e: self._start_delay())
+
+    def _start_delay(self):
+        current_handler = datetime.datetime.now()
+        self.handler = current_handler
+        self.after(self._delay, lambda: self.apply_filter(current_handler))
+
+    def apply_filter(self, handler=None):
+        if handler is None or handler == self.handler:
+            word = self.get()
+            if word == '':
+                self._set_values(self._value_store)
+            else:
+                self._set_values(sorted(filter(lambda s: word.lower() in s.lower(), self._value_store)))
+                if word in self._value_store:
+                    self.event_generate('<<ComboboxSelected>>')
+            self.event_generate('<Button-1>')
+
+    def _set_values(self, values):
+        super().__setitem__('values', values)
+
+    def __getitem__(self, key:str):
+        if key == 'values':
+            return self._value_store
+        else:
+            return super().__getitem__(key)
+    
+    def __setitem__(self, key:str, value):
+        if key == 'values':
+            self._value_store = value
+        super().__setitem__(key, value)
+
 class SETS():
     """Main App Class"""
 
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.8b60'
+    version = '2023.8b130'
 
     daysDelayBeforeReattempt = 7
 
@@ -4395,12 +4440,10 @@ class SETS():
 
         # create and mount mark option menu
         marks = copy.copy(self.marks)
-        if mark.get() in marks:
-            marks.remove(mark.get())
-        mark_option = OptionMenu(topbar_frame, mark, mark.get(), *marks)
-        mark_option.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
-                highlightthickness=0)
-        mark_option.grid(row=0, column=0, sticky='nsew')
+        mark_dropdown = FilteredCombobox(topbar_frame, textvariable=mark, values=marks)
+        #mark_dropdown.configure(background=self.theme['entry_dark']['bg'], 
+                #foreground=self.theme['entry_dark']['fg'], highlightthickness=0)
+        mark_dropdown.grid(row=0, column=0, sticky='nsew')
 
         rarity = StringVar(value='')
         # get rarity preset value
@@ -4418,21 +4461,22 @@ class SETS():
 
         # create and mount rarity option menu
         rarities = copy.copy(self.rarities)
-        if rarity.get() != '' and rarity.get() in rarities:
-            rarities.remove(rarity.get())
-        rarity_option = OptionMenu(topbar_frame, rarity, rarity.get(), *rarities)
-        rarity_option.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
-                highlightthickness=0)
-        rarity_option.grid(row=0, column=2, sticky='nsew')
+        rarity_dropdown = FilteredCombobox(topbar_frame, textvariable=rarity, values=rarities)
+        #rarity_dropdown.configure(bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'], 
+                #highlightthickness=0)
+        rarity_dropdown.grid(row=0, column=2, sticky='nsew')
 
         mod_frame = Frame(topbar_frame, bg=self.theme['app']['fg'])
         mod_frame.grid(row=1, column=0, columnspan=3, sticky='nsew')
         topbar_frame.pack(side=TOP)
         
         # add traces
-        mark.trace_add('write', lambda v,i,m:self.markBoxCallback(value=mark.get(), itemVar=item_var))
-        rarity.trace_add('write', lambda v,i,m,frame=mod_frame:
-                self.setupModFrame(frame, rarity=rarity.get(), item_var=item_var))
+        mark_dropdown.bind('<<ComboboxSelected>>', lambda e: self.markBoxCallback(item_var, mark.get()))
+        rarity_dropdown.bind('<<ComboboxSelected>>', lambda e: 
+                self.setupModFrame(mod_frame, rarity.get(), item_var))
+        #mark.trace_add('write', lambda v,i,m:self.markBoxCallback(item_var, mark.get()))
+        #rarity.trace_add('write', lambda v,i,m,frame=mod_frame:
+                #self.setupModFrame(frame, rarity=rarity.get(), item_var=item_var))
 
         # initial set up of mods
         if 'rarity' in item_var and item_var['rarity']:
@@ -5407,8 +5451,16 @@ class SETS():
                 item_var['modifiers'] = item_var['modifiers'][:len(item_var['modifiers'])]
 
         # set up and mount mod option menus including traces
-        mods = [''] + sorted(self.cache['modifiers'])
+        mods = sorted(self.cache['modifiers'])
+        if not '' in mods:
+            mods = [''] + mods
         for i in range(n):
+            v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
+            d = FilteredCombobox(frame, textvariable=v, values=mods)
+            px = (0, 1) if i == 0 else (1, 0) if i == n-1 else 1
+            d.grid(row=0, column=i, sticky='nsew', padx=px, pady=(4,0))
+            frame.grid_columnconfigure(i, weight=1, uniform='setupModFrame')
+            """
             v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
             v.trace_add('write', lambda v0,v1,v2,i=i,itemVar=item_var,v=v:
                     self.setListIndex(item_var['modifiers'],i,v.get()))
@@ -5418,6 +5470,7 @@ class SETS():
             px = (0, 1) if i == 0 else (1, 0) if i == n-1 else 1
             o.grid(row=0, column=i, sticky='nsew', padx=px, pady=(4,0))
             frame.grid_columnconfigure(i, weight=1, uniform='setupModFrame')
+            """
 
     def getURL(self, name):
         return self.wikihttp + name
