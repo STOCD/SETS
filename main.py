@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.8b130'
+    version = '2023.8b140'
 
     daysDelayBeforeReattempt = 7
 
@@ -5459,6 +5459,8 @@ class SETS():
             d = FilteredCombobox(frame, textvariable=v, values=mods)
             px = (0, 1) if i == 0 else (1, 0) if i == n-1 else 1
             d.grid(row=0, column=i, sticky='nsew', padx=px, pady=(4,0))
+            d.bind('<<ComboboxSelected>>', lambda e, index=i, variable=v:
+                    self.setListIndex(item_var['modifiers'], index, variable.get()))
             frame.grid_columnconfigure(i, weight=1, uniform='setupModFrame')
             """
             v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
