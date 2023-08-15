@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.8b150'
+    version = '2023.8b151'
 
     daysDelayBeforeReattempt = 7
 
@@ -5449,13 +5449,13 @@ class SETS():
                 item_var['modifiers'] += [''] * (n - len(item_var['modifiers']))
             elif len(item_var['modifiers']) > n:
                 item_var['modifiers'] = item_var['modifiers'][:len(item_var['modifiers'])]
+        else:
+            item_var['modifiers'] = [''] * n
 
         # set up and mount mod option menus including traces
         mods = sorted(self.cache['modifiers'])
         if not '' in mods:
             mods = [''] + mods
-        if 'modifiers' not in item_var:
-            item_var['modifiers'] = ['', '', '', '', '']
         for i in range(n):
             v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
             d = FilteredCombobox(frame, textvariable=v, values=mods)
