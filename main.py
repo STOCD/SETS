@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.8b151'
+    version = '2023.9b20'
 
     daysDelayBeforeReattempt = 7
 
@@ -413,7 +413,7 @@ class SETS():
             return
         total_pixels = array.size//n
         message += "$t3g0"
-        b_message = ''.join([format(ord(i), "08b") for i in message])
+        b_message = ''.join([f'{ord(i):08b}' for i in message])
         req_pixels = len(b_message)
         if req_pixels <= total_pixels:
             index = 0
@@ -444,7 +444,7 @@ class SETS():
             if p % 5000 == 0:
                 self.progress_bar_update()
             for q in range(0, 3):
-                hidden_bits[counter] = (bin(array[p][q])[2:][-1])
+                hidden_bits[counter] = (bin(array[p][q])[-1])
                 counter += 1
         hidden_bits = "".join(hidden_bits)
         hidden_bits = [hidden_bits[i:i+8] for i in range(0, len(hidden_bits), 8)]
@@ -1100,7 +1100,7 @@ class SETS():
 
     def getTierOptions(self, tier):
         """Get possible tier options from ship tier string"""
-        return ['T5', 'T5-U', 'T5-X'] if int(tier) == 5 else ['T6', 'T6-X'] if int(tier) == 6 else ['T'+str(tier)]
+        return ['T5', 'T5-U', 'T5-X'] if int(tier) == 5 else ['T6', 'T6-X', 'T6-X2'] if int(tier) == 6 else ['T'+str(tier)]
 
     def setVarAndQuit(self, e, name, image, v, win):
         """Helper function to set variables from within UI callbacks"""
@@ -3157,11 +3157,15 @@ class SETS():
             }
             for key in variable_slots.keys():
                 self.build[key] = self.build[key][:shipHtml[variable_slots[key]]]
-            if '-X' in self.build['tier']: extra_slot = 1
+            if '-X2' in self.build['tier']: extra_slot = 2
+            elif '-X' in self.build['tier']: extra_slot = 1
             else: extra_slot = 0
             self.build['devices'] = self.build['devices'][:shipHtml['devices']+extra_slot]
             if 'Innovation Effects' in shipHtml['abilities']: extra_slot += 1
             self.build['uniConsoles'] = self.build['uniConsoles'][:extra_slot]
+
+            # space for X2 starship trait
+            while len(self.build['starshipTrait']) < 7: self.build['starshipTrait'].append(None)
 
             # naming updates
             if not self.args.fandom and not self.persistent['source_old_wiki']:
@@ -4679,9 +4683,14 @@ class SETS():
         self.backend['shipSciConsoles'] = int(ship['consolessci'])
         self.backend['shipUniConsoles'] = 1 if 'Innovation Effects' in ship["abilities"] else 0
         self.backend['shipHangars'] = 0 if ship["hangars"] == '' or ship['hangars'] is None else int(ship["hangars"])
-        if '-X' in self.backend['tier'].get():
-            self.backend['shipUniConsoles'] = self.backend['shipUniConsoles'] + 1
-            self.backend['shipDevices'] = self.backend['shipDevices'] + 1
+        if '-X2' in self.backend['tier'].get():
+            self.backend['shipUniConsoles'] += 2
+            self.backend['shipDevices'] += 2
+            while len(self.build['devices']) < self.backend['shipDevices']: self.build['devices'].append(None)
+            while len(self.build['uniConsoles']) < self.backend['shipUniConsoles']: self.build['uniConsoles'].append(None)
+        elif '-X' in self.backend['tier'].get():
+            self.backend['shipUniConsoles'] += 1
+            self.backend['shipDevices'] += 1
             if len(self.build['devices']) < self.backend['shipDevices']: self.build['devices'].append(None)
             if len(self.build['uniConsoles']) < self.backend['shipUniConsoles']: self.build['uniConsoles'].append(None)
         else:
@@ -5211,9 +5220,15 @@ class SETS():
 
         traitEliteCaptain = 1 if self.build['eliteCaptain'] else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
+        if '-X2' in self.backend['tier'].get():
+            x_traits = 2
+        elif '-X' in self.backend['tier'].get():
+            x_traits = 1
+        else:
+            x_traits = 0
         self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "space"])
         self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.trait_label_callback, [False, False, False, "space"], 1 if not traitAlien else 0)
-        self.label_build_block(parentFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+(1 if '-X' in self.backend['tier'].get() else 0), self.trait_label_callback, [False, False, True, "space"])
+        self.label_build_block(parentFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+x_traits, self.trait_label_callback, [False, False, True, "space"])
         self.label_build_block(parentFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.trait_label_callback, [True, False, False, "space"])
         self.label_build_block(parentFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.trait_label_callback, [True, True, False, "space"])
 
