@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.9b20'
+    version = '2023.9b50'
 
     daysDelayBeforeReattempt = 7
 
@@ -3107,7 +3107,7 @@ class SETS():
             logNote = logNote+'{} merged'.format(len(self.build))
 
             # fixes empty tier field bug
-            if not self.build['tier']:
+            if not self.build['tier'] and self.build['ship']:
                 shipHTML = self.getShipFromName(self.ships, self.build['ship'])
                 self.build['tier'] = f"T{shipHTML['tier']}"
 
