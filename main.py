@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.9b50'
+    version = '2023.10b10'
 
     daysDelayBeforeReattempt = 7
 
@@ -553,7 +553,8 @@ class SETS():
                 except requests.exceptions.Timeout:
                     r = None
             try:
-                result = r.json()
+                text_result = r.text.replace('&#039;', "'")
+                result = json.loads(text_result)
                 self.logWriteSimple("fetchOrRequestJson", "save", 3, [filename, designation, url_full])
                 self.saveJsonFile(filename, designation, result)
 
@@ -1092,6 +1093,9 @@ class SETS():
 
     def getShipFromName(self, shipJson, shipName):
         """Find cargo table entry for given ship name"""
+        # escaping characters
+        
+
         ship_list = []
         for e in range(len(shipJson)):
             if shipJson[e]["Page"] == shipName:
