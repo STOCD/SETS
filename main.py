@@ -3224,6 +3224,7 @@ class SETS():
 
         if save_as is True:
             outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.filenameDefault(), initialdir=initialDir)
+            self.loaded_filename = outFilename
         else:
             outFilename = self.loaded_filename
 
