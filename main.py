@@ -1837,7 +1837,7 @@ class SETS():
 
         self.yesNo = ["Yes", "No"]
         self.universalTypes = ['Tactical', 'Engineering', 'Science' ]
-        self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
+        self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IV', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
         self.rarities = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Ultra Rare', 'Epic']
         self.mods_per_rarity = {'Common':0, 'Uncommon':1, 'Rare':2, 'Very Rare':3, 'Ultra Rare':4, 'Epic':5, '':0}
         self.factionNames = [ 'Federation', 'Dominion', 'DSC Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
