@@ -1342,7 +1342,13 @@ class SETS():
         self.logWriteCounter('Modifiers', '(json)', len(self.cache['modifiers']))
 
     def precacheShips(self):
-        self.shipNames = [e["Page"] for e in self.ships]
+        #self.shipNames = [e["Page"] for e in self.ships]
+        self.shipNames = dict()
+        for e in self.ships:
+            current_name = f"{e['displayclass']} " if e['displayclass'] is not None else ''
+            current_name += f"{e['displayprefix']} " if e['displayprefix'] is not None else ''
+            current_name += e['displaytype'] if e['displaytype'] is not None else e['Page']
+            self.shipNames[current_name] = e['Page']
         self.logWriteCounter('Ships', '(json)', len(self.shipNames), ['space'])
 
     def predownloadGearImages(self):
@@ -2929,6 +2935,8 @@ class SETS():
             self.resetBuild('clearShip')
             return
 
+
+
         if self.persistent['keepTemplateOnShipChange'] == 0 and self.backend['ship'].get() == '':
             self.resetBuild('clearShip')
             self.backend['shipHtml'] = None
@@ -2958,7 +2966,7 @@ class SETS():
     def shipPickButtonCallback(self, *args):
         """Callback for ship picker button"""
         itemVar = self.getEmptyItem()
-        items_list = [(name, '') for name in self.shipNames]
+        items_list = [(name, '') for name in self.shipNames.keys()]
         # restrict by faction if not KDF unlocked?
         item = self.pickerGui('Pick Starship', itemVar, items_list, [self.setupSearchFrame])
         if 'item' in item and len(item['item']):
@@ -2975,7 +2983,7 @@ class SETS():
             else:
                 self.resetShipSettings()
                 self.shipButton.configure(text=self.ship_name_wrap(item['item']))
-                self.backend['ship'].set(item['item'])
+                self.backend['ship'].set(self.shipNames[item['item']])
                 #self.setupBoffFrame('space', self.backend['shipHtml'])
             self.auto_save_queue()
 
