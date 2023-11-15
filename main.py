@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.10b10'
+    version = '2023.11b150'
 
     daysDelayBeforeReattempt = 7
 
@@ -2287,7 +2287,10 @@ class SETS():
 
     def pickerDimensions(self):
         #self.window.update()
-        windowheight = self.windowHeight
+        if self.persistent['pickerSpawnUnderMouse']:
+            windowheight = int((self.windowHeight - self.window.winfo_pointery()) * 0.97)
+        else:
+            windowheight = int(self.windowHeight * 0.97)
         windowwidth = int(self.windowWidth / 6)
         if windowheight < 400: windowheight = 400
         if windowwidth < 240: windowwidth = 240
@@ -4502,7 +4505,8 @@ class SETS():
         if 'rarity' in item_var and item_var['rarity']:
             self.setupModFrame(mod_frame, rarity=item_var['rarity'], item_var=item_var)
     
-    def label_build_block(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
+    def label_build_block(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0,
+            cmenu=True):
         """
         Set up n-element line of ship equipment icons/buttons
 
@@ -4518,7 +4522,7 @@ class SETS():
         - :param callback: callback function to use for the buttons
         - :param args: callback args to use for the buttons
         - :param disabledCount: a hack to allow disabling elements at the end of the list [no click response]
-
+        - :param cmenu: include standard context menu
         """
         cFrame = Frame(frame, bg=self.theme['frame']['bg'])
         cFrame.grid(row=row, column=col, columnspan=cspan, sticky='nsew', padx=10)
@@ -4537,7 +4541,7 @@ class SETS():
             padx = (25 + 3 * 2) if disabled else 2
 
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, 
-                i=i, callback=callback, args=args, context_menu=True)
+                i=i, callback=callback, args=args, context_menu=cmenu)
 
     def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None,
                      row=0, column=0, columnspan=1, rowspan=1,
@@ -5238,11 +5242,11 @@ class SETS():
             x_traits = 1
         else:
             x_traits = 0
-        self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "space"])
-        self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.trait_label_callback, [False, False, False, "space"], 1 if not traitAlien else 0)
-        self.label_build_block(parentFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+x_traits, self.trait_label_callback, [False, False, True, "space"])
-        self.label_build_block(parentFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.trait_label_callback, [True, False, False, "space"])
-        self.label_build_block(parentFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.trait_label_callback, [True, True, False, "space"])
+        self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "space"], cmenu=False)
+        self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.trait_label_callback, [False, False, False, "space"], 1 if not traitAlien else 0, cmenu=False)
+        self.label_build_block(parentFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+x_traits, self.trait_label_callback, [False, False, True, "space"], cmenu=False)
+        self.label_build_block(parentFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.trait_label_callback, [True, False, False, "space"], cmenu=False)
+        self.label_build_block(parentFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.trait_label_callback, [True, True, False, "space"], cmenu=False)
 
     def setupGroundTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -5256,10 +5260,10 @@ class SETS():
 
         traitEliteCaptain = 1 if self.build['eliteCaptain'] else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
-        self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "ground"])
-        self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.trait_label_callback, [False, False, False, "ground"], 1 if not traitAlien else 0)
-        self.label_build_block(parentFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.trait_label_callback, [True, False, False, "ground"])
-        self.label_build_block(parentFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.trait_label_callback, [True, True, False, "ground"])
+        self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "ground"], cmenu=False)
+        self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.trait_label_callback, [False, False, False, "ground"], 1 if not traitAlien else 0, cmenu=False)
+        self.label_build_block(parentFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.trait_label_callback, [True, False, False, "ground"], cmenu=False)
+        self.label_build_block(parentFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.trait_label_callback, [True, True, False, "ground"], cmenu=False)
 
     def resetShipSettings(self):
         if not self.persistent['keepTemplateOnShipChange']:
@@ -5475,11 +5479,13 @@ class SETS():
 
         # adjust number of available mods
         n = self.mods_per_rarity[rarity]
+        if n == 0:
+            Label(frame, height=1, background=self.theme['app']['fg']).grid(row=0, column=0, pady=(3,0))
         if 'modifiers' in item_var:
             if len(item_var['modifiers']) < n:
                 item_var['modifiers'] += [''] * (n - len(item_var['modifiers']))
             elif len(item_var['modifiers']) > n:
-                item_var['modifiers'] = item_var['modifiers'][:len(item_var['modifiers'])]
+                item_var['modifiers'] = item_var['modifiers'][:n]
         else:
             item_var['modifiers'] = [''] * n
 
@@ -5490,10 +5496,10 @@ class SETS():
         for i in range(n):
             v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
             d = FilteredCombobox(frame, textvariable=v, values=mods)
+            d.bind('<<ComboboxSelected>>', lambda e, index=i, variable=v:
+                self.setListIndex(item_var['modifiers'], index, variable.get()))
             px = (0, 1) if i == 0 else (1, 0) if i == n-1 else 1
             d.grid(row=0, column=i, sticky='nsew', padx=px, pady=(4,0))
-            d.bind('<<ComboboxSelected>>', lambda e, index=i, variable=v:
-                    self.setListIndex(item_var['modifiers'], index, variable.get()))
             frame.grid_columnconfigure(i, weight=1, uniform='setupModFrame')
             """
             v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
@@ -6785,7 +6791,7 @@ class SETS():
         edit_window.update()
         edit_window.geometry((f'''{edit_window.winfo_width()}x{edit_window.winfo_height()}'''
                 f'''{self.pickerLocation(edit_window.winfo_width(), edit_window.winfo_height())}'''))
-        edit_window.resizable(True, False)
+        edit_window.resizable(True, True)
         edit_window.wait_window()
         self.auto_save_queue()
 
