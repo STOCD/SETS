@@ -2980,7 +2980,7 @@ class SETS():
             else:
                 self.resetShipSettings()
                 self.shipButton.configure(text=self.ship_name_wrap(item['item']))
-                self.backend['ship'].set(self.shipNames[item['item']])
+                self.backend['ship'].set(item['item'])
                 #self.setupBoffFrame('space', self.backend['shipHtml'])
             self.auto_save_queue()
 
