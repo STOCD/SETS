@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.12b100'
+    version = '2024.01b90'
 
     daysDelayBeforeReattempt = 7
 
@@ -1480,10 +1480,9 @@ class SETS():
                 # other reps
                 pass
             elif environment is not None and len(environment) and not name in self.cache['specsSecondary'] and not name in self.cache['specsGroundBoff']:
-                if environment == 'space' or environment == 'both':
-                    self.cache['specsSecondary'][name] = description
-                    if not 'secondary' in item or item['secondary'] != 'yes':
-                        self.cache['specsPrimary'][name] = description
+                self.cache['specsSecondary'][name] = description
+                if not 'secondary' in item or item['secondary'] != 'yes':
+                    self.cache['specsPrimary'][name] = description
                 if 'boff' in item and item['boff'] == 'yes' and (environment == "ground" or environment == "both"):
                     self.cache['specsGroundBoff'][self.deWikify(name)] = self.deWikify(description, leaveHTML=True)
 
