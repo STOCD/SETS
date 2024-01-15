@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2024.01b90'
+    version = '2024.01b150'
 
     daysDelayBeforeReattempt = 7
 
@@ -494,18 +494,19 @@ class SETS():
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
-            if interval.days < self.daysDelayBeforeReattempt:
-                with open(filename, 'r', encoding='utf-8') as html_file:
-                    s = html_file.read()
-                    self.logWriteTransaction('Cache File (html)', 'read', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
-                    return HTML(html=s, url = self.wikihttp )
-        r = self.session.get(url_full)
-        self.make_filename_path(os.path.dirname(filename))
-        with open(filename, 'w', encoding="utf-8") as html_file:
-            html_file.write(r.text)
-            self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
+            if interval.days > self.daysDelayBeforeReattempt:   
+                r = self.session.get(url_full)
+                if r.html.find("div.mw-parser-output", first=True) is not None:
+                    self.make_filename_path(os.path.dirname(filename))
+                    with open(filename, 'w', encoding="utf-8") as html_file:
+                        html_file.write(r.text)
+                        self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
+                    return r.html
 
-        return r.html
+        with open(filename, 'r', encoding='utf-8') as html_file:
+            s = html_file.read()
+            self.logWriteTransaction('Cache File (html)', 'read', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
+            return HTML(html=s, url = self.wikihttp )
 
     def get_url_header(self, source=None):
         if source == 'fandom':
