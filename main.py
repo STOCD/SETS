@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2024.01b190'
+    version = '2024.01b210'
 
     daysDelayBeforeReattempt = 7
 
@@ -5916,8 +5916,9 @@ class SETS():
     tk.Text.formatted_insert = formatted_insert
 
     def insert_infobox_paragraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, 
-            framewidth):
-        """Inserts Infobox paragraph into a frame (Recursive function); creates indentation if needed
+            framewidth, recursion_depth=0):
+        """
+        Inserts Infobox paragraph into a frame (Recursive function); creates indentation if needed
         Parameters:
         - inframe: Frame -> text is inserted into this frame; must be managed by grid
         - ptext: str -> the text to be inserted; can include following formatting tags:
@@ -5937,6 +5938,12 @@ class SETS():
         # an unindented frame below the indented frame and calls itself passing the new frame and 'inserttext2'. 
 
         # sets up frame that will contain all the text widgets and frames
+
+        if recursion_depth > 100:
+            self.logWriteSimple('self.insert_infobox_paragraph', ('Recursion depth of 100 reached, '
+                    'Infobox building aborted'), tags=[ptext])
+            return
+
         mainframe = Frame(inframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
                 highlightcolor=self.theme['tooltip']['highlight'])
         mainframe.grid(row=gridrow,column=0, sticky="nsew")
@@ -6129,7 +6136,7 @@ class SETS():
 
         rowinsert=0 
         # inserts not indented text into textframe if text does not contain a bullet list
-        if not inserttext1 == "" and not '*' in inserttext1:
+        if not inserttext1 == "" and not '\n*' in inserttext1:
             maintext = Text(mainframe, bg=self.theme['tooltip']['bg'], fg=pcolor, wrap=WORD, 
                     highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], 
                     relief=self.theme['tooltip']['relief'], font=(pfamily, psize, pweight), 
@@ -6153,7 +6160,7 @@ class SETS():
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
             self.insert_infobox_paragraph(lineframe, inserttext1, pfamily, pcolor, psize, pweight, 0, 
-                    framewidth)
+                    framewidth, recursion_depth + 1)
             rowinsert = rowinsert+1
         # passes text to be indented on to another iteration of this function but with an indented frame
         if not passtext == "":
@@ -6172,7 +6179,7 @@ class SETS():
                     highlightcolor=self.theme['tooltip']['highlight'], highlightthickness=0)
             daughterframe.grid(row=0, column=1, sticky="nsew")
             self.insert_infobox_paragraph(daughterframe, passtext, pfamily, pcolor, psize, pweight, 0, 
-                    framewidth-12)
+                    framewidth-12, recursion_depth + 1)
             rowinsert = rowinsert + 1
         # passes text after first indentation block on to another iteration of this function
         if not inserttext2 == "":
@@ -6184,7 +6191,7 @@ class SETS():
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
             self.insert_infobox_paragraph(lineframe, inserttext2, pfamily, pcolor, psize, pweight, 0, 
-                    framewidth)
+                    framewidth, recursion_depth + 1)
     
 
     def format_ship_list(self, li):
