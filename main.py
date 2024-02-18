@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2024.01b210'
+    version = '2024.02b180'
 
     daysDelayBeforeReattempt = 7
 
@@ -669,7 +669,7 @@ class SETS():
         text = re.sub('/[Ss]if', '/SIF', text)
         text = re.sub('nos_', 'noS_', text)
         text = re.sub('rihan', 'Rihan', text)
-        text = re.sub('_(\w{1,2})_', self.lowerCaseRegexpText, text)
+        text = re.sub('_(\\w{1,2})_', self.lowerCaseRegexpText, text)
         text = re.sub('-([a-z])', self.titleCaseRegexpText, text)
         return text
 
@@ -1529,7 +1529,7 @@ class SETS():
                 else:
                     obt = 'ship'
                     if item['obtained'] is not None and not r'{{{obtained}}}' in item['obtained']:
-                        pattern = re.compile('\[\[(.*?)\]\]')
+                        pattern = re.compile('\\[\\[(.*?)\\]\\]')
                         res = pattern.findall(item['obtained'])
                         ship = [s for s in res if not ':' in s and not 'File' in s]
                 self.cache['shipTraitsFull'][name] = {
@@ -6078,7 +6078,7 @@ class SETS():
             inserttext2 = ""
             passtext = ""
 
-            occs = [i.start() for i in re.finditer('\n\*', ptext)] # the asterisk has to be escaped in re strings
+            occs = [i.start() for i in re.finditer('\n\\*', ptext)] # the asterisk has to be escaped in re strings
             
             # given text starts with bullet list
             if ptext.startswith("*"):
@@ -7109,12 +7109,13 @@ class SETS():
 
         self.footerFrameL = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameL.grid(row=0, column=0, sticky='w')
-        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='w', font=self.font_tuple_create('text_small'))
+        # text color currently set to yellow to temporarily hide the log
+        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg=self.theme['app']['bg'], bg=self.theme['app']['bg'], anchor='w', font=self.font_tuple_create('text_small'))
         footerLabelL.grid(row=0, column=0, sticky='w')
 
         self.footerFrameR = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameR.grid(row=0, column=1, sticky='e')
-        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='e', font=self.font_tuple_create('text_highlight'))
+        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg=self.theme['app']['bg'], bg=self.theme['app']['bg'], anchor='e', font=self.font_tuple_create('text_highlight'))
         footerLabelR.grid(row=0, column=0, sticky='e')
 
         self.footerFrame.grid_columnconfigure(0, weight=2, uniform="footerlabel")
