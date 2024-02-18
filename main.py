@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2024.02b180'
+    version = '2024.02b181'
 
     daysDelayBeforeReattempt = 7
 
@@ -2546,7 +2546,8 @@ class SETS():
     def log_window_interior(self, parentFrame):
         scrollbar = Scrollbar(parentFrame)
         scrollbar.pack(side=RIGHT, fill=Y)
-        self.logDisplay = Text(parentFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'],
+        # currently the fg color is the bg color to hide the folder path
+        self.logDisplay = Text(parentFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['bg'],
                                wrap=WORD, height=30, width=110, font=self.font_tuple_create('text_log'))
         self.logDisplay.pack(side=LEFT, fill=BOTH, expand=True)
         self.logDisplay.insert('0.0', self.logFull.get())
