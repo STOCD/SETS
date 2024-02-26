@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2023.9b20'
+    version = '2024.02b181'
 
     daysDelayBeforeReattempt = 7
 
@@ -496,18 +496,27 @@ class SETS():
         if os.path.exists(filename):
             modDate = os.path.getmtime(filename)
             interval = datetime.datetime.now() - datetime.datetime.fromtimestamp(modDate)
-            if interval.days < self.daysDelayBeforeReattempt:
-                with open(filename, 'r', encoding='utf-8') as html_file:
-                    s = html_file.read()
-                    self.logWriteTransaction('Cache File (html)', 'read', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
-                    return HTML(html=s, url = self.wikihttp )
-        r = self.session.get(url_full)
-        self.make_filename_path(os.path.dirname(filename))
-        with open(filename, 'w', encoding="utf-8") as html_file:
-            html_file.write(r.text)
-            self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
+            if interval.days > self.daysDelayBeforeReattempt:   
+                r = self.session.get(url_full)
+                if r.html.find("div.mw-parser-output", first=True) is not None:
+                    self.make_filename_path(os.path.dirname(filename))
+                    with open(filename, 'w', encoding="utf-8") as html_file:
+                        html_file.write(r.text)
+                        self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
+                    return r.html
+        else:
+            r = self.session.get(url_full)
+            if r.html.find("div.mw-parser-output", first=True) is not None:
+                self.make_filename_path(os.path.dirname(filename))
+                with open(filename, 'w', encoding="utf-8") as html_file:
+                    html_file.write(r.text)
+                    self.logWriteTransaction('Cache File (html)', 'stored', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
+                return r.html
 
-        return r.html
+        with open(filename, 'r', encoding='utf-8') as html_file:
+            s = html_file.read()
+            self.logWriteTransaction('Cache File (html)', 'read', str(os.path.getsize(filename)), designation, 1, tags=[url_full] if self.settings['debug'] >= 3 else None)
+            return HTML(html=s, url = self.wikihttp )
 
     def get_url_header(self, source=None):
         if source == 'fandom':
@@ -555,7 +564,8 @@ class SETS():
                 except requests.exceptions.Timeout:
                     r = None
             try:
-                result = r.json()
+                text_result = r.text.replace('&#039;', "'")
+                result = json.loads(text_result)
                 self.logWriteSimple("fetchOrRequestJson", "save", 3, [filename, designation, url_full])
                 self.saveJsonFile(filename, designation, result)
 
@@ -661,7 +671,7 @@ class SETS():
         text = re.sub('/[Ss]if', '/SIF', text)
         text = re.sub('nos_', 'noS_', text)
         text = re.sub('rihan', 'Rihan', text)
-        text = re.sub('_(\w{1,2})_', self.lowerCaseRegexpText, text)
+        text = re.sub('_(\\w{1,2})_', self.lowerCaseRegexpText, text)
         text = re.sub('-([a-z])', self.titleCaseRegexpText, text)
         return text
 
@@ -1094,6 +1104,9 @@ class SETS():
 
     def getShipFromName(self, shipJson, shipName):
         """Find cargo table entry for given ship name"""
+        # escaping characters
+        
+
         ship_list = []
         for e in range(len(shipJson)):
             if shipJson[e]["Page"] == shipName:
@@ -1478,10 +1491,9 @@ class SETS():
                 # other reps
                 pass
             elif environment is not None and len(environment) and not name in self.cache['specsSecondary'] and not name in self.cache['specsGroundBoff']:
-                if environment == 'space' or environment == 'both':
-                    self.cache['specsSecondary'][name] = description
-                    if not 'secondary' in item or item['secondary'] != 'yes':
-                        self.cache['specsPrimary'][name] = description
+                self.cache['specsSecondary'][name] = description
+                if not 'secondary' in item or item['secondary'] != 'yes':
+                    self.cache['specsPrimary'][name] = description
                 if 'boff' in item and item['boff'] == 'yes' and (environment == "ground" or environment == "both"):
                     self.cache['specsGroundBoff'][self.deWikify(name)] = self.deWikify(description, leaveHTML=True)
 
@@ -1519,7 +1531,7 @@ class SETS():
                 else:
                     obt = 'ship'
                     if item['obtained'] is not None and not r'{{{obtained}}}' in item['obtained']:
-                        pattern = re.compile('\[\[(.*?)\]\]')
+                        pattern = re.compile('\\[\\[(.*?)\\]\\]')
                         res = pattern.findall(item['obtained'])
                         ship = [s for s in res if not ':' in s and not 'File' in s]
                 self.cache['shipTraitsFull'][name] = {
@@ -1835,7 +1847,7 @@ class SETS():
 
         self.yesNo = ["Yes", "No"]
         self.universalTypes = ['Tactical', 'Engineering', 'Science' ]
-        self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IIII', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
+        self.marks = ['', 'Mk I', 'Mk II', 'Mk III', 'Mk IV', 'Mk V', 'Mk VI', 'Mk VII', 'Mk VIII', 'Mk IX', 'Mk X', 'Mk XI', 'Mk XII', '∞', 'Mk XIII', 'Mk XIV', 'Mk XV']
         self.rarities = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Ultra Rare', 'Epic']
         self.mods_per_rarity = {'Common':0, 'Uncommon':1, 'Rare':2, 'Very Rare':3, 'Ultra Rare':4, 'Epic':5, '':0}
         self.factionNames = [ 'Federation', 'Dominion', 'DSC Federation', 'Klingon', 'Romulan', 'TOS Federation' ]
@@ -2279,7 +2291,10 @@ class SETS():
 
     def pickerDimensions(self):
         #self.window.update()
-        windowheight = self.windowHeight
+        if self.persistent['pickerSpawnUnderMouse']:
+            windowheight = int((self.windowHeight - self.window.winfo_pointery()) * 0.97)
+        else:
+            windowheight = int(self.windowHeight * 0.97)
         windowwidth = int(self.windowWidth / 6)
         if windowheight < 400: windowheight = 400
         if windowwidth < 240: windowwidth = 240
@@ -2533,7 +2548,8 @@ class SETS():
     def log_window_interior(self, parentFrame):
         scrollbar = Scrollbar(parentFrame)
         scrollbar.pack(side=RIGHT, fill=Y)
-        self.logDisplay = Text(parentFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['fg'],
+        # currently the fg color is the bg color to hide the folder path
+        self.logDisplay = Text(parentFrame, bg=self.theme['entry_dark']['bg'], fg=self.theme['entry_dark']['bg'],
                                wrap=WORD, height=30, width=110, font=self.font_tuple_create('text_log'))
         self.logDisplay.pack(side=LEFT, fill=BOTH, expand=True)
         self.logDisplay.insert('0.0', self.logFull.get())
@@ -2927,6 +2943,8 @@ class SETS():
             self.resetBuild('clearShip')
             return
 
+
+
         if self.persistent['keepTemplateOnShipChange'] == 0 and self.backend['ship'].get() == '':
             self.resetBuild('clearShip')
             self.backend['shipHtml'] = None
@@ -3109,7 +3127,7 @@ class SETS():
             logNote = logNote+'{} merged'.format(len(self.build))
 
             # fixes empty tier field bug
-            if not self.build['tier']:
+            if not self.build['tier'] and self.build['ship']:
                 shipHTML = self.getShipFromName(self.ships, self.build['ship'])
                 self.build['tier'] = f"T{shipHTML['tier']}"
 
@@ -4508,7 +4526,8 @@ class SETS():
         if 'rarity' in item_var and item_var['rarity']:
             self.setupModFrame(mod_frame, rarity=item_var['rarity'], item_var=item_var)
     
-    def label_build_block(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0):
+    def label_build_block(self, frame, name, row, col, cspan, key, n, callback, args=None, disabledCount=0,
+            cmenu=True):
         """
         Set up n-element line of ship equipment icons/buttons
 
@@ -4524,7 +4543,7 @@ class SETS():
         - :param callback: callback function to use for the buttons
         - :param args: callback args to use for the buttons
         - :param disabledCount: a hack to allow disabling elements at the end of the list [no click response]
-
+        - :param cmenu: include standard context menu
         """
         cFrame = Frame(frame, bg=self.theme['frame']['bg'])
         cFrame.grid(row=row, column=col, columnspan=cspan, sticky='nsew', padx=10)
@@ -4543,7 +4562,7 @@ class SETS():
             padx = (25 + 3 * 2) if disabled else 2
 
             self.createButton(iFrame, bg=bg, row=row, column=i+1, padx=padx, disabled=disabled, key=key, 
-                i=i, callback=callback, args=args, context_menu=True)
+                i=i, callback=callback, args=args, context_menu=cmenu)
 
     def createButton(self, parentFrame, key, i=0, groupKey=None, callback=None, name=None,
                      row=0, column=0, columnspan=1, rowspan=1,
@@ -5244,11 +5263,11 @@ class SETS():
             x_traits = 1
         else:
             x_traits = 0
-        self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "space"])
-        self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.trait_label_callback, [False, False, False, "space"], 1 if not traitAlien else 0)
-        self.label_build_block(parentFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+x_traits, self.trait_label_callback, [False, False, True, "space"])
-        self.label_build_block(parentFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.trait_label_callback, [True, False, False, "space"])
-        self.label_build_block(parentFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.trait_label_callback, [True, True, False, "space"])
+        self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalSpaceTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "space"], cmenu=False)
+        self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalSpaceTrait2', 5, self.trait_label_callback, [False, False, False, "space"], 1 if not traitAlien else 0, cmenu=False)
+        self.label_build_block(parentFrame, "Starship", 2, 0, 1, 'starshipTrait', 5+x_traits, self.trait_label_callback, [False, False, True, "space"], cmenu=False)
+        self.label_build_block(parentFrame, "SpaceRep", 3, 0, 1, 'spaceRepTrait', 5, self.trait_label_callback, [True, False, False, "space"], cmenu=False)
+        self.label_build_block(parentFrame, "Active", 4, 0, 1, 'activeRepTrait', 5, self.trait_label_callback, [True, True, False, "space"], cmenu=False)
 
     def setupGroundTraitFrame(self):
         """Set up UI frame containing traits"""
@@ -5262,10 +5281,10 @@ class SETS():
 
         traitEliteCaptain = 1 if self.build['eliteCaptain'] else 0
         traitAlien = 1 if 'Alien' in self.backend['species'].get() else 0
-        self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "ground"])
-        self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.trait_label_callback, [False, False, False, "ground"], 1 if not traitAlien else 0)
-        self.label_build_block(parentFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.trait_label_callback, [True, False, False, "ground"])
-        self.label_build_block(parentFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.trait_label_callback, [True, True, False, "ground"])
+        self.label_build_block(parentFrame, "Personal", 0, 0, 1, 'personalGroundTrait', 6 if traitEliteCaptain else 5, self.trait_label_callback, [False, False, False, "ground"], cmenu=False)
+        self.label_build_block(parentFrame, "Personal", 1, 0, 1, 'personalGroundTrait2', 5, self.trait_label_callback, [False, False, False, "ground"], 1 if not traitAlien else 0, cmenu=False)
+        self.label_build_block(parentFrame, "GroundRep", 3, 0, 1, 'groundRepTrait', 5, self.trait_label_callback, [True, False, False, "ground"], cmenu=False)
+        self.label_build_block(parentFrame, "Active", 4, 0, 1, 'groundActiveRepTrait', 5, self.trait_label_callback, [True, True, False, "ground"], cmenu=False)
 
     def resetShipSettings(self):
         if not self.persistent['keepTemplateOnShipChange']:
@@ -5481,11 +5500,13 @@ class SETS():
 
         # adjust number of available mods
         n = self.mods_per_rarity[rarity]
+        if n == 0:
+            Label(frame, height=1, background=self.theme['app']['fg']).grid(row=0, column=0, pady=(3,0))
         if 'modifiers' in item_var:
             if len(item_var['modifiers']) < n:
                 item_var['modifiers'] += [''] * (n - len(item_var['modifiers']))
             elif len(item_var['modifiers']) > n:
-                item_var['modifiers'] = item_var['modifiers'][:len(item_var['modifiers'])]
+                item_var['modifiers'] = item_var['modifiers'][:n]
         else:
             item_var['modifiers'] = [''] * n
 
@@ -5496,10 +5517,10 @@ class SETS():
         for i in range(n):
             v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
             d = FilteredCombobox(frame, textvariable=v, values=mods)
+            d.bind('<<ComboboxSelected>>', lambda e, index=i, variable=v:
+                self.setListIndex(item_var['modifiers'], index, variable.get()))
             px = (0, 1) if i == 0 else (1, 0) if i == n-1 else 1
             d.grid(row=0, column=i, sticky='nsew', padx=px, pady=(4,0))
-            d.bind('<<ComboboxSelected>>', lambda e, index=i, variable=v:
-                    self.setListIndex(item_var['modifiers'], index, variable.get()))
             frame.grid_columnconfigure(i, weight=1, uniform='setupModFrame')
             """
             v = StringVar(value=item_var['modifiers'][i] if 'modifiers' in item_var else '')
@@ -5914,8 +5935,9 @@ class SETS():
     tk.Text.formatted_insert = formatted_insert
 
     def insert_infobox_paragraph(self, inframe: Frame, ptext: str, pfamily, pcolor, psize, pweight, gridrow, 
-            framewidth):
-        """Inserts Infobox paragraph into a frame (Recursive function); creates indentation if needed
+            framewidth, recursion_depth=0):
+        """
+        Inserts Infobox paragraph into a frame (Recursive function); creates indentation if needed
         Parameters:
         - inframe: Frame -> text is inserted into this frame; must be managed by grid
         - ptext: str -> the text to be inserted; can include following formatting tags:
@@ -5935,6 +5957,12 @@ class SETS():
         # an unindented frame below the indented frame and calls itself passing the new frame and 'inserttext2'. 
 
         # sets up frame that will contain all the text widgets and frames
+
+        if recursion_depth > 100:
+            self.logWriteSimple('self.insert_infobox_paragraph', ('Recursion depth of 100 reached, '
+                    'Infobox building aborted'), tags=[ptext])
+            return
+
         mainframe = Frame(inframe, bg=self.theme['tooltip']['bg'], highlightthickness=0, 
                 highlightcolor=self.theme['tooltip']['highlight'])
         mainframe.grid(row=gridrow,column=0, sticky="nsew")
@@ -6069,7 +6097,7 @@ class SETS():
             inserttext2 = ""
             passtext = ""
 
-            occs = [i.start() for i in re.finditer('\n\*', ptext)] # the asterisk has to be escaped in re strings
+            occs = [i.start() for i in re.finditer('\n\\*', ptext)] # the asterisk has to be escaped in re strings
             
             # given text starts with bullet list
             if ptext.startswith("*"):
@@ -6127,7 +6155,7 @@ class SETS():
 
         rowinsert=0 
         # inserts not indented text into textframe if text does not contain a bullet list
-        if not inserttext1 == "" and not '*' in inserttext1:
+        if not inserttext1 == "" and not '\n*' in inserttext1:
             maintext = Text(mainframe, bg=self.theme['tooltip']['bg'], fg=pcolor, wrap=WORD, 
                     highlightthickness=0, highlightcolor=self.theme['tooltip']['highlight'], 
                     relief=self.theme['tooltip']['relief'], font=(pfamily, psize, pweight), 
@@ -6151,7 +6179,7 @@ class SETS():
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
             self.insert_infobox_paragraph(lineframe, inserttext1, pfamily, pcolor, psize, pweight, 0, 
-                    framewidth)
+                    framewidth, recursion_depth + 1)
             rowinsert = rowinsert+1
         # passes text to be indented on to another iteration of this function but with an indented frame
         if not passtext == "":
@@ -6170,7 +6198,7 @@ class SETS():
                     highlightcolor=self.theme['tooltip']['highlight'], highlightthickness=0)
             daughterframe.grid(row=0, column=1, sticky="nsew")
             self.insert_infobox_paragraph(daughterframe, passtext, pfamily, pcolor, psize, pweight, 0, 
-                    framewidth-12)
+                    framewidth-12, recursion_depth + 1)
             rowinsert = rowinsert + 1
         # passes text after first indentation block on to another iteration of this function
         if not inserttext2 == "":
@@ -6182,7 +6210,7 @@ class SETS():
             mainframe.columnconfigure(0, weight=1)
             mainframe.columnconfigure(1, weight=1)
             self.insert_infobox_paragraph(lineframe, inserttext2, pfamily, pcolor, psize, pweight, 0, 
-                    framewidth)
+                    framewidth, recursion_depth + 1)
     
 
     def format_ship_list(self, li):
@@ -6791,7 +6819,7 @@ class SETS():
         edit_window.update()
         edit_window.geometry((f'''{edit_window.winfo_width()}x{edit_window.winfo_height()}'''
                 f'''{self.pickerLocation(edit_window.winfo_width(), edit_window.winfo_height())}'''))
-        edit_window.resizable(True, False)
+        edit_window.resizable(True, True)
         edit_window.wait_window()
         self.auto_save_queue()
 
@@ -7100,12 +7128,13 @@ class SETS():
 
         self.footerFrameL = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameL.grid(row=0, column=0, sticky='w')
-        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='w', font=self.font_tuple_create('text_small'))
+        # text color currently set to yellow to temporarily hide the log
+        footerLabelL = Label(self.footerFrameL, textvariable=self.log, fg=self.theme['app']['bg'], bg=self.theme['app']['bg'], anchor='w', font=self.font_tuple_create('text_small'))
         footerLabelL.grid(row=0, column=0, sticky='w')
 
         self.footerFrameR = Frame(self.footerFrame, bg=self.theme['app']['bg'])
         self.footerFrameR.grid(row=0, column=1, sticky='e')
-        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg=self.theme['app']['fg'], bg=self.theme['app']['bg'], anchor='e', font=self.font_tuple_create('text_highlight'))
+        footerLabelR = Label(self.footerFrameR, textvariable=self.logmini, fg=self.theme['app']['bg'], bg=self.theme['app']['bg'], anchor='e', font=self.font_tuple_create('text_highlight'))
         footerLabelR.grid(row=0, column=0, sticky='e')
 
         self.footerFrame.grid_columnconfigure(0, weight=2, uniform="footerlabel")
