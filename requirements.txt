@@ -3,3 +3,4 @@ requests-html==0.10.0
 requests
 numpy
 tkmacosx; sys_platform == 'darwin'
+lxml_html_clean
