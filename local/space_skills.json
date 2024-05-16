@@ -592,13 +592,13 @@
 			{
 				"skill" : [
 					"Offensive Subsystem Tuning",
-					"Offensive Subsystem Tuning (Weapons)",
-					"Offensive Subsystem Tuning (Engines)"
+                    "Offensive Subsystem Tuning (Engines)",
+					"Offensive Subsystem Tuning (Weapons)"
 				],
 				"gdesc" : [
 					"This skill improves the amount of subsystem power available in your Weapons and Engines Subsystems.<br><br>Each point of Weapons Subsystem Power improves the base damage dealt by your starship energy weapons by 1%",
-					"This skill improves the amount of subsystem power available in your Weapons Subsystem.<br><br>Each point of Weapons Subsystem Power improves the base damage dealt by your starship energy weapons by 1%",
-					"This skill improves the amount of subsystem power available in yourEngines Subsystem.<br><br>Each point of Engines Subsystem Power improves the base Turn Rate of your starship by 1%, as well as improving your Impulse Speed."
+                    "This skill improves the amount of subsystem power available in your Engines Subsystem.<br><br>Each point of Engines Subsystem Power improves the base Turn Rate of your starship by 1%, as well as improving your Impulse Speed.",
+					"This skill improves the amount of subsystem power available in your Weapons Subsystem.<br><br>Each point of Weapons Subsystem Power improves the base damage dealt by your starship energy weapons by 1%"
 				],
 				"career" : "eng",
 				"linear" : 2,
@@ -610,15 +610,15 @@
 						"image" : "Engineering_Skill_3_R1",
 						"desc" : "+4.8 Weapons and Engines Subsystem Power"
 					},
+                    {
+						"name" : "Offensive Subsystem Tuning (Engines)",
+						"image" : "Engineering_Skill_4_R2",
+						"desc" : "+3.2 Engines Subsystem Power<br>Total Engines Subsystem Power Bonus = +8.0"
+					},
 					{
 						"name" : "Offensive Subsystem Tuning (Weapons)",
 						"image" : "Engineering_Skill_6_R2",
 						"desc" : "+3.2 Weapons Subsystem Power<br>Total Weapons Subsystem Power Bonus = +8.0"
-					},
-					{
-						"name" : "Offensive Subsystem Tuning (Engines)",
-						"image" : "Engineering_Skill_4_R2",
-						"desc" : "+3.2 Engines Subsystem Power<br>Total Engines Subsystem Power Bonus = +8.0"
 					}
 				]
 			},
