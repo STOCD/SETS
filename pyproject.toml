@@ -1,23 +1,9 @@
-[build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
-
-
 [project]
 name = "SETS"
-version = "2023.4b192"
-authors = [
-  { name="Mara 'Sizer' Morrigan", email="mara.mos714@gmail.com" },
-  { name="Stephen Hill", email="stephen@zosimple.net" },
-  { name="Liraal2" },
-  { name="Serious Table" },
-  { name="Shinga" },
-]
 description = "A Star Trek Online build tool in Python"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
-keywords = ["star trek online"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -31,14 +17,10 @@ dependencies = [
   "requests-html==0.10.0",
   "requests",
   "numpy",
+  "lxml_html_clean",
   "tkmacosx; sys_platform == 'darwin'"
 ]
-
 
 [project.urls]
 homepage = "https://stobuilds.com/SETS/"
 repository = "https://github.com/STOCD/SETS"
-
-
-[tool.setuptools_scm]
-write_to = "SETS/_version.py"
