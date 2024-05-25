@@ -13,12 +13,7 @@ classifiers = [
     "Development Status :: 4 - Beta"
 ]
 dependencies = [
-  "Pillow>=8.3.1",
-  "requests-html==0.10.0",
-  "requests",
-  "numpy",
-  "lxml_html_clean",
-  "tkmacosx; sys_platform == 'darwin'"
+  "PySide6"
 ]
 
 [project.urls]
