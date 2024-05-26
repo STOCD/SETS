@@ -1,7 +1,8 @@
 from types import FunctionType, BuiltinFunctionType, MethodType
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout
+from PySide6.QtWidgets import (
+        QComboBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, QVBoxLayout)
 
 from .style import get_style, get_style_class, merge_style, theme_font
 
@@ -159,3 +160,53 @@ def create_button_series(
         return layout, button_list
     else:
         return layout
+
+
+def create_combo_box(self, style: str = 'combobox', style_override: dict = {}) -> QComboBox:
+    """
+    Creates a combobox with given style and returns it.
+
+    Parameters:
+    - :param style: key for self.theme -> default style
+    - :param style_override: style dict to override default style
+
+    :return: styled QCombobox
+    """
+    combo_box = QComboBox()
+    combo_box.setStyleSheet(get_style_class(self, 'QComboBox', style, style_override))
+    if 'font' in style_override:
+        combo_box.setFont(theme_font(self, style, style_override['font']))
+    else:
+        combo_box.setFont(theme_font(self, style))
+    combo_box.setSizePolicy(SMINMAX)
+    combo_box.setCursor(Qt.CursorShape.PointingHandCursor)
+    combo_box.view().setCursor(Qt.CursorShape.PointingHandCursor)
+    return combo_box
+
+
+def create_entry(
+        self, default_value='', validator=None, style: str = 'entry',
+        style_override: dict = {}, placeholder='') -> QLineEdit:
+    """
+    Creates an entry widget and styles it.
+
+    Parameters:
+    - :param default_value: default value for the entry
+    - :param validator: validator to validate entered characters against
+    - :param style: key for self.theme -> default style
+    - :param style_override: style dict to override default style
+    - :param placeholder: placeholder shown when entry is empty
+
+    :return: styled QLineEdit
+    """
+    entry = QLineEdit(default_value)
+    entry.setValidator(validator)
+    entry.setPlaceholderText(placeholder)
+    entry.setStyleSheet(get_style_class(self, 'QLineEdit', style, style_override))
+    if 'font' in style_override:
+        entry.setFont(theme_font(self, style, style_override['font']))
+    else:
+        entry.setFont(theme_font(self, style))
+    entry.setCursor(Qt.CursorShape.IBeamCursor)
+    entry.setSizePolicy(SMAXMAX)
+    return entry

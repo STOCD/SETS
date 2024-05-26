@@ -13,7 +13,8 @@ classifiers = [
     "Development Status :: 4 - Beta"
 ]
 dependencies = [
-  "PySide6"
+  "PySide6",
+  "requests"
 ]
 
 [project.urls]

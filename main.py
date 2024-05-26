@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2024.05b250'
+    version = '2024.05b260'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -58,7 +58,7 @@ class Launcher():
             'mbg': '#242424',  # medium background
             'lbg': '#404040',  # light background
             'sets': '#c59129',  # accent
-            'lsets': '#20c59129',  # light accent (12.5% opacity)
+            'lsets': '#60c59129',  # light accent
             'font': ('Overpass', 11, 'normal'),
             'heading': ('Overpass', 14, 'bold'),
             'subhead': ('Overpass', 12, 'medium'),
@@ -166,6 +166,58 @@ class Launcher():
             '::tab': {
                 'height': 0,
                 'width': 0
+            }
+        },
+        # combo box
+        'combobox': {
+            'border-style': 'solid',
+            'border-width': '@bw',
+            'border-color': '@bc',
+            'background-color': '@bg',
+            'padding': (2, 5, 0, 5),
+            'color': '@fg',
+            'font': '@subhead',
+            '::down-arrow': {
+                'image': 'url(local/thick-chevron-down.svg)',
+                'width': '@margin',
+            },
+            '::drop-down': {
+                'border-style': 'none',
+                'padding': (2, 2, 2, 2)
+            },
+            '~QAbstractItemView': {
+                'background-color': '@mbg',
+                'border-style': 'solid',
+                'border-color': '@bc',
+                'border-width': '@bw',
+                'border-radius': '@br',
+                'color': '@fg',
+                'outline': '0',
+                '::item': {
+                    'border-width': '@bw',
+                    'border-style': 'solid',
+                    'border-color': '@mbg',
+                },
+                '::item:hover': {
+                    'border-color': '@sets',
+                },
+            }
+        },
+        # line of user-editable text
+        'entry': {
+            'background-color': '@mbg',
+            'color': '@fg',
+            'border-width': '@bw',
+            'border-style': 'solid',
+            'border-color': '@bc',
+            'font': '@subhead',
+            'selection-background-color': '@lsets',
+            # cursor is inside the line
+            ':focus': {
+                'border-color': '@sets'
+            },
+            ':hover': {
+                'background-color': '@lbg'
             }
         },
     }
