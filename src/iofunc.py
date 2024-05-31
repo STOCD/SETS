@@ -1,13 +1,118 @@
+from datetime import datetime
 import json
 import os
 from re import sub as re_sub
 import sys
+from urllib.parse import quote_plus
 
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon, QPixmap
 import requests
+from requests_html import HTMLSession
+
+from .constants import WIKI_IMAGE_URL
+from .textedit import compensate_json
 
 
-def create_folder(self, path_to_folder):
+def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dict | list:
+    """
+    Retrieves cargo data for specific table. Downloads cargo data from wiki if cache is empty.
+    Updates cache.
+
+    Parameters:
+    - :param filename: filename of cache file
+    - :param url: url to cargo table
+    - :param ignore_cache_age: True if cache of any age should be accepted
+    """
+    filepath = f"{self.config['config_subfolders']['cache']}\\{filename}"
+    cargo_data = None
+
+    # try loading from cache
+    if os.path.exists(filepath) and os.path.isfile(filepath):
+        last_modified = os.path.getmtime(filepath)
+        if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7 or ignore_cache_age:
+            try:
+                return load_json(filepath)
+            except json.JSONDecodeError:
+                backup_filepath = f"{self.config['config_subfolders']['backups']}\\{filename}"
+                if os.path.exists(backup_filepath) and os.path.isfile(backup_filepath):
+                    try:
+                        cargo_data = load_json(backup_filepath)
+                        store_json(cargo_data, filepath)
+                        return cargo_data
+                    except json.JSONDecodeError:
+                        pass
+
+    # download cargo data if loading from cache failed or data should be updated
+    try:
+        cargo_data = fetch_json(url)
+        store_json(cargo_data, filepath)
+        return cargo_data
+    except requests.exceptions.JSONDecodeError:
+        if ignore_cache_age:
+            sys.stderr.write(f'[Error] Cargo table could not be retrieved ({filename})\n')
+            sys.exit(1)
+        else:
+            return get_cargo_data(self, filename, url, ignore_cache_age=True)
+
+
+def retrieve_image(
+        self, name: str, image_folder_path: str, width: int, height: int, signal=None,
+        url_override: str = '') -> QPixmap:
+    """
+    Downloads image or fetches image from cache.
+
+    Parameters:
+    - :param name: name of the item
+    - :param image_folder_path: path to the image folder
+    - :param width: width that the image is scaled to
+    - :param height: height that the image is scaled to
+    - :param signal: signal that is emitted to chance splash when downloading image (optional)
+    - :param url_override: non default image url (optional)
+    """
+    filename = get_image_file_name(name)
+    filepath = f'{image_folder_path}\\{filename}'
+    image = QPixmap(filepath)
+    if image.isNull():
+        if signal is not None:
+            signal.emit(f'Loading Image: {name}')
+        if url_override == '':
+            image_url = f'{WIKI_IMAGE_URL}{name.replace(' ', '_')}_icon.png'
+        else:
+            image_url = url_override
+        image_response = requests.get(image_url)
+        if image_response.ok:
+            image.loadFromData(image_response.content, 'png')
+            image.save(filepath)
+        else:
+            return self.cache.empty_image
+    image.scaled(
+            width, height, Qt.AspectRatioMode. KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation)
+    return image
+
+# --------------------------------------------------------------------------------------------------
+# static functions
+# --------------------------------------------------------------------------------------------------
+
+
+def load_image(path: str, width: int, height: int) -> QPixmap:
+    """
+    Reads image from filesystem, scales it accordingly and returns it.
+
+    Parameters:
+    - :param path: path to image
+    - :param width: width that the image is scaled to
+    - :param height: height that the image is scaled to
+    """
+    image = QPixmap(path)
+    image.scaled(
+            width, height, Qt.AspectRatioMode. KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation)
+    return image
+
+
+def create_folder(path_to_folder):
     """
     Creates the folder at path_to_folder in case it does not exist.
 
@@ -16,11 +121,6 @@ def create_folder(self, path_to_folder):
     """
     if not os.path.exists(path_to_folder) and not os.path.isdir(path_to_folder):
         os.mkdir(path_to_folder)
-
-
-# --------------------------------------------------------------------------------------------------
-# static functions
-# --------------------------------------------------------------------------------------------------
 
 
 def get_asset_path(asset_name: str, app_directory: str) -> str:
@@ -96,18 +196,25 @@ def fetch_json(url: str) -> dict | list:
             r = requests.get(url, timeout=10)
         except requests.exceptions.Timeout:
             raise requests.exceptions.JSONDecodeError
-    return r.json()
+    r.encoding = 'utf-8'
+    return json.loads(compensate_json(r.text))
+
+
+def fetch_html(url: str):
+    """
+    Fetches html from url and returns plain text. Raises requests.exceptions.Timeout if
+    2 download attempts failed.
+
+    Parameters:
+    - :param url: URL to file
+    """
+    session = HTMLSession()
+    r = session.get(url)
+    return r.html
 
 
 def sanitize_file_name(txt, chr_set='extended') -> str:
     """Converts txt to a valid filename.
-
-    Parameters:
-    - :param txt: The path to convert.
-    - :param chr_set:
-        - 'printable':    Any printable character except those disallowed on Windows/*nix.
-        - 'extended':     'printable' + extended ASCII character codes 128-255
-        - 'universal':    For almost *any* file system.
     """
     FILLER = '-'
     MAX_LEN = 255  # Maximum length of filename is 255 bytes in Windows and some *nix flavors.
@@ -145,3 +252,13 @@ def sanitize_file_name(txt, chr_set='extended') -> str:
     result = re_sub(r"^ ", FILLER, result)
 
     return result
+
+
+def get_image_file_name(name: str) -> str:
+    """
+    Converts image name to valid file name
+    """
+    identifier = quote_plus(name)
+    if len(identifier) < 7:
+        identifier += '+'
+    return f'{identifier}+icon.png'

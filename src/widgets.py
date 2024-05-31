@@ -49,17 +49,34 @@ class Cache():
             'space': self.boff_dict(),
             'ground': self.boff_dict()
         }
+        self.skills = {
+            'space': dict(),
+            'space_unlocks': dict(),
+            'ground': dict(),
+            'ground_unlocks': dict()
+        }
+        self.species: dict = {
+            'Federation': dict(),
+            'Klingon': dict(),
+            'Romulan': dict(),
+            'Dominion': dict(),
+            'TOS Federation': dict(),
+            'DSC Federation': dict()
+        }
+
+        self.empty_image: QPixmap
+        self.images: dict = dict()
 
     def boff_dict(self):
         return {
-            'Tactical': (dict(), dict(), dict(), dict()),
-            'Engineering': (dict(), dict(), dict(), dict()),
-            'Science': (dict(), dict(), dict(), dict()),
-            'Intelligence': (dict(), dict(), dict(), dict()),
-            'Command': (dict(), dict(), dict(), dict()),
-            'Pilot': (dict(), dict(), dict(), dict()),
-            'Temporal': (dict(), dict(), dict(), dict()),
-            'Miracle Worker': (dict(), dict(), dict(), dict()),
+            'Tactical': [dict(), dict(), dict(), dict()],
+            'Engineering': [dict(), dict(), dict(), dict()],
+            'Science': [dict(), dict(), dict(), dict()],
+            'Intelligence': [dict(), dict(), dict(), dict()],
+            'Command': [dict(), dict(), dict(), dict()],
+            'Pilot': [dict(), dict(), dict(), dict()],
+            'Temporal': [dict(), dict(), dict(), dict()],
+            'Miracle Worker': [dict(), dict(), dict(), dict()],
         }
 
 

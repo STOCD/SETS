@@ -952,7 +952,7 @@
 				"points_required" : 24,
 				"ultimate" : true,
 				"nodes" : [
-					{"Focused Frenzy" : "Mark the target foe, and devote all available resources to taking them down.  Each tiem you hit the marked foe with an energy weapon, your weapons' firing cycles will speed up progressively faster and faster.\r\n\r\n- 1 min 30 sec recharge\r\n- Affecting skills: ? (if any)\r\n- +4% firing cycle Haste for energy weapons when damaging marked foe, up to 5 stacks\r\n- Stacks expire after not hitting the target for 2.5 seconds"}
+					{"Focused Frenzy" : "Mark the target foe, and devote all available resources to taking them down.  Each time you hit the marked foe with an energy weapon, your weapons' firing cycles will speed up progressively faster and faster.\r\n\r\n- 1 min 30 sec recharge\r\n- Affecting skills: ? (if any)\r\n- +4% firing cycle Haste for energy weapons when damaging marked foe, up to 5 stacks\r\n- Stacks expire after not hitting the target for 2.5 seconds"}
 				],
 				"options" : [
 					{"Frenzied Reactions" : "Chance to also reduce Bridge Officer cooldowns with each hit\r\n\r\n10% chance: -1 seconds to the current recharge time of abilities"},

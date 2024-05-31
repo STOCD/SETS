@@ -1,14 +1,9 @@
-from PySide6.QtCore import QEventLoop
-
-
 def enter_splash(self):
     """
     Shows splash screen
     """
     self.widgets.loading_label.setText('Loading: ...')
     self.widgets.splash_tabber.setCurrentIndex(1)
-    self.app.processEvents()
-    self.app.processEvents()
 
 
 def exit_splash(self):
@@ -26,7 +21,6 @@ def splash_text(self, new_text: str):
     - :param new_text: will be displayed on the splsh screen
     """
     self.widgets.loading_label.setText(new_text)
-    self.app.processEvents()
 
 
 def switch_main_tab(self, index):

@@ -5,7 +5,8 @@ from PySide6.QtGui import QFontDatabase
 from PySide6.QtWidgets import (
         QApplication, QFrame, QGridLayout, QHBoxLayout, QTabWidget, QVBoxLayout, QWidget)
 
-from .iofunc import get_asset_path, load_icon
+from .constants import CAREERS, FACTIONS, PRIMARY_SPECS, SECONDARY_SPECS
+from .iofunc import create_folder, get_asset_path, load_icon
 from .widgetbuilder import AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, SMAXMIN, SMINMAX, SMINMIN
 from .widgets import Cache, ImageLabel, WidgetStorage
 
@@ -17,8 +18,7 @@ signal(SIGINT, SIG_DFL)
 class SETS():
 
     from .callbacks import enter_splash, exit_splash, splash_text, switch_main_tab
-    from .datafunctions import load_cargo_data
-    from .iofunc import create_folder
+    from .datafunctions import init_backend
     from .style import create_style_sheet, get_style, get_style_class
     from .widgetbuilder import (
             create_button, create_button_series, create_combo_box, create_entry, create_frame,
@@ -62,8 +62,7 @@ class SETS():
         self.app, self.window = self.create_main_window()
         self.setup_main_layout()
         self.window.show()
-        self.app.processEvents()
-        self.load_cargo_data()
+        self.init_backend()
 
     def run(self) -> int:
         """
@@ -93,17 +92,19 @@ class SETS():
         for folder, path in self.config['config_subfolders'].items():
             self.config['config_subfolders'][folder] = config_folder + path
         self.config['ui_scale'] = self.settings.value('ui_scale', type=float)
+        self.config['box_width'] *= self.config['ui_scale']
+        self.config['box_height'] *= self.config['ui_scale']
 
     def init_environment(self):
         """
         Creates required folders if necessary.
         """
-        self.create_folder(self.config['config_folder_path'])
-        self.create_folder(self.config['config_subfolders']['library'])
-        self.create_folder(self.config['config_subfolders']['cache'])
-        self.create_folder(self.config['config_subfolders']['backups'])
-        self.create_folder(self.config['config_subfolders']['images'])
-        self.create_folder(self.config['config_subfolders']['ship_images'])
+        create_folder(self.config['config_folder_path'])
+        create_folder(self.config['config_subfolders']['library'])
+        create_folder(self.config['config_subfolders']['cache'])
+        create_folder(self.config['config_subfolders']['backups'])
+        create_folder(self.config['config_subfolders']['images'])
+        create_folder(self.config['config_subfolders']['ship_images'])
 
     def main_window_close_callback(self, event):
         """
@@ -289,32 +290,53 @@ class SETS():
         csp = self.theme['defaults']['csp'] * self.config['ui_scale']
         layout.setContentsMargins(csp, csp, csp, csp)
         layout.setSpacing(csp)
+        layout.setColumnStretch(1, 1)
         char_name = self.create_entry(placeholder='NAME')
         char_name.setAlignment(AHCENTER)
         char_name.setSizePolicy(SMINMAX)
         layout.addWidget(char_name, 0, 0, 1, 2)
+        career_label = self.create_label('Captain Career', 'label_subhead')
+        layout.addWidget(career_label, 1, 0, alignment=ARIGHT)
+        career_combo = self.create_combo_box()
+        career_combo.addItems({''} | CAREERS)
+        layout.addWidget(career_combo, 1, 1)
+        faction_label = self.create_label('Faction')
+        layout.addWidget(faction_label, 2, 0, alignment=ARIGHT)
+        faction_combo = self.create_combo_box()
+        faction_combo.addItems({''} | FACTIONS)
+        layout.addWidget(faction_combo, 2, 1)
+        species_label = self.create_label('Species')
+        layout.addWidget(species_label, 3, 0, alignment=ARIGHT)
+        species_combo = self.create_combo_box()
+        species_combo.addItems({''})
+        layout.addWidget(species_combo, 3, 1)
+        primary_label = self.create_label('Primary Spec')
+        layout.addWidget(primary_label, 4, 0, alignment=ARIGHT)
+        primary_combo = self.create_combo_box()
+        primary_combo.addItems({''} | PRIMARY_SPECS)
+        layout.addWidget(primary_combo, 4, 1)
+        secondary_label = self.create_label('Secondary Spec')
+        layout.addWidget(secondary_label, 5, 0, alignment=ARIGHT)
+        secondary_combo = self.create_combo_box()
+        secondary_combo.addItems({''} | SECONDARY_SPECS)
+        layout.addWidget(secondary_combo, 5, 1)
         frame.setLayout(layout)
 
     def setup_splash(self, frame: QFrame):
         """
         Creates Splash screen.
         """
-        layout = QHBoxLayout()
+        layout = QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        center_frame = self.create_frame(size_policy=SMINMIN)
-        center_layout = QVBoxLayout()
-        center_layout.setContentsMargins(0, 0, 0, 0)
-        center_layout.setSpacing(self.theme['defaults']['csp'])
+        layout.setRowStretch(0, 1)
+        layout.setRowStretch(3, 1)
+        layout.setColumnStretch(0, 3)
+        layout.setColumnStretch(1, 2)
+        layout.setColumnStretch(2, 3)
         loading_image = ImageLabel(get_asset_path('sets_loading.png', self.app_dir), (1, 1))
-        center_layout.addWidget(loading_image)
+        layout.addWidget(loading_image, 1, 1)
         loading_label = self.create_label('Loading: ...', 'label_subhead')
         self.widgets.loading_label = loading_label
-        center_layout.addWidget(loading_label, alignment=ALEFT)
-        center_frame.setLayout(center_layout)
-        left_frame = self.create_frame(size_policy=SMINMIN)
-        layout.addWidget(left_frame, 3)
-        layout.addWidget(center_frame, 2, AVCENTER)
-        right_frame = self.create_frame(size_policy=SMINMIN)
-        layout.addWidget(right_frame, 3)
+        layout.addWidget(loading_label, 2, 0, 1, 3, alignment=AHCENTER)
         frame.setLayout(layout)

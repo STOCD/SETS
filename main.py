@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2024.05b260'
+    version = '2024.05b310'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -234,15 +234,17 @@ class Launcher():
     @staticmethod
     def app_config() -> dict:
         config = {
-            'settings_path': '/.SETS_settings.ini',
-            'config_folder_path': '/.config',
+            'settings_path': '\\.SETS_settings.ini',
+            'config_folder_path': '\\.config',
             'config_subfolders': {
-                'library': '/library',
-                'cache': '/cache',
-                'backups': '/backups',
-                'images': '/images',
-                'ship_images': '/ship_images'
+                'library': '\\library',
+                'cache': '\\cache',
+                'backups': '\\backups',
+                'images': '\\images',
+                'ship_images': '\\ship_images'
             },
+            'box_width': 49,
+            'box_height': 64,
             'default_settings': {
                 'ui_scale': 1.0,
                 'geometry': None
