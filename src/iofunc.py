@@ -57,16 +57,13 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
 
 
 def retrieve_image(
-        self, name: str, image_folder_path: str, width: int, height: int, signal=None,
-        url_override: str = '') -> QPixmap:
+        self, name: str, image_folder_path: str, signal=None, url_override: str = '') -> QPixmap:
     """
     Downloads image or fetches image from cache.
 
     Parameters:
     - :param name: name of the item
     - :param image_folder_path: path to the image folder
-    - :param width: width that the image is scaled to
-    - :param height: height that the image is scaled to
     - :param signal: signal that is emitted to chance splash when downloading image (optional)
     - :param url_override: non default image url (optional)
     """
@@ -86,9 +83,6 @@ def retrieve_image(
             image.save(filepath)
         else:
             return self.cache.empty_image
-    image.scaled(
-            width, height, Qt.AspectRatioMode. KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation)
     return image
 
 # --------------------------------------------------------------------------------------------------
@@ -96,19 +90,14 @@ def retrieve_image(
 # --------------------------------------------------------------------------------------------------
 
 
-def load_image(path: str, width: int, height: int) -> QPixmap:
+def load_image(path: str) -> QPixmap:
     """
     Reads image from filesystem, scales it accordingly and returns it.
 
     Parameters:
     - :param path: path to image
-    - :param width: width that the image is scaled to
-    - :param height: height that the image is scaled to
     """
     image = QPixmap(path)
-    image.scaled(
-            width, height, Qt.AspectRatioMode. KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation)
     return image
 
 
@@ -259,6 +248,4 @@ def get_image_file_name(name: str) -> str:
     Converts image name to valid file name
     """
     identifier = quote_plus(name)
-    if len(identifier) < 7:
-        identifier += '+'
     return f'{identifier}+icon.png'

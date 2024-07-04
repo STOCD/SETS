@@ -151,6 +151,33 @@ class Launcher():
                 'color': '@bc'
             }
         },
+        # build item button
+        'item': {
+            'background-color': '@mbg',
+            'border-style': 'solid',
+            'border-width': '@bw',
+            'border-color': '@bc'
+        },
+        # checkbox
+        'checkbox': {
+            '::indicator': {
+                'width': 16,
+                'height': 16,
+                'border-style': 'solid',
+                'border-width': '@bw',
+                'border-color': '@bc',
+                'background-color': '@lbg',
+            },
+            '::indicator:hover': {
+                'border-color': '@sets'
+            },
+            '::indicator:checked': {
+                'image': 'url(local/check.svg)'
+            },
+            '::indicator:unchecked': {
+                'image': 'url(local/uncheck.svg)',
+            }
+        },
         # holds sub-pages
         'tabber': {
             'background-color': 'none',
@@ -220,6 +247,17 @@ class Launcher():
                 'background-color': '@lbg'
             }
         },
+        # for item tooltips
+        'infobox': {
+            'background-color': '#000000',
+            'border-style': 'solid',
+            'border-width': '@bw',
+            'border-color': '@lbg',
+            'border-radius': '@br',
+            'color': '@fg',
+            'margin': 0,
+            'padding': '@sep'
+        }
     }
 
     @staticmethod
@@ -243,6 +281,7 @@ class Launcher():
                 'images': '\\images',
                 'ship_images': '\\ship_images'
             },
+            'autosave_filename': '.autosave.json',
             'box_width': 49,
             'box_height': 64,
             'default_settings': {

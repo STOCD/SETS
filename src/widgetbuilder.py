@@ -1,25 +1,11 @@
-from types import FunctionType, BuiltinFunctionType, MethodType
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-        QComboBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, QVBoxLayout)
+        QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+        QSizePolicy, QVBoxLayout)
 
+from .constants import ALEFT, CALLABLE, SMAXMAX, SMAXMIN, SMINMAX
 from .style import get_style, get_style_class, merge_style, theme_font
-
-CALLABLE = (FunctionType, BuiltinFunctionType, MethodType)
-
-SMINMIN = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-SMAXMAX = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
-SMAXMIN = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Minimum)
-SMINMAX = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
-
-ATOP = Qt.AlignmentFlag.AlignTop
-ABOTTOM = Qt.AlignmentFlag.AlignBottom
-ARIGHT = Qt.AlignmentFlag.AlignRight
-ALEFT = Qt.AlignmentFlag.AlignLeft
-ACENTER = Qt.AlignmentFlag.AlignCenter
-AVCENTER = Qt.AlignmentFlag.AlignVCenter
-AHCENTER = Qt.AlignmentFlag.AlignHCenter
+from .widgets import ItemButton
 
 
 def create_frame(self, style='frame', style_override={}, size_policy=None) -> QFrame:
@@ -210,3 +196,47 @@ def create_entry(
     entry.setCursor(Qt.CursorShape.IBeamCursor)
     entry.setSizePolicy(SMAXMAX)
     return entry
+
+
+def create_checkbox(self, style: str = 'checkbox', style_override: dict = {}) -> QCheckBox:
+    """
+    Creates checkbox and styles it.
+
+    Parameters:
+    - :param style: key for self.theme -> default style
+    - :param style_override: style dict to override default style
+    """
+    checkbox = QCheckBox()
+    checkbox.setStyleSheet(get_style_class(self, 'QCheckBox', style, style_override))
+    return checkbox
+
+
+def create_item_button(self) -> ItemButton:
+    """
+    Creates Item Button.
+    """
+    label = create_label(self, '', 'infobox')
+    button = ItemButton(self.box_width, self.box_height, get_style(self, 'item'), label)
+    return button
+
+
+def create_build_section(self, label_text: str, button_count: int) -> QGridLayout:
+    """
+    Creates a block of item buttons below a label.
+
+    Parameters:
+    - :param label_text: text to be displayed above the buttons
+    - :param button_count: number of buttons to be created
+    """
+    layout = QGridLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(self.theme['defaults']['margin'] * self.config['ui_scale'])
+    label = create_label(self, label_text, style_override={'margin': 0})
+    label.sizePolicy().setRetainSizeWhenHidden(True)
+    layout.addWidget(label, 0, 0, 1, button_count, alignment=ALEFT)
+    for i in range(button_count):
+        button = create_item_button(self)
+        button.clicked.connect(self.picker)
+        button.rightclicked.connect(lambda data, i=i: print(f'Rightclicked on {label_text} #{i}'))
+        layout.addWidget(button, 1, i)
+    return layout

@@ -1,3 +1,23 @@
+from types import FunctionType, BuiltinFunctionType, MethodType
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QSizePolicy
+
+CALLABLE = (FunctionType, BuiltinFunctionType, MethodType)
+
+SMINMIN = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+SMAXMAX = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+SMAXMIN = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Minimum)
+SMINMAX = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
+
+ATOP = Qt.AlignmentFlag.AlignTop
+ABOTTOM = Qt.AlignmentFlag.AlignBottom
+ARIGHT = Qt.AlignmentFlag.AlignRight
+ALEFT = Qt.AlignmentFlag.AlignLeft
+ACENTER = Qt.AlignmentFlag.AlignCenter
+AVCENTER = Qt.AlignmentFlag.AlignVCenter
+AHCENTER = Qt.AlignmentFlag.AlignHCenter
+
 WIKI_URL = 'https://stowiki.net/wiki/'
 WIKI_IMAGE_URL = WIKI_URL + 'Special:FilePath/'
 SHIP_QUERY_URL = (
@@ -30,10 +50,10 @@ TRAYSKILL_QUERY = (
     'description,description_long,rank1rank,rank2rank,rank3rank,recharge_base,recharge_global,'
     'region,system,targets,type&limit=1000&offset=0&format=json'
 )
-FACTION_QUERY = (
-    WIKI_URL + 'Special:CargoExport?tables=Faction&fields=playability,name,faction,traits'
-    '&limit=1000&offset=0&format=json&where=playability%20IS%20NOT%20NULL'
-)
+# FACTION_QUERY = (
+#     WIKI_URL + 'Special:CargoExport?tables=Faction&fields=playability,name,faction,traits'
+#     '&limit=1000&offset=0&format=json&where=playability%20IS%20NOT%20NULL'
+# )
 
 EQUIPMENT_TYPES = {
     'Body Armor', 'EV Suit', 'Experimental Weapon', 'Ground Device', 'Ground Weapon', 'Hangar Bay',
@@ -46,6 +66,18 @@ EQUIPMENT_TYPES = {
 CAREERS = {'Tactical', 'Science', 'Engineering'}
 
 FACTIONS = {'Federation', 'Klingon', 'Romulan', 'Dominion', 'TOS Federation', 'DSC Federation'}
+
+SPECIES = {
+    'Federation': {
+        'Human', 'Andorian', 'Bajoran', 'Benzite', 'Betazoid', 'Bolian', 'Ferengi', 'Pakled',
+        'Rigelian', 'Saurian', 'Tellarite', 'Trill', 'Vulcan', 'Alien'
+    },
+    'Klingon': {'Klingon', 'Gorn', 'Lethean', 'Nausicaan', 'Orion', 'Alien'},
+    'Romulan': {'Romulan', 'Reman', 'Alien'},
+    'Dominion': {"Jem'Hadar"},
+    'TOS Federation': {'Human', 'Andorian', 'Tellarite', 'Vulcan'},
+    'DSC Federation': {'Human', 'Vulcan', 'Alien'}
+}
 
 PRIMARY_SPECS = {'Command', 'Intelligence', 'Miracle Worker', 'Temporal', 'Pilot'}
 

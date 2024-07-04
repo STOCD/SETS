@@ -5,9 +5,10 @@ from PySide6.QtGui import QFontDatabase
 from PySide6.QtWidgets import (
         QApplication, QFrame, QGridLayout, QHBoxLayout, QTabWidget, QVBoxLayout, QWidget)
 
-from .constants import CAREERS, FACTIONS, PRIMARY_SPECS, SECONDARY_SPECS
-from .iofunc import create_folder, get_asset_path, load_icon
-from .widgetbuilder import AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, SMAXMIN, SMINMAX, SMINMIN
+from .constants import (
+    AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS, SECONDARY_SPECS, SMAXMIN,
+    SMINMAX, SMINMIN)
+from .iofunc import create_folder, get_asset_path, load_icon, store_json
 from .widgets import Cache, ImageLabel, WidgetStorage
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
@@ -17,26 +18,26 @@ signal(SIGINT, SIG_DFL)
 
 class SETS():
 
-    from .callbacks import enter_splash, exit_splash, splash_text, switch_main_tab
-    from .datafunctions import init_backend
+    from .callbacks import (
+            elite_callback, enter_splash, exit_splash, faction_combo_callback, picker,
+            set_build_item, spec_combo_callback, splash_text, switch_main_tab)
+    from .datafunctions import autosave, empty_build, init_backend
     from .style import create_style_sheet, get_style, get_style_class
     from .widgetbuilder import (
-            create_button, create_button_series, create_combo_box, create_entry, create_frame,
-            create_label)
+            create_build_section, create_button, create_button_series, create_checkbox,
+            create_combo_box, create_entry, create_frame, create_item_button, create_label)
 
     app_dir = None
-
     versions = ('', '')  # (release version, dev version)
-
     config = {}  # see main.py for contents
-
     settings: QSettings  # see main.py for defaults
-
     # stores widgets that need to be accessed from outside their creating function
     widgets: WidgetStorage
-
     # stores refined cargo data
     cache: Cache
+    build: dict  # stores current build
+    box_height: int
+    box_width: int
 
     def __init__(self, theme, args, path, config, versions):
         """
@@ -62,7 +63,7 @@ class SETS():
         self.app, self.window = self.create_main_window()
         self.setup_main_layout()
         self.window.show()
-        self.init_backend()
+        self.init_backend(self.setup_space_build_frame)
 
     def run(self) -> int:
         """
@@ -91,9 +92,10 @@ class SETS():
         self.config['config_folder_path'] = config_folder
         for folder, path in self.config['config_subfolders'].items():
             self.config['config_subfolders'][folder] = config_folder + path
+        self.config['autosave_filename'] = f'{config_folder}\\{self.config['autosave_filename']}'
         self.config['ui_scale'] = self.settings.value('ui_scale', type=float)
-        self.config['box_width'] *= self.config['ui_scale']
-        self.config['box_height'] *= self.config['ui_scale']
+        self.box_width = self.config['box_width'] * self.config['ui_scale'] * 0.8
+        self.box_height = self.config['box_height'] * self.config['ui_scale'] * 0.8
 
     def init_environment(self):
         """
@@ -105,6 +107,8 @@ class SETS():
         create_folder(self.config['config_subfolders']['backups'])
         create_folder(self.config['config_subfolders']['images'])
         create_folder(self.config['config_subfolders']['ship_images'])
+        if not os.path.exists(self.config['autosave_filename']):
+            store_json(self.empty_build(), self.config['autosave_filename'])
 
     def main_window_close_callback(self, event):
         """
@@ -279,8 +283,69 @@ class SETS():
             build_tabber.addTab(tab_frame, tab_name)
             self.widgets.build_frames.append(tab_frame)
         content_layout.addWidget(build_tabber, 1, 1)
+        self.setup_build_frames()
 
         content_frame.setLayout(content_layout)
+
+    def setup_build_frames(self):
+        """
+        Creates build areas
+        """
+        # self.setup_space_build_frame()
+
+    def setup_space_build_frame(self):
+        """
+        """
+        frame = self.widgets.build_frames[0]
+        isp = self.theme['defaults']['isp'] * 2 * self.config['ui_scale']
+        # m = self.theme['defaults']['margin'] * self.config['ui_scale']
+        layout = QGridLayout()
+        layout.setContentsMargins(isp, isp, isp, isp)
+        layout.setSpacing(isp)
+        layout.setColumnStretch(20, 1)
+        layout.setRowStretch(20, 1)
+
+        # Equipment
+        fore_layout = self.create_build_section('Fore Weapons', 5)
+        layout.addLayout(fore_layout, 0, 0, alignment=ALEFT)
+        aft_layout = self.create_build_section('Aft Weapons', 5)
+        layout.addLayout(aft_layout, 1, 0, alignment=ALEFT)
+        exp_layout = self.create_build_section('Experimental Weapon', 1)
+        layout.addLayout(exp_layout, 2, 0, alignment=ALEFT)
+        device_layout = self.create_build_section('Devices', 6)
+        layout.addLayout(device_layout, 3, 0, alignment=ALEFT)
+        hangar_layout = self.create_build_section('Hangars', 2)
+        layout.addLayout(hangar_layout, 4, 0, alignment=ALEFT)
+        sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
+            'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
+        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        layout.addWidget(sep1, 0, 1, 5, 1)
+
+        deflector_layout = self.create_build_section('Deflector', 1)
+        layout.addLayout(deflector_layout, 0, 2, alignment=ALEFT)
+        secdef_layout = self.create_build_section('Sec-Def', 1)
+        layout.addLayout(secdef_layout, 1, 2, alignment=ALEFT)
+        engine_layout = self.create_build_section('Engines', 1)
+        layout.addLayout(engine_layout, 2, 2, alignment=ALEFT)
+        warp_layout = self.create_build_section('Warp Core', 1)
+        layout.addLayout(warp_layout, 3, 2, alignment=ALEFT)
+        shield_layout = self.create_build_section('Shield', 1)
+        layout.addLayout(shield_layout, 4, 2, alignment=ALEFT)
+        sep2 = self.create_frame(size_policy=SMAXMIN, style_override={
+            'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
+        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        layout.addWidget(sep2, 0, 3, 5, 1)
+
+        uni_layout = self.create_build_section('Universal Consoles', 3)
+        layout.addLayout(uni_layout, 0, 4, alignment=ALEFT)
+        eng_layout = self.create_build_section('Engineering Consoles', 5)
+        layout.addLayout(eng_layout, 1, 4, alignment=ALEFT)
+        sci_layout = self.create_build_section('Science Consoles', 5)
+        layout.addLayout(sci_layout, 2, 4, alignment=ALEFT)
+        tac_layout = self.create_build_section('Tactical Consoles', 5)
+        layout.addLayout(tac_layout, 3, 4, alignment=ALEFT)
+
+        frame.setLayout(layout)
 
     def setup_character_frame(self, frame: QFrame):
         """
@@ -294,33 +359,56 @@ class SETS():
         char_name = self.create_entry(placeholder='NAME')
         char_name.setAlignment(AHCENTER)
         char_name.setSizePolicy(SMINMAX)
+        char_name.editingFinished.connect(
+                lambda: self.set_build_item(self.build['captain'], 'name', char_name.text()))
         layout.addWidget(char_name, 0, 0, 1, 2)
-        career_label = self.create_label('Captain Career', 'label_subhead')
-        layout.addWidget(career_label, 1, 0, alignment=ARIGHT)
+        elite_label = self.create_label('Elite Captain')
+        layout.addWidget(elite_label, 1, 0, alignment=ARIGHT)
+        elite_checkbox = self.create_checkbox()
+        elite_checkbox.checkStateChanged.connect(self.elite_callback)
+        layout.addWidget(elite_checkbox, 1, 1, alignment=ALEFT)
+        career_label = self.create_label('Captain Career')
+        layout.addWidget(career_label, 2, 0, alignment=ARIGHT)
         career_combo = self.create_combo_box()
         career_combo.addItems({''} | CAREERS)
-        layout.addWidget(career_combo, 1, 1)
+        career_combo.currentTextChanged.connect(
+                lambda t: self.set_build_item(self.build['captain'], 'career', t))
+        layout.addWidget(career_combo, 2, 1)
         faction_label = self.create_label('Faction')
-        layout.addWidget(faction_label, 2, 0, alignment=ARIGHT)
+        layout.addWidget(faction_label, 3, 0, alignment=ARIGHT)
         faction_combo = self.create_combo_box()
         faction_combo.addItems({''} | FACTIONS)
-        layout.addWidget(faction_combo, 2, 1)
+        faction_combo.currentTextChanged.connect(self.faction_combo_callback)
+        layout.addWidget(faction_combo, 3, 1)
         species_label = self.create_label('Species')
-        layout.addWidget(species_label, 3, 0, alignment=ARIGHT)
+        layout.addWidget(species_label, 4, 0, alignment=ARIGHT)
         species_combo = self.create_combo_box()
         species_combo.addItems({''})
-        layout.addWidget(species_combo, 3, 1)
+        species_combo.currentTextChanged.connect(
+                lambda t: self.set_build_item(self.build['captain'], 'species', t))
+        layout.addWidget(species_combo, 4, 1)
         primary_label = self.create_label('Primary Spec')
-        layout.addWidget(primary_label, 4, 0, alignment=ARIGHT)
+        layout.addWidget(primary_label, 5, 0, alignment=ARIGHT)
         primary_combo = self.create_combo_box()
         primary_combo.addItems({''} | PRIMARY_SPECS)
-        layout.addWidget(primary_combo, 4, 1)
+        primary_combo.currentTextChanged.connect(lambda t: self.spec_combo_callback(True, t))
+        layout.addWidget(primary_combo, 5, 1)
         secondary_label = self.create_label('Secondary Spec')
-        layout.addWidget(secondary_label, 5, 0, alignment=ARIGHT)
+        layout.addWidget(secondary_label, 6, 0, alignment=ARIGHT)
         secondary_combo = self.create_combo_box()
-        secondary_combo.addItems({''} | SECONDARY_SPECS)
-        layout.addWidget(secondary_combo, 5, 1)
+        secondary_combo.addItems({''} | PRIMARY_SPECS | SECONDARY_SPECS)
+        secondary_combo.currentTextChanged.connect(lambda t: self.spec_combo_callback(False, t))
+        layout.addWidget(secondary_combo, 6, 1)
         frame.setLayout(layout)
+        self.widgets.character = {
+            'name': char_name,
+            'elite': elite_checkbox,
+            'career': career_combo,
+            'faction': faction_combo,
+            'species': species_combo,
+            'primary': primary_combo,
+            'secondary': secondary_combo,
+        }
 
     def setup_splash(self, frame: QFrame):
         """
