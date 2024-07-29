@@ -2,50 +2,21 @@ from datetime import datetime
 from json import JSONDecodeError
 import os
 import sys
-from urllib.parse import unquote_plus
 
-from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt
 from requests.exceptions import Timeout
 from requests_html import Element
 
 from .callbacks import (
         enter_splash, exit_splash, faction_combo_callback, spec_combo_callback, splash_text)
 from .constants import (
-        BOFF_URL, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES, ITEM_QUERY_URL,
+        BOFF_URL, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES, ITEM_QUERY_URL, MODIFIER_QUERY,
         PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, WIKI_IMAGE_URL)
 from .iofunc import (
         get_cargo_data, fetch_html, get_asset_path, load_image, load_json, retrieve_image,
         store_json)
 from .textedit import dewikify, sanitize_equipment_name
-
-
-class CustomThread(QThread):
-    """
-    Subclass of QThread able to execute an arbitrary function in a seperate thread.
-    """
-    result = Signal(tuple)
-    update_splash = Signal(str)
-
-    def __init__(self, parent, func, *args, **kwargs) -> None:
-        """
-        Executes a function in a seperate thread. Positional and keyword parameters besides the
-        parameters listed below are passed to the function. The function should also take a keyword
-        parameter `thread` which will contain this thread. This thread has two additional signals
-        `result` (type: tuple) and `update_splash` (type: str).
-
-        Parameters:
-        - :param parent: parent of the thread, should be the main window, prevents the thread to go
-        out of scope and be destroyed by the garbage collector
-        - :param func: function to execute in seperate thread, must take parameter `thread`
-        """
-        self._func = func
-        self._args = args
-        self._kwargs = kwargs
-        super().__init__(parent)
-
-    def run(self):
-        self._func(*self._args, thread=self, **self._kwargs)
+from .widgets import CustomThread
 
 
 def init_backend(self, after):
@@ -54,18 +25,29 @@ def init_backend(self, after):
     """
     def check_exit(result):
         if cargo_thread.isFinished() and build_ready:
+            insert_cargo_data(self)
             load_build(self)
             exit_splash(self)
             after()
 
     enter_splash(self)
-    build_ready = True
+    build_ready = False
     cargo_thread = CustomThread(self.window, populate_cache, self)
     cargo_thread.update_splash.connect(lambda new_text: splash_text(self, new_text))
     cargo_thread.result.connect(check_exit)
     cargo_thread.start()
 
+    build_ready = False
     load_build_file(self, self.config['autosave_filename'])
+    build_ready = True
+    check_exit(None)
+
+
+def insert_cargo_data(self):
+    """
+    Updates UI elements depending on cargo data with the loaded data
+    """
+    self.widgets.ship['combo'].addItems(self.cache.ships.keys())
 
 
 def load_build(self):
@@ -125,12 +107,13 @@ def load_cargo_data(self, thread: CustomThread):
 
     thread.update_splash.emit('Loading: Equipment')
     equipment_cargo_data = get_cargo_data(self, 'equipment.json', ITEM_QUERY_URL)
+    equipment_types = set(EQUIPMENT_TYPES.keys())
     for item in equipment_cargo_data:
-        if item['type'] in EQUIPMENT_TYPES and not (
+        if item['type'] in equipment_types and not (
                 item['name'].startswith('Hangar - Advanced')
                 or item['name'].startswith('Hangar - Elite')):
             item['name'] = sanitize_equipment_name(item['name'])
-            self.cache.equipment[item['type']][item['name']] = item
+            self.cache.equipment[EQUIPMENT_TYPES[item['type']]][item['name']] = item
 
     thread.update_splash.emit('Loading: Traits')
     trait_cargo_data = get_cargo_data(self, 'traits.json', TRAIT_QUERY_URL)
@@ -156,6 +139,21 @@ def load_cargo_data(self, thread: CustomThread):
 
     thread.update_splash.emit('Loading: Skills')
     cache_skills(self)
+
+    thread.update_splash.emit('Loading: Modifiers')
+    mod_cargo_data = get_cargo_data(self, 'modifiers.json', MODIFIER_QUERY)
+    for modifier in mod_cargo_data:
+        try:
+            if modifier['available'][0] == '':
+                modifier['available'] = list()
+        except (IndexError, TypeError):
+            modifier['available'] = list()
+        for mod_type in modifier['type']:
+            try:
+                mod_key = EQUIPMENT_TYPES[mod_type]
+                self.cache.modifiers[mod_key][modifier['modifier']] = modifier
+            except KeyError:
+                pass
 
     thread.update_splash.emit('Loading: Duty Officers')
     doff_cargo_data = get_cargo_data(self, 'doffs.json', DOFF_QUERY_URL)
@@ -266,25 +264,25 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'aft_weapons': [None] * 5,
             'boffs': [[None] * 4] * 6,
             'boff_specs': [None] * 6,
-            'core': '',
-            'deflector': '',
+            'core': [''],
+            'deflector': [''],
             'devices': [None] * 6,
             'doffs': [''] * 6,
             'eng_consoles': [None] * 5,
-            'engines': '',
-            'experimental': None,
+            'engines': [''],
+            'experimental': [None],
             'fore_weapons': [None] * 5,
             'hangars': [None] * 2,
             'rep_traits': [None] * 5,
             'sci_consoles': [None] * 5,
-            'sec_def': None,
-            'shield': '',
+            'sec_def': [None],
+            'shield': [''],
             'ship': '',
             'ship_name': '',
             'starship_traits': [None] * 7,
             'tac_consoles': [None] * 5,
             'tier': '',
-            'traits': [None] * 11,
+            'traits': [None] * 12,
             'uni_consoles': [None] * 3,
         },
 
@@ -299,8 +297,8 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'kit': '',
             'kit_modules': [None] * 6,
             'rep_traits': [None] * 5,
-            'shield': '',
-            'traits': [None] * 11,
+            'personal_shield': '',
+            'traits': [None] * 12,
             'weapons': [''] * 2,
         },
 

@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2024.05b310'
+    version = '2024.07b290'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -26,7 +26,7 @@ class Launcher():
                 # scroll bar trough (invisible)
                 'QScrollBar': {
                     'background': 'none',
-                    'border': 'none',
+                    'border-style': 'none',
                     'border-radius': 0,
                     'margin': 0
                 },
@@ -201,7 +201,7 @@ class Launcher():
             'border-width': '@bw',
             'border-color': '@bc',
             'background-color': '@bg',
-            'padding': (2, 5, 0, 5),
+            'padding': (1, 5, 1, 5),
             'color': '@fg',
             'font': '@subhead',
             '::down-arrow': {
@@ -230,6 +230,24 @@ class Launcher():
                 },
             }
         },
+        # auto-completion popup of combobox
+        'popup': {
+            'background-color': '@mbg',
+            'border-style': 'solid',
+            'border-color': '@bc',
+            'border-width': '@bw',
+            'border-radius': '@br',
+            'color': '@fg',
+            'outline': '0',
+            '::item': {
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@mbg',
+            },
+            '::item:hover': {
+                'border-color': '@sets',
+            },
+        },
         # line of user-editable text
         'entry': {
             'background-color': '@mbg',
@@ -257,6 +275,46 @@ class Launcher():
             'color': '@fg',
             'margin': 0,
             'padding': '@sep'
+        },
+        # picker window
+        'picker': {
+            'background-color': '@bg',
+            'border-color': '@sets',
+            'border-width': 3,
+            'border-style': 'solid',
+            'border-radius': '@br'
+        },
+        # list widget displaying items in picker
+        'picker_list': {
+            'background-color': '@bg',
+            'color': '@fg',
+            'border-style': 'none',
+            'margin': 0,
+            'font': '@font',
+            'outline': '0',  # removes dotted line around clicked item
+            '::item': {
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@bg',
+            },
+            '::item:selected': {
+                'background-color': '@bg',
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@bg',
+            },
+            # selected but not the last click of the user
+            '::item:selected:!active': {
+                'color': '@fg'
+            },
+            '::item:hover': {
+                'background-color': '@lbg',
+            },
+            '~QScrollBar': {
+                'border-style': 'none',
+                'border': 'none',
+                'border-radius': 0
+            }
         }
     }
 

@@ -50,17 +50,25 @@ TRAYSKILL_QUERY = (
     'description,description_long,rank1rank,rank2rank,rank3rank,recharge_base,recharge_global,'
     'region,system,targets,type&limit=1000&offset=0&format=json'
 )
+MODIFIER_QUERY = (
+    WIKI_URL + 'Special:CargoExport?tables=Modifiers&fields=_pageName,modifier,type,stats,'
+    'available&format=json&limit=1000'
+)
 # FACTION_QUERY = (
 #     WIKI_URL + 'Special:CargoExport?tables=Faction&fields=playability,name,faction,traits'
 #     '&limit=1000&offset=0&format=json&where=playability%20IS%20NOT%20NULL'
 # )
 
 EQUIPMENT_TYPES = {
-    'Body Armor', 'EV Suit', 'Experimental Weapon', 'Ground Device', 'Ground Weapon', 'Hangar Bay',
-    'Impulse Engine', 'Impulse Engine', 'Kit', 'Kit Module', 'Personal Shield', 'Ship Aft Weapon',
-    'Ship Deflector Dish', 'Ship Device', 'Ship Engineering Console', 'Ship Fore Weapon',
-    'Ship Science Console', 'Ship Secondary Deflector', 'Ship Shields', 'Ship Tactical Console',
-    'Ship Weapon', 'Singularity Engine', 'Universal Console', 'Warp Engine'
+    'Body Armor': 'armor', 'EV Suit': 'ev', 'Experimental Weapon': 'experimental',
+    'Ground Device': 'ground_devices', 'Ground Weapon': 'weapons', 'Hangar Bay': 'hangars',
+    'Impulse Engine': 'engines', 'Kit': 'kit', 'Kit Module': 'module',
+    'Personal Shield': 'personal_shield', 'Ship Aft Weapon': 'aft_weapons',
+    'Ship Deflector Dish': 'deflector', 'Ship Device': 'devices',
+    'Ship Engineering Console': 'eng_consoles', 'Ship Fore Weapon': 'fore_weapons',
+    'Ship Science Console': 'sci_consoles', 'Ship Secondary Deflector': 'sec_def',
+    'Ship Shields': 'shield', 'Ship Tactical Console': 'tac_consoles', 'Ship Weapon': 'ship_weapon',
+    'Singularity Engine': 'core', 'Universal Console': 'uni_consoles', 'Warp Engine': 'core'
 }
 
 CAREERS = {'Tactical', 'Science', 'Engineering'}
@@ -84,3 +92,26 @@ PRIMARY_SPECS = {'Command', 'Intelligence', 'Miracle Worker', 'Temporal', 'Pilot
 SECONDARY_SPECS = {'Strategist', 'Constable', 'Commando'}
 
 BOFF_URL = WIKI_URL + 'Bridge_officer_and_kit_abilities'
+
+RARITIES = {
+    'Common': 0,
+    'Uncommon': 1,
+    'Rare': 2,
+    'Very Rare': 3,
+    'Ultra Rare': 4,
+    'Epic': 5
+}
+
+RARITY_COLORS = {
+    'Common': '#eeeeee',
+    'Uncommon': '#00cc00',
+    'Rare': '#0099ff',
+    'Very Rare': '#a245b9',
+    'Ultra Rare': '#6d65bc',
+    'Epic': '#ffd700'
+}
+
+MARKS = (
+    'Mk I', 'Mk II', 'Mk III', 'Mk IV', 'MK V', 'MK VI', 'MK VII', 'MK VIII', 'MK IX', 'MK X',
+    'Mk XI', 'Mk XII', 'Mk XIII', 'Mk XIV', 'Mk XV', '∞'
+)

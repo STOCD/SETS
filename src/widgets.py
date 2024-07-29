@@ -1,10 +1,10 @@
-from PySide6.QtCore import QEvent, Qt, QRect, Signal
-from PySide6.QtGui import QEnterEvent, QHelpEvent, QImage, QMouseEvent, QPainter, QPixmap
+from PySide6.QtCore import QEvent, Qt, QRect, QThread, Signal
+from PySide6.QtGui import QEnterEvent, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (
-        QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QTabWidget, QToolTip, QWidget)
+        QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QTabWidget,
+        QVBoxLayout, QWidget)
 
-from .datafunctions import EQUIPMENT_TYPES
-from .constants import SMAXMAX, SMINMIN
+from .constants import EQUIPMENT_TYPES, SMAXMAX, SMINMIN
 
 
 class WidgetStorage():
@@ -20,6 +20,10 @@ class WidgetStorage():
         self.sidebar: QFrame
         self.sidebar_tabber: QTabWidget
         self.sidebar_frames: list[QFrame] = list()
+        self.ship: dict = {
+            'image': ImageLabel,
+            'combo': QComboBox
+        }
         self.character_tabber: QTabWidget
         self.character_frames: list[QFrame] = list()
 
@@ -38,25 +42,25 @@ class WidgetStorage():
             'aft_weapons': [None] * 5,
             'boffs': [[None] * 4] * 6,
             'boff_specs': [None] * 6,
-            'core': '',
-            'deflector': '',
+            'core': [''],
+            'deflector': [''],
             'devices': [None] * 6,
             'doffs': [''] * 6,
             'eng_consoles': [None] * 5,
-            'engines': '',
-            'experimental': None,
+            'engines': [''],
+            'experimental': [None],
             'fore_weapons': [None] * 5,
             'hangars': [None] * 2,
             'rep_traits': [None] * 5,
             'sci_consoles': [None] * 5,
-            'sec_def': None,
-            'shield': '',
+            'sec_def': [None],
+            'shield': [''],
             'ship': '',
             'ship_name': '',
             'starship_traits': [None] * 7,
             'tac_consoles': [None] * 5,
             'tier': '',
-            'traits': [None] * 11,
+            'traits': [None] * 12,
             'uni_consoles': [None] * 3,
         }
 
@@ -67,7 +71,7 @@ class Cache():
     """
     def __init__(self):
         self.ships: dict = dict()
-        self.equipment: dict = {type_: dict() for type_ in EQUIPMENT_TYPES}
+        self.equipment: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
         self.starship_traits: dict = dict()
         self.traits: dict = {
             'space': {
@@ -101,6 +105,7 @@ class Cache():
             'TOS Federation': dict(),
             'DSC Federation': dict()
         }
+        self.modifiers: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
 
         self.empty_image: QPixmap
         self.overlays: OverlayCache = OverlayCache()
@@ -134,15 +139,19 @@ class ImageLabel(QWidget):
     Label displaying image that resizes according to its parents width while preserving aspect
     ratio.
     """
-    def __init__(self, path: str, aspect_ratio: tuple[int, int], *args, **kwargs) -> None:
+    def __init__(self, path: str = '', aspect_ratio: tuple[int, int] = (0, 0), *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._w, self._h = aspect_ratio
-        self.setPixmap(QPixmap(path))
+        if path != '':
+            self.set_pixmap(QPixmap(path))
+            print(self.p)
         self.setSizePolicy(SMINMIN)
         self.setMinimumHeight(10)  # forces visibility
+        print(self.rect().height(), self.rect().width())
 
-    def setPixmap(self, p):
+    def set_pixmap(self, p):
         self.p = p
+        print(p)
         self.update()
 
     def paintEvent(self, event):
@@ -152,6 +161,7 @@ class ImageLabel(QWidget):
             w = int(self.rect().width())
             h = int(w * self._h / self._w)
             rect = QRect(0, 0, w, h)
+            print(rect, self.p)
             painter.drawPixmap(rect, self.p)
             self.setMaximumHeight(h)
             self.setMinimumHeight(h)
@@ -251,3 +261,85 @@ class ItemImage(QWidget):
             painter.drawPixmap(self._rect, self._button._base)
         if self._button._overlay is not None:
             painter.drawPixmap(self._rect, self._button._overlay)
+
+
+class GridLayout(QGridLayout):
+    def __init__(self, margins=0, spacing: int = 0, parent: QWidget = None):
+        """
+        Creates Grid Layout
+
+        Parameters:
+        - :param margins: number or sequence with 4 items specifying content margins
+        - :param spacing: item spacing for content
+        - :param parent: parent of the layout
+        """
+        super().__init__(parent)
+        if isinstance(margins, (int, float)):
+            self.setContentsMargins(margins, margins, margins, margins)
+        else:
+            self.setContentsMargins(*margins)
+        self.setSpacing(spacing)
+
+
+class HBoxLayout(QHBoxLayout):
+    def __init__(self, margins=0, spacing: int = 0, parent: QWidget = None):
+        """
+        Creates horizontal Box Layout
+
+        Parameters:
+        - :param margins: number or sequence with 4 items specifying content margins
+        - :param spacing: item spacing for content
+        - :param parent: parent of the layout
+        """
+        super().__init__(parent)
+        if isinstance(margins, (int, float)):
+            self.setContentsMargins(margins, margins, margins, margins)
+        else:
+            self.setContentsMargins(*margins)
+        self.setSpacing(spacing)
+
+
+class VBoxLayout(QVBoxLayout):
+    def __init__(self, margins=0, spacing: int = 0, parent: QWidget = None):
+        """
+        Creates vertical Box Layout
+
+        Parameters:
+        - :param margins: number or sequence with 4 items specifying content margins
+        - :param spacing: item spacing for content
+        - :param parent: parent of the layout
+        """
+        super().__init__(parent)
+        if isinstance(margins, (int, float)):
+            self.setContentsMargins(margins, margins, margins, margins)
+        else:
+            self.setContentsMargins(*margins)
+        self.setSpacing(spacing)
+
+
+class CustomThread(QThread):
+    """
+    Subclass of QThread able to execute an arbitrary function in a seperate thread.
+    """
+    result = Signal(tuple)
+    update_splash = Signal(str)
+
+    def __init__(self, parent, func, *args, **kwargs) -> None:
+        """
+        Executes a function in a seperate thread. Positional and keyword parameters besides the
+        parameters listed below are passed to the function. The function should also take a keyword
+        parameter `thread` which will contain this thread. This thread has two additional signals
+        `result` (type: tuple) and `update_splash` (type: str).
+
+        Parameters:
+        - :param parent: parent of the thread, should be the main window, prevents the thread to go
+        out of scope and be destroyed by the garbage collector
+        - :param func: function to execute in seperate thread, must take parameter `thread`
+        """
+        self._func = func
+        self._args = args
+        self._kwargs = kwargs
+        super().__init__(parent)
+
+    def run(self):
+        self._func(*self._args, thread=self, **self._kwargs)

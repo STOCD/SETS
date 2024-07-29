@@ -5,7 +5,6 @@ from re import sub as re_sub
 import sys
 from urllib.parse import quote_plus
 
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPixmap
 import requests
 from requests_html import HTMLSession
@@ -84,6 +83,13 @@ def retrieve_image(
         else:
             return self.cache.empty_image
     return image
+
+
+def get_ship_image(self, name: str, image_name: str, thread):
+    image_url = WIKI_IMAGE_URL + image_name.replace(' ', '_')
+    image_folder = self.config['config_subfolders']['ship_images']
+    image = retrieve_image(self, name, image_folder, url_override=image_url)
+    thread.result.emit((image,))
 
 # --------------------------------------------------------------------------------------------------
 # static functions

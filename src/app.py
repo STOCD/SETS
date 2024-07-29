@@ -1,15 +1,15 @@
 import os
 
 from PySide6.QtCore import QSettings
-from PySide6.QtGui import QFontDatabase
-from PySide6.QtWidgets import (
-        QApplication, QFrame, QGridLayout, QHBoxLayout, QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtGui import QFontDatabase, QPixmap
+from PySide6.QtWidgets import QApplication, QFrame, QTabWidget, QWidget, QLabel
 
 from .constants import (
-    AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS, SECONDARY_SPECS, SMAXMIN,
-    SMINMAX, SMINMIN)
+    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS, SECONDARY_SPECS,
+    SMAXMIN, SMINMAX, SMINMIN)
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
-from .widgets import Cache, ImageLabel, WidgetStorage
+from .subwindows import Picker
+from .widgets import Cache, GridLayout, ImageLabel, VBoxLayout, WidgetStorage
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 from signal import signal, SIGINT, SIG_DFL
@@ -19,13 +19,14 @@ signal(SIGINT, SIG_DFL)
 class SETS():
 
     from .callbacks import (
-            elite_callback, enter_splash, exit_splash, faction_combo_callback, picker,
-            set_build_item, spec_combo_callback, splash_text, switch_main_tab)
+            elite_callback, enter_splash, exit_splash, faction_combo_callback,
+            set_build_item, slot_ship, spec_combo_callback, splash_text, switch_main_tab)
     from .datafunctions import autosave, empty_build, init_backend
     from .style import create_style_sheet, get_style, get_style_class
     from .widgetbuilder import (
-            create_build_section, create_button, create_button_series, create_checkbox,
-            create_combo_box, create_entry, create_frame, create_item_button, create_label)
+            create_boff_station, create_build_section, create_button, create_button_series,
+            create_checkbox, create_combo_box, create_entry, create_frame, create_item_button,
+            create_label, create_personal_trait_section, create_starship_trait_section)
 
     app_dir = None
     versions = ('', '')  # (release version, dev version)
@@ -62,6 +63,7 @@ class SETS():
         self.init_environment()
         self.app, self.window = self.create_main_window()
         self.setup_main_layout()
+        self.picker_window = Picker(self, self.window)
         self.window.show()
         self.init_backend(self.setup_space_build_frame)
 
@@ -147,21 +149,16 @@ class SETS():
         Creates the main layout and places it into the main window.
         """
         # master layout: banner, borders and splash screen
-        layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout = VBoxLayout(margins=0, spacing=0)
         background_frame = self.create_frame(
                 style_override={'background-color': '@sets'}, size_policy=SMINMIN)
         layout.addWidget(background_frame)
         self.window.setLayout(layout)
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        main_layout = VBoxLayout(margins=0, spacing=0)
         banner = ImageLabel(get_asset_path('sets_banner.png', self.app_dir), (2880, 126))
         main_layout.addWidget(banner)
-        tabber_layout = QVBoxLayout()
-        tabber_layout.setContentsMargins(8, 8, 8, 8)
-        tabber_layout.setSpacing(0)
+        frame_width = 8 * self.config['ui_scale']
+        tabber_layout = VBoxLayout(margins=frame_width, spacing=0)
         splash_tabber = QTabWidget()
         splash_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
         splash_tabber.tabBar().setStyleSheet(self.get_style_class('QTabBar', 'tabber_tab'))
@@ -176,16 +173,12 @@ class SETS():
         splash_tabber.addTab(splash_frame, 'Splash')
         self.setup_splash(splash_frame)
 
-        content_layout = QGridLayout()
-        content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(0)
+        content_layout = GridLayout(margins=0, spacing=0)
         content_layout.setColumnStretch(0, 1)
         content_layout.setColumnStretch(1, 4)
 
         margin = 3 * self.config['ui_scale']
-        menu_layout = QGridLayout()
-        menu_layout.setContentsMargins(margin, margin, margin, 0)
-        menu_layout.setSpacing(0)
+        menu_layout = GridLayout(margins=(margin, margin, margin, 0), spacing=0)
         menu_layout.setColumnStretch(0, 2)
         menu_layout.setColumnStretch(1, 5)
         menu_layout.setColumnStretch(2, 2)
@@ -223,9 +216,7 @@ class SETS():
         # sidebar
         sidebar = self.create_frame(size_policy=SMINMIN)
         self.widgets.sidebar = sidebar
-        sidebar_layout = QGridLayout()
-        sidebar_layout.setContentsMargins(0, 0, 0, 0)
-        sidebar_layout.setSpacing(0)
+        sidebar_layout = GridLayout(margins=0, spacing=0)
 
         sidebar_tabber = QTabWidget()
         sidebar_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
@@ -238,13 +229,7 @@ class SETS():
             tab_frame = self.create_frame()
             sidebar_tabber.addTab(tab_frame, tab_name)
             self.widgets.sidebar_frames.append(tab_frame)
-        space_frame = self.create_frame()
-        ground_frame = self.create_frame()
-        ground_skill_frame = self.create_frame()
-        sidebar_tabber.addTab(space_frame, 'space')
-        sidebar_tabber.addTab(ground_frame, 'ground')
-        sidebar_tabber.addTab(ground_skill_frame, 'ground_skill')
-        self.widgets.sidebar_frames = [space_frame, ground_frame, ground_skill_frame]
+        self.setup_ship_frame()
         sidebar_layout.addWidget(sidebar_tabber, 0, 0)
 
         character_tabber = QTabWidget()
@@ -287,6 +272,29 @@ class SETS():
 
         content_frame.setLayout(content_layout)
 
+    def setup_ship_frame(self):
+        """
+        Creates ship info frame
+        """
+        frame = self.widgets.sidebar_frames[0]
+        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        layout = VBoxLayout(margins=csp, spacing=csp)
+
+        image_layout = GridLayout(margins=0, spacing=0)
+        ship_image = ImageLabel(aspect_ratio=(16, 9))
+        self.widgets.ship['image'] = ship_image
+        image_layout.addWidget(ship_image, 0, 0)
+        layout.addLayout(image_layout, stretch=1)
+
+        ship_layout = VBoxLayout(margins=0, spacing=csp)
+        ship_selector = self.create_combo_box(editable=True)
+        ship_selector.addItem('<no ship>')
+        ship_selector.currentTextChanged.connect(self.slot_ship)
+        self.widgets.ship['combo'] = ship_selector
+        ship_layout.addWidget(ship_selector)
+        layout.addLayout(ship_layout, stretch=2)
+        frame.setLayout(layout)
+
     def setup_build_frames(self):
         """
         Creates build areas
@@ -298,52 +306,111 @@ class SETS():
         """
         frame = self.widgets.build_frames[0]
         isp = self.theme['defaults']['isp'] * 2 * self.config['ui_scale']
-        # m = self.theme['defaults']['margin'] * self.config['ui_scale']
-        layout = QGridLayout()
-        layout.setContentsMargins(isp, isp, isp, isp)
-        layout.setSpacing(isp)
-        layout.setColumnStretch(20, 1)
+        layout = GridLayout(margins=isp, spacing=isp)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(10, 1)
         layout.setRowStretch(20, 1)
+        eq = self.cache.equipment
 
         # Equipment
-        fore_layout = self.create_build_section('Fore Weapons', 5)
-        layout.addLayout(fore_layout, 0, 0, alignment=ALEFT)
-        aft_layout = self.create_build_section('Aft Weapons', 5)
-        layout.addLayout(aft_layout, 1, 0, alignment=ALEFT)
-        exp_layout = self.create_build_section('Experimental Weapon', 1)
-        layout.addLayout(exp_layout, 2, 0, alignment=ALEFT)
-        device_layout = self.create_build_section('Devices', 6)
-        layout.addLayout(device_layout, 3, 0, alignment=ALEFT)
-        hangar_layout = self.create_build_section('Hangars', 2)
-        layout.addLayout(hangar_layout, 4, 0, alignment=ALEFT)
+        fore_layout = self.create_build_section(
+                'Fore Weapons', 5, 'space', 'fore_weapons',
+                eq['fore_weapons'].keys() | eq['ship_weapon'].keys(), True)
+        layout.addLayout(fore_layout, 0, 1, alignment=ALEFT)
+        aft_layout = self.create_build_section(
+                'Aft Weapons', 5, 'space', 'aft_weapons',
+                eq['aft_weapons'].keys() | eq['ship_weapon'].keys(), True)
+        layout.addLayout(aft_layout, 1, 1, alignment=ALEFT)
+        exp_layout = self.create_build_section(
+                'Experimental Weapon', 1, 'space', 'experimental', eq['experimental'].keys(), True)
+        layout.addLayout(exp_layout, 2, 1, alignment=ALEFT)
+        device_layout = self.create_build_section(
+                'Devices', 6, 'space', 'devices', eq['devices'].keys(), True)
+        layout.addLayout(device_layout, 3, 1, alignment=ALEFT)
+        hangar_layout = self.create_build_section(
+                'Hangars', 2, 'space', 'hangars', eq['hangars'].keys(), True)
+        layout.addLayout(hangar_layout, 4, 1, alignment=ALEFT)
         sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
         sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
-        layout.addWidget(sep1, 0, 1, 5, 1)
+        layout.addWidget(sep1, 0, 2, 5, 1)
 
-        deflector_layout = self.create_build_section('Deflector', 1)
-        layout.addLayout(deflector_layout, 0, 2, alignment=ALEFT)
-        secdef_layout = self.create_build_section('Sec-Def', 1)
-        layout.addLayout(secdef_layout, 1, 2, alignment=ALEFT)
-        engine_layout = self.create_build_section('Engines', 1)
-        layout.addLayout(engine_layout, 2, 2, alignment=ALEFT)
-        warp_layout = self.create_build_section('Warp Core', 1)
-        layout.addLayout(warp_layout, 3, 2, alignment=ALEFT)
-        shield_layout = self.create_build_section('Shield', 1)
-        layout.addLayout(shield_layout, 4, 2, alignment=ALEFT)
+        deflector_layout = self.create_build_section(
+                'Deflector', 1, 'space', 'deflector', eq['deflector'], True)
+        layout.addLayout(deflector_layout, 0, 3, alignment=ALEFT)
+        secdef_layout = self.create_build_section(
+                'Sec-Def', 1, 'space', 'sec_def', eq['sec_def'], True)
+        layout.addLayout(secdef_layout, 1, 3, alignment=ALEFT)
+        engine_layout = self.create_build_section(
+                'Engines', 1, 'space', 'engines', eq['engines'], True)
+        layout.addLayout(engine_layout, 2, 3, alignment=ALEFT)
+        warp_layout = self.create_build_section(
+                'Warp Core', 1, 'space', 'core', eq['core'], True)
+        layout.addLayout(warp_layout, 3, 3, alignment=ALEFT)
+        shield_layout = self.create_build_section(
+                'Shield', 1, 'space', 'shield', eq['shield'], True)
+        layout.addLayout(shield_layout, 4, 3, alignment=ALEFT)
         sep2 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
         sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
-        layout.addWidget(sep2, 0, 3, 5, 1)
+        layout.addWidget(sep2, 0, 4, 5, 1)
 
-        uni_layout = self.create_build_section('Universal Consoles', 3)
-        layout.addLayout(uni_layout, 0, 4, alignment=ALEFT)
-        eng_layout = self.create_build_section('Engineering Consoles', 5)
-        layout.addLayout(eng_layout, 1, 4, alignment=ALEFT)
-        sci_layout = self.create_build_section('Science Consoles', 5)
-        layout.addLayout(sci_layout, 2, 4, alignment=ALEFT)
-        tac_layout = self.create_build_section('Tactical Consoles', 5)
-        layout.addLayout(tac_layout, 3, 4, alignment=ALEFT)
+        consoles = eq['uni_consoles'] | eq['eng_consoles'] | eq['sci_consoles'] | eq['tac_consoles']
+        uni_layout = self.create_build_section(
+                'Universal Consoles', 3, 'space', 'uni_consoles', consoles, True)
+        layout.addLayout(uni_layout, 0, 5, alignment=ALEFT)
+        eng_layout = self.create_build_section(
+                'Engineering Consoles', 5, 'space', 'eng_consoles',
+                eq['eng_consoles'] | eq['uni_consoles'], True)
+        layout.addLayout(eng_layout, 1, 5, alignment=ALEFT)
+        sci_layout = self.create_build_section(
+                'Science Consoles', 5, 'space', 'sci_consoles',
+                eq['sci_consoles'] | eq['uni_consoles'], True)
+        layout.addLayout(sci_layout, 2, 5, alignment=ALEFT)
+        tac_layout = self.create_build_section(
+                'Tactical Consoles', 5, 'space', 'tac_consoles',
+                eq['tac_consoles'] | eq['uni_consoles'], True)
+        layout.addLayout(tac_layout, 3, 5, alignment=ALEFT)
+        sep3 = self.create_frame(size_policy=SMAXMIN, style_override={
+            'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
+        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        layout.addWidget(sep3, 0, 6, 5, 1)
+
+        # Boffs
+        boff_1_layout = self.create_boff_station('Universal', 'Miracle Worker')
+        layout.addLayout(boff_1_layout, 0, 7, alignment=ALEFT)
+        boff_2_layout = self.create_boff_station('Tactical', 'Command')
+        layout.addLayout(boff_2_layout, 1, 7, alignment=ALEFT)
+        boff_3_layout = self.create_boff_station('Science', 'Intelligence')
+        layout.addLayout(boff_3_layout, 2, 7, alignment=ALEFT)
+        boff_4_layout = self.create_boff_station('Engineering', 'Pilot')
+        layout.addLayout(boff_4_layout, 3, 7, alignment=ALEFT)
+        boff_5_layout = self.create_boff_station('Tactical', 'Temporal')
+        layout.addLayout(boff_5_layout, 4, 7, alignment=ALEFT)
+        boff_6_layout = self.create_boff_station('Universal')
+        layout.addLayout(boff_6_layout, 5, 7, alignment=ALEFT)
+        sep4 = self.create_frame(size_policy=SMAXMIN, style_override={
+            'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
+        sep4.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        layout.addWidget(sep4, 0, 8, 5, 1)
+
+        # Traits
+        trait_layout = GridLayout(margins=0, spacing=isp)
+        personal_trait_layout = self.create_personal_trait_section('space')
+        trait_layout.addLayout(personal_trait_layout, 0, 0, alignment=ALEFT)
+        starship_trait_layout = self.create_starship_trait_section('space')
+        trait_layout.addLayout(starship_trait_layout, 1, 0)
+        rep_trait_layout = self.create_build_section(
+                'Reputation Traits', 5, 'space', 'rep_traits',
+                self.cache.traits['space']['rep'].keys())
+        trait_layout.addLayout(rep_trait_layout, 2, 0)
+        active_trait_layout = self.create_build_section(
+                'Active Reputation Traits', 5, 'space', 'active_rep_traits',
+                self.cache.traits['space']['active_rep'])
+        trait_layout.addLayout(active_trait_layout, 3, 0)
+        layout.addLayout(trait_layout, 0, 9, 6, 1, alignment=ATOP)
+
+        # Doffs
 
         frame.setLayout(layout)
 
@@ -351,10 +418,8 @@ class SETS():
         """
         Creates character customization area.
         """
-        layout = QGridLayout()
         csp = self.theme['defaults']['csp'] * self.config['ui_scale']
-        layout.setContentsMargins(csp, csp, csp, csp)
-        layout.setSpacing(csp)
+        layout = GridLayout(margins=csp, spacing=csp)
         layout.setColumnStretch(1, 1)
         char_name = self.create_entry(placeholder='NAME')
         char_name.setAlignment(AHCENTER)
@@ -414,9 +479,7 @@ class SETS():
         """
         Creates Splash screen.
         """
-        layout = QGridLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout = GridLayout(margins=0, spacing=0)
         layout.setRowStretch(0, 1)
         layout.setRowStretch(3, 1)
         layout.setColumnStretch(0, 3)
