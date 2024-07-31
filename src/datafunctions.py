@@ -47,7 +47,7 @@ def insert_cargo_data(self):
     """
     Updates UI elements depending on cargo data with the loaded data
     """
-    self.widgets.ship['combo'].addItems(self.cache.ships.keys())
+    self.ship_selector_window.set_ships(self.cache.ships.keys())
 
 
 def load_build(self):

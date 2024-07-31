@@ -133,9 +133,7 @@ def picker(
     """
     opens dialog to select item, stores it to build and updates item button
     """
-    size = (self.window.width() * 0.2, self.window.height() * 0.9)
-    pos = (self.window.x() + size[0] / 4, self.window.y() + size[1] / 18)
-    new_item = self.picker_window.pick_item(size, pos, items, equipment)
+    new_item = self.picker_window.pick_item(items, equipment)
     if new_item is not None:
         if environment == 'space':
             widget_storage = self.widgets.space_build
@@ -146,18 +144,23 @@ def picker(
             self.build[environment][build_key][build_subkey] = new_item
             overlay = getattr(self.cache.overlays, new_item['rarity'].lower().replace(' ', ''))
             widget_storage[build_key][build_subkey].set_item_overlay(item_image, overlay)
+            widget_storage[build_key][build_subkey].tooltip = new_item['item']
         else:
             self.build[environment][build_key][build_subkey] = {'item': new_item['item']}
             widget_storage[build_key][build_subkey].set_item(item_image)
         self.autosave()
 
 
-def slot_ship(self, new_ship: str):
+def select_ship(self):
     """
-    Updates UI to reflect new ship.
+    Opens ship picker and updates UI to reflect new ship.
     """
+    new_ship = self.ship_selector_window.pick_ship()
+    if new_ship is None:
+        return
+    self.widgets.ship['button'].setText(new_ship)
     ship_data = self.cache.ships[new_ship]
-    image_name = ship_data['image'].replace(' ', '_')
-    image_thread = CustomThread(self.window, get_ship_image, self, new_ship, image_name)
+    image_name = ship_data['image']
+    image_thread = CustomThread(self.window, get_ship_image, self, image_name)
     image_thread.result.connect(lambda img: self.widgets.ship['image'].set_pixmap(*img))
     image_thread.start()

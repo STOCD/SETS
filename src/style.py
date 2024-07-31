@@ -80,8 +80,8 @@ def merge_style(self, s1: dict, s2: dict) -> dict:
     for k, v in s2.items():
         if k in result.keys() and isinstance(result[k], dict) and isinstance(v, dict):
             result[k].update(v)
-            continue
-        result[k] = v
+        else:
+            result[k] = v
     return result
 
 
@@ -108,7 +108,7 @@ def get_css(self, style: dict) -> str:
     return css
 
 
-def theme_font(self, key, font_spec=()) -> QFont:
+def theme_font(self, key=None, font_spec=()) -> QFont:
     """
     Returns QFont object with font specified in self.theme or font_spec. Adds default fallback font
     families.

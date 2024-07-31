@@ -1,10 +1,10 @@
 from PySide6.QtCore import QEvent, Qt, QRect, QThread, Signal
 from PySide6.QtGui import QEnterEvent, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (
-        QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QTabWidget,
-        QVBoxLayout, QWidget)
+        QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+        QTabWidget, QVBoxLayout, QWidget)
 
-from .constants import EQUIPMENT_TYPES, SMAXMAX, SMINMIN
+from .constants import AHCENTER, EQUIPMENT_TYPES, SMAXMAX, SMINMIN
 
 
 class WidgetStorage():
@@ -22,7 +22,7 @@ class WidgetStorage():
         self.sidebar_frames: list[QFrame] = list()
         self.ship: dict = {
             'image': ImageLabel,
-            'combo': QComboBox
+            'button': ShipButton
         }
         self.character_tabber: QTabWidget
         self.character_frames: list[QFrame] = list()
@@ -142,29 +142,40 @@ class ImageLabel(QWidget):
     def __init__(self, path: str = '', aspect_ratio: tuple[int, int] = (0, 0), *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._w, self._h = aspect_ratio
-        if path != '':
-            self.set_pixmap(QPixmap(path))
-            print(self.p)
+        if path == '':
+            self.p = QPixmap()
+        else:
+            self.p = QPixmap(path)
         self.setSizePolicy(SMINMIN)
         self.setMinimumHeight(10)  # forces visibility
-        print(self.rect().height(), self.rect().width())
+        self.update()
 
-    def set_pixmap(self, p):
+    def set_pixmap(self, p: QPixmap):
         self.p = p
-        print(p)
+        self._w = p.width()
+        self._h = p.height()
         self.update()
 
     def paintEvent(self, event):
         if not self.p.isNull():
             painter = QPainter(self)
-            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            w = int(self.rect().width())
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+            w = int(self.width())
             h = int(w * self._h / self._w)
             rect = QRect(0, 0, w, h)
-            print(rect, self.p)
             painter.drawPixmap(rect, self.p)
-            self.setMaximumHeight(h)
-            self.setMinimumHeight(h)
+            self.setFixedHeight(h)
+
+
+class ShipImage(ImageLabel):
+    def paintEvent(self, event):
+        if not self.p.isNull():
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            w = int(self.width())
+            new_p = self.p.scaledToWidth(w, Qt.TransformationMode.SmoothTransformation)
+            painter.drawPixmap(0, 0, new_p)
+            self.setFixedHeight(new_p.height())
 
 
 class ItemButton(QFrame):
@@ -195,8 +206,16 @@ class ItemButton(QFrame):
         self._tooltip.setWindowFlags(Qt.WindowType.ToolTip)
         self._tooltip.setWordWrap(True)
 
+    @property
+    def tooltip(self):
+        return self._tooltip.text()
+
+    @tooltip.setter
+    def tooltip(self, new_tooltip):
+        self._tooltip.setText(new_tooltip)
+
     def enterEvent(self, event: QEnterEvent) -> None:
-        if self._tooltip.text() != '':
+        if self.tooltip != '':
             tooltip_width = self.window().width() // 5
             position = self.parentWidget().mapToGlobal(self.geometry().topLeft())
             position.setX(position.x() - tooltip_width - 1)
@@ -343,3 +362,24 @@ class CustomThread(QThread):
 
     def run(self):
         self._func(*self._args, thread=self, **self._kwargs)
+
+
+class ShipButton(QLabel):
+    """
+    Button with word wrap
+    """
+    clicked = Signal()
+
+    def __init__(self, text: str):
+        super().__init__()
+        self.setWordWrap(True)
+        self.setText(text)
+        self.setAlignment(AHCENTER)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mousePressEvent(self, ev: QMouseEvent):
+        if ev.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+            ev.accept()
+        else:
+            super().mousePressEvent(ev)

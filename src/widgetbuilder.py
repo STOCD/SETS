@@ -225,12 +225,13 @@ def create_checkbox(self, style: str = 'checkbox', style_override: dict = {}) ->
     return checkbox
 
 
-def create_item_button(self) -> ItemButton:
+def create_item_button(self, style_override: dict = {}) -> ItemButton:
     """
     Creates Item Button.
     """
     label = create_label(self, '', 'infobox')
-    button = ItemButton(self.box_width, self.box_height, get_style(self, 'item'), label)
+    button = ItemButton(
+            self.box_width, self.box_height, get_style(self, 'item', style_override), label)
     return button
 
 

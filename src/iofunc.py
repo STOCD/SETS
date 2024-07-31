@@ -85,10 +85,19 @@ def retrieve_image(
     return image
 
 
-def get_ship_image(self, name: str, image_name: str, thread):
+def get_ship_image(self, image_name: str, thread):
     image_url = WIKI_IMAGE_URL + image_name.replace(' ', '_')
-    image_folder = self.config['config_subfolders']['ship_images']
-    image = retrieve_image(self, name, image_folder, url_override=image_url)
+    image_path = f"{self.config['config_subfolders']['ship_images']}\\{quote_plus(image_name)}"
+    _, _, fmt = image_name.rpartition('.')
+    image = QPixmap(image_path)
+    if image.isNull():
+        image_response = requests.get(image_url)
+        if image_response.ok:
+            image.loadFromData(image_response.content, fmt)
+            image.save(image_path)
+        else:
+            thread.result.emit((self.cache.empty_image,))
+            return
     thread.result.emit((image,))
 
 # --------------------------------------------------------------------------------------------------

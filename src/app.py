@@ -1,15 +1,15 @@
 import os
 
 from PySide6.QtCore import QSettings
-from PySide6.QtGui import QFontDatabase, QPixmap
-from PySide6.QtWidgets import QApplication, QFrame, QTabWidget, QWidget, QLabel
+from PySide6.QtGui import QFontDatabase
+from PySide6.QtWidgets import QApplication, QFrame, QTabWidget, QWidget
 
 from .constants import (
     ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS, SECONDARY_SPECS,
     SMAXMIN, SMINMAX, SMINMIN)
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
-from .subwindows import Picker
-from .widgets import Cache, GridLayout, ImageLabel, VBoxLayout, WidgetStorage
+from .subwindows import Picker, ShipSelector
+from .widgets import Cache, GridLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 from signal import signal, SIGINT, SIG_DFL
@@ -20,9 +20,9 @@ class SETS():
 
     from .callbacks import (
             elite_callback, enter_splash, exit_splash, faction_combo_callback,
-            set_build_item, slot_ship, spec_combo_callback, splash_text, switch_main_tab)
+            set_build_item, select_ship, spec_combo_callback, splash_text, switch_main_tab)
     from .datafunctions import autosave, empty_build, init_backend
-    from .style import create_style_sheet, get_style, get_style_class
+    from .style import create_style_sheet, get_style, get_style_class, theme_font
     from .widgetbuilder import (
             create_boff_station, create_build_section, create_button, create_button_series,
             create_checkbox, create_combo_box, create_entry, create_frame, create_item_button,
@@ -64,6 +64,7 @@ class SETS():
         self.app, self.window = self.create_main_window()
         self.setup_main_layout()
         self.picker_window = Picker(self, self.window)
+        self.ship_selector_window = ShipSelector(self, self.window)
         self.window.show()
         self.init_backend(self.setup_space_build_frame)
 
@@ -248,7 +249,7 @@ class SETS():
         sidebar_layout.addWidget(character_tabber, 1, 0)
 
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
-                'background-color': '@sets', 'margin-top': '@isp', 'margin-bottom': '@isp'})
+                'background-color': '@sets', 'margin-top': '@isp'})
         seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
         sidebar_layout.addWidget(seperator, 0, 1, 2, 1)
         sidebar.setLayout(sidebar_layout)
@@ -280,19 +281,26 @@ class SETS():
         csp = self.theme['defaults']['csp'] * self.config['ui_scale']
         layout = VBoxLayout(margins=csp, spacing=csp)
 
+        image_frame = self.create_frame(size_policy=SMINMIN)
         image_layout = GridLayout(margins=0, spacing=0)
-        ship_image = ImageLabel(aspect_ratio=(16, 9))
+        ship_image = ShipImage()
+        ship_image.setSizePolicy(SMINMAX)
         self.widgets.ship['image'] = ship_image
         image_layout.addWidget(ship_image, 0, 0)
-        layout.addLayout(image_layout, stretch=1)
+        image_frame.setLayout(image_layout)
+        layout.addWidget(image_frame, stretch=1)
 
+        ship_frame = self.create_frame(size_policy=SMINMIN)
         ship_layout = VBoxLayout(margins=0, spacing=csp)
-        ship_selector = self.create_combo_box(editable=True)
-        ship_selector.addItem('<no ship>')
-        ship_selector.currentTextChanged.connect(self.slot_ship)
-        self.widgets.ship['combo'] = ship_selector
-        ship_layout.addWidget(ship_selector)
-        layout.addLayout(ship_layout, stretch=2)
+        ship_selector = ShipButton('<Pick Ship>')
+        ship_selector.setSizePolicy(SMINMAX)
+        ship_selector.setStyleSheet(self.get_style_class('ShipButton', 'button'))
+        ship_selector.setFont(self.theme_font(font_spec='@subhead'))
+        ship_selector.clicked.connect(self.select_ship)
+        self.widgets.ship['button'] = ship_selector
+        ship_layout.addWidget(ship_selector, alignment=ATOP)
+        ship_frame.setLayout(ship_layout)
+        layout.addWidget(ship_frame, stretch=2)
         frame.setLayout(layout)
 
     def setup_build_frames(self):
