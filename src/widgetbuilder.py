@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
         QPushButton, QSizePolicy, QVBoxLayout)
 
-from .callbacks import picker
+from .callbacks import boff_profession_callback, picker
 from .constants import ALEFT, CALLABLE, SMAXMAX, SMAXMIN, SMINMAX
 from .style import get_style, get_style_class, merge_style, theme_font
 from .widgets import ItemButton
@@ -152,7 +152,7 @@ def create_button_series(
 
 
 def create_combo_box(
-        self, style: str = 'combobox', editable: bool = False,
+        self, style: str = 'combobox', editable: bool = False, size_policy: QSizePolicy = None,
         style_override: dict = {}) -> QComboBox:
     """
     Creates a combobox with given style and returns it.
@@ -171,9 +171,11 @@ def create_combo_box(
     else:
         font = theme_font(self, style)
     combo_box.setFont(font)
-    combo_box.setSizePolicy(SMINMAX)
+    combo_box.setSizePolicy(SMINMAX if size_policy is None else size_policy)
     combo_box.setCursor(Qt.CursorShape.PointingHandCursor)
     combo_box.view().setCursor(Qt.CursorShape.PointingHandCursor)
+    combo_box.setMinimumContentsLength(1)
+    combo_box.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
     if editable:
         combo_box.setEditable(True)
         combo_box.completer().setFilterMode(Qt.MatchFlag.MatchContains)
@@ -237,7 +239,7 @@ def create_item_button(self, style_override: dict = {}) -> ItemButton:
 
 def create_build_section(
         self, label_text: str, button_count: int, environment: bool, build_key: str,
-        item_list: Iterable, is_equipment: bool = False) -> QGridLayout:
+        item_list: Iterable, is_equipment: bool = False, label_store: str = '') -> QGridLayout:
     """
     Creates a block of item buttons below a label.
 
@@ -253,24 +255,26 @@ def create_build_section(
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(self.theme['defaults']['margin'] * self.config['ui_scale'])
     label = create_label(self, label_text, style_override={'margin': (0, 0, 6, 0)})
-    label.sizePolicy().setRetainSizeWhenHidden(True)
+    label_size_policy = label.sizePolicy()
+    label_size_policy.setRetainSizeWhenHidden(True)
+    label.setSizePolicy(label_size_policy)
     layout.addWidget(label, 0, 0, 1, button_count, alignment=ALEFT)
-    if environment == 'space':
-        widget_storage = self.widgets.space_build
-    else:
-        widget_storage = self.widgets.ground_build
+    widget_storage = self.widgets.build[environment]
+    if label_store != '':
+        widget_storage[label_store] = label
     for i in range(button_count):
         button = create_item_button(self)
-        button.sizePolicy().setRetainSizeWhenHidden(True)
-        button.clicked.connect(lambda _, subkey=i: picker(
+        button.clicked.connect(lambda subkey=i: picker(
                 self, item_list, environment, build_key, subkey, is_equipment))
-        button.rightclicked.connect(lambda _, i=i: print(f'Rightclicked on {label_text} #{i}'))
+        button.rightclicked.connect(lambda i=i: print(f'Rightclicked on {label_text} #{i}'))
         widget_storage[build_key][i] = button
         layout.addWidget(button, 1, i, alignment=ALEFT)
     return layout
 
 
-def create_boff_station(self, profession: str, specialization: str = '') -> QGridLayout:
+def create_boff_station(
+        self, profession: str, environment: str, specialization: str = '',
+        boff_id: int = 0) -> QGridLayout:
     """
     Creates a block of item buttons with label / Combobox representing boff station.
 
@@ -292,16 +296,23 @@ def create_boff_station(self, profession: str, specialization: str = '') -> QGri
         )
     else:
         label_options = (profession + specialization,)
-    label = create_combo_box(self, style_override={'font': '@font'})
+    widget_storage = self.widgets.build[environment]
+    label = create_combo_box(self, size_policy=SMAXMAX, style_override=self.theme['boff_combo'])
+    label.currentTextChanged.connect(lambda new: boff_profession_callback(self, boff_id, new))
     label.addItems(label_options)
-    label.sizePolicy().setRetainSizeWhenHidden(True)
+    label_size_policy = label.sizePolicy()
+    label_size_policy.setRetainSizeWhenHidden(True)
+    label.setSizePolicy(label_size_policy)
+    widget_storage['boff_labels'][boff_id] = label
     layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
     for i in range(4):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
-        button.clicked.connect(picker)
-        button.rightclicked.connect(lambda data, i=i: print(f'Rightclicked on boff #{i}'))
+        button.clicked.connect(lambda subkey=i: picker(
+                self, None, environment, 'boffs', subkey, boff_id=boff_id))
+        button.rightclicked.connect(lambda i=i: print(f'Rightclicked on boff #{i}'))
         layout.addWidget(button, 1, i, alignment=ALEFT)
+        widget_storage['boffs'][boff_id][i] = button
     return layout
 
 
@@ -313,21 +324,16 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(self.theme['defaults']['margin'] * self.config['ui_scale'])
     label = create_label(self, 'Personal Traits', style_override={'margin': (0, 0, 6, 0)})
-    label.sizePolicy().setRetainSizeWhenHidden(True)
     layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
     item_list = self.cache.traits[environment]['personal']
-    if environment == 'space':
-        widget_storage = self.widgets.space_build
-    else:
-        widget_storage = self.widgets.ground_build
+    widget_storage = self.widgets.build[environment]
     for row in range(3):
         for col in range(4):
             i = row * 4 + col
             button = create_item_button(self)
-            button.sizePolicy().setRetainSizeWhenHidden(True)
-            button.clicked.connect(lambda _, subkey=i: picker(
+            button.clicked.connect(lambda subkey=i: picker(
                 self, item_list, environment, 'traits', subkey))
-            button.rightclicked.connect(lambda data, i=i: print(f'Rightclicked on p. trait #{i}'))
+            button.rightclicked.connect(lambda i=i: print(f'Rightclicked on p. trait #{i}'))
             layout.addWidget(button, row + 1, col, alignment=ALEFT)
             widget_storage['traits'][i] = button
     return layout
@@ -343,25 +349,21 @@ def create_starship_trait_section(self, environment: str) -> QGridLayout:
     label = create_label(self, 'Starship Traits', style_override={'margin': (0, 0, 6, 0)})
     label.sizePolicy().setRetainSizeWhenHidden(True)
     layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
-    item_list = self.cache.starship_traits
-    if environment == 'space':
-        widget_storage = self.widgets.space_build
-    else:
-        widget_storage = self.widgets.ground_build
+    widget_storage = self.widgets.build[environment]
     for col in range(5):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
-        button.clicked.connect(lambda _, subkey=col: picker(
-                self, item_list, environment, 'starship_traits', subkey))
+        button.clicked.connect(lambda subkey=col: picker(
+                self, self.cache.starship_traits.keys(), environment, 'starship_traits', subkey))
         button.rightclicked.connect(lambda data, i=col: print(f'Rightclicked on s. trait #{i}'))
         layout.addWidget(button, 1, col, alignment=ALEFT)
         widget_storage['starship_traits'][col] = button
     for col in range(2):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
-        button.clicked.connect(lambda _, subkey=col + 5: picker(
-                self, item_list, environment, 'starship_traits', subkey))
-        button.rightclicked.connect(lambda data, i=col + 5: print(f'Rightclicked on s. trait #{i}'))
+        button.clicked.connect(lambda subkey=col + 5: picker(
+                self, self.cache.starship_traits.keys(), environment, 'starship_traits', subkey))
+        button.rightclicked.connect(lambda i=col + 5: print(f'Rightclicked on s. trait #{i}'))
         layout.addWidget(button, 2, col, alignment=ALEFT)
         widget_storage['starship_traits'][col + 5] = button
     return layout

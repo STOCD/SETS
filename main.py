@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2024.07b310'
+    version = '2024.08b060'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -230,6 +230,19 @@ class Launcher():
                 },
             }
         },
+        # additional style for boff combobox
+        'boff_combo': {
+            'font': '@font',
+            ':disabled': {
+                'border-color': '@bg',
+                'border-left-width': 0,
+                'padding-left': 0
+            },
+            '::down-arrow:disabled': {
+                'image': 'none',
+                'width': '@margin',
+            },
+        },
         # auto-completion popup of combobox
         'popup': {
             'background-color': '@mbg',
@@ -315,6 +328,17 @@ class Launcher():
                 'border': 'none',
                 'border-radius': 0
             }
+        },
+        # large text editor
+        'textedit': {
+            'background-color': '@mbg',
+            'border-style': 'solid',
+            'border-width': '@bw',
+            'border-color': '@bc',
+            'font': '@font',
+            'color': '@fg',
+            'padding': 3,
+            'selection-background-color': '@lsets'
         }
     }
 

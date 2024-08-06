@@ -2,7 +2,7 @@ from PySide6.QtCore import QEvent, Qt, QRect, QThread, Signal
 from PySide6.QtGui import QEnterEvent, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-        QTabWidget, QVBoxLayout, QWidget)
+        QPlainTextEdit, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
 from .constants import AHCENTER, EQUIPMENT_TYPES, SMAXMAX, SMINMIN
 
@@ -21,8 +21,11 @@ class WidgetStorage():
         self.sidebar_tabber: QTabWidget
         self.sidebar_frames: list[QFrame] = list()
         self.ship: dict = {
-            'image': ImageLabel,
-            'button': ShipButton
+            'image': ShipImage,
+            'button': ShipButton,
+            'tier': QComboBox,
+            'name': QLineEdit,
+            'desc': QPlainTextEdit
         }
         self.character_tabber: QTabWidget
         self.character_frames: list[QFrame] = list()
@@ -37,31 +40,43 @@ class WidgetStorage():
             'secondary': QComboBox,
         }
 
-        self.space_build: dict = {
-            'active_rep_traits': [None] * 5,
-            'aft_weapons': [None] * 5,
-            'boffs': [[None] * 4] * 6,
-            'boff_specs': [None] * 6,
-            'core': [''],
-            'deflector': [''],
-            'devices': [None] * 6,
-            'doffs': [''] * 6,
-            'eng_consoles': [None] * 5,
-            'engines': [''],
-            'experimental': [None],
-            'fore_weapons': [None] * 5,
-            'hangars': [None] * 2,
-            'rep_traits': [None] * 5,
-            'sci_consoles': [None] * 5,
-            'sec_def': [None],
-            'shield': [''],
-            'ship': '',
-            'ship_name': '',
-            'starship_traits': [None] * 7,
-            'tac_consoles': [None] * 5,
-            'tier': '',
-            'traits': [None] * 12,
-            'uni_consoles': [None] * 3,
+        self.build: dict = {
+            'space': {
+                'active_rep_traits': [None] * 5,
+                'aft_weapons': [None] * 5,
+                'aft_weapons_label': None,
+                'boffs': [[None] * 4, [None] * 4, [None] * 4, [None] * 4, [None] * 4, [None] * 4],
+                'boff_labels': [None] * 6,
+                'boff_specs': [None] * 6,
+                'core': [''],
+                'deflector': [''],
+                'devices': [None] * 6,
+                'doffs': [''] * 6,
+                'eng_consoles': [None] * 5,
+                'eng_consoles_label': None,
+                'engines': [''],
+                'experimental': [None],
+                'experimental_label': None,
+                'fore_weapons': [None] * 5,
+                'hangars': [None] * 2,
+                'hangars_label': None,
+                'rep_traits': [None] * 5,
+                'sci_consoles': [None] * 5,
+                'sci_consoles_label': None,
+                'sec_def': [None],
+                'sec_def_label': None,
+                'shield': [''],
+                'ship': '',
+                'ship_desc': '',
+                'ship_name': '',
+                'starship_traits': [None] * 7,
+                'tac_consoles': [None] * 5,
+                'tac_consoles_label': None,
+                'tier': '',
+                'traits': [None] * 12,
+                'uni_consoles': [None] * 3,
+                'uni_consoles_label': None
+            }
         }
 
 
@@ -89,7 +104,8 @@ class Cache():
         self.space_doffs: dict = dict()
         self.boff_abilities: dict = {
             'space': self.boff_dict(),
-            'ground': self.boff_dict()
+            'ground': self.boff_dict(),
+            'all': dict()
         }
         self.skills = {
             'space': dict(),
@@ -169,12 +185,17 @@ class ImageLabel(QWidget):
 
 class ShipImage(ImageLabel):
     def paintEvent(self, event):
+        super().paintEvent(event)
         if not self.p.isNull():
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-            w = int(self.width())
+            current_width = self.width()
+            current_height = self.height()
+            scale_factor = min(current_width / self._w, current_height / self._h)
+            w = self._w * scale_factor
+            h = self._h * scale_factor
             new_p = self.p.scaledToWidth(w, Qt.TransformationMode.SmoothTransformation)
-            painter.drawPixmap(0, 0, new_p)
+            painter.drawPixmap(abs(w - current_width) // 2, abs(h - current_height) // 2, new_p)
             self.setFixedHeight(new_p.height())
 
 
@@ -183,15 +204,16 @@ class ItemButton(QFrame):
     Button used to show items with overlay.
     """
 
-    clicked = Signal(dict)
-    rightclicked = Signal(dict)
+    clicked = Signal()
+    rightclicked = Signal()
 
     def __init__(
             self, width=49, height=64, stylesheet: str = '',
             tooltip_label: QLabel = '', *args, **kwargs):
         super().__init__(*args, *kwargs)
-        self.setSizePolicy(SMAXMAX)
-        self.sizePolicy().setRetainSizeWhenHidden(True)
+        size_policy = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        size_policy.setRetainSizeWhenHidden(True)
+        self.setSizePolicy(size_policy)
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self._image_space = ItemImage(self, width, height)
@@ -232,11 +254,11 @@ class ItemButton(QFrame):
         if (event.button() == Qt.MouseButton.LeftButton
                 and event.localPos().x() < self.width()
                 and event.localPos().y() < self.height()):
-            self.clicked.emit({})
+            self.clicked.emit()
         elif (event.button() == Qt.MouseButton.RightButton
                 and event.localPos().x() < self.width()
                 and event.localPos().y() < self.height()):
-            self.rightclicked.emit({})
+            self.rightclicked.emit()
         event.accept()
 
     def set_item(self, pixmap: QPixmap):
@@ -252,9 +274,16 @@ class ItemButton(QFrame):
         self._overlay = overlay_pixmap
         self._image_space.update()
 
+    def set_item_full(self, item_pixmap: QPixmap, overlay_pixmap: QPixmap, tooltip: str):
+        self._base = item_pixmap
+        self._overlay = overlay_pixmap
+        self._tooltip.setText(tooltip)
+        self._image_space.update()
+
     def clear(self):
         self._base = None
         self._overlay = None
+        self._tooltip.setText('')
         self._image_space.update()
 
     def clear_item(self):

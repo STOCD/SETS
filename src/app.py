@@ -1,15 +1,16 @@
 import os
 
 from PySide6.QtCore import QSettings
-from PySide6.QtGui import QFontDatabase
-from PySide6.QtWidgets import QApplication, QFrame, QTabWidget, QWidget
+from PySide6.QtGui import QFontDatabase, QTextOption
+from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QTabWidget, QWidget
 
 from .constants import (
-    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS, SECONDARY_SPECS,
-    SMAXMIN, SMINMAX, SMINMIN)
+    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS,
+    SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
 from .subwindows import Picker, ShipSelector
-from .widgets import Cache, GridLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage
+from .widgets import (
+    Cache, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 from signal import signal, SIGINT, SIG_DFL
@@ -19,9 +20,11 @@ signal(SIGINT, SIG_DFL)
 class SETS():
 
     from .callbacks import (
-            elite_callback, enter_splash, exit_splash, faction_combo_callback,
-            set_build_item, select_ship, spec_combo_callback, splash_text, switch_main_tab)
+            clear_build_callback, elite_callback, faction_combo_callback,
+            load_build_callback, save_build_callback, set_build_item, select_ship,
+            spec_combo_callback, switch_main_tab, tier_callback)
     from .datafunctions import autosave, empty_build, init_backend
+    from .splash import enter_splash, exit_splash, splash_text
     from .style import create_style_sheet, get_style, get_style_class, theme_font
     from .widgetbuilder import (
             create_boff_station, create_build_section, create_button, create_button_series,
@@ -39,6 +42,7 @@ class SETS():
     build: dict  # stores current build
     box_height: int
     box_width: int
+    autosave_enabled: bool
 
     def __init__(self, theme, args, path, config, versions):
         """
@@ -62,11 +66,13 @@ class SETS():
         self.init_config()
         self.init_environment()
         self.app, self.window = self.create_main_window()
+        self.building = True
+        self.build = self.empty_build()
         self.setup_main_layout()
         self.picker_window = Picker(self, self.window)
         self.ship_selector_window = ShipSelector(self, self.window)
         self.window.show()
-        self.init_backend(self.setup_space_build_frame)
+        self.init_backend()
 
     def run(self) -> int:
         """
@@ -119,6 +125,7 @@ class SETS():
         """
         window_geometry = self.window.saveGeometry()
         self.settings.setValue('geometry', window_geometry)
+        self.autosave()
         event.accept()
 
     # ----------------------------------------------------------------------------------------------
@@ -184,9 +191,9 @@ class SETS():
         menu_layout.setColumnStretch(1, 5)
         menu_layout.setColumnStretch(2, 2)
         left_button_group = {
-            'Save': {'callback': lambda: None},
-            'Open': {'callback': lambda: None},
-            'Clear': {'callback': lambda: None},
+            'Save': {'callback': self.save_build_callback},
+            'Open': {'callback': self.load_build_callback},
+            'Clear': {'callback': self.clear_build_callback},
             'Clear all': {'callback': lambda: None}
         }
         menu_layout.addLayout(self.create_button_series(left_button_group), 0, 0, ALEFT | ATOP)
@@ -249,7 +256,7 @@ class SETS():
         sidebar_layout.addWidget(character_tabber, 1, 0)
 
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
-                'background-color': '@sets', 'margin-top': '@isp'})
+                'background-color': '@sets', 'margin-top': '@isp', 'margin-bottom': '@isp'})
         seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
         sidebar_layout.addWidget(seperator, 0, 1, 2, 1)
         sidebar.setLayout(sidebar_layout)
@@ -284,21 +291,50 @@ class SETS():
         image_frame = self.create_frame(size_policy=SMINMIN)
         image_layout = GridLayout(margins=0, spacing=0)
         ship_image = ShipImage()
-        ship_image.setSizePolicy(SMINMAX)
+        ship_image.setSizePolicy(SMINMIN)
         self.widgets.ship['image'] = ship_image
         image_layout.addWidget(ship_image, 0, 0)
         image_frame.setLayout(image_layout)
         layout.addWidget(image_frame, stretch=1)
 
         ship_frame = self.create_frame(size_policy=SMINMIN)
-        ship_layout = VBoxLayout(margins=0, spacing=csp)
+        ship_layout = GridLayout(margins=0, spacing=csp)
+        ship_layout.setRowStretch(4, 1)
+        ship_layout.setColumnStretch(1, 1)
         ship_selector = ShipButton('<Pick Ship>')
         ship_selector.setSizePolicy(SMINMAX)
-        ship_selector.setStyleSheet(self.get_style_class('ShipButton', 'button'))
+        ship_selector.setStyleSheet(
+                self.get_style_class('ShipButton', 'button', override={'margin': 0}))
         ship_selector.setFont(self.theme_font(font_spec='@subhead'))
         ship_selector.clicked.connect(self.select_ship)
         self.widgets.ship['button'] = ship_selector
-        ship_layout.addWidget(ship_selector, alignment=ATOP)
+        ship_layout.addWidget(ship_selector, 0, 0, 1, 2, alignment=ATOP)
+        tier_label = self.create_label('Ship Tier:')
+        ship_layout.addWidget(tier_label, 1, 0)
+        tier_combo = self.create_combo_box()
+        tier_combo.currentTextChanged.connect(self.tier_callback)
+        tier_combo.setSizePolicy(SMAXMAX)
+        self.widgets.ship['tier'] = tier_combo
+        ship_layout.addWidget(tier_combo, 1, 1, alignment=ALEFT)
+        name_label = self.create_label('Ship Name:')
+        ship_layout.addWidget(name_label, 2, 0)
+        name_entry = self.create_entry()
+        name_entry.editingFinished.connect(
+                lambda: self.set_build_item(self.build['space'], 'ship_name', name_entry.text()))
+        self.widgets.ship['name'] = name_entry
+        name_entry.setSizePolicy(SMINMAX)
+        ship_layout.addWidget(name_entry, 2, 1)
+        desc_label = self.create_label('Build Description:')
+        ship_layout.addWidget(desc_label, 3, 0, 1, 2)
+        desc_edit = QPlainTextEdit()
+        desc_edit.setSizePolicy(SMINMIN)
+        desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
+        desc_edit.setFont(self.theme_font('textedit'))
+        desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+        desc_edit.textChanged.connect(lambda: self.set_build_item(
+                self.build['space'], 'ship_desc', desc_edit.toPlainText(), autosave=False))
+        self.widgets.ship['desc'] = desc_edit
+        ship_layout.addWidget(desc_edit, 4, 0, 1, 2)
         ship_frame.setLayout(ship_layout)
         layout.addWidget(ship_frame, stretch=2)
         frame.setLayout(layout)
@@ -307,7 +343,7 @@ class SETS():
         """
         Creates build areas
         """
-        # self.setup_space_build_frame()
+        self.setup_space_build_frame()
 
     def setup_space_build_frame(self):
         """
@@ -319,24 +355,23 @@ class SETS():
         layout.setColumnStretch(10, 1)
         layout.setRowStretch(20, 1)
         eq = self.cache.equipment
-
         # Equipment
         fore_layout = self.create_build_section(
-                'Fore Weapons', 5, 'space', 'fore_weapons',
-                eq['fore_weapons'].keys() | eq['ship_weapon'].keys(), True)
+                'Fore Weapons', 5, 'space', 'fore_weapons', eq['fore_weapons'].keys(), True)
         layout.addLayout(fore_layout, 0, 1, alignment=ALEFT)
         aft_layout = self.create_build_section(
                 'Aft Weapons', 5, 'space', 'aft_weapons',
-                eq['aft_weapons'].keys() | eq['ship_weapon'].keys(), True)
+                eq['aft_weapons'].keys(), True, 'aft_weapons_label')
         layout.addLayout(aft_layout, 1, 1, alignment=ALEFT)
         exp_layout = self.create_build_section(
-                'Experimental Weapon', 1, 'space', 'experimental', eq['experimental'].keys(), True)
+                'Experimental Weapon', 1, 'space', 'experimental', eq['experimental'].keys(), True,
+                'experimental_label')
         layout.addLayout(exp_layout, 2, 1, alignment=ALEFT)
         device_layout = self.create_build_section(
                 'Devices', 6, 'space', 'devices', eq['devices'].keys(), True)
         layout.addLayout(device_layout, 3, 1, alignment=ALEFT)
         hangar_layout = self.create_build_section(
-                'Hangars', 2, 'space', 'hangars', eq['hangars'].keys(), True)
+                'Hangars', 2, 'space', 'hangars', eq['hangars'].keys(), True, 'hangars_label')
         layout.addLayout(hangar_layout, 4, 1, alignment=ALEFT)
         sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
@@ -347,7 +382,7 @@ class SETS():
                 'Deflector', 1, 'space', 'deflector', eq['deflector'], True)
         layout.addLayout(deflector_layout, 0, 3, alignment=ALEFT)
         secdef_layout = self.create_build_section(
-                'Sec-Def', 1, 'space', 'sec_def', eq['sec_def'], True)
+                'Sec-Def', 1, 'space', 'sec_def', eq['sec_def'], True, 'sec_def_label')
         layout.addLayout(secdef_layout, 1, 3, alignment=ALEFT)
         engine_layout = self.create_build_section(
                 'Engines', 1, 'space', 'engines', eq['engines'], True)
@@ -363,21 +398,21 @@ class SETS():
         sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
         layout.addWidget(sep2, 0, 4, 5, 1)
 
-        consoles = eq['uni_consoles'] | eq['eng_consoles'] | eq['sci_consoles'] | eq['tac_consoles']
         uni_layout = self.create_build_section(
-                'Universal Consoles', 3, 'space', 'uni_consoles', consoles, True)
+                'Universal Consoles', 3, 'space', 'uni_consoles', eq['uni_consoles'], True,
+                'uni_consoles_label')
         layout.addLayout(uni_layout, 0, 5, alignment=ALEFT)
         eng_layout = self.create_build_section(
                 'Engineering Consoles', 5, 'space', 'eng_consoles',
-                eq['eng_consoles'] | eq['uni_consoles'], True)
+                eq['eng_consoles'], True, 'eng_consoles_label')
         layout.addLayout(eng_layout, 1, 5, alignment=ALEFT)
         sci_layout = self.create_build_section(
                 'Science Consoles', 5, 'space', 'sci_consoles',
-                eq['sci_consoles'] | eq['uni_consoles'], True)
+                eq['sci_consoles'], True, 'sci_consoles_label')
         layout.addLayout(sci_layout, 2, 5, alignment=ALEFT)
         tac_layout = self.create_build_section(
                 'Tactical Consoles', 5, 'space', 'tac_consoles',
-                eq['tac_consoles'] | eq['uni_consoles'], True)
+                eq['tac_consoles'], True, 'tac_consoles_label')
         layout.addLayout(tac_layout, 3, 5, alignment=ALEFT)
         sep3 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
@@ -385,22 +420,27 @@ class SETS():
         layout.addWidget(sep3, 0, 6, 5, 1)
 
         # Boffs
-        boff_1_layout = self.create_boff_station('Universal', 'Miracle Worker')
+        boff_1_layout = self.create_boff_station('Universal', 'space', 'Miracle Worker', boff_id=0)
         layout.addLayout(boff_1_layout, 0, 7, alignment=ALEFT)
-        boff_2_layout = self.create_boff_station('Tactical', 'Command')
+        boff_2_layout = self.create_boff_station('Universal', 'space', 'Command', boff_id=1)
         layout.addLayout(boff_2_layout, 1, 7, alignment=ALEFT)
-        boff_3_layout = self.create_boff_station('Science', 'Intelligence')
+        boff_3_layout = self.create_boff_station('Universal', 'space', 'Intelligence', boff_id=2)
         layout.addLayout(boff_3_layout, 2, 7, alignment=ALEFT)
-        boff_4_layout = self.create_boff_station('Engineering', 'Pilot')
+        boff_4_layout = self.create_boff_station('Universal', 'space', 'Pilot', boff_id=3)
         layout.addLayout(boff_4_layout, 3, 7, alignment=ALEFT)
-        boff_5_layout = self.create_boff_station('Tactical', 'Temporal')
+        boff_5_layout = self.create_boff_station('Universal', 'space', 'Temporal', boff_id=4)
         layout.addLayout(boff_5_layout, 4, 7, alignment=ALEFT)
-        boff_6_layout = self.create_boff_station('Universal')
+        boff_6_layout = self.create_boff_station('Universal', 'space', boff_id=5)
+        width_placeholder = self.create_combo_box(size_policy=SMAXMAX)
+        width_placeholder.addItem('Engineering / Miracle Worker')
+        width_placeholder_sizepolicy = width_placeholder.sizePolicy()
+        width_placeholder_sizepolicy.setRetainSizeWhenHidden(True)
+        width_placeholder.setSizePolicy(width_placeholder_sizepolicy)
+        width_placeholder.setFixedHeight(1)
+        boff_6_layout.addWidget(width_placeholder, 2, 0, 1, 4)
+        width_placeholder.hide()
         layout.addLayout(boff_6_layout, 5, 7, alignment=ALEFT)
-        sep4 = self.create_frame(size_policy=SMAXMIN, style_override={
-            'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep4.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
-        layout.addWidget(sep4, 0, 8, 5, 1)
+        # no seperator here as the width placehoder takes care of it
 
         # Traits
         trait_layout = GridLayout(margins=0, spacing=isp)
@@ -429,49 +469,54 @@ class SETS():
         csp = self.theme['defaults']['csp'] * self.config['ui_scale']
         layout = GridLayout(margins=csp, spacing=csp)
         layout.setColumnStretch(1, 1)
+        seperator = self.create_frame(size_policy=SMINMAX, style_override={
+                'background-color': '@sets', 'margin': '@isp'})
+        sep = self.theme['defaults']['sep'] * self.config['ui_scale']
+        seperator.setFixedHeight(sep)
+        layout.addWidget(seperator, 0, 0, 1, 2, alignment=ATOP)  # ATOP makes it respect the margin?
         char_name = self.create_entry(placeholder='NAME')
         char_name.setAlignment(AHCENTER)
         char_name.setSizePolicy(SMINMAX)
         char_name.editingFinished.connect(
                 lambda: self.set_build_item(self.build['captain'], 'name', char_name.text()))
-        layout.addWidget(char_name, 0, 0, 1, 2)
+        layout.addWidget(char_name, 1, 0, 1, 2)
         elite_label = self.create_label('Elite Captain')
-        layout.addWidget(elite_label, 1, 0, alignment=ARIGHT)
+        layout.addWidget(elite_label, 2, 0, alignment=ARIGHT)
         elite_checkbox = self.create_checkbox()
         elite_checkbox.checkStateChanged.connect(self.elite_callback)
-        layout.addWidget(elite_checkbox, 1, 1, alignment=ALEFT)
+        layout.addWidget(elite_checkbox, 2, 1, alignment=ALEFT)
         career_label = self.create_label('Captain Career')
-        layout.addWidget(career_label, 2, 0, alignment=ARIGHT)
+        layout.addWidget(career_label, 3, 0, alignment=ARIGHT)
         career_combo = self.create_combo_box()
         career_combo.addItems({''} | CAREERS)
         career_combo.currentTextChanged.connect(
                 lambda t: self.set_build_item(self.build['captain'], 'career', t))
-        layout.addWidget(career_combo, 2, 1)
+        layout.addWidget(career_combo, 3, 1)
         faction_label = self.create_label('Faction')
-        layout.addWidget(faction_label, 3, 0, alignment=ARIGHT)
+        layout.addWidget(faction_label, 4, 0, alignment=ARIGHT)
         faction_combo = self.create_combo_box()
         faction_combo.addItems({''} | FACTIONS)
         faction_combo.currentTextChanged.connect(self.faction_combo_callback)
-        layout.addWidget(faction_combo, 3, 1)
+        layout.addWidget(faction_combo, 4, 1)
         species_label = self.create_label('Species')
-        layout.addWidget(species_label, 4, 0, alignment=ARIGHT)
+        layout.addWidget(species_label, 5, 0, alignment=ARIGHT)
         species_combo = self.create_combo_box()
         species_combo.addItems({''})
         species_combo.currentTextChanged.connect(
                 lambda t: self.set_build_item(self.build['captain'], 'species', t))
-        layout.addWidget(species_combo, 4, 1)
+        layout.addWidget(species_combo, 5, 1)
         primary_label = self.create_label('Primary Spec')
-        layout.addWidget(primary_label, 5, 0, alignment=ARIGHT)
+        layout.addWidget(primary_label, 6, 0, alignment=ARIGHT)
         primary_combo = self.create_combo_box()
         primary_combo.addItems({''} | PRIMARY_SPECS)
         primary_combo.currentTextChanged.connect(lambda t: self.spec_combo_callback(True, t))
-        layout.addWidget(primary_combo, 5, 1)
-        secondary_label = self.create_label('Secondary Spec')
-        layout.addWidget(secondary_label, 6, 0, alignment=ARIGHT)
+        layout.addWidget(primary_combo, 6, 1)
+        secondary_label = self.create_label('Secondary Spec', style_override={'margin-bottom': 0})
+        layout.addWidget(secondary_label, 7, 0, alignment=ARIGHT)
         secondary_combo = self.create_combo_box()
         secondary_combo.addItems({''} | PRIMARY_SPECS | SECONDARY_SPECS)
         secondary_combo.currentTextChanged.connect(lambda t: self.spec_combo_callback(False, t))
-        layout.addWidget(secondary_combo, 6, 1)
+        layout.addWidget(secondary_combo, 7, 1)
         frame.setLayout(layout)
         self.widgets.character = {
             'name': char_name,

@@ -3,32 +3,34 @@ from json import JSONDecodeError
 import os
 import sys
 
-from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
 from requests.exceptions import Timeout
 from requests_html import Element
 
-from .callbacks import (
-        enter_splash, exit_splash, faction_combo_callback, spec_combo_callback, splash_text)
+from .buildupdater import load_build, get_boff_spec
 from .constants import (
-        BOFF_URL, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES, ITEM_QUERY_URL, MODIFIER_QUERY,
-        PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, WIKI_IMAGE_URL)
+        BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES, ITEM_QUERY_URL,
+        MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL,
+        WIKI_IMAGE_URL)
 from .iofunc import (
-        get_cargo_data, fetch_html, get_asset_path, load_image, load_json, retrieve_image,
-        store_json)
+        get_cargo_data, fetch_html, get_asset_path, load_image, load_json,
+        retrieve_image, store_json)
+from .splash import enter_splash, exit_splash, splash_text
 from .textedit import dewikify, sanitize_equipment_name
 from .widgets import CustomThread
 
 
-def init_backend(self, after):
+def init_backend(self):
     """
     Loads cargo and build data.
     """
     def check_exit(result):
         if cargo_thread.isFinished() and build_ready:
+            splash_text(self, 'Injecting Cargo Data')
             insert_cargo_data(self)
+            splash_text(self, 'Loading Build')
             load_build(self)
             exit_splash(self)
-            after()
 
     enter_splash(self)
     build_ready = False
@@ -38,7 +40,7 @@ def init_backend(self, after):
     cargo_thread.start()
 
     build_ready = False
-    load_build_file(self, self.config['autosave_filename'])
+    load_build_file(self, self.config['autosave_filename'], update_ui=False)
     build_ready = True
     check_exit(None)
 
@@ -50,44 +52,13 @@ def insert_cargo_data(self):
     self.ship_selector_window.set_ships(self.cache.ships.keys())
 
 
-def load_build(self):
-    """
-    Updates UI to show the build currently in self.build
-    """
-    # Character section
-    self.widgets.character['name'].setText(self.build['captain']['name'])
-    elite = Qt.CheckState.Checked if self.build['captain']['elite'] else Qt.CheckState.Unchecked
-    self.widgets.character['elite'].setCheckState(elite)
-    self.widgets.character['career'].setCurrentText(self.build['captain']['career'])
-    species = self.build['captain']['species']
-    self.widgets.character['faction'].setCurrentText(self.build['captain']['faction'])
-    self.widgets.character['species'].setCurrentText(species)
-    self.build['captain']['species'] = species
-    self.widgets.character['primary'].setCurrentText(self.build['captain']['primary_spec'])
-    self.widgets.character['secondary'].setCurrentText(self.build['captain']['secondary_spec'])
-
-
-def load_build_file(self, filepath: str):
-    """
-    Loads build from json or png file and puts it into self.build
-
-    Parameters:
-    - :param filepath: path to build file
-    """
-    *_, extension = filepath.rpartition('.')
-    if extension.lower() == 'json':
-        self.build = load_json(filepath)
-    else:
-        raise NotImplementedError()
-
-
 def populate_cache(self, thread: CustomThread):
     """
     Loads cargo data and images into cache
     """
     load_cargo_data(self, thread)
-    self.cache.empty_image = load_image(get_asset_path('Common_icon.png', self.app_dir))
-    self.cache.overlays.common = self.cache.empty_image
+    self.cache.empty_image = QPixmap()
+    self.cache.overlays.common = load_image(get_asset_path('Common_icon.png', self.app_dir))
     self.cache.overlays.uncommon = load_image(get_asset_path('Uncommon_icon.png', self.app_dir))
     self.cache.overlays.rare = load_image(get_asset_path('Rare_icon.png', self.app_dir))
     self.cache.overlays.veryrare = load_image(get_asset_path('Very_rare_icon.png', self.app_dir))
@@ -114,6 +85,15 @@ def load_cargo_data(self, thread: CustomThread):
                 or item['name'].startswith('Hangar - Elite')):
             item['name'] = sanitize_equipment_name(item['name'])
             self.cache.equipment[EQUIPMENT_TYPES[item['type']]][item['name']] = item
+    self.cache.equipment['fore_weapons'].update(self.cache.equipment['ship_weapon'])
+    self.cache.equipment['aft_weapons'].update(self.cache.equipment['ship_weapon'])
+    del self.cache.equipment['ship_weapon']
+    self.cache.equipment['tac_consoles'].update(self.cache.equipment['uni_consoles'])
+    self.cache.equipment['sci_consoles'].update(self.cache.equipment['uni_consoles'])
+    self.cache.equipment['eng_consoles'].update(self.cache.equipment['uni_consoles'])
+    self.cache.equipment['uni_consoles'].update(self.cache.equipment['tac_consoles'])
+    self.cache.equipment['uni_consoles'].update(self.cache.equipment['sci_consoles'])
+    self.cache.equipment['uni_consoles'].update(self.cache.equipment['eng_consoles'])
 
     thread.update_splash.emit('Loading: Traits')
     trait_cargo_data = get_cargo_data(self, 'traits.json', TRAIT_QUERY_URL)
@@ -131,11 +111,16 @@ def load_cargo_data(self, thread: CustomThread):
                 pass
 
     thread.update_splash.emit('Loading: Starship Traits')
-    shiptrait_cargo_data = get_cargo_data(self, 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL)
-    self.cache.starship_traits = {ship_trait['name'] for ship_trait in shiptrait_cargo_data}
+    shiptrait_cargo = get_cargo_data(self, 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL)
+    self.cache.starship_traits = {ship_trait['name']: ship_trait for ship_trait in shiptrait_cargo}
 
     thread.update_splash.emit('Loading: Bridge Officers')
     get_boff_data(self)
+    self.cache.all_boff_abilities = dict()
+    for cat in self.cache.boff_abilities['space'].values():
+        self.cache.all_boff_abilities.update(cat[2])
+    for cat in self.cache.boff_abilities['ground'].values():
+        self.cache.all_boff_abilities.update(cat[2])
 
     thread.update_splash.emit('Loading: Skills')
     cache_skills(self)
@@ -249,6 +234,103 @@ def cache_skills(self):
     self.cache.skills['ground_unlocks'] = ground_skill_data['ground_unlocks']
 
 
+def autosave(self):
+    """
+    Saves build to autosave file.
+    """
+    if not self.building:
+        store_json(self.build, self.config['autosave_filename'])
+
+
+def map_build_items(self, old_build: dict, new_build: dict, mapping):
+    """
+    Inserts items from old build into new build according to mapping; in-place
+
+    Parameters:
+    - :param old_build: source
+    - :param new_build: target
+    - :param mapping: iterable of 2-tuples containing source and target key
+    """
+    for source_key, target_key in mapping:
+        try:
+            if isinstance(new_build[target_key], list):
+                for index, element in enumerate(old_build[source_key]):
+                    new_build[target_key][index] = element
+            else:
+                new_build[target_key] = old_build[source_key]
+        except KeyError:
+            continue
+
+
+def convert_old_build(self, build: dict) -> dict:
+    """
+    converts build from old spec to current spec
+    """
+    new_build = empty_build(self)
+
+    # space
+    map_build_items(self, build, new_build['space'], BUILD_CONVERSION['space'])
+    new_build['space']['traits'] = (
+            build['personalSpaceTrait'] + build['personalSpaceTrait2'] + [None])
+    ship_data = self.cache.ships[new_build['space']['ship']]
+    boff_data = sorted(map(lambda s: get_boff_spec(self, s), ship_data['boffs']), reverse=True)
+    for boff_id in range(5):
+        # taking profession from ship specifications
+        if boff_data[boff_id][1] == 'Universal':
+            new_profession = build['boffseats']['space'][boff_id]
+        else:
+            new_profession = boff_data[boff_id][1]
+        # taking specialization from ship specifications
+        new_specialization = boff_data[boff_id][2]
+        new_build['space']['boff_specs'][boff_id] = [new_profession, new_specialization]
+        for i, ability in enumerate(build['boffs'][f'spaceBoff_{boff_id}']):
+            if ability is None or ability == '':
+                new_build['space']['boffs'][boff_id][i]
+            else:
+                new_build['space']['boffs'][boff_id][i] = {'item': ability}
+
+    # ground
+    map_build_items(self, build, new_build['ground'], BUILD_CONVERSION['ground'])
+    for boff_id in range(4):
+        new_build['ground']['boff_profs'][boff_id] = build['boffseats']['ground'][boff_id]
+        new_build['ground']['boff_specs'][boff_id] = build['boffseats']['ground_spec'][boff_id]
+        for i, ability in enumerate(build['boffs'][f'groundBoff_{boff_id}']):
+            if ability is None or ability == '':
+                new_build['ground']['boffs'][boff_id][i]
+            else:
+                new_build['ground']['boffs'][boff_id][i] = {'item': ability}
+    new_build['ground']['traits'] = (
+            build['personalGroundTrait'] + build['personalGroundTrait2'] + [None])
+
+    # captain
+    map_build_items(self, build, new_build['captain'], BUILD_CONVERSION['captain'])
+    new_build['captain']['name'] = build['playerName'] + build['playerHandle']
+    new_build['captain']['faction'] = build['captain']['faction']
+
+    # skills TODO
+    return new_build
+
+
+def load_build_file(self, filepath: str, update_ui: bool = True):
+    """
+    Loads build from json or png file and puts it into self.build
+
+    Parameters:
+    - :param filepath: path to build file
+    """
+    *_, extension = filepath.rpartition('.')
+    if extension.lower() == 'json':
+        build_data = load_json(filepath)
+    else:
+        raise NotImplementedError()
+    if 'space' in build_data:
+        self.build = build_data
+    else:
+        self.build = convert_old_build(self, build_data)
+    if update_ui:
+        load_build(self)
+
+
 def empty_build(self, build_type: str = 'full') -> dict:
     """
     Creates empty build and returns it.
@@ -262,8 +344,8 @@ def empty_build(self, build_type: str = 'full') -> dict:
         'space': {
             'active_rep_traits': [None] * 5,
             'aft_weapons': [None] * 5,
-            'boffs': [[None] * 4] * 6,
-            'boff_specs': [None] * 6,
+            'boffs': [[None] * 4, [None] * 4, [None] * 4, [None] * 4, [None] * 4, [None] * 4],
+            'boff_specs': [[None, None]] * 6,
             'core': [''],
             'deflector': [''],
             'devices': [None] * 6,
@@ -279,6 +361,7 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'shield': [''],
             'ship': '',
             'ship_name': '',
+            'ship_desc': '',
             'starship_traits': [None] * 7,
             'tac_consoles': [None] * 5,
             'tier': '',
@@ -289,8 +372,8 @@ def empty_build(self, build_type: str = 'full') -> dict:
         'ground': {
             'active_rep_traits': [None] * 5,
             'armor': '',
-            'boffs': [[''] * 4] * 4,
-            'boff_careers': [''] * 4,
+            'boffs': [[''] * 4, [''] * 4, [''] * 4, [''] * 4],
+            'boff_profs': [''] * 4,
             'boff_specs': [''] * 4,
             'devices': [None] * 5,
             'ev_suit': '',
@@ -325,13 +408,6 @@ def empty_build(self, build_type: str = 'full') -> dict:
         return new_build
     elif build_type == 'skills':
         return new_skills
-
-
-def autosave(self):
-    """
-    Saves build to autosave file.
-    """
-    store_json(self.build, self.config['autosave_filename'])
 
 
 def get_boff_data(self):
@@ -383,6 +459,12 @@ def get_boff_data(self):
             trs = table[0].find('tr')
             for tr in trs:
                 tds = tr.find('td')
+                if len(tds) > 0:
+                    a_name = tds[0].text.strip()
+                    a_desc = tds[5].text.strip()
+                    if a_desc == 'III':
+                        a_desc = tds[6].text.strip()
+                    self.boff_abilities['all'][a_name] = a_desc
                 rank1 = 1
                 for i in [0, 1, 2, 3]:
                     if len(tds) > 0 and tds[rank1 + i].text.strip() != '':

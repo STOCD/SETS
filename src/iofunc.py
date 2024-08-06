@@ -6,11 +6,37 @@ import sys
 from urllib.parse import quote_plus
 
 from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import QFileDialog
 import requests
 from requests_html import HTMLSession
 
 from .constants import WIKI_IMAGE_URL
 from .textedit import compensate_json
+
+
+def browse_path(self, default_path: str = None, types: str = 'Any File (*.*)', save=False) -> str:
+    """
+    Opens file dialog prompting the user to select a file.
+
+    Parameters:
+    - :param default_path: path that the file dialog opens at
+    - :param types: string containing all file extensions and their respective names that are
+    allowed.
+    Format: "<name of file type> (*.<extension>);;<name of file type> (*.<extension>);; [...]"
+    Example: "Logfile (*.log);;Any File (*.*)"
+    """
+    if default_path is None or default_path == '':
+        default_path = self.app_dir
+    default_path = os.path.abspath(default_path)
+    if not os.path.exists(os.path.dirname(default_path)):
+        default_path = self.app_dir
+    if save:
+        file, _ = QFileDialog.getSaveFileName(self.window, 'Save...', default_path, types)
+    else:
+        file, _ = QFileDialog.getOpenFileName(self.window, 'Open...', default_path, types)
+        if not os.path.exists(file):
+            return ('', '')
+    return file
 
 
 def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dict | list:
@@ -95,9 +121,7 @@ def get_ship_image(self, image_name: str, thread):
         if image_response.ok:
             image.loadFromData(image_response.content, fmt)
             image.save(image_path)
-        else:
-            thread.result.emit((self.cache.empty_image,))
-            return
+        # else: returns null image
     thread.result.emit((image,))
 
 # --------------------------------------------------------------------------------------------------

@@ -115,3 +115,103 @@ MARKS = (
     'Mk I', 'Mk II', 'Mk III', 'Mk IV', 'MK V', 'MK VI', 'MK VII', 'MK VIII', 'MK IX', 'MK X',
     'Mk XI', 'Mk XII', 'Mk XIII', 'Mk XIV', 'Mk XV', '∞'
 )
+
+BOFF_RANKS = {
+    'Commander': 4,
+    'Lieutenant Commander': 3,
+    'Lieutenant': 2,
+    'Ensign': 1
+}
+
+SHIP_TEMPLATE = {
+    'name': '<Pick Ship>',
+    'boffs': [
+        'Commander Universal-Miracle Worker',
+        'Commander Universal-Command',
+        'Commander Universal-Intelligence',
+        'Commander Universal-Pilot',
+        'Commander Universal-Temporal',
+        'Commander Universal'
+    ],
+    'abilities': [
+        'Innovation Effects'
+    ],
+    'fore': 5,
+    'aft': 5,
+    'devices': 6,
+    'consolestac': 5,
+    'consoleseng': 5,
+    'consolessci': 5,
+    'experimental': 1,
+    'secdeflector': 1,
+    'hangars': 2
+}
+
+# commented maps must be transferred manually
+BUILD_CONVERSION = {
+    'space': (
+        ('activeRepTrait', 'active_rep_traits'),
+        ('aftWeapons', 'aft_weapons'),
+        ('warpCore', 'core'),
+        ('devices', 'devices'),
+        ('deflector', 'deflector'),
+        ('doffs', 'doffs'),
+        ('engConsoles', 'eng_consoles'),
+        ('engines', 'engines'),
+        ('experimental', 'experimental'),
+        ('foreWeapons', 'fore_weapons'),
+        ('hangars', 'hangars'),
+        ('spaceRepTrait', 'rep_traits'),
+        ('sciConsoles', 'sci_consoles'),
+        ('secdef', 'sec_def'),
+        ('shield', 'shield'),
+        ('ship', 'ship'),
+        ('playerShipName', 'ship_name'),
+        ('playerShipDesc', 'ship_desc'),
+        ('starshipTrait', 'starship_traits'),
+        ('tacConsoles', 'tac_consoles'),
+        ('tier', 'tier'),
+        # ('personalSpaceTrait', 'traits'),
+        # ('personalSpaceTrait2', 'traits'),
+        ('uniConsoles', 'uni_consoles')
+    ),
+    'ground': (
+        ('groundActiveRepTrait', 'active_rep_traits'),
+        ('groundArmor', 'armor'),
+        ('groundDevices', 'devices'),
+        ('groundEV', 'ev_suit'),
+        ('groundKit', 'kit'),
+        ('groundKitModules', 'kit_modules'),
+        ('groundRepTrait', 'rep_traits'),
+        ('groundShield', 'personal_shield'),
+        # ('personalGroundTrait', 'traits'),
+        # ('personalGroundTrait2', 'traits'),
+        ('groundWeapons', 'weapons')
+    ),
+    'captain': (
+        ('career', 'career'),
+        ('eliteCaptain', 'elite'),
+        ('specPrimary', 'primary_spec'),
+        ('specSecondary', 'secondary_spec'),
+        ('species', 'species')
+    )
+}
+
+INFOBOX_STYLE = {
+    'boff_header': 'color:#42afca;font-size:large;font-weight:bold;',
+}
+
+"""
+'tooltip': {
+            'bg': '#090b0d',  # self.theme['tooltip']['bg']
+            'fg': '#ffffff',  # self.theme['tooltip']['fg']
+            'highlight': '#090b0d',  # self.theme['tooltip']['highlight']
+            'relief': 'flat',  # self.theme['tooltip']['relief']
+            # Tags
+            'head1': {'fg': '#42afca'},  # self.theme['tooltip']['head1']['fg']
+            'head': {'fg': '#42afca'},  # self.theme['tooltip']['head']['fg']
+            'subhead': {'fg':  '#f4f400'},  # self.theme['tooltip']['subhead']['fg']
+            'who': {'fg':  '#ff6347'},  # self.theme['tooltip']['who']['fg']
+            'distance': {'fg':  '#000000'},  # self.theme['tooltip']['distance']['fg']
+        },
+"""
