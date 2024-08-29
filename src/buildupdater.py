@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt
 
 from .constants import BOFF_RANKS, SHIP_TEMPLATE
-from .iofunc import get_ship_image
+from .iofunc import get_ship_image, image
 from .textedit import get_tooltip
 from .widgets import CustomThread
 
@@ -266,7 +266,9 @@ def load_boff_stations(self, environment: str):
                 if ability is not None and ability != '':
                     tooltip = get_tooltip(self, ability, 'boff')
                     self.widgets.build['space']['boffs'][boff_id][ability_num].set_item_full(
-                            self.cache.images[ability['item']], None, tooltip)
+                            image(self, ability['item']), None, tooltip)
+                else:
+                    self.widgets.build['space']['boffs'][boff_id][ability_num].clear()
 
 
 def slot_equipment_item(self, item: dict, environment: str, build_key: str, build_subkey: int):
@@ -280,7 +282,7 @@ def slot_equipment_item(self, item: dict, environment: str, build_key: str, buil
     - :param build_subkey: index of the item within its build_key (category)
     """
     self.build[environment][build_key][build_subkey] = item
-    item_image = self.cache.images[item['item']]
+    item_image = image(self, item['item'])
     overlay = getattr(self.cache.overlays, item['rarity'].lower().replace(' ', ''))
     self.widgets.build[environment][build_key][build_subkey].set_item_full(
             item_image, overlay, item['item'])
@@ -297,7 +299,7 @@ def slot_trait_item(self, item: dict, environment: str, build_key: str, build_su
     - :param build_subkey: index of the item within its build_key (category)
     """
     self.build[environment][build_key][build_subkey] = item
-    item_image = self.cache.images[item['item']]
+    item_image = image(self, item['item'])
     self.widgets.build[environment][build_key][build_subkey].set_item_full(
             item_image, None, item['item'])
 

@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtCore import QSettings
+from PySide6.QtCore import QSettings, QThread
 from PySide6.QtGui import QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QTabWidget, QWidget
 
@@ -42,7 +42,6 @@ class SETS():
     build: dict  # stores current build
     box_height: int
     box_width: int
-    autosave_enabled: bool
 
     def __init__(self, theme, args, path, config, versions):
         """
@@ -113,7 +112,7 @@ class SETS():
         create_folder(self.config['config_folder_path'])
         create_folder(self.config['config_subfolders']['library'])
         create_folder(self.config['config_subfolders']['cache'])
-        create_folder(self.config['config_subfolders']['backups'])
+        create_folder(self.config['config_subfolders']['cargo'])
         create_folder(self.config['config_subfolders']['images'])
         create_folder(self.config['config_subfolders']['ship_images'])
         if not os.path.exists(self.config['autosave_filename']):
@@ -150,6 +149,7 @@ class SETS():
         if self.settings.value('geometry'):
             window.restoreGeometry(self.settings.value('geometry'))
         window.closeEvent = self.main_window_close_callback
+        QThread.currentThread().setPriority(QThread.Priority.TimeCriticalPriority)
         return app, window
 
     def setup_main_layout(self):
@@ -354,44 +354,35 @@ class SETS():
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(10, 1)
         layout.setRowStretch(20, 1)
-        eq = self.cache.equipment
         # Equipment
-        fore_layout = self.create_build_section(
-                'Fore Weapons', 5, 'space', 'fore_weapons', eq['fore_weapons'].keys(), True)
+        fore_layout = self.create_build_section('Fore Weapons', 5, 'space', 'fore_weapons', True)
         layout.addLayout(fore_layout, 0, 1, alignment=ALEFT)
         aft_layout = self.create_build_section(
-                'Aft Weapons', 5, 'space', 'aft_weapons',
-                eq['aft_weapons'].keys(), True, 'aft_weapons_label')
+                'Aft Weapons', 5, 'space', 'aft_weapons', True, 'aft_weapons_label')
         layout.addLayout(aft_layout, 1, 1, alignment=ALEFT)
         exp_layout = self.create_build_section(
-                'Experimental Weapon', 1, 'space', 'experimental', eq['experimental'].keys(), True,
-                'experimental_label')
+                'Experimental Weapon', 1, 'space', 'experimental', True, 'experimental_label')
         layout.addLayout(exp_layout, 2, 1, alignment=ALEFT)
-        device_layout = self.create_build_section(
-                'Devices', 6, 'space', 'devices', eq['devices'].keys(), True)
+        device_layout = self.create_build_section('Devices', 6, 'space', 'devices', True)
         layout.addLayout(device_layout, 3, 1, alignment=ALEFT)
         hangar_layout = self.create_build_section(
-                'Hangars', 2, 'space', 'hangars', eq['hangars'].keys(), True, 'hangars_label')
+                'Hangars', 2, 'space', 'hangars', True, 'hangars_label')
         layout.addLayout(hangar_layout, 4, 1, alignment=ALEFT)
         sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
         sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
         layout.addWidget(sep1, 0, 2, 5, 1)
 
-        deflector_layout = self.create_build_section(
-                'Deflector', 1, 'space', 'deflector', eq['deflector'], True)
+        deflector_layout = self.create_build_section('Deflector', 1, 'space', 'deflector', True)
         layout.addLayout(deflector_layout, 0, 3, alignment=ALEFT)
         secdef_layout = self.create_build_section(
-                'Sec-Def', 1, 'space', 'sec_def', eq['sec_def'], True, 'sec_def_label')
+                'Sec-Def', 1, 'space', 'sec_def', True, 'sec_def_label')
         layout.addLayout(secdef_layout, 1, 3, alignment=ALEFT)
-        engine_layout = self.create_build_section(
-                'Engines', 1, 'space', 'engines', eq['engines'], True)
+        engine_layout = self.create_build_section('Engines', 1, 'space', 'engines', True)
         layout.addLayout(engine_layout, 2, 3, alignment=ALEFT)
-        warp_layout = self.create_build_section(
-                'Warp Core', 1, 'space', 'core', eq['core'], True)
+        warp_layout = self.create_build_section('Warp Core', 1, 'space', 'core', True)
         layout.addLayout(warp_layout, 3, 3, alignment=ALEFT)
-        shield_layout = self.create_build_section(
-                'Shield', 1, 'space', 'shield', eq['shield'], True)
+        shield_layout = self.create_build_section('Shield', 1, 'space', 'shield', True)
         layout.addLayout(shield_layout, 4, 3, alignment=ALEFT)
         sep2 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
@@ -399,20 +390,16 @@ class SETS():
         layout.addWidget(sep2, 0, 4, 5, 1)
 
         uni_layout = self.create_build_section(
-                'Universal Consoles', 3, 'space', 'uni_consoles', eq['uni_consoles'], True,
-                'uni_consoles_label')
+                'Universal Consoles', 3, 'space', 'uni_consoles', True, 'uni_consoles_label')
         layout.addLayout(uni_layout, 0, 5, alignment=ALEFT)
         eng_layout = self.create_build_section(
-                'Engineering Consoles', 5, 'space', 'eng_consoles',
-                eq['eng_consoles'], True, 'eng_consoles_label')
+                'Engineering Consoles', 5, 'space', 'eng_consoles', True, 'eng_consoles_label')
         layout.addLayout(eng_layout, 1, 5, alignment=ALEFT)
         sci_layout = self.create_build_section(
-                'Science Consoles', 5, 'space', 'sci_consoles',
-                eq['sci_consoles'], True, 'sci_consoles_label')
+                'Science Consoles', 5, 'space', 'sci_consoles', True, 'sci_consoles_label')
         layout.addLayout(sci_layout, 2, 5, alignment=ALEFT)
         tac_layout = self.create_build_section(
-                'Tactical Consoles', 5, 'space', 'tac_consoles',
-                eq['tac_consoles'], True, 'tac_consoles_label')
+                'Tactical Consoles', 5, 'space', 'tac_consoles', True, 'tac_consoles_label')
         layout.addLayout(tac_layout, 3, 5, alignment=ALEFT)
         sep3 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
@@ -448,13 +435,10 @@ class SETS():
         trait_layout.addLayout(personal_trait_layout, 0, 0, alignment=ALEFT)
         starship_trait_layout = self.create_starship_trait_section('space')
         trait_layout.addLayout(starship_trait_layout, 1, 0)
-        rep_trait_layout = self.create_build_section(
-                'Reputation Traits', 5, 'space', 'rep_traits',
-                self.cache.traits['space']['rep'].keys())
+        rep_trait_layout = self.create_build_section('Reputation Traits', 5, 'space', 'rep_traits')
         trait_layout.addLayout(rep_trait_layout, 2, 0)
         active_trait_layout = self.create_build_section(
-                'Active Reputation Traits', 5, 'space', 'active_rep_traits',
-                self.cache.traits['space']['active_rep'])
+                'Active Reputation Traits', 5, 'space', 'active_rep_traits')
         trait_layout.addLayout(active_trait_layout, 3, 0)
         layout.addLayout(trait_layout, 0, 9, 6, 1, alignment=ATOP)
 

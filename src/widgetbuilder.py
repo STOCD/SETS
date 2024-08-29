@@ -239,7 +239,7 @@ def create_item_button(self, style_override: dict = {}) -> ItemButton:
 
 def create_build_section(
         self, label_text: str, button_count: int, environment: bool, build_key: str,
-        item_list: Iterable, is_equipment: bool = False, label_store: str = '') -> QGridLayout:
+        is_equipment: bool = False, label_store: str = '') -> QGridLayout:
     """
     Creates a block of item buttons below a label.
 
@@ -248,7 +248,6 @@ def create_build_section(
     - :param button_count: number of buttons to be created
     - :param environment: "space" or "ground"
     - :param build_key: key for self.build['space'/'ground']
-    - :param item_list: list of possible items to fill slots in this section
     - :param is_equipment: True when items are equipment, False if items are abilities or traits
     """
     layout = QGridLayout()
@@ -265,7 +264,7 @@ def create_build_section(
     for i in range(button_count):
         button = create_item_button(self)
         button.clicked.connect(lambda subkey=i: picker(
-                self, item_list, environment, build_key, subkey, is_equipment))
+                self, environment, build_key, subkey, is_equipment))
         button.rightclicked.connect(lambda i=i: print(f'Rightclicked on {label_text} #{i}'))
         widget_storage[build_key][i] = button
         layout.addWidget(button, 1, i, alignment=ALEFT)
@@ -309,7 +308,7 @@ def create_boff_station(
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
         button.clicked.connect(lambda subkey=i: picker(
-                self, None, environment, 'boffs', subkey, boff_id=boff_id))
+                self, environment, 'boffs', subkey, boff_id=boff_id))
         button.rightclicked.connect(lambda i=i: print(f'Rightclicked on boff #{i}'))
         layout.addWidget(button, 1, i, alignment=ALEFT)
         widget_storage['boffs'][boff_id][i] = button
@@ -325,14 +324,12 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
     layout.setSpacing(self.theme['defaults']['margin'] * self.config['ui_scale'])
     label = create_label(self, 'Personal Traits', style_override={'margin': (0, 0, 6, 0)})
     layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
-    item_list = self.cache.traits[environment]['personal']
     widget_storage = self.widgets.build[environment]
     for row in range(3):
         for col in range(4):
             i = row * 4 + col
             button = create_item_button(self)
-            button.clicked.connect(lambda subkey=i: picker(
-                self, item_list, environment, 'traits', subkey))
+            button.clicked.connect(lambda subkey=i: picker(self, environment, 'traits', subkey))
             button.rightclicked.connect(lambda i=i: print(f'Rightclicked on p. trait #{i}'))
             layout.addWidget(button, row + 1, col, alignment=ALEFT)
             widget_storage['traits'][i] = button
@@ -354,7 +351,7 @@ def create_starship_trait_section(self, environment: str) -> QGridLayout:
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
         button.clicked.connect(lambda subkey=col: picker(
-                self, self.cache.starship_traits.keys(), environment, 'starship_traits', subkey))
+                self, environment, 'starship_traits', subkey))
         button.rightclicked.connect(lambda data, i=col: print(f'Rightclicked on s. trait #{i}'))
         layout.addWidget(button, 1, col, alignment=ALEFT)
         widget_storage['starship_traits'][col] = button
@@ -362,7 +359,7 @@ def create_starship_trait_section(self, environment: str) -> QGridLayout:
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
         button.clicked.connect(lambda subkey=col + 5: picker(
-                self, self.cache.starship_traits.keys(), environment, 'starship_traits', subkey))
+                self, environment, 'starship_traits', subkey))
         button.rightclicked.connect(lambda i=col + 5: print(f'Rightclicked on s. trait #{i}'))
         layout.addWidget(button, 2, col, alignment=ALEFT)
         widget_storage['starship_traits'][col + 5] = button

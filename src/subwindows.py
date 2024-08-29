@@ -5,6 +5,7 @@ from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QAbstractItemView, QDialog, QListView, QListWidget
 
 from .constants import AHCENTER, ALEFT, MARKS, RARITIES, SMAXMAX, SMINMAX, SMINMIN
+from .iofunc import image
 from .widgetbuilder import (
     create_button, create_combo_box, create_entry, create_frame, create_item_button, create_label)
 from .widgets import GridLayout, HBoxLayout, VBoxLayout
@@ -23,7 +24,7 @@ class Picker(QDialog):
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setMinimumSize(10, 10)
         self.setSizePolicy(SMAXMAX)
-        self._image_cache = sets.cache.images
+        self._image_getter = lambda image_name: image(sets, image_name)
         self._item = self.empty_item
         self._result = None
         ui_scale = sets.config['ui_scale']
@@ -150,7 +151,7 @@ class Picker(QDialog):
         """
         new_item = str(new_index.data(Qt.ItemDataRole.DisplayRole))
         self._item['item'] = new_item
-        self._item_button.set_item(self._image_cache[new_item])
+        self._item_button.set_item(self._image_getter(new_item))
         self._item_label.setText(new_item)
         for i in range(5):
             self._mod_combos[i].setCurrentText('')

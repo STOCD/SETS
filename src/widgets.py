@@ -1,4 +1,4 @@
-from PySide6.QtCore import QEvent, Qt, QRect, QThread, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, QRect, QThread, Signal, QRunnable, Slot
 from PySide6.QtGui import QEnterEvent, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
@@ -85,6 +85,9 @@ class Cache():
     Stores data
     """
     def __init__(self):
+        self.reset_cache()
+
+    def reset_cache(self):
         self.ships: dict = dict()
         self.equipment: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
         self.starship_traits: dict = dict()
@@ -126,6 +129,9 @@ class Cache():
         self.empty_image: QPixmap
         self.overlays: OverlayCache = OverlayCache()
         self.images: dict = dict()
+        self.images_set: set = set()
+        self.images_populated: bool = False
+        self.images_failed: dict = dict()
 
     def boff_dict(self):
         return {
@@ -138,6 +144,9 @@ class Cache():
             'Temporal': [dict(), dict(), dict(), dict()],
             'Miracle Worker': [dict(), dict(), dict(), dict()],
         }
+
+    def __getitem__(self, key: str):
+        return getattr(self, key)
 
 
 class OverlayCache():
@@ -391,6 +400,47 @@ class CustomThread(QThread):
 
     def run(self):
         self._func(*self._args, thread=self, **self._kwargs)
+
+
+class ThreadObject(QObject):
+
+    start = Signal(tuple)
+    result = Signal(object)
+    update_splash = Signal(str)
+    finished = Signal()
+
+    def __init__(self, func, *args, **kwargs) -> None:
+        self._func = func
+        self._args = args
+        self._kwargs = kwargs
+        super().__init__()
+
+    @Slot()
+    def run(self, start_args=tuple()):
+        self._func(*self._args, *start_args, thread=self, **self._kwargs)
+        self.finished.emit()
+
+
+def exec_in_thread(self, func, *args, result=None, update_splash=None, start_later=False, **kwargs):
+    worker = ThreadObject(func, *args, **kwargs)
+    if result is not None:
+        worker.result.connect(result)
+    if update_splash is not None:
+        worker.update_splash.connect(update_splash)
+    thread = QThread(self.app)
+    worker.moveToThread(thread)
+    if start_later:
+        worker.start.connect(worker.run)
+    else:
+        thread.started.connect(worker.run)
+    worker.finished.connect(thread.quit)
+    worker.finished.connect(worker.deleteLater)
+    thread.finished.connect(thread.deleteLater)
+    thread.worker = worker
+    thread.start(QThread.Priority.LowestPriority)
+    print('start')
+    if start_later:
+        return worker.start
 
 
 class ShipButton(QLabel):

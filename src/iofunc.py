@@ -3,7 +3,7 @@ import json
 import os
 from re import sub as re_sub
 import sys
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, unquote_plus
 
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QFileDialog
@@ -34,22 +34,20 @@ def browse_path(self, default_path: str = None, types: str = 'Any File (*.*)', s
         file, _ = QFileDialog.getSaveFileName(self.window, 'Save...', default_path, types)
     else:
         file, _ = QFileDialog.getOpenFileName(self.window, 'Open...', default_path, types)
-        if not os.path.exists(file):
-            return ('', '')
     return file
 
 
 def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dict | list:
     """
-    Retrieves cargo data for specific table. Downloads cargo data from wiki if cache is empty.
-    Updates cache.
+    Retrieves cargo data for specific table. Downloads cargo data from wiki if cargo cache is empty.
+    Updates cargo cache.
 
     Parameters:
     - :param filename: filename of cache file
     - :param url: url to cargo table
     - :param ignore_cache_age: True if cache of any age should be accepted
     """
-    filepath = f"{self.config['config_subfolders']['cache']}\\{filename}"
+    filepath = f"{self.config['config_subfolders']['cargo']}\\{filename}"
     cargo_data = None
 
     # try loading from cache
@@ -59,26 +57,50 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
             try:
                 return load_json(filepath)
             except json.JSONDecodeError:
-                backup_filepath = f"{self.config['config_subfolders']['backups']}\\{filename}"
-                if os.path.exists(backup_filepath) and os.path.isfile(backup_filepath):
-                    try:
-                        cargo_data = load_json(backup_filepath)
-                        store_json(cargo_data, filepath)
-                        return cargo_data
-                    except json.JSONDecodeError:
-                        pass
+                pass
 
     # download cargo data if loading from cache failed or data should be updated
     try:
         cargo_data = fetch_json(url)
         store_json(cargo_data, filepath)
         return cargo_data
-    except requests.exceptions.JSONDecodeError:
+    except (requests.exceptions.Timeout, json.JSONDecodeError):
         if ignore_cache_age:
             sys.stderr.write(f'[Error] Cargo table could not be retrieved ({filename})\n')
             sys.exit(1)
         else:
             return get_cargo_data(self, filename, url, ignore_cache_age=True)
+
+
+def get_cached_cargo_data(self, filename: str) -> dict | list:
+    """
+    Retrieves cached cargo data from filename. Returns empty dict when cache is too old or
+    corrupted.
+
+    Parameters:
+    - :param filename: name of the cache file
+    """
+    filepath = f"{self.config['config_subfolders']['cache']}\\{filename}"
+    if os.path.exists(filepath) and os.path.isfile(filepath):
+        last_modified = os.path.getmtime(filepath)
+        if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
+            try:
+                return load_json(filepath)
+            except json.JSONDecodeError:
+                pass
+    return {}
+
+
+def store_to_cache(self, data, filename: str):
+    """
+    Stores data to cache file with filename.
+
+    Parameters:
+    - :param data: data that will be stored
+    - :param filename: filename of the cache file
+    """
+    filepath = f"{self.config['config_subfolders']['cache']}\\{filename}"
+    store_json(data, filepath)
 
 
 def retrieve_image(
@@ -97,17 +119,24 @@ def retrieve_image(
     image = QPixmap(filepath)
     if image.isNull():
         if signal is not None:
-            signal.emit(f'Loading Image: {name}')
-        if url_override == '':
-            image_url = f'{WIKI_IMAGE_URL}{name.replace(' ', '_')}_icon.png'
-        else:
-            image_url = url_override
-        image_response = requests.get(image_url)
-        if image_response.ok:
-            image.loadFromData(image_response.content, 'png')
-            image.save(filepath)
-        else:
-            return self.cache.empty_image
+            signal.emit(f'Downloading Image: {name}')
+        image = download_image(self, name, image_folder_path, url_override)
+    return image
+
+
+def download_image(self, name: str, image_folder_path: str, url_override: str = ''):
+    filepath = f'{image_folder_path}\\{get_image_file_name(name)}'
+    if url_override == '':
+        image_url = f'{WIKI_IMAGE_URL}{name.replace(' ', '_')}_icon.png'
+    else:
+        image_url = url_override
+    image_response = requests.get(image_url)
+    image = QPixmap()
+    if image_response.ok:
+        image.loadFromData(image_response.content, 'png')
+        image.save(filepath)
+    else:
+        self.cache.images_failed[name] = int(datetime.now().timestamp())
     return image
 
 
@@ -124,20 +153,45 @@ def get_ship_image(self, image_name: str, thread):
         # else: returns null image
     thread.result.emit((image,))
 
+
+def load_image(image_name: str, image: QPixmap, image_folder_path: str) -> QPixmap:
+    """
+    Retrieves image from images folder and returns it. Assumes the image exists.
+
+    Parameters:
+    - :param image_name: name of the image
+    - :param image: preconstructed (empty) Pixmap
+    - :param image_folder_path: path to the image folder
+    """
+    image_path = f"{image_folder_path}\\{get_image_file_name(image_name)}"
+    image.load(image_path)
+
+
+def image(self, image_name: str) -> QPixmap:
+    """
+    Returns image from cache if cached, loads and returns image if not cached.
+
+    Parameters:
+    - :param image_name: name of the image
+    """
+    img = self.cache.images[image_name]
+    if img.isNull():
+        img_folder = self.config['config_subfolders']['images']
+        load_image(image_name, img, img_folder)
+    return img
+
+
+def get_downloaded_images(self) -> set:
+    """
+    Returns set containing all images currently in the images folder.
+    """
+    img_folder = self.config['config_subfolders']['images']
+    return set(map(lambda x: unquote_plus(x)[:-4], os.listdir(img_folder)))
+
+
 # --------------------------------------------------------------------------------------------------
 # static functions
 # --------------------------------------------------------------------------------------------------
-
-
-def load_image(path: str) -> QPixmap:
-    """
-    Reads image from filesystem, scales it accordingly and returns it.
-
-    Parameters:
-    - :param path: path to image
-    """
-    image = QPixmap(path)
-    return image
 
 
 def create_folder(path_to_folder):
@@ -220,10 +274,7 @@ def fetch_json(url: str) -> dict | list:
     try:
         r = requests.get(url, timeout=10)
     except requests.exceptions.Timeout:
-        try:
-            r = requests.get(url, timeout=10)
-        except requests.exceptions.Timeout:
-            raise requests.exceptions.JSONDecodeError
+        r = requests.get(url, timeout=10)
     r.encoding = 'utf-8'
     return json.loads(compensate_json(r.text))
 
@@ -286,5 +337,4 @@ def get_image_file_name(name: str) -> str:
     """
     Converts image name to valid file name
     """
-    identifier = quote_plus(name)
-    return f'{identifier}+icon.png'
+    return f'{quote_plus(name)}.png'

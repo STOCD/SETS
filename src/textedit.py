@@ -10,7 +10,7 @@ def get_tooltip(self, item: dict, type_: str):
     """
     tooltip = item['item']
     if type_ == 'boff':
-        boff_desc = self.cache.all_boff_abilities[item['item']]
+        boff_desc = self.cache.boff_abilities['all'][item['item']]
         tooltip = (
                 f"<span style='{INFOBOX_STYLE['boff_header']}'>{item['item']}</span>"
                 f"<br><br>{boff_desc}")

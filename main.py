@@ -359,7 +359,7 @@ class Launcher():
             'config_subfolders': {
                 'library': '\\library',
                 'cache': '\\cache',
-                'backups': '\\backups',
+                'cargo': '\\cargo',
                 'images': '\\images',
                 'ship_images': '\\ship_images'
             },

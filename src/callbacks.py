@@ -1,12 +1,9 @@
-import os
-from typing import Iterable
-
 from .buildupdater import (
         align_space_frame, clear_ship, clear_traits, slot_equipment_item,
         slot_trait_item)
 from .constants import PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE
-from .datafunctions import load_build_file
-from .iofunc import browse_path, get_ship_image, sanitize_file_name, store_json
+from .datafunctions import load_build_file, save_build_file
+from .iofunc import browse_path, get_ship_image, image
 from .textedit import get_tooltip
 from .widgets import CustomThread
 
@@ -128,8 +125,8 @@ def get_boff_abilities(
 
 
 def picker(
-        self, items: Iterable, environment: str, build_key: str, build_subkey: int,
-        equipment: bool = False, boff_id=None):
+        self, environment: str, build_key: str, build_subkey: int, equipment: bool = False,
+        boff_id=None):
     """
     opens dialog to select item, stores it to build and updates item button
 
@@ -141,12 +138,23 @@ def picker(
     - :param equipment: set to True to show rarity, mark, and modifier selector (optional)
     - :param boff_id: id of the boff; only set when picking boff abilities! (optional)
     """
-    if build_key == 'boffs':
+    if equipment:
+        items = self.cache.equipment[build_key].keys()
+    elif build_key == 'boffs':
         items = get_boff_abilities(self, environment, build_subkey, boff_id)
+    elif build_key == 'traits':
+        items = self.cache.traits[environment]['personal'].keys()
+    elif build_key == 'starship_traits':
+        items = self.cache.starship_traits.keys()
+    elif build_key == 'rep_traits':
+        items = self.cache.traits[environment]['rep'].keys()
+    elif build_key == 'active_rep_traits':
+        items = self.cache.traits[environment]['active_rep'].keys()
+    else:
+        items = []
     new_item = self.picker_window.pick_item(items, equipment)
     if new_item is not None:
         widget_storage = self.widgets.build[environment]
-        item_image = self.cache.images[new_item['item']]
         if equipment:
             slot_equipment_item(self, new_item, environment, build_key, build_subkey)
         else:
@@ -157,6 +165,7 @@ def picker(
                 self.build[environment]['boffs'][boff_id][build_subkey] = {
                     'item': new_item['item']
                 }
+                item_image = image(self, new_item['item'])
                 widget_storage['boffs'][boff_id][build_subkey].set_item(item_image)
                 widget_storage['boffs'][boff_id][build_subkey].tooltip = get_tooltip(
                         self, new_item, 'boff')
@@ -252,7 +261,7 @@ def load_build_callback(self):
     """
     load_path = browse_path(
             self, self.config['config_subfolders']['library'],
-            'JSON file (*.json);;PNG image (*.png);;Any File (*.*)')
+            'SETS Files (*.json *.png);;JSON file (*.json);;PNG image (*.png);;Any File (*.*)')
     if load_path != '':
         load_build_file(self, load_path)
 
@@ -272,6 +281,4 @@ def save_build_callback(self):
             self, default_path,
             'JSON file (*.json);;PNG image (*.png);;Any File (*.*)', save=True)
     if save_path != '':
-        filepath, filename = os.path.split(save_path)
-        clean_filename = sanitize_file_name(filename)
-        store_json(self.build, f'{filepath}\\{clean_filename}')
+        save_build_file(self, save_path)
