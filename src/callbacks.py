@@ -5,7 +5,7 @@ from .constants import PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE
 from .datafunctions import load_build_file, save_build_file
 from .iofunc import browse_path, get_ship_image, image
 from .textedit import get_tooltip
-from .widgets import CustomThread
+from .widgets import exec_in_thread
 
 from PySide6.QtCore import Qt
 
@@ -208,9 +208,9 @@ def select_ship(self):
     self.building = True
     self.widgets.ship['button'].setText(new_ship)
     ship_data = self.cache.ships[new_ship]
-    image_thread = CustomThread(self.window, get_ship_image, self, ship_data['image'])
-    image_thread.result.connect(lambda img: self.widgets.ship['image'].set_pixmap(*img))
-    image_thread.start()
+    exec_in_thread(
+            self, get_ship_image, self, ship_data['image'],
+            result=lambda img: self.widgets.ship['image'].set_image(*img))
     tier = ship_data['tier']
     self.widgets.ship['tier'].clear()
     if tier == 6:

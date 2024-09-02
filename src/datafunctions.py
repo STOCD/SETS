@@ -1,53 +1,48 @@
-from datetime import datetime, timedelta
-from zlib import compress as zlib_compress, decompress as zlib_decompress
+from datetime import datetime
 from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 import os
 import sys
-
+from zlib import compress as zlib_compress, decompress as zlib_decompress
+import time
+from PySide6.QtCore import QThread
 from numpy import array, append, fromiter, packbits, uint8, unpackbits, zeros
-from PySide6.QtCore import QTimer, QObject, QThread
-from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtGui import QImage
 from requests.exceptions import Timeout
 from requests_html import Element
 
-from .buildupdater import load_build, get_boff_spec
+from .buildupdater import get_boff_spec, load_build
 from .constants import (
         BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES, ITEM_QUERY_URL,
         MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL,
         WIKI_IMAGE_URL)
 from .iofunc import (
-        download_image, get_cached_cargo_data, get_cargo_data, get_downloaded_images, fetch_html,
-        get_asset_path, load_image, load_json, retrieve_image, store_json, store_to_cache)
+        download_image, fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data,
+        get_downloaded_images, load_image, load_json, retrieve_image, store_json, store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
 from .textedit import dewikify, sanitize_equipment_name
-from .widgets import CustomThread, exec_in_thread
+from .widgets import exec_in_thread, ThreadObject
 
 
 def init_backend(self):
     """
     Loads cargo and build data.
     """
-    def finish_backend_init(result: tuple):
+    def finish_backend_init():
         splash_text(self, 'Injecting Cargo Data')
         insert_cargo_data(self)
         splash_text(self, 'Loading Build')
         load_build(self)
+        print(QThread.currentThread())
         exec_in_thread(self, load_images, self)
         exit_splash(self)
+        print('after exit')
 
     enter_splash(self)
     load_build_file(self, self.config['autosave_filename'], update_ui=False)
-    # cargo_worker = WorkerObject(populate_cache, self)
-    # cargo_worker.signals.result.connect(finish_backend_init)
-    # cargo_worker.signals.update_splash.connect(lambda new_text: splash_text(self, new_text))
-    # self.thread_pool.start(cargo_worker)
+    print(QThread.currentThread())
     exec_in_thread(
-            self, populate_cache, self, result=finish_backend_init,
+            self, populate_cache, self, finished=finish_backend_init,
             update_splash=lambda new_text: splash_text(self, new_text))
-    # cargo_thread = CustomThread(self.window, populate_cache, self)
-    # cargo_thread.update_splash.connect(lambda new_text: splash_text(self, new_text))
-    # cargo_thread.result.connect(finish_backend_init)
-    # cargo_thread.start()
 
 
 def insert_cargo_data(self):
@@ -57,28 +52,33 @@ def insert_cargo_data(self):
     self.ship_selector_window.set_ships(self.cache.ships.keys())
 
 
-def populate_cache(self, thread: CustomThread):
+def populate_cache(self, threaded_worker: ThreadObject):
     """
     Loads cargo data and images into cache
+
+    Parameters:
+    - :param threaded_worker: worker object supplying signals
     """
-    success = load_cargo_cache(self, thread)
+    success = load_cargo_cache(self, threaded_worker)
     if not success:
         self.cache.reset_cache()
-        load_cargo_data(self, thread)
-    self.cache.empty_image = QPixmap()
+        load_cargo_data(self, threaded_worker)
+    self.cache.empty_image = QImage()
     self.cache.images_failed = get_cached_cargo_data(self, 'images_failed.json')
-    download_images(self, thread)
+    download_images(self, threaded_worker)
     store_to_cache(self, self.cache.images_failed, 'images_failed.json')
-    load_base_images(self, thread)
-    thread.result.emit(tuple())
+    load_base_images(self, threaded_worker)
 
 
-def load_cargo_cache(self, thread: CustomThread) -> bool:
+def load_cargo_cache(self, threaded_worker: ThreadObject) -> bool:
     """
     Loads cargo data for all cargo tables from cached data and puts them into variables. Returns
     True when successful, False if cache is too old
+
+    Parameters:
+    - :param threaded_worker: worker object supplying signals
     """
-    thread.update_splash.emit('Loading: Cargo Data')
+    threaded_worker.update_splash.emit('Loading: Cargo Data')
     self.cache.ships = get_cached_cargo_data(self, 'ships.json')
     if len(self.cache.ships) == 0:
         return False
@@ -112,16 +112,19 @@ def load_cargo_cache(self, thread: CustomThread) -> bool:
     return True
 
 
-def load_cargo_data(self, thread: CustomThread):
+def load_cargo_data(self, threaded_worker: ThreadObject):
     """
     Loads cargo data for all cargo tables and puts them into variables.
+
+    Parameters:
+    - :param threaded_worker: worker object supplying signals
     """
-    thread.update_splash.emit('Loading: Starships')
+    threaded_worker.update_splash.emit('Loading: Starships')
     ship_cargo_data = get_cargo_data(self, 'ship_list.json', SHIP_QUERY_URL)
     self.cache.ships = {ship['Page']: ship for ship in ship_cargo_data}
     store_to_cache(self, self.cache.ships, 'ships.json')
 
-    thread.update_splash.emit('Loading: Equipment')
+    threaded_worker.update_splash.emit('Loading: Equipment')
     equipment_cargo_data = get_cargo_data(self, 'equipment.json', ITEM_QUERY_URL)
     equipment_types = set(EQUIPMENT_TYPES.keys())
     for item in equipment_cargo_data:
@@ -142,7 +145,7 @@ def load_cargo_data(self, thread: CustomThread):
     self.cache.equipment['uni_consoles'].update(self.cache.equipment['eng_consoles'])
     store_to_cache(self, self.cache.equipment, 'equipment.json')
 
-    thread.update_splash.emit('Loading: Traits')
+    threaded_worker.update_splash.emit('Loading: Traits')
     trait_cargo_data = get_cargo_data(self, 'traits.json', TRAIT_QUERY_URL)
     for trait in trait_cargo_data:
         if trait['chartype'] == 'char' and trait['name'] is not None:
@@ -159,21 +162,21 @@ def load_cargo_data(self, thread: CustomThread):
                 pass
     store_to_cache(self, self.cache.traits, 'traits.json')
 
-    thread.update_splash.emit('Loading: Starship Traits')
+    threaded_worker.update_splash.emit('Loading: Starship Traits')
     shiptrait_cargo = get_cargo_data(self, 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL)
     self.cache.starship_traits = {ship_trait['name']: ship_trait for ship_trait in shiptrait_cargo}
     self.cache.images_set |= self.cache.starship_traits.keys()
     store_to_cache(self, self.cache.starship_traits, 'starship_traits.json')
 
-    thread.update_splash.emit('Loading: Bridge Officers')
+    threaded_worker.update_splash.emit('Loading: Bridge Officers')
     get_boff_data(self)
     store_to_cache(self, self.cache.boff_abilities, 'boff_abilities.json')
 
-    thread.update_splash.emit('Loading: Skills')
+    threaded_worker.update_splash.emit('Loading: Skills')
     cache_skills(self)
     store_to_cache(self, self.cache.skills, 'skills.json')
 
-    thread.update_splash.emit('Loading: Modifiers')
+    threaded_worker.update_splash.emit('Loading: Modifiers')
     mod_cargo_data = get_cargo_data(self, 'modifiers.json', MODIFIER_QUERY)
     for modifier in mod_cargo_data:
         try:
@@ -189,7 +192,7 @@ def load_cargo_data(self, thread: CustomThread):
                 pass
     store_to_cache(self, self.cache.modifiers, 'modifiers.json')
 
-    thread.update_splash.emit('Loading: Duty Officers')
+    threaded_worker.update_splash.emit('Loading: Duty Officers')
     doff_cargo_data = get_cargo_data(self, 'doffs.json', DOFF_QUERY_URL)
     for doff in doff_cargo_data:
         doff['description'] = dewikify(doff['description'], remove_formatting=True)
@@ -208,29 +211,32 @@ def load_cargo_data(self, thread: CustomThread):
     store_to_cache(self, list(self.cache.images_set), 'images_list.json')
 
 
-def load_base_images(self, thread: CustomThread):
+def load_base_images(self, threaded_worker: ThreadObject):
     """
     Loads all images that are required for the app to start (skills, overlays)
-    """
-    thread.update_splash.emit('Loading: Images (Overlays)')
-    self.cache.images = {image_name: QPixmap() for image_name in self.cache.images_set}
-    self.cache.overlays.common = QPixmap(get_asset_path('Common_icon.png', self.app_dir))
-    self.cache.overlays.uncommon = QPixmap(get_asset_path('Uncommon_icon.png', self.app_dir))
-    self.cache.overlays.rare = QPixmap(get_asset_path('Rare_icon.png', self.app_dir))
-    self.cache.overlays.veryrare = QPixmap(get_asset_path('Very_rare_icon.png', self.app_dir))
-    self.cache.overlays.ultrarare = QPixmap(get_asset_path('Ultra_rare_icon.png', self.app_dir))
-    self.cache.overlays.epic = QPixmap(get_asset_path('Epic_icon.png', self.app_dir))
 
-    thread.update_splash.emit('Loading: Images (Skills)')
+    Parameters:
+    - :param threaded_worker: worker object supplying signals
+    """
+    threaded_worker.update_splash.emit('Loading: Images (Overlays)')
+    self.cache.images = {image_name: QImage() for image_name in self.cache.images_set}
+    self.cache.overlays.common = QImage(get_asset_path('Common_icon.png', self.app_dir))
+    self.cache.overlays.uncommon = QImage(get_asset_path('Uncommon_icon.png', self.app_dir))
+    self.cache.overlays.rare = QImage(get_asset_path('Rare_icon.png', self.app_dir))
+    self.cache.overlays.veryrare = QImage(get_asset_path('Very_rare_icon.png', self.app_dir))
+    self.cache.overlays.ultrarare = QImage(get_asset_path('Ultra_rare_icon.png', self.app_dir))
+    self.cache.overlays.epic = QImage(get_asset_path('Epic_icon.png', self.app_dir))
+
+    threaded_worker.update_splash.emit('Loading: Images (Skills)')
     img_folder = self.config['config_subfolders']['images']
     for rank_group in self.cache.skills['space'].values():
         for skill_group in rank_group:
             for skill_node in skill_group['nodes']:
                 self.cache.images[skill_node['image']] = retrieve_image(
-                    self, skill_node['image'], img_folder, thread.update_splash,
+                    self, skill_node['image'], img_folder, threaded_worker.update_splash,
                     f'{WIKI_IMAGE_URL}{skill_node['image']}.png')
-    self.cache.images['arrow-up'] = QPixmap(get_asset_path('arrow-up.png', self.app_dir))
-    self.cache.images['arrow-down'] = QPixmap(get_asset_path('arrow-down.png', self.app_dir))
+    self.cache.images['arrow-up'] = QImage(get_asset_path('arrow-up.png', self.app_dir))
+    self.cache.images['arrow-down'] = QImage(get_asset_path('arrow-down.png', self.app_dir))
     self.cache.images['Focused Frenzy'] = retrieve_image(
             self, 'Focused Frenzy', img_folder)
     self.cache.images['Probability Manipulation'] = retrieve_image(
@@ -239,15 +245,18 @@ def load_base_images(self, thread: CustomThread):
             self, 'EPS Corruption', img_folder)
 
 
-def load_images(self, thread=None):
+def load_images(self, threaded_worker=None):
     """
+
+    Parameters:
+    - :param threaded_worker: (unused; required for compatability with employed threading method)
     """
     img_folder = self.config['config_subfolders']['images']
     for img_name, img in self.cache.images.items():
         load_image(img_name, img, img_folder)
 
 
-def download_images(self, thread: CustomThread):
+def download_images(self, threaded_worker: ThreadObject):
     """
     Downloads all images not already in the images folder and puts them into cache. Returns set of
     images not to be retried in this cycle.
@@ -264,12 +273,12 @@ def download_images(self, thread: CustomThread):
 
     images_to_download = images - self.cache.boff_abilities['all'].keys()
     for image_name in images_to_download:
-        thread.update_splash.emit(f'Downloading Image: {image_name}')
+        threaded_worker.update_splash.emit(f'Downloading Image: {image_name}')
         download_image(self, image_name, img_folder)
 
     boff_images_to_download = images & self.cache.boff_abilities['all'].keys()
     for image_name in boff_images_to_download:
-        thread.update_splash.emit(f'Downloading Image: {image_name}')
+        threaded_worker.update_splash.emit(f'Downloading Image: {image_name}')
         image_url = f'{WIKI_IMAGE_URL}{image_name.replace(' ', '_')}_icon_(Federation).png'
         download_image(self, image_name, img_folder, image_url)
     return no_retry_images

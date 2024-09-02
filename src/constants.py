@@ -196,22 +196,3 @@ BUILD_CONVERSION = {
         ('species', 'species')
     )
 }
-
-INFOBOX_STYLE = {
-    'boff_header': 'color:#42afca;font-size:large;font-weight:bold;',
-}
-
-"""
-'tooltip': {
-            'bg': '#090b0d',  # self.theme['tooltip']['bg']
-            'fg': '#ffffff',  # self.theme['tooltip']['fg']
-            'highlight': '#090b0d',  # self.theme['tooltip']['highlight']
-            'relief': 'flat',  # self.theme['tooltip']['relief']
-            # Tags
-            'head1': {'fg': '#42afca'},  # self.theme['tooltip']['head1']['fg']
-            'head': {'fg': '#42afca'},  # self.theme['tooltip']['head']['fg']
-            'subhead': {'fg':  '#f4f400'},  # self.theme['tooltip']['subhead']['fg']
-            'who': {'fg':  '#ff6347'},  # self.theme['tooltip']['who']['fg']
-            'distance': {'fg':  '#000000'},  # self.theme['tooltip']['distance']['fg']
-        },
-"""

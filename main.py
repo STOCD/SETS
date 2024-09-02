@@ -289,6 +289,10 @@ class Launcher():
             'margin': 0,
             'padding': '@sep'
         },
+        # for formatting tooltip text
+        'tooltip': {
+            'boff_header': 'color:#42afca;font-size:large;font-weight:bold;',
+        },
         # picker window
         'picker': {
             'background-color': '@bg',

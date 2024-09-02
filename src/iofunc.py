@@ -5,7 +5,7 @@ from re import sub as re_sub
 import sys
 from urllib.parse import quote_plus, unquote_plus
 
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QImage
 from PySide6.QtWidgets import QFileDialog
 import requests
 from requests_html import HTMLSession
@@ -104,7 +104,7 @@ def store_to_cache(self, data, filename: str):
 
 
 def retrieve_image(
-        self, name: str, image_folder_path: str, signal=None, url_override: str = '') -> QPixmap:
+        self, name: str, image_folder_path: str, signal=None, url_override: str = '') -> QImage:
     """
     Downloads image or fetches image from cache.
 
@@ -116,7 +116,7 @@ def retrieve_image(
     """
     filename = get_image_file_name(name)
     filepath = f'{image_folder_path}\\{filename}'
-    image = QPixmap(filepath)
+    image = QImage(filepath)
     if image.isNull():
         if signal is not None:
             signal.emit(f'Downloading Image: {name}')
@@ -125,13 +125,21 @@ def retrieve_image(
 
 
 def download_image(self, name: str, image_folder_path: str, url_override: str = ''):
+    """
+    Downloads image from wiki and stores it in images folder. Returns the image.
+
+    Parameters:
+    - :param name: name of the item
+    - :param image_folder_path: path to the image folder
+    - :param url_override: non default image url (optional)
+    """
     filepath = f'{image_folder_path}\\{get_image_file_name(name)}'
     if url_override == '':
         image_url = f'{WIKI_IMAGE_URL}{name.replace(' ', '_')}_icon.png'
     else:
         image_url = url_override
     image_response = requests.get(image_url)
-    image = QPixmap()
+    image = QImage()
     if image_response.ok:
         image.loadFromData(image_response.content, 'png')
         image.save(filepath)
@@ -140,34 +148,41 @@ def download_image(self, name: str, image_folder_path: str, url_override: str = 
     return image
 
 
-def get_ship_image(self, image_name: str, thread):
+def get_ship_image(self, image_name: str, threaded_worker):
+    """
+    Tries to fetch ship image from local filesystem, downloads it otherwise. Returns the image.
+
+    Parameters:
+    - :image_name: filename of the image
+    - :param threaded_worker: thread object supplying signals
+    """
     image_url = WIKI_IMAGE_URL + image_name.replace(' ', '_')
     image_path = f"{self.config['config_subfolders']['ship_images']}\\{quote_plus(image_name)}"
     _, _, fmt = image_name.rpartition('.')
-    image = QPixmap(image_path)
+    image = QImage(image_path)
     if image.isNull():
         image_response = requests.get(image_url)
         if image_response.ok:
             image.loadFromData(image_response.content, fmt)
             image.save(image_path)
         # else: returns null image
-    thread.result.emit((image,))
+    threaded_worker.result.emit((image,))
 
 
-def load_image(image_name: str, image: QPixmap, image_folder_path: str) -> QPixmap:
+def load_image(image_name: str, image: QImage, image_folder_path: str) -> QImage:
     """
     Retrieves image from images folder and returns it. Assumes the image exists.
 
     Parameters:
     - :param image_name: name of the image
-    - :param image: preconstructed (empty) Pixmap
+    - :param image: preconstructed (empty) Image
     - :param image_folder_path: path to the image folder
     """
     image_path = f"{image_folder_path}\\{get_image_file_name(image_name)}"
     image.load(image_path)
 
 
-def image(self, image_name: str) -> QPixmap:
+def image(self, image_name: str) -> QImage:
     """
     Returns image from cache if cached, loads and returns image if not cached.
 
@@ -176,6 +191,7 @@ def image(self, image_name: str) -> QPixmap:
     """
     img = self.cache.images[image_name]
     if img.isNull():
+        print(f'LOAD IMAGE: {image_name}')
         img_folder = self.config['config_subfolders']['images']
         load_image(image_name, img, img_folder)
     return img

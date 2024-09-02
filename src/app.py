@@ -10,7 +10,7 @@ from .constants import (
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
 from .subwindows import Picker, ShipSelector
 from .widgets import (
-    Cache, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage)
+    Cache, GridLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 from signal import signal, SIGINT, SIG_DFL
@@ -32,15 +32,23 @@ class SETS():
             create_label, create_personal_trait_section, create_starship_trait_section)
 
     app_dir = None
-    versions = ('', '')  # (release version, dev version)
-    config = {}  # see main.py for contents
-    settings: QSettings  # see main.py for defaults
+    # (release version, dev version)
+    versions = ('', '')
+    # see main.py for contents
+    config = {}
+    # see main.py for contents
+    theme = {}
+    # see main.py for defaults
+    settings: QSettings
     # stores widgets that need to be accessed from outside their creating function
     widgets: WidgetStorage
     # stores refined cargo data
     cache: Cache
-    build: dict  # stores current build
+    # stores current build
+    build: dict
+    # height of items
     box_height: int
+    # width of items
     box_width: int
 
     def __init__(self, theme, args, path, config, versions):
@@ -347,6 +355,7 @@ class SETS():
 
     def setup_space_build_frame(self):
         """
+        Creates space build layout
         """
         frame = self.widgets.build_frames[0]
         isp = self.theme['defaults']['isp'] * 2 * self.config['ui_scale']
@@ -354,6 +363,7 @@ class SETS():
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(10, 1)
         layout.setRowStretch(20, 1)
+
         # Equipment
         fore_layout = self.create_build_section('Fore Weapons', 5, 'space', 'fore_weapons', True)
         layout.addLayout(fore_layout, 0, 1, alignment=ALEFT)

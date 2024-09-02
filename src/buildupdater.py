@@ -3,7 +3,7 @@ from PySide6.QtCore import Qt
 from .constants import BOFF_RANKS, SHIP_TEMPLATE
 from .iofunc import get_ship_image, image
 from .textedit import get_tooltip
-from .widgets import CustomThread
+from .widgets import exec_in_thread
 
 
 def load_build(self):
@@ -17,13 +17,13 @@ def load_build(self):
         ship_data = SHIP_TEMPLATE
         self.widgets.ship['button'].setText('<Pick Ship>')
         self.widgets.ship['tier'].clear()
-        self.widgets.ship['image'].set_pixmap(self.cache.empty_image)
+        self.widgets.ship['image'].set_image(self.cache.empty_image)
     elif ship != '':
         self.widgets.ship['button'].setText(ship)
         ship_data = self.cache.ships[ship]
-        image_thread = CustomThread(self.window, get_ship_image, self, ship_data['image'])
-        image_thread.result.connect(lambda img: self.widgets.ship['image'].set_pixmap(*img))
-        image_thread.start()
+        exec_in_thread(
+                self, get_ship_image, self, ship_data['image'],
+                result=lambda img: self.widgets.ship['image'].set_image(*img))
         tier = self.build['space']['tier']
         ship_tier = ship_data['tier']
         self.widgets.ship['tier'].clear()
@@ -330,7 +330,7 @@ def clear_ship(self):
     """
     Clears ship section of sidebar
     """
-    self.widgets.ship['image'].set_pixmap(self.cache.empty_image)
+    self.widgets.ship['image'].set_image(self.cache.empty_image)
     self.widgets.ship['button'].setText('<Pick Ship>')
     self.build['space']['ship'] = '<Pick Ship>'
     self.widgets.ship['tier'].clear()

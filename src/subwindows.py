@@ -1,8 +1,8 @@
 from typing import Iterable
 
-from PySide6.QtCore import QPoint, QStringListModel, QSortFilterProxyModel, Qt
+from PySide6.QtCore import QPoint, QSortFilterProxyModel, QStringListModel, Qt
 from PySide6.QtGui import QMouseEvent
-from PySide6.QtWidgets import QAbstractItemView, QDialog, QListView, QListWidget
+from PySide6.QtWidgets import QAbstractItemView, QDialog, QListView
 
 from .constants import AHCENTER, ALEFT, MARKS, RARITIES, SMAXMAX, SMINMAX, SMINMIN
 from .iofunc import image

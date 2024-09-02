@@ -1,8 +1,5 @@
-from re import sub as re_sub
 from html import unescape
-
-
-from .constants import INFOBOX_STYLE
+from re import sub as re_sub
 
 
 def get_tooltip(self, item: dict, type_: str):
@@ -12,7 +9,7 @@ def get_tooltip(self, item: dict, type_: str):
     if type_ == 'boff':
         boff_desc = self.cache.boff_abilities['all'][item['item']]
         tooltip = (
-                f"<span style='{INFOBOX_STYLE['boff_header']}'>{item['item']}</span>"
+                f"<span style='{self.theme['tooltip']['boff_header']}'>{item['item']}</span>"
                 f"<br><br>{boff_desc}")
     return tooltip
 

@@ -1,5 +1,3 @@
-from typing import Iterable
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,

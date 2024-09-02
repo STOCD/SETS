@@ -1,10 +1,10 @@
-from PySide6.QtCore import QEvent, QObject, Qt, QRect, QThread, Signal, QRunnable, Slot
-from PySide6.QtGui import QEnterEvent, QMouseEvent, QPainter, QPixmap
+from PySide6.QtCore import QEvent, QObject, QRect, Qt, QThread, Signal, Slot
+from PySide6.QtGui import QEnterEvent, QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
         QPlainTextEdit, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
-from .constants import AHCENTER, EQUIPMENT_TYPES, SMAXMAX, SMINMIN
+from .constants import AHCENTER, EQUIPMENT_TYPES, SMINMIN
 
 
 class WidgetStorage():
@@ -126,7 +126,7 @@ class Cache():
         }
         self.modifiers: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
 
-        self.empty_image: QPixmap
+        self.empty_image: QImage
         self.overlays: OverlayCache = OverlayCache()
         self.images: dict = dict()
         self.images_set: set = set()
@@ -151,12 +151,12 @@ class Cache():
 
 class OverlayCache():
     def __init__(self):
-        self.common: QPixmap
-        self.uncommon: QPixmap
-        self.rare: QPixmap
-        self.veryrare: QPixmap
-        self.ultrarare: QPixmap
-        self.epic: QPixmap
+        self.common: QImage
+        self.uncommon: QImage
+        self.rare: QImage
+        self.veryrare: QImage
+        self.ultrarare: QImage
+        self.epic: QImage
 
 
 class ImageLabel(QWidget):
@@ -168,14 +168,14 @@ class ImageLabel(QWidget):
         super().__init__(*args, **kwargs)
         self._w, self._h = aspect_ratio
         if path == '':
-            self.p = QPixmap()
+            self.p = QImage()
         else:
-            self.p = QPixmap(path)
+            self.p = QImage(path)
         self.setSizePolicy(SMINMIN)
         self.setMinimumHeight(10)  # forces visibility
         self.update()
 
-    def set_pixmap(self, p: QPixmap):
+    def set_image(self, p: QImage):
         self.p = p
         self._w = p.width()
         self._h = p.height()
@@ -188,7 +188,7 @@ class ImageLabel(QWidget):
             w = int(self.width())
             h = int(w * self._h / self._w)
             rect = QRect(0, 0, w, h)
-            painter.drawPixmap(rect, self.p)
+            painter.drawImage(rect, self.p)
             self.setFixedHeight(h)
 
 
@@ -204,7 +204,7 @@ class ShipImage(ImageLabel):
             w = self._w * scale_factor
             h = self._h * scale_factor
             new_p = self.p.scaledToWidth(w, Qt.TransformationMode.SmoothTransformation)
-            painter.drawPixmap(abs(w - current_width) // 2, abs(h - current_height) // 2, new_p)
+            painter.drawImage(abs(w - current_width) // 2, abs(h - current_height) // 2, new_p)
             self.setFixedHeight(new_p.height())
 
 
@@ -230,8 +230,8 @@ class ItemButton(QFrame):
         self._image_space.setFixedHeight(height)
         layout.addWidget(self._image_space)
         self.setLayout(layout)
-        self._base: QPixmap = None
-        self._overlay: QPixmap = None
+        self._base: QImage = None
+        self._overlay: QImage = None
         self.setStyleSheet(stylesheet)
         self._tooltip = tooltip_label
         self._tooltip.setWindowFlags(Qt.WindowType.ToolTip)
@@ -270,22 +270,22 @@ class ItemButton(QFrame):
             self.rightclicked.emit()
         event.accept()
 
-    def set_item(self, pixmap: QPixmap):
-        self._base = pixmap
+    def set_item(self, image: QImage):
+        self._base = image
         self._image_space.update()
 
-    def set_overlay(self, pixmap: QPixmap):
-        self._overlay = pixmap
+    def set_overlay(self, image: QImage):
+        self._overlay = image
         self._image_space.update()
 
-    def set_item_overlay(self, item_pixmap: QPixmap, overlay_pixmap: QPixmap):
-        self._base = item_pixmap
-        self._overlay = overlay_pixmap
+    def set_item_overlay(self, item_image: QImage, overlay_image: QImage):
+        self._base = item_image
+        self._overlay = overlay_image
         self._image_space.update()
 
-    def set_item_full(self, item_pixmap: QPixmap, overlay_pixmap: QPixmap, tooltip: str):
-        self._base = item_pixmap
-        self._overlay = overlay_pixmap
+    def set_item_full(self, item_image: QImage, overlay_image: QImage, tooltip: str):
+        self._base = item_image
+        self._overlay = overlay_image
         self._tooltip.setText(tooltip)
         self._image_space.update()
 
@@ -313,11 +313,11 @@ class ItemImage(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
         if self._button._base is not None:
-            painter.drawPixmap(self._rect, self._button._base)
+            painter.drawImage(self._rect, self._button._base)
         if self._button._overlay is not None:
-            painter.drawPixmap(self._rect, self._button._overlay)
+            painter.drawImage(self._rect, self._button._overlay)
 
 
 class GridLayout(QGridLayout):
@@ -374,34 +374,6 @@ class VBoxLayout(QVBoxLayout):
         self.setSpacing(spacing)
 
 
-class CustomThread(QThread):
-    """
-    Subclass of QThread able to execute an arbitrary function in a seperate thread.
-    """
-    result = Signal(tuple)
-    update_splash = Signal(str)
-
-    def __init__(self, parent, func, *args, **kwargs) -> None:
-        """
-        Executes a function in a seperate thread. Positional and keyword parameters besides the
-        parameters listed below are passed to the function. The function should also take a keyword
-        parameter `thread` which will contain this thread. This thread has two additional signals
-        `result` (type: tuple) and `update_splash` (type: str).
-
-        Parameters:
-        - :param parent: parent of the thread, should be the main window, prevents the thread to go
-        out of scope and be destroyed by the garbage collector
-        - :param func: function to execute in seperate thread, must take parameter `thread`
-        """
-        self._func = func
-        self._args = args
-        self._kwargs = kwargs
-        super().__init__(parent)
-
-    def run(self):
-        self._func(*self._args, thread=self, **self._kwargs)
-
-
 class ThreadObject(QObject):
 
     start = Signal(tuple)
@@ -417,14 +389,38 @@ class ThreadObject(QObject):
 
     @Slot()
     def run(self, start_args=tuple()):
-        self._func(*self._args, *start_args, thread=self, **self._kwargs)
+        self._func(*self._args, *start_args, threaded_worker=self, **self._kwargs)
         self.finished.emit()
 
 
-def exec_in_thread(self, func, *args, result=None, update_splash=None, start_later=False, **kwargs):
+def exec_in_thread(
+        self, func, *args, result=None, update_splash=None, finished=None, start_later=False,
+        **kwargs):
+    """
+    Executes function `func` in separate thread. All positional and keyword parameters not listed
+    are passed to the function. The function must take a parameter `threaded_worker` which will
+    contain the worker object holding the signals: `start` (tuple), `result` (object),
+    `update_splash` (str), `finished` (no data)
+
+    Parameters:
+    - :param func: function to execute
+    - :param *args: positional parameters passed to the function [optional]
+    - :param result: callable that is executed when signal result is emitted (takes object)
+    [optional]
+    - :param update_splash: callable that is executed when signal update_splash is emitted
+    (takes str) [optional]
+    - :param finished: callable that is executed after `func` returns (takes no parameters)
+    [optional]
+    - :param start_later: set to True to defer execution of the function; makes this function
+    return signal that can be emitted to start execution. That signal takes a tuple with additional
+    positional parameters passed to `func` [optional]
+    - :param **kwargs: keyword parameters passed to the function [optional]
+    """
     worker = ThreadObject(func, *args, **kwargs)
     if result is not None:
         worker.result.connect(result)
+    if finished is not None:
+        worker.finished.connect(finished)
     if update_splash is not None:
         worker.update_splash.connect(update_splash)
     thread = QThread(self.app)
@@ -438,7 +434,6 @@ def exec_in_thread(self, func, *args, result=None, update_splash=None, start_lat
     thread.finished.connect(thread.deleteLater)
     thread.worker = worker
     thread.start(QThread.Priority.LowestPriority)
-    print('start')
     if start_later:
         return worker.start
 
