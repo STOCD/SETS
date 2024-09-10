@@ -311,7 +311,7 @@ def clear_traits(self, environment: str = 'both'):
     Parameters:
     - :param environment: environment to clear the traits from (space/ground/both)
     """
-    if environment == 'space':
+    if environment == 'space' or environment == 'both':
         for i, trait_button in enumerate(self.widgets.build['space']['traits']):
             trait_button.clear()
             self.build['space']['traits'][i] = ''
@@ -324,6 +324,26 @@ def clear_traits(self, environment: str = 'both'):
         for i, trait_button in enumerate(self.widgets.build['space']['active_rep_traits']):
             trait_button.clear()
             self.build['space']['active_rep_traits'][i] = ''
+
+
+def clear_captain(self):
+    """
+    Clears Captain information from build and UI
+    """
+    self.widgets.character['name'].clear()
+    self.build['captain']['name'] = ''
+    self.widgets.character['elite'].setCheckState(Qt.CheckState.Unchecked)
+    self.build['captain']['elite'] = False
+    self.widgets.character['career'].setCurrentText('')
+    self.build['captain']['career'] = ''
+    self.widgets.character['faction'].setCurrentText('')
+    self.build['captain']['faction'] = ''
+    self.widgets.character['species'].setCurrentText('')
+    self.build['captain']['species'] = ''
+    self.widgets.character['primary'].setCurrentText('')
+    self.build['captain']['primary_spec'] = ''
+    self.widgets.character['secondary'].setCurrentText('')
+    self.build['captain']['secondary_spec'] = ''
 
 
 def clear_ship(self):

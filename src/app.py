@@ -20,9 +20,9 @@ signal(SIGINT, SIG_DFL)
 class SETS():
 
     from .callbacks import (
-            clear_build_callback, elite_callback, faction_combo_callback,
+            clear_all, clear_build_callback, elite_callback, faction_combo_callback,
             load_build_callback, save_build_callback, set_build_item, select_ship,
-            spec_combo_callback, switch_main_tab, tier_callback)
+            ship_info_callback, spec_combo_callback, switch_main_tab, tier_callback)
     from .datafunctions import autosave, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import create_style_sheet, get_style, get_style_class, theme_font
@@ -202,7 +202,7 @@ class SETS():
             'Save': {'callback': self.save_build_callback},
             'Open': {'callback': self.load_build_callback},
             'Clear': {'callback': self.clear_build_callback},
-            'Clear all': {'callback': lambda: None}
+            'Clear all': {'callback': self.clear_all}
         }
         menu_layout.addLayout(self.create_button_series(left_button_group), 0, 0, ALEFT | ATOP)
         center_button_group = {
@@ -308,7 +308,7 @@ class SETS():
         ship_frame = self.create_frame(size_policy=SMINMIN)
         ship_layout = GridLayout(margins=0, spacing=csp)
         ship_layout.setRowStretch(4, 1)
-        ship_layout.setColumnStretch(1, 1)
+        ship_layout.setColumnStretch(2, 1)
         ship_selector = ShipButton('<Pick Ship>')
         ship_selector.setSizePolicy(SMINMAX)
         ship_selector.setStyleSheet(
@@ -316,7 +316,7 @@ class SETS():
         ship_selector.setFont(self.theme_font(font_spec='@subhead'))
         ship_selector.clicked.connect(self.select_ship)
         self.widgets.ship['button'] = ship_selector
-        ship_layout.addWidget(ship_selector, 0, 0, 1, 2, alignment=ATOP)
+        ship_layout.addWidget(ship_selector, 0, 0, 1, 3, alignment=ATOP)
         tier_label = self.create_label('Ship Tier:')
         ship_layout.addWidget(tier_label, 1, 0)
         tier_combo = self.create_combo_box()
@@ -324,6 +324,9 @@ class SETS():
         tier_combo.setSizePolicy(SMAXMAX)
         self.widgets.ship['tier'] = tier_combo
         ship_layout.addWidget(tier_combo, 1, 1, alignment=ALEFT)
+        info_button = self.create_button('Ship Info', style_override={'margin': 0})
+        info_button.clicked.connect(self.ship_info_callback)
+        ship_layout.addWidget(info_button, 1, 2, alignment=ARIGHT)
         name_label = self.create_label('Ship Name:')
         ship_layout.addWidget(name_label, 2, 0)
         name_entry = self.create_entry()
@@ -331,9 +334,9 @@ class SETS():
                 lambda: self.set_build_item(self.build['space'], 'ship_name', name_entry.text()))
         self.widgets.ship['name'] = name_entry
         name_entry.setSizePolicy(SMINMAX)
-        ship_layout.addWidget(name_entry, 2, 1)
+        ship_layout.addWidget(name_entry, 2, 1, 1, 2)
         desc_label = self.create_label('Build Description:')
-        ship_layout.addWidget(desc_label, 3, 0, 1, 2)
+        ship_layout.addWidget(desc_label, 3, 0, 1, 3)
         desc_edit = QPlainTextEdit()
         desc_edit.setSizePolicy(SMINMIN)
         desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
@@ -342,7 +345,7 @@ class SETS():
         desc_edit.textChanged.connect(lambda: self.set_build_item(
                 self.build['space'], 'ship_desc', desc_edit.toPlainText(), autosave=False))
         self.widgets.ship['desc'] = desc_edit
-        ship_layout.addWidget(desc_edit, 4, 0, 1, 2)
+        ship_layout.addWidget(desc_edit, 4, 0, 1, 3)
         ship_frame.setLayout(ship_layout)
         layout.addWidget(ship_frame, stretch=2)
         frame.setLayout(layout)

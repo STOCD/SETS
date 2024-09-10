@@ -1,5 +1,5 @@
-from PySide6.QtCore import QEvent, QObject, QRect, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QEnterEvent, QImage, QMouseEvent, QPainter
+from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt, QThread, Signal, Slot
+from PySide6.QtGui import QCursor, QEnterEvent, QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
         QPlainTextEdit, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
@@ -247,12 +247,15 @@ class ItemButton(QFrame):
 
     def enterEvent(self, event: QEnterEvent) -> None:
         if self.tooltip != '':
-            tooltip_width = self.window().width() // 5
-            position = self.parentWidget().mapToGlobal(self.geometry().topLeft())
-            position.setX(position.x() - tooltip_width - 1)
-            self._tooltip.setFixedWidth(tooltip_width)
-            self._tooltip.move(position)
-            self._tooltip.show()
+            # for some reason doubleclick-selecting an item fires enter event despite not hovering
+            r = QRect(self.mapToGlobal(QPoint(0, 0)), self.mapToGlobal(self.rect().bottomRight()))
+            if r.contains(QCursor.pos()):
+                tooltip_width = self.window().width() // 5
+                position = self.parentWidget().mapToGlobal(self.geometry().topLeft())
+                position.setX(position.x() - tooltip_width - 1)
+                self._tooltip.setFixedWidth(tooltip_width)
+                self._tooltip.move(position)
+                self._tooltip.show()
         event.accept()
 
     def leaveEvent(self, event: QEvent) -> None:
@@ -430,7 +433,7 @@ def exec_in_thread(
     else:
         thread.started.connect(worker.run)
     worker.finished.connect(thread.quit)
-    worker.finished.connect(worker.deleteLater)
+    thread.finished.connect(worker.deleteLater)
     thread.finished.connect(thread.deleteLater)
     thread.worker = worker
     thread.start(QThread.Priority.LowestPriority)

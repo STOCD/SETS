@@ -4,13 +4,14 @@ import os
 from re import sub as re_sub
 import sys
 from urllib.parse import quote_plus, unquote_plus
+from webbrowser import open as webbrowser_open
 
 from PySide6.QtGui import QIcon, QImage
 from PySide6.QtWidgets import QFileDialog
 import requests
 from requests_html import HTMLSession
 
-from .constants import WIKI_IMAGE_URL
+from .constants import WIKI_IMAGE_URL, WIKI_URL
 from .textedit import compensate_json
 
 
@@ -64,7 +65,7 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
         cargo_data = fetch_json(url)
         store_json(cargo_data, filepath)
         return cargo_data
-    except (requests.exceptions.Timeout, json.JSONDecodeError):
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError):
         if ignore_cache_age:
             sys.stderr.write(f'[Error] Cargo table could not be retrieved ({filename})\n')
             sys.exit(1)
@@ -191,7 +192,6 @@ def image(self, image_name: str) -> QImage:
     """
     img = self.cache.images[image_name]
     if img.isNull():
-        print(f'LOAD IMAGE: {image_name}')
         img_folder = self.config['config_subfolders']['images']
         load_image(image_name, img, img_folder)
     return img
@@ -354,3 +354,17 @@ def get_image_file_name(name: str) -> str:
     Converts image name to valid file name
     """
     return f'{quote_plus(name)}.png'
+
+
+def open_url(url: str):
+    """
+    Opens URL in webbrowser
+    """
+    webbrowser_open(url, new=2, autoraise=True)
+
+
+def open_wiki_page(page_name: str):
+    """
+    Converts page name to URL and opens page in webbrowser.
+    """
+    open_url(WIKI_URL + page_name.replace(' ', '_'))

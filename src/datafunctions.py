@@ -3,8 +3,6 @@ from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 import os
 import sys
 from zlib import compress as zlib_compress, decompress as zlib_decompress
-import time
-from PySide6.QtCore import QThread
 from numpy import array, append, fromiter, packbits, uint8, unpackbits, zeros
 from PySide6.QtGui import QImage
 from requests.exceptions import Timeout
@@ -32,14 +30,11 @@ def init_backend(self):
         insert_cargo_data(self)
         splash_text(self, 'Loading Build')
         load_build(self)
-        print(QThread.currentThread())
         exec_in_thread(self, load_images, self)
         exit_splash(self)
-        print('after exit')
 
     enter_splash(self)
     load_build_file(self, self.config['autosave_filename'], update_ui=False)
-    print(QThread.currentThread())
     exec_in_thread(
             self, populate_cache, self, finished=finish_backend_init,
             update_splash=lambda new_text: splash_text(self, new_text))

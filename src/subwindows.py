@@ -94,7 +94,9 @@ class Picker(QDialog):
         self._items_list.setSizePolicy(SMINMIN)
         self._items_list.setModel(self._sort_model)
         self._items_list.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self._items_list.pressed.connect(self.slot_item)
+        self._items_list.clicked.connect(self.slot_item)
+        self._items_list.doubleClicked.connect(self.select_item)
+        self._items_list.doubleClicked
         layout.addWidget(self._items_list)
         spacer_4 = create_frame(sets)
         spacer_4.setFixedHeight(spacing)
@@ -155,6 +157,15 @@ class Picker(QDialog):
         self._item_label.setText(new_item)
         for i in range(5):
             self._mod_combos[i].setCurrentText('')
+
+    def select_item(self, new_index):
+        """
+        shortcut for selecting item and pressing ok
+        """
+        new_item = str(new_index.data(Qt.ItemDataRole.DisplayRole))
+        self._item['item'] = new_item
+        self._item['modifiers'] = [None] * 5
+        self.accept()
 
     def pick_item(self, items: Iterable, equipment: bool = False):
         """
@@ -234,6 +245,7 @@ class ShipSelector(QDialog):
         self._ship_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._ship_list.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._ship_list.setModel(sort_model)
+        self._ship_list.doubleClicked.connect(self.accept)
         layout.addWidget(self._ship_list)
         csp = sets.theme['defaults']['csp'] * ui_scale
         control_layout = HBoxLayout(spacing=csp)

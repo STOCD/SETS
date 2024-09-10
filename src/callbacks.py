@@ -1,9 +1,9 @@
 from .buildupdater import (
-        align_space_frame, clear_ship, clear_traits, slot_equipment_item,
+        align_space_frame, clear_captain, clear_ship, clear_traits, slot_equipment_item,
         slot_trait_item)
-from .constants import PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE
+from .constants import PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES
 from .datafunctions import load_build_file, save_build_file
-from .iofunc import browse_path, get_ship_image, image
+from .iofunc import browse_path, get_ship_image, image, open_wiki_page
 from .textedit import get_tooltip
 from .widgets import exec_in_thread
 
@@ -42,7 +42,7 @@ def faction_combo_callback(self, new_faction: str):
     self.build['captain']['faction'] = new_faction
     self.widgets.character['species'].clear()
     if new_faction != '':
-        self.widgets.character['species'].addItems(('', *self.cache.species[new_faction].keys()))
+        self.widgets.character['species'].addItems(('', *SPECIES[new_faction]))
     self.build['captain']['species'] = ''
     self.autosave()
 
@@ -255,6 +255,19 @@ def clear_space_build(self):
     self.autosave()
 
 
+def clear_all(self):
+    """
+    Clears space and ground build, skills and captain info
+    """
+    self.building = True
+    clear_ship(self)
+    align_space_frame(self, SHIP_TEMPLATE, clear=True)
+    clear_traits(self)
+    clear_captain(self)
+    self.building = False
+    self.autosave()
+
+
 def load_build_callback(self):
     """
     Loads build from file
@@ -282,3 +295,11 @@ def save_build_callback(self):
             'JSON file (*.json);;PNG image (*.png);;Any File (*.*)', save=True)
     if save_path != '':
         save_build_file(self, save_path)
+
+
+def ship_info_callback(self):
+    """
+    Opens wiki page of ship if ship is slotted
+    """
+    if self.build['space']['ship'] != '<Pick Ship>':
+        open_wiki_page(self.cache.ships[self.build['space']['ship']]['Page'])
