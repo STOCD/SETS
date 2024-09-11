@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Iterator
 
 from PySide6.QtCore import QPoint, QSortFilterProxyModel, QStringListModel, Qt
 from PySide6.QtGui import QMouseEvent
@@ -27,6 +27,7 @@ class Picker(QDialog):
         self._image_getter = lambda image_name: image(sets, image_name)
         self._item = self.empty_item
         self._result = None
+        self._modifiers = {}
         ui_scale = sets.config['ui_scale']
         spacing = sets.theme['defaults']['isp'] * ui_scale
         layout = VBoxLayout(margins=(spacing, 0, spacing, spacing), spacing=0)
@@ -57,11 +58,11 @@ class Picker(QDialog):
         self._mod_combos = [None] * 5
         for i in range(4):
             mod_combo = create_combo_box(sets, style_override={'font': '@font'}, editable=True)
-            mod_combo.currentTextChanged.connect(lambda mod, i=i: self.modifier_callback(mod, i))
+            mod_combo.currentIndexChanged.connect(lambda mod, i=i: self.modifier_callback(mod, i))
             self._mod_combos[i] = mod_combo
             mod_layout.addWidget(mod_combo, i // 2, i % 2)
         mod_combo = create_combo_box(sets, style_override={'font': '@font'}, editable=True)
-        mod_combo.currentTextChanged.connect(lambda: self.modifier_callback(4))
+        mod_combo.currentIndexChanged.connect(lambda mod: self.modifier_callback(mod, 4))
         self._mod_combos[4] = mod_combo
         mod_layout.addWidget(mod_combo, 2, 0, 1, 2)
         prop_layout.addLayout(mod_layout)
@@ -138,11 +139,12 @@ class Picker(QDialog):
         for i in range(RARITIES[new_rarity], 5):
             self._mod_combos[i].setEnabled(False)
 
-    def modifier_callback(self, new_mod: str, mod_num: int):
+    def modifier_callback(self, new_mod_index: int, mod_num: int):
         """
         called when modifier is changed
         """
-        if new_mod == '' and mod_num > RARITIES[self._item['rarity']] - 1:
+        new_mod = self._mod_combos[mod_num].itemText(new_mod_index)
+        if new_mod == '' or mod_num > RARITIES[self._item['rarity']] - 1:
             self._item['modifiers'][mod_num] = None
         else:
             self._item['modifiers'][mod_num] = new_mod
@@ -167,7 +169,50 @@ class Picker(QDialog):
         self._item['modifiers'] = [None] * 5
         self.accept()
 
-    def pick_item(self, items: Iterable, equipment: bool = False):
+    def insert_modifiers(self, modifiers: dict = {}):
+        """
+        Inserts the modifiers into the
+        """
+        self._modifiers = modifiers
+        self._mod_combos[0].clear()
+        self._mod_combos[0].addItems(self.unique_mods(modifiers))
+        self._mod_combos[1].clear()
+        self._mod_combos[1].addItems(self.standard_mods(modifiers))
+        self._mod_combos[2].clear()
+        self._mod_combos[2].addItems(self.standard_mods(modifiers))
+        self._mod_combos[3].clear()
+        self._mod_combos[3].addItems(self.standard_mods(modifiers))
+        self._mod_combos[4].clear()
+        self._mod_combos[4].addItems(self.epic_mods(modifiers))
+
+    def unique_mods(self, modifiers: dict = {}) -> Iterator[str]:
+        """
+        yields mods for first mod slot from modifier dict
+        """
+        yield ''
+        for mod, details in modifiers.items():
+            if not details['epic']:
+                yield mod
+
+    def standard_mods(self, modifiers: dict = {}) -> Iterator[str]:
+        """
+        yields mods for second to fourth mod slot from modifier list
+        """
+        yield ''
+        for mod, details in modifiers.items():
+            if not details['epic'] and not details['isunique']:
+                yield mod
+
+    def epic_mods(self, modifiers: dict = {}) -> Iterator[str]:
+        """
+        yields mods for fifth mod slot from modifier list
+        """
+        yield ''
+        for mod, details in modifiers.items():
+            if details['epic']:
+                yield mod
+
+    def pick_item(self, items: Iterable, equipment: bool = False, modifiers: dict = {}):
         """
         Executes picker, returns selected item. Returns None when picker is closed without saving.
         """
@@ -182,6 +227,7 @@ class Picker(QDialog):
         self._sort_model.sort(0, Qt.SortOrder.AscendingOrder)
         self._items_list.scrollToTop()
         if equipment:
+            self.insert_modifiers(modifiers)
             self._prop_frame.show()
         else:
             self._prop_frame.hide()

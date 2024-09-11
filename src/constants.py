@@ -52,12 +52,8 @@ TRAYSKILL_QUERY = (
 )
 MODIFIER_QUERY = (
     WIKI_URL + 'Special:CargoExport?tables=Modifiers&fields=_pageName,modifier,type,stats,'
-    'available&format=json&limit=1000'
+    'available,isunique,info&format=json&limit=1000'
 )
-# FACTION_QUERY = (
-#     WIKI_URL + 'Special:CargoExport?tables=Faction&fields=playability,name,faction,traits'
-#     '&limit=1000&offset=0&format=json&where=playability%20IS%20NOT%20NULL'
-# )
 
 EQUIPMENT_TYPES = {
     'Body Armor': 'armor', 'EV Suit': 'ev', 'Experimental Weapon': 'experimental',

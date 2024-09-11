@@ -138,8 +138,10 @@ def picker(
     - :param equipment: set to True to show rarity, mark, and modifier selector (optional)
     - :param boff_id: id of the boff; only set when picking boff abilities! (optional)
     """
+    modifiers = {}
     if equipment:
         items = self.cache.equipment[build_key].keys()
+        modifiers = self.cache.modifiers[build_key]
     elif build_key == 'boffs':
         items = get_boff_abilities(self, environment, build_subkey, boff_id)
     elif build_key == 'traits':
@@ -152,7 +154,7 @@ def picker(
         items = self.cache.traits[environment]['active_rep'].keys()
     else:
         items = []
-    new_item = self.picker_window.pick_item(items, equipment)
+    new_item = self.picker_window.pick_item(items, equipment, modifiers)
     if new_item is not None:
         widget_storage = self.widgets.build[environment]
         if equipment:

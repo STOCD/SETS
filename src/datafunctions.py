@@ -55,6 +55,7 @@ def populate_cache(self, threaded_worker: ThreadObject):
     - :param threaded_worker: worker object supplying signals
     """
     success = load_cargo_cache(self, threaded_worker)
+    print(success)
     if not success:
         self.cache.reset_cache()
         load_cargo_data(self, threaded_worker)
@@ -181,10 +182,18 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
             modifier['available'] = list()
         for mod_type in modifier['type']:
             try:
-                mod_key = EQUIPMENT_TYPES[mod_type]
-                self.cache.modifiers[mod_key][modifier['modifier']] = modifier
+                epic = True if modifier['info'] == 'Epic Modifier' else False
+                self.cache.modifiers[EQUIPMENT_TYPES[mod_type]][modifier['modifier']] = {
+                    'stats': modifier['stats'],
+                    'available': modifier['available'],
+                    'epic': epic,
+                    'isunique': False if epic else bool(modifier['isunique'])
+                }
             except KeyError:
                 pass
+    self.cache.modifiers['fore_weapons'].update(self.cache.modifiers['ship_weapon'])
+    self.cache.modifiers['aft_weapons'].update(self.cache.modifiers['ship_weapon'])
+    del self.cache.modifiers['ship_weapon']
     store_to_cache(self, self.cache.modifiers, 'modifiers.json')
 
     threaded_worker.update_splash.emit('Loading: Duty Officers')
@@ -647,23 +656,23 @@ def get_boff_data(self):
     filename = 'boff_abilities.json'
     filepath = f"{self.config['config_subfolders']['cargo']}\\{filename}"
 
-    # try loading from cache
-    if os.path.exists(filepath) and os.path.isfile(filepath):
-        last_modified = os.path.getmtime(filepath)
-        if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
-            try:
-                self.cache.boff_abilities = load_json(filepath)
-                return
-            except JSONDecodeError:
-                backup_filepath = f"{self.config['config_subfolders']['backups']}\\{filename}"
-                if os.path.exists(backup_filepath) and os.path.isfile(backup_filepath):
-                    try:
-                        cargo_data = load_json(backup_filepath)
-                        store_json(cargo_data, filepath)
-                        self.cache.boff_abilities = cargo_data
-                        return
-                    except JSONDecodeError:
-                        pass
+    # # try loading from cache
+    # if os.path.exists(filepath) and os.path.isfile(filepath):
+    #     last_modified = os.path.getmtime(filepath)
+    #     if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
+    #         try:
+    #             self.cache.boff_abilities = load_json(filepath)
+    #             return
+    #         except JSONDecodeError:
+    #             backup_filepath = f"{self.config['config_subfolders']['backups']}\\{filename}"
+    #             if os.path.exists(backup_filepath) and os.path.isfile(backup_filepath):
+    #                 try:
+    #                     cargo_data = load_json(backup_filepath)
+    #                     store_json(cargo_data, filepath)
+    #                     self.cache.boff_abilities = cargo_data
+    #                     return
+    #                 except JSONDecodeError:
+    #                     pass
 
     # download if not exists
     try:

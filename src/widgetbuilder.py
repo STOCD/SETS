@@ -176,6 +176,7 @@ def create_combo_box(
     combo_box.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
     if editable:
         combo_box.setEditable(True)
+        combo_box.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         combo_box.completer().setFilterMode(Qt.MatchFlag.MatchContains)
         combo_box.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
         combo_box.completer().popup().setStyleSheet(get_style_class(self, 'QListView', 'popup'))
