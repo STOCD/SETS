@@ -1,10 +1,12 @@
+from collections import namedtuple
+
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QCursor, QEnterEvent, QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
         QPlainTextEdit, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
-from .constants import AHCENTER, EQUIPMENT_TYPES, SMINMIN
+from .constants import AHCENTER, ATOP, EQUIPMENT_TYPES, SMINMIN
 
 
 class WidgetStorage():
@@ -218,7 +220,8 @@ class ItemButton(QFrame):
 
     def __init__(
             self, width=49, height=64, stylesheet: str = '',
-            tooltip_label: QLabel = '', *args, **kwargs):
+            tooltip_label: QLabel = '', tooltip_frame: QFrame = '', frame_padding: int = 0, *args,
+            **kwargs):
         super().__init__(*args, *kwargs)
         size_policy = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         size_policy.setRetainSizeWhenHidden(True)
@@ -233,17 +236,20 @@ class ItemButton(QFrame):
         self._base: QImage = None
         self._overlay: QImage = None
         self.setStyleSheet(stylesheet)
-        self._tooltip = tooltip_label
-        self._tooltip.setWindowFlags(Qt.WindowType.ToolTip)
-        self._tooltip.setWordWrap(True)
+        self._tooltip_label = tooltip_label
+        self._tooltip_label.setAlignment(ATOP)
+        self._tooltip_label.setWordWrap(True)
+        self._tooltip_frame = tooltip_frame
+        self._tooltip_frame.setWindowFlags(Qt.WindowType.ToolTip)
+        self._total_padding = frame_padding * 2
 
     @property
     def tooltip(self):
-        return self._tooltip.text()
+        return self._tooltip_label.text()
 
     @tooltip.setter
     def tooltip(self, new_tooltip):
-        self._tooltip.setText(new_tooltip)
+        self._tooltip_label.setText(new_tooltip)
 
     def enterEvent(self, event: QEnterEvent) -> None:
         if self.tooltip != '':
@@ -252,14 +258,15 @@ class ItemButton(QFrame):
             if r.contains(QCursor.pos()):
                 tooltip_width = self.window().width() // 5
                 position = self.parentWidget().mapToGlobal(self.geometry().topLeft())
-                position.setX(position.x() - tooltip_width - 1)
-                self._tooltip.setFixedWidth(tooltip_width)
-                self._tooltip.move(position)
-                self._tooltip.show()
+                position.setX(position.x() - tooltip_width - 1 - self._total_padding)
+                self._tooltip_label.setFixedWidth(tooltip_width)
+                self._tooltip_frame.move(position)
+                self._tooltip_frame.updateGeometry()
+                self._tooltip_frame.show()
         event.accept()
 
     def leaveEvent(self, event: QEvent) -> None:
-        self._tooltip.hide()
+        self._tooltip_frame.hide()
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
@@ -289,13 +296,13 @@ class ItemButton(QFrame):
     def set_item_full(self, item_image: QImage, overlay_image: QImage, tooltip: str):
         self._base = item_image
         self._overlay = overlay_image
-        self._tooltip.setText(tooltip)
+        self._tooltip_label.setText(tooltip)
         self._image_space.update()
 
     def clear(self):
         self._base = None
         self._overlay = None
-        self._tooltip.setText('')
+        self._tooltip_label.setText('')
         self._image_space.update()
 
     def clear_item(self):
@@ -460,3 +467,6 @@ class ShipButton(QLabel):
             ev.accept()
         else:
             super().mousePressEvent(ev)
+
+
+TagStyles = namedtuple('TagStyles', ('ul', 'li', 'indent'))

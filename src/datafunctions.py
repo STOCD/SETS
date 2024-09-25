@@ -17,8 +17,10 @@ from .iofunc import (
         download_image, fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data,
         get_downloaded_images, load_image, load_json, retrieve_image, store_json, store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
-from .textedit import dewikify, sanitize_equipment_name
-from .widgets import exec_in_thread, ThreadObject
+from .textedit import (
+        create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
+        sanitize_equipment_name)
+from .widgets import exec_in_thread, TagStyles, ThreadObject
 
 
 def init_backend(self):
@@ -55,7 +57,6 @@ def populate_cache(self, threaded_worker: ThreadObject):
     - :param threaded_worker: worker object supplying signals
     """
     success = load_cargo_cache(self, threaded_worker)
-    print(success)
     if not success:
         self.cache.reset_cache()
         load_cargo_data(self, threaded_worker)
@@ -120,16 +121,28 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
     self.cache.ships = {ship['Page']: ship for ship in ship_cargo_data}
     store_to_cache(self, self.cache.ships, 'ships.json')
 
+    tags = TagStyles(
+            self.theme['tooltip']['ul'], self.theme['tooltip']['li'],
+            self.theme['tooltip']['indent'])
+
     threaded_worker.update_splash.emit('Loading: Equipment')
     equipment_cargo_data = get_cargo_data(self, 'equipment.json', ITEM_QUERY_URL)
     equipment_types = set(EQUIPMENT_TYPES.keys())
+    head_s = self.theme['tooltip']['equipment_head']
+    subhead_s = self.theme['tooltip']['equipment_subhead']
+    who_s = self.theme['tooltip']['equipment_who']
     for item in equipment_cargo_data:
         if item['type'] in equipment_types and not (
                 item['name'].startswith('Hangar - Advanced')
                 or item['name'].startswith('Hangar - Elite')):
-            item['name'] = sanitize_equipment_name(item['name'])
-            self.cache.equipment[EQUIPMENT_TYPES[item['type']]][item['name']] = item
-            self.cache.images_set.add(item['name'])
+            name = sanitize_equipment_name(item['name'])
+            self.cache.equipment[EQUIPMENT_TYPES[item['type']]][name] = {
+                'Page': item['Page'],
+                'name': name,
+                'rarity': item['rarity'],
+                'tooltip': create_equipment_tooltip(item, head_s, subhead_s, who_s, tags)
+            }
+            self.cache.images_set.add(name)
     self.cache.equipment['fore_weapons'].update(self.cache.equipment['ship_weapon'])
     self.cache.equipment['aft_weapons'].update(self.cache.equipment['ship_weapon'])
     del self.cache.equipment['ship_weapon']
@@ -143,8 +156,11 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
 
     threaded_worker.update_splash.emit('Loading: Traits')
     trait_cargo_data = get_cargo_data(self, 'traits.json', TRAIT_QUERY_URL)
+    head_s = self.theme['tooltip']['trait_header']
+    subhead_s = self.theme['tooltip']['trait_subheader']
     for trait in trait_cargo_data:
-        if trait['chartype'] == 'char' and trait['name'] is not None:
+        name = trait['name']
+        if trait['chartype'] == 'char' and name is not None:
             if trait['type'] == 'reputation':
                 trait_type = 'rep'
             elif trait['type'] == 'activereputation':
@@ -152,15 +168,29 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
             else:
                 trait_type = 'personal'
             try:
-                self.cache.traits[trait['environment']][trait_type][trait['name']] = trait
-                self.cache.images_set.add(trait['name'])
+                self.cache.traits[trait['environment']][trait_type][name] = {
+                    'Page': trait['Page'],
+                    'name': name,
+                    'tooltip': create_trait_tooltip(
+                            name, trait['description'], trait_type, trait['environment'], head_s,
+                            subhead_s, tags)
+                }
+                self.cache.images_set.add(name)
             except KeyError:
                 pass
     store_to_cache(self, self.cache.traits, 'traits.json')
 
     threaded_worker.update_splash.emit('Loading: Starship Traits')
     shiptrait_cargo = get_cargo_data(self, 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL)
-    self.cache.starship_traits = {ship_trait['name']: ship_trait for ship_trait in shiptrait_cargo}
+    self.cache.starship_traits = {ship_trait['name']: {
+        'Page': ship_trait['Page'],
+        'name': ship_trait['name'],
+        'obtained': ship_trait['obtained'],
+        'tooltip': (
+                f"<p style='{head_s}'>{ship_trait['name']}</p><p style='{subhead_s}'>"
+                f"Starship Trait</p><p style='margin:0'>"
+                f"{ship_trait['short']}</p>{parse_wikitext(ship_trait['detailed'], tags)}")
+    } for ship_trait in shiptrait_cargo}
     self.cache.images_set |= self.cache.starship_traits.keys()
     store_to_cache(self, self.cache.starship_traits, 'starship_traits.json')
 
@@ -682,6 +712,7 @@ def get_boff_data(self):
         sys.exit(1)
 
     boffCategories = CAREERS | PRIMARY_SPECS
+    header_tag = f"<p style='{self.theme['tooltip']['boff_header']}'>"
     for environment in ('space', 'ground'):
         l0 = [h2 for h2 in boff_html.find('h2') if ' Abilities' in h2.html]
         if environment == 'ground':
@@ -703,7 +734,8 @@ def get_boff_data(self):
                     a_desc = tds[5].text.strip()
                     if a_desc == 'III':
                         a_desc = tds[6].text.strip()
-                    self.cache.boff_abilities['all'][a_name] = a_desc
+                    self.cache.boff_abilities['all'][a_name] = (
+                        f"{header_tag}{a_name}</p><p>{a_desc}</p>")
                     self.cache.images_set.add(a_name)
                 rank1 = 1
                 for i in [0, 1, 2, 3]:

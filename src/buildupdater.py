@@ -264,7 +264,7 @@ def load_boff_stations(self, environment: str):
             self.widgets.build['space']['boff_labels'][boff_id].setCurrentText(boff_text)
             for ability_num, ability in enumerate(boff_data):
                 if ability is not None and ability != '':
-                    tooltip = get_tooltip(self, ability, 'boff')
+                    tooltip = self.cache.boff_abilities['all'][ability['item']]
                     self.widgets.build['space']['boffs'][boff_id][ability_num].set_item_full(
                             image(self, ability['item']), None, tooltip)
                 else:
@@ -285,7 +285,7 @@ def slot_equipment_item(self, item: dict, environment: str, build_key: str, buil
     item_image = image(self, item['item'])
     overlay = getattr(self.cache.overlays, item['rarity'].lower().replace(' ', ''))
     self.widgets.build[environment][build_key][build_subkey].set_item_full(
-            item_image, overlay, item['item'])
+            item_image, overlay, self.cache.equipment[build_key][item['item']]['tooltip'])
 
 
 def slot_trait_item(self, item: dict, environment: str, build_key: str, build_subkey: int):
@@ -301,7 +301,7 @@ def slot_trait_item(self, item: dict, environment: str, build_key: str, build_su
     self.build[environment][build_key][build_subkey] = item
     item_image = image(self, item['item'])
     self.widgets.build[environment][build_key][build_subkey].set_item_full(
-            item_image, None, item['item'])
+            item_image, None, get_tooltip(self, item['item'], build_key, environment))
 
 
 def clear_traits(self, environment: str = 'both'):

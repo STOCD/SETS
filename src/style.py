@@ -150,3 +150,22 @@ def create_style_sheet(self, d: dict) -> str:
     for s, v in d.items():
         style += f'{s} {{{get_css(self, v)}}}'
     return style
+
+
+def prepare_tooltip_css(self):
+    """
+    Converts dictionaries containing tooltip style to css
+    """
+    ui_scale = self.config['ui_scale']
+    tooltips = self.theme['tooltip']
+    for tag, style in self.theme['tooltip_def'].items():
+        css = ''
+        for prop, val in style.items():
+            if isinstance(val, int):
+                unit = 'pt' if prop == 'font-size' else 'px'
+                css += f'{prop}:{val * ui_scale}{unit};'
+            elif isinstance(val, tuple):
+                css += f'''{prop}:{'px '.join(map(lambda s: str(s * ui_scale), val))}px;'''
+            else:
+                css += f'{prop}:{val};'
+        tooltips[tag] = css

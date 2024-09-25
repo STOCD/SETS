@@ -25,7 +25,8 @@ class SETS():
             ship_info_callback, spec_combo_callback, switch_main_tab, tier_callback)
     from .datafunctions import autosave, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
-    from .style import create_style_sheet, get_style, get_style_class, theme_font
+    from .style import (
+            create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
     from .widgetbuilder import (
             create_boff_station, create_build_section, create_button, create_button_series,
             create_checkbox, create_combo_box, create_entry, create_frame, create_item_button,
@@ -71,6 +72,7 @@ class SETS():
         self.cache = Cache()
         self.init_settings()
         self.init_config()
+        self.prepare_tooltip_css()
         self.init_environment()
         self.app, self.window = self.create_main_window()
         self.building = True
@@ -147,9 +149,8 @@ class SETS():
         """
         app = QApplication(argv)
         font_database = QFontDatabase()
-        font_database.addApplicationFont(get_asset_path('Overpass-Bold.ttf', self.app_dir))
-        font_database.addApplicationFont(get_asset_path('Overpass-Medium.ttf', self.app_dir))
-        font_database.addApplicationFont(get_asset_path('Overpass-Regular.ttf', self.app_dir))
+        font_database.addApplicationFont(
+                get_asset_path('Overpass-VariableFont_wght.ttf', self.app_dir))
         app.setStyleSheet(self.create_style_sheet(self.theme['app']['style']))
         window = QWidget()
         window.setWindowIcon(load_icon('SETS_icon_small.png', self.app_dir))

@@ -4,7 +4,6 @@ from .buildupdater import (
 from .constants import PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES
 from .datafunctions import load_build_file, save_build_file
 from .iofunc import browse_path, get_ship_image, image, open_wiki_page
-from .textedit import get_tooltip
 from .widgets import exec_in_thread
 
 from PySide6.QtCore import Qt
@@ -169,8 +168,8 @@ def picker(
                 }
                 item_image = image(self, new_item['item'])
                 widget_storage['boffs'][boff_id][build_subkey].set_item(item_image)
-                widget_storage['boffs'][boff_id][build_subkey].tooltip = get_tooltip(
-                        self, new_item, 'boff')
+                widget_storage['boffs'][boff_id][build_subkey].tooltip = (
+                        self.cache.boff_abilities['all'][new_item['item']])
         self.autosave()
 
 

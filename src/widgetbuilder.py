@@ -4,9 +4,9 @@ from PySide6.QtWidgets import (
         QPushButton, QSizePolicy, QVBoxLayout)
 
 from .callbacks import boff_profession_callback, picker
-from .constants import ALEFT, CALLABLE, SMAXMAX, SMAXMIN, SMINMAX
+from .constants import ALEFT, ATOP, CALLABLE, SMAXMAX, SMAXMIN, SMINMAX
 from .style import get_style, get_style_class, merge_style, theme_font
-from .widgets import ItemButton
+from .widgets import ItemButton, VBoxLayout
 
 
 def create_frame(self, style='frame', style_override={}, size_policy=None) -> QFrame:
@@ -231,8 +231,14 @@ def create_item_button(self, style_override: dict = {}) -> ItemButton:
     Creates Item Button.
     """
     label = create_label(self, '', 'infobox')
+    frame = create_frame(self, 'infobox_frame')
+    margin = self.theme['defaults']['csp'] * self.config['ui_scale']
+    layout = VBoxLayout(margin)
+    layout.addWidget(label, alignment=ATOP)
+    frame.setLayout(layout)
     button = ItemButton(
-            self.box_width, self.box_height, get_style(self, 'item', style_override), label)
+            self.box_width, self.box_height, get_style(self, 'item', style_override), label, frame,
+            margin + self.theme['defaults']['bw'] * self.config['ui_scale'])
     return button
 
 
