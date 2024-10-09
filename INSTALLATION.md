@@ -1,7 +1,12 @@
 # SETS - STO Equipment and Trait Selector
 A Star Trek Online build tool in Python
-**Website: https://stobuilds.com/SETS/**
+**Website: https://stobuilds.com/apps/sets**
 **GitHub: https://github.com/STOCD/SETS**
+
+## Manual installation 
+### Windows
+Please refer to the manual installation guide on the website: https://stobuilds.com/apps/sets/installation
+<!---
 **Dailies (app): https://stobuilds.com/SETS/downloads.html**
 
 ## Application (no installations required)
@@ -113,4 +118,4 @@ At a shell prompt [^1], change to the folder SETS is in
 
 [^6] If xcode hangs on finding/install, check <https://developer.apple.com/download/all/> for `Command Line Tools for Xcode 13.3` (13.3 for macOS 12+ and 13.2 for down to macOS 11.3).  Homebrew should install this automatically, but can hang on download (requiring this to be installed manually).
 
-[^7] `/usr/bin/python3` is usually the xcode one (a few components are too old for SETS currently) -- check where brew links them.
+[^7] `/usr/bin/python3` is usually the xcode one (a few components are too old for SETS currently) -- check where brew links them.-->
