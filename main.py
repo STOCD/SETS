@@ -128,6 +128,8 @@ class SETS():
     wikihttp = wikihttp_current
     wikiImages = wikihttp+wikiImagesText
 
+    loaded_filename = ""
+
     #query for ship cargo table on the wiki
     ship_query = 'Special:CargoExport?tables=Ships&fields=_pageName%3DPage,name,image,fc,tier,type,hull,hullmod,shieldmod,turnrate,impulse,inertia,powerall,powerweapons,powershields,powerengines,powerauxiliary,powerboost,boffs,fore,aft,equipcannons,devices,consolestac,consoleseng,consolessci,uniconsole,t5uconsole,experimental,secdeflector,hangars,abilities,displayprefix,displayclass,displaytype,factionlede&limit=2500&format=json'
     #query for ship equipment cargo table on the wiki
@@ -3142,6 +3144,7 @@ class SETS():
         if not result and self.persistent['forceJsonLoad']:
             return self.importByFilename(inFilename, True)
         else:
+            if autosave is False : self.loaded_filename = inFilename
             return result
 
     def repair_build(self):
@@ -3216,7 +3219,7 @@ class SETS():
     def in_splash(self):
         return self.visible_window == 'splash'
 
-    def exportCallback(self, event=None):
+    def exportAs(self, save_as, event=None):
         """Callback for export as png button"""
         if self.in_splash():
             return
@@ -3237,7 +3240,12 @@ class SETS():
             defaultExtensionOption = 'json'
             #self.logWrite('==={}'.format(self.persistent['exportDefault'].lower()), 2)
 
-        outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.filenameDefault(), initialdir=initialDir)
+        if save_as is True:
+            outFilename = filedialog.asksaveasfilename(defaultextension='.'+defaultExtensionOption,filetypes=filetypesOptions, initialfile=self.filenameDefault(), initialdir=initialDir)
+            self.loaded_filename = outFilename
+        else:
+            outFilename = self.loaded_filename
+
         if not outFilename:
             return
 
@@ -3256,6 +3264,15 @@ class SETS():
             self.encodeBuildInImage(outFilename, json.dumps(self.buildImport), outFilename)
 
         self.logWriteTransaction('Export build', chosenExtension, str(os.path.getsize(outFilename)), outFilename, 0, [str(image.size) if chosenExtension.lower() == '.png' else None])
+
+
+    def exportAsCallback(self):
+        self.exportAs(True)
+
+
+    def exportCallback(self):
+        self.exportAs(False)
+
 
     def update_build_master(self):
         if self.persistent['versioning']:
@@ -3293,6 +3310,7 @@ class SETS():
                 return True
         else:
             return True
+
 
     def skillAllowed(self, skill_id, environment):
         (rank, row, col) = skill_id
@@ -7171,7 +7189,8 @@ class SETS():
         exportImportFrame.grid(row=0, column=col, sticky='nsew')
         settingsMenuExport = {
             'default': {'sticky': 'n', 'bg': self.theme['button_medium']['bg'], 'fg': self.theme['button_medium']['fg'], 'font_data': self.font_tuple_create('button_medium')},
-            'Save': {'type': 'button_block', 'var_name': 'exportFullButton', 'callback': self.exportCallback},
+            'Save As': {'type': 'button_block', 'var_name': 'exportFullButton', 'callback': self.exportAsCallback},
+            'Save': {'type': 'button_block', 'var_name': 'exportButton', 'callback': self.exportCallback},
             'Open': {'type': 'button_block', 'var_name': 'importButton', 'callback': self.importCallback},
             'Clear...': {'type': 'menu', 'var_name': 'clearButton', 'setting_options': ['Clear all', 'Clear skills'], 'callback': 'menu_clear_callback'},
         }
