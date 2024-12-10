@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2024.05b160'
+    version = '2024.12b100'
 
     daysDelayBeforeReattempt = 7
 
@@ -1268,7 +1268,8 @@ class SETS():
         """Add an item to caches """
         name = self.sanitizeEquipmentName(name)
         if 'Hangar - Advanced' in name or 'Hangar - Elite' in name:
-            return
+            if 'Valor' not in name:
+                return
 
         if not keyPhrase in self.cache['equipment']:
             self.cache['equipment'][keyPhrase] = {}
