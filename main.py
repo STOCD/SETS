@@ -1277,7 +1277,10 @@ class SETS():
 
         if not name in self.cache['equipment'][keyPhrase]:
             self.cache['equipment'][keyPhrase][name] = item
-            self.cache['equipmentWithImages'][keyPhrase][name] = self.imageFromInfoboxName(name)
+            if 'Valor' in name:
+                self.cache['equipmentWithImages'][keyPhrase][name] = self.imageFromInfoboxName('Hangar - Valor Fighters')
+            else:
+                self.cache['equipmentWithImages'][keyPhrase][name] = self.imageFromInfoboxName(name)
 
 
     def precacheEquipment(self, keyPhrase):
