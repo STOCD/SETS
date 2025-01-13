@@ -309,7 +309,15 @@ def fetch_html(url: str):
 
 
 def sanitize_file_name(txt, chr_set='extended') -> str:
-    """Converts txt to a valid filename.
+    """
+    Converts txt to a valid filename.
+
+    Parameters:
+    - :param txt: The path to convert.
+    - :param chr_set:
+        - 'printable':    Any printable character except those disallowed on Windows/*nix.
+        - 'extended':     'printable' + extended ASCII character codes 128-255
+        - 'universal':    For almost *any* file system.
     """
     FILLER = '-'
     MAX_LEN = 255  # Maximum length of filename is 255 bytes in Windows and some *nix flavors.
@@ -326,9 +334,9 @@ def sanitize_file_name(txt, chr_set='extended') -> str:
 
     # Step 2: Device names, '.', and '..' are invalid filenames in Windows.
     DEVICE_NAMES = (
-            'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7',
-            'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9',
-            'CONIN$', 'CONOUT$', '..', '.')
+            'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6',
+            'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8',
+            'LPT9', 'CONIN$', 'CONOUT$', '..', '.')
     if '.' in txt:
         name, _, ext = result.rpartition('.')
         ext = f'.{ext}'
@@ -343,8 +351,9 @@ def sanitize_file_name(txt, chr_set='extended') -> str:
         result = result[:MAX_LEN - len(ext)] + ext
 
     # Step 4: Windows does not allow filenames to end with '.' or ' ' or begin with ' '.
-    result = re_sub(r"[. ]$", FILLER, result)
-    result = re_sub(r"^ ", FILLER, result)
+    result = result.strip()
+    while len(result) > 0 and result[-1] == '.':
+        result = result[:-1]
 
     return result
 

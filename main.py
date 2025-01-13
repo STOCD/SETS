@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2024.09b110'
+    version = '2024.09b250'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -281,17 +281,64 @@ class Launcher():
         # for item tooltips
         'infobox': {
             'background-color': '#000000',
+            'border-style': 'none',
+            'color': '@fg',
+            # 'margin': 0,
+            # 'padding': 0,
+        },
+        'infobox_frame': {
+            'background-color': '#000000',
             'border-style': 'solid',
             'border-width': '@bw',
-            'border-color': '@lbg',
+            'border-color': '@mbg',
             'border-radius': '@br',
-            'color': '@fg',
-            'margin': 0,
-            'padding': '@sep'
+            # 'margin': 0,
+            # 'padding': '@sep',
         },
-        # for formatting tooltip text
-        'tooltip': {
-            'boff_header': 'color:#42afca;font-size:large;font-weight:bold;',
+        # for formatting tooltip text, will contain css from tooltip_def
+        'tooltip': {},
+        'tooltip_def': {
+            'indent': {
+                'margin': (0, 0, 0, 20),
+            },
+            'ul': {
+                'margin': (0, 0, 0, 20),
+                '-qt-list-indent': '0',
+            },
+            'li': {
+                'margin-bottom': 1,
+            },
+            'boff_header': {
+                'color': '#42afca',
+                'font-size': 'large',
+                'font-weight': 'bold',
+            },
+            'trait_header': {
+                'color': '#42afca',
+                'font-size': 'large',
+                'font-weight': 'bold',
+                'margin': 0,  # padding: 0
+            },
+            'trait_subheader': {
+                'color': '#42afca',
+                'font-size': 10,
+                'margin': (0, 0, 20, 0),
+            },
+            'equipment_head': {
+                'color': '#42afca',
+                'font-size': 12,
+                'margin': (10, 0, 0, 0)
+            },
+            'equipment_subhead': {
+                'color': '#f4f400',
+                'font-size': 10,
+                'margin': 0
+            },
+            'equipment_who': {
+                'color': '#ff6347',
+                'font-size': 10,
+                'margin': (0, 0, 10, 0)
+            },
         },
         # picker window
         'picker': {
