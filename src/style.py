@@ -134,7 +134,10 @@ def theme_font(self, key=None, font_spec=()) -> QFont:
         font_weight = WEIGHT_CONVERSION[font[2]]
     except KeyError:
         font_weight = QFont.Weight.Normal
-    return QFont(font_family, font_size, font_weight)
+    font = QFont(font_family, font_size, font_weight)
+    font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+    font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
+    return font
 
 
 def create_style_sheet(self, d: dict) -> str:
