@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt
 
 from .constants import BOFF_RANKS, SHIP_TEMPLATE
 from .iofunc import get_ship_image, image
-from .textedit import get_tooltip
+from .textedit import get_tooltip, add_equipment_tooltip_header
 from .widgets import exec_in_thread
 
 
@@ -284,8 +284,10 @@ def slot_equipment_item(self, item: dict, environment: str, build_key: str, buil
     self.build[environment][build_key][build_subkey] = item
     item_image = image(self, item['item'])
     overlay = getattr(self.cache.overlays, item['rarity'].lower().replace(' ', ''))
+    tooltip = add_equipment_tooltip_header(
+            self, item, self.cache.equipment[build_key][item['item']]['tooltip'], build_key)
     self.widgets.build[environment][build_key][build_subkey].set_item_full(
-            item_image, overlay, self.cache.equipment[build_key][item['item']]['tooltip'])
+            item_image, overlay, tooltip)
 
 
 def slot_trait_item(self, item: dict, environment: str, build_key: str, build_subkey: int):

@@ -140,6 +140,7 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
                 'Page': item['Page'],
                 'name': name,
                 'rarity': item['rarity'],
+                'type': item['type'],
                 'tooltip': create_equipment_tooltip(item, head_s, subhead_s, who_s, tags)
             }
             self.cache.images_set.add(name)

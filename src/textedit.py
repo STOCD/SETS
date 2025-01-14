@@ -1,8 +1,16 @@
 from re import sub as re_sub
 
+from .constants import RARITY_COLORS
 
-def get_tooltip(self, name: str, type_: str, environment: str = 'space'):
+
+def get_tooltip(self, name: str, type_: str, environment: str = 'space') -> str:
     """
+    Returns tooltip for trait.
+
+    Parameters:
+    - :param name: name of the trait
+    - :param type_: type of the trait ("rep_traits", "traits", "starship_traits", ...)
+    - :param environment: "space" / "ground"
     """
     if type_ == 'rep_traits':
         return self.cache.traits[environment]['rep'][name]['tooltip']
@@ -16,6 +24,30 @@ def get_tooltip(self, name: str, type_: str, environment: str = 'space'):
         return 'Something is wrong!'
 
 
+def add_equipment_tooltip_header(self, item: dict, tooltip_body: str, item_type: str) -> str:
+    """
+    Adds equipment header including name, mark, modifiers, rarity and item type to the tooltip body
+    and returns the complete tooltip.
+
+    Parameters:
+    - :param item: item to create the tooltip for
+    - :param tooltip_body: already created tooltip body
+    - :param item_type: type of the item to add to the subtitle
+    """
+    rarity_color = f'color:{RARITY_COLORS[item['rarity']]};'
+    head_style = self.theme['tooltip']['equipment_name'] + rarity_color
+    subhead_style = self.theme['tooltip']['equipment_type_subheader'] + rarity_color
+    item_title = item['item']
+    if item['mark'] != '' and item['mark'] is not None:
+        item_title += ' ' + item['mark']
+    mods = ' '.join(mod for mod in item['modifiers'] if mod != '' and mod is not None)
+    if mods != '':
+        item_title += ' ' + mods
+    tooltip = (
+            f"<p style='{head_style}'>{item_title}</p><p style='{subhead_style}'>"
+            f"{item['rarity']} {self.cache.equipment[item_type][item['item']]['type']}</p>")
+    return tooltip + tooltip_body
+
 # --------------------------------------------------------------------------------------------------
 # static functions
 # --------------------------------------------------------------------------------------------------
@@ -24,6 +56,14 @@ def get_tooltip(self, name: str, type_: str, environment: str = 'space'):
 def create_equipment_tooltip(
         item: dict, head_style: str, subhead_style: str, who_style: str, tags) -> str:
     """
+    Creates tooltip for equipment from raw item data.
+
+    Parameters:
+    - :param item: item data (from cargo table)
+    - :param head_style: css style for head
+    - :param subhead_style: css style for subhead
+    - :param who_style: css style for ship/career/... restriction information
+    - :param tags: css styles for the wikitext parser
     """
     tooltip = ''
     if item['who'] is not None:
@@ -46,6 +86,16 @@ def create_trait_tooltip(
         name: str, description: str, type_: str, environment: str, head_style: str,
         subhead_style: str, tags) -> str:
     """
+    Creates tooltip for trait from trait description.
+
+    Parameters:
+    - :param name: name of the trait
+    - :param description: description of the trait
+    - :param type_: type of the trait; one of "personal", "rep", "active_rep"
+    - :param environment: "space" / "ground"
+    - :param head_style: css style for head
+    - :param subhead_style: css style for subhead
+    - :param tags: css styles for the wikitext parser
     """
     if type_ == 'personal':
         tooltip = (

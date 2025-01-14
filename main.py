@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.01b140'
+    version = '2025.01b141'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -321,6 +321,15 @@ class Launcher():
             },
             'trait_subheader': {
                 'color': '#42afca',
+                'font-size': 10,
+                'margin': (0, 0, 20, 0),
+            },
+            'equipment_name': {
+                'font-size': 'large',
+                'font-weight': 'bold',
+                'margin': 0
+            },
+            'equipment_type_subheader': {
                 'font-size': 10,
                 'margin': (0, 0, 20, 0),
             },
