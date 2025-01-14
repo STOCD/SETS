@@ -427,13 +427,13 @@ def exec_in_thread(
     - :param **kwargs: keyword parameters passed to the function [optional]
     """
     worker = ThreadObject(func, *args, **kwargs)
+    thread = QThread(self.app)
     if result is not None:
         worker.result.connect(result)
     if finished is not None:
-        worker.finished.connect(finished)
+        thread.finished.connect(finished)
     if update_splash is not None:
         worker.update_splash.connect(update_splash)
-    thread = QThread(self.app)
     worker.moveToThread(thread)
     if start_later:
         worker.start.connect(worker.run)
