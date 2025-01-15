@@ -304,3 +304,39 @@ def ship_info_callback(self):
     """
     if self.build['space']['ship'] != '<Pick Ship>':
         open_wiki_page(self.cache.ships[self.build['space']['ship']]['Page'])
+
+
+def open_wiki_direct(self, key: str, subkey: int, environment: str, boff_id: int = -1):
+    """
+    Opens wiki page of item at specific slot in self.build.
+
+    Parameters:
+    - :param key: item slot type
+    - :param subkey: item slot index
+    - :param environment: "space" / "ground"
+    - :param boff_id: id for boff station
+    """
+    if boff_id == -1:
+        item = self.build[environment][key][subkey]
+    else:
+        item = self.build[environment][key][boff_id][subkey]
+    if item is None or item == '':
+        return
+    if 'traits' in key:
+        item_name = f"Trait: {item['item']}"
+    elif key == 'boffs':
+        item_name = f"Ability: {item['item']}"
+    else:
+        item_name = item['item']
+    open_wiki_page(item_name)
+
+
+def open_wiki_equipment(self):
+    """
+    Opens wiki page of item of item in `self.context_menu.clicked_item`.
+    """
+    item_slot = self.context_menu.clicked_item
+    item = self.build[item_slot.environment][item_slot.type][item_slot.index]
+    if item is None or item == '':
+        return
+    open_wiki_page(f"{self.cache.equipment[item_slot.type][item['item']]['Page']}#{item['item']}")

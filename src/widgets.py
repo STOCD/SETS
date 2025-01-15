@@ -3,7 +3,7 @@ from collections import namedtuple
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QCursor, QEnterEvent, QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import (
-        QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+        QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
         QPlainTextEdit, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
 from .constants import AHCENTER, ATOP, EQUIPMENT_TYPES, SMINMIN
@@ -216,7 +216,7 @@ class ItemButton(QFrame):
     """
 
     clicked = Signal()
-    rightclicked = Signal()
+    rightclicked = Signal(QMouseEvent)
 
     def __init__(
             self, width=49, height=64, stylesheet: str = '',
@@ -277,7 +277,7 @@ class ItemButton(QFrame):
         elif (event.button() == Qt.MouseButton.RightButton
                 and event.localPos().x() < self.width()
                 and event.localPos().y() < self.height()):
-            self.rightclicked.emit()
+            self.rightclicked.emit(event)
         event.accept()
 
     def set_item(self, image: QImage):
@@ -470,3 +470,28 @@ class ShipButton(QLabel):
 
 
 TagStyles = namedtuple('TagStyles', ('ul', 'li', 'indent'))
+
+ItemSlot = namedtuple('ItemSlot', ('type', 'index', 'environment'))
+
+
+class ContextMenu(QMenu):
+    """
+    Custom context menu with data storage
+    """
+    def __init__(self):
+        super().__init__()
+        self.clicked_item: ItemSlot | None = None
+        self.last_item_type = None
+
+    def invoke(self, event: QMouseEvent, key: str, subkey: int, environment: str):
+        """
+        Opens context menu for equipment
+
+        Parameters:
+        - :param event: event containing the clicked point
+        - :param key: slot type in self.build[environment]
+        - :param subkey: slot index
+        - :param environment: "space" / "ground"
+        """
+        self.clicked_item = ItemSlot(key, subkey, environment)
+        self.exec(event.globalPos())

@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtCore import QSettings, QThread
+from PySide6.QtCore import QSettings, Qt, QThread
 from PySide6.QtGui import QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QTabWidget, QWidget
 
@@ -10,7 +10,7 @@ from .constants import (
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
 from .subwindows import Picker, ShipSelector
 from .widgets import (
-    Cache, GridLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage)
+    Cache, ContextMenu, GridLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 from signal import signal, SIGINT, SIG_DFL
@@ -21,8 +21,8 @@ class SETS():
 
     from .callbacks import (
             clear_all, clear_build_callback, elite_callback, faction_combo_callback,
-            load_build_callback, save_build_callback, set_build_item, select_ship,
-            ship_info_callback, spec_combo_callback, switch_main_tab, tier_callback)
+            load_build_callback, open_wiki_equipment, save_build_callback, set_build_item,
+            select_ship, ship_info_callback, spec_combo_callback, switch_main_tab, tier_callback)
     from .datafunctions import autosave, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
@@ -51,6 +51,8 @@ class SETS():
     box_height: int
     # width of items
     box_width: int
+    # context menu for equipment
+    context_menu: ContextMenu
 
     def __init__(self, theme, args, path, config, versions):
         """
@@ -80,6 +82,7 @@ class SETS():
         self.setup_main_layout()
         self.picker_window = Picker(self, self.window)
         self.ship_selector_window = ShipSelector(self, self.window)
+        self.context_menu = self.create_context_menu()
         self.window.show()
         self.init_backend()
 
@@ -158,6 +161,7 @@ class SETS():
         if self.settings.value('geometry'):
             window.restoreGeometry(self.settings.value('geometry'))
         window.closeEvent = self.main_window_close_callback
+        app.focusWindowChanged.connect(self.hide_tooltips)
         QThread.currentThread().setPriority(QThread.Priority.TimeCriticalPriority)
         return app, window
 
@@ -542,3 +546,23 @@ class SETS():
         self.widgets.loading_label = loading_label
         layout.addWidget(loading_label, 2, 0, 1, 3, alignment=AHCENTER)
         frame.setLayout(layout)
+
+    def create_context_menu(self) -> ContextMenu:
+        """
+        Creates context menu for rightclick operations on equipment items
+        """
+        menu = ContextMenu()
+        menu.setStyleSheet(self.get_style_class('ContextMenu', 'context_menu'))
+        menu.setFont(self.theme_font('context_menu'))
+        menu.addAction(
+                load_icon('external_link.png', self.app_dir), 'Open Wiki', self.open_wiki_equipment)
+        return menu
+
+    def hide_tooltips(self):
+        """
+        Hides tooltip windows when main window isn't the active window anymore.
+        """
+        if not self.window.isActiveWindow():
+            for window in self.app.topLevelWindows():
+                if window.type() == Qt.WindowType.ToolTip:
+                    window.hide()

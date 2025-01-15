@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.01b141'
+    version = '2025.01b150'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -399,6 +399,30 @@ class Launcher():
             'color': '@fg',
             'padding': 3,
             'selection-background-color': '@lsets'
+        },
+        # context menu
+        'context_menu': {
+            'background-color': '@bg',
+            'border-color': '@lbg',
+            'border-width': '@bw',
+            'border-style': 'solid',
+            'border-radius': '@br',
+            'padding': '@sep',
+            '::item': {
+                'color': '@fg',
+                'font': '@font',
+                'border-color': '@bg',
+                'border-radius': 0,
+                'border-style': 'solid',
+                'border-width': '@bw',
+                'padding': (3, 3, 1, 10),
+            },
+            '::icon': {
+                'padding': (1, 1, 1, 10),
+            },
+            '::item:selected': {
+                'border-color': '@sets',
+            }
         }
     }
 
