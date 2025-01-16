@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
         QPushButton, QSizePolicy, QVBoxLayout)
 
-from .callbacks import boff_profession_callback, open_wiki_direct, picker
+from .callbacks import boff_profession_callback, picker
 from .constants import ALEFT, ATOP, CALLABLE, SMAXMAX, SMAXMIN, SMINMAX
 from .style import get_style, get_style_class, merge_style, theme_font
 from .widgets import ItemButton, VBoxLayout
@@ -270,12 +270,8 @@ def create_build_section(
         button = create_item_button(self)
         button.clicked.connect(lambda subkey=i: picker(
                 self, environment, build_key, subkey, is_equipment))
-        if is_equipment:
-            button.rightclicked.connect(
-                    lambda e, i=i: self.context_menu.invoke(e, build_key, i, environment))
-        else:
-            button.rightclicked.connect(
-                    lambda e, i=i: open_wiki_direct(self, build_key, i, environment))
+        button.rightclicked.connect(
+                lambda e, i=i: self.context_menu.invoke(e, build_key, i, environment))
         widget_storage[build_key][i] = button
         layout.addWidget(button, 1, i, alignment=ALEFT)
     return layout
@@ -320,7 +316,7 @@ def create_boff_station(
         button.clicked.connect(lambda subkey=i: picker(
                 self, environment, 'boffs', subkey, boff_id=boff_id))
         button.rightclicked.connect(
-                lambda e, i=i: open_wiki_direct(self, 'boffs', i, environment, boff_id))
+                lambda e, i=i: self.context_menu.invoke(e, 'boffs', i, environment, boff_id))
         layout.addWidget(button, 1, i, alignment=ALEFT)
         widget_storage['boffs'][boff_id][i] = button
     return layout
@@ -342,7 +338,7 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
             button = create_item_button(self)
             button.clicked.connect(lambda subkey=i: picker(self, environment, 'traits', subkey))
             button.rightclicked.connect(
-                    lambda e, i=i: open_wiki_direct(self, 'traits', i, environment))
+                    lambda e, i=i: self.context_menu.invoke(e, 'traits', i, environment))
             layout.addWidget(button, row + 1, col, alignment=ALEFT)
             widget_storage['traits'][i] = button
     return layout
@@ -365,7 +361,7 @@ def create_starship_trait_section(self, environment: str) -> QGridLayout:
         button.clicked.connect(lambda subkey=col: picker(
                 self, environment, 'starship_traits', subkey))
         button.rightclicked.connect(
-                lambda e, i=col: open_wiki_direct(self, 'starship_traits', i, environment))
+                lambda e, i=col: self.context_menu.invoke(e, 'starship_traits', i, environment))
         layout.addWidget(button, 1, col, alignment=ALEFT)
         widget_storage['starship_traits'][col] = button
     for col in range(2):
@@ -374,7 +370,7 @@ def create_starship_trait_section(self, environment: str) -> QGridLayout:
         button.clicked.connect(lambda subkey=col + 5: picker(
                 self, environment, 'starship_traits', subkey))
         button.rightclicked.connect(
-                lambda e, i=col + 5: open_wiki_direct(self, 'starship_traits', i, environment))
+                lambda e, i=col + 5: self.context_menu.invoke(e, 'starship_traits', i, environment))
         layout.addWidget(button, 2, col, alignment=ALEFT)
         widget_storage['starship_traits'][col + 5] = button
     return layout

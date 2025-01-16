@@ -1,7 +1,7 @@
 from .buildupdater import (
         align_space_frame, clear_captain, clear_ship, clear_traits, slot_equipment_item,
         slot_trait_item)
-from .constants import PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES
+from .constants import EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES
 from .datafunctions import load_build_file, save_build_file
 from .iofunc import browse_path, get_ship_image, image, open_wiki_page
 from .widgets import exec_in_thread
@@ -306,37 +306,71 @@ def ship_info_callback(self):
         open_wiki_page(self.cache.ships[self.build['space']['ship']]['Page'])
 
 
-def open_wiki_direct(self, key: str, subkey: int, environment: str, boff_id: int = -1):
+def open_wiki_context(self):
     """
-    Opens wiki page of item at specific slot in self.build.
-
-    Parameters:
-    - :param key: item slot type
-    - :param subkey: item slot index
-    - :param environment: "space" / "ground"
-    - :param boff_id: id for boff station
+    Opens wiki page of item in `self.context_menu.clicked_slot`.
     """
-    if boff_id == -1:
-        item = self.build[environment][key][subkey]
-    else:
-        item = self.build[environment][key][boff_id][subkey]
+    slot = self.context_menu.clicked_slot
+    if self.context_menu.clicked_boff_station != -1:
+        boff_id = self.context_menu.clicked_boff_station
+        item = self.build[slot.environment][slot.type][boff_id][slot.index]
+        if item is not None and item != '':
+            open_wiki_page(f"Ability: {item['item']}")
+        return
+    item = self.build[slot.environment][slot.type][slot.index]
     if item is None or item == '':
         return
-    if 'traits' in key:
-        item_name = f"Trait: {item['item']}"
-    elif key == 'boffs':
-        item_name = f"Ability: {item['item']}"
+    if 'traits' in slot.type:
+        open_wiki_page(f"Trait: {item['item']}")
     else:
-        item_name = item['item']
-    open_wiki_page(item_name)
+        open_wiki_page(f"{self.cache.equipment[slot.type][item['item']]['Page']}#{item['item']}")
 
 
-def open_wiki_equipment(self):
+def copy_equipment_item(self):
     """
-    Opens wiki page of item of item in `self.context_menu.clicked_item`.
+    Copies equipment item clicked on.
     """
-    item_slot = self.context_menu.clicked_item
+    item_slot = self.context_menu.clicked_slot
     item = self.build[item_slot.environment][item_slot.type][item_slot.index]
     if item is None or item == '':
-        return
-    open_wiki_page(f"{self.cache.equipment[item_slot.type][item['item']]['Page']}#{item['item']}")
+        self.context_menu.copied_item = None
+        self.context_menu.copied_item_type = None
+    else:
+        self.context_menu.copied_item = item
+        item_type = EQUIPMENT_TYPES[self.cache.equipment[item_slot.type][item['item']]['type']]
+        self.context_menu.copied_item_type = item_type
+
+
+def paste_equipment_item(self):
+    """
+    Pastes copied item into clicked slot if slot types are compatible
+    """
+    slot = self.context_menu.clicked_slot
+    copied_type = self.context_menu.copied_item_type
+    if slot.type == copied_type:
+        slot_equipment_item(
+                self, self.context_menu.copied_item, slot.environment, slot.type, slot.index)
+    elif copied_type == 'ship_weapon' and (
+            slot.type == 'fore_weapons' or slot.type == 'aft_weapons'):
+        slot_equipment_item(
+                self, self.context_menu.copied_item, slot.environment, slot.type, slot.index)
+    elif (copied_type == 'uni_consoles' and 'consoles' in slot.type
+            or slot.type == 'uni_consoles' and 'consoles' in copied_type):
+        slot_equipment_item(
+                self, self.context_menu.copied_item, slot.environment, slot.type, slot.index)
+    self.autosave()
+
+
+def clear_slot(self):
+    """
+    Clears slot that was rightclicked on.
+    """
+    slot = self.context_menu.clicked_slot
+    if self.context_menu.clicked_boff_station == -1:
+        self.widgets.build[slot.environment][slot.type][slot.index].clear()
+        self.build[slot.environment][slot.type][slot.index] = ''
+    else:
+        boff_id = self.context_menu.clicked_boff_station
+        self.widgets.build[slot.environment][slot.type][boff_id][slot.index].clear()
+        self.build[slot.environment][slot.type][boff_id][slot.index] = ''
+    self.autosave()

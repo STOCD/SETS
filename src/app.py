@@ -20,9 +20,10 @@ signal(SIGINT, SIG_DFL)
 class SETS():
 
     from .callbacks import (
-            clear_all, clear_build_callback, elite_callback, faction_combo_callback,
-            load_build_callback, open_wiki_equipment, save_build_callback, set_build_item,
-            select_ship, ship_info_callback, spec_combo_callback, switch_main_tab, tier_callback)
+            clear_all, clear_slot, clear_build_callback, copy_equipment_item, elite_callback,
+            faction_combo_callback, load_build_callback, open_wiki_context, paste_equipment_item,
+            save_build_callback, set_build_item, select_ship, ship_info_callback,
+            spec_combo_callback, switch_main_tab, tier_callback)
     from .datafunctions import autosave, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
@@ -554,8 +555,12 @@ class SETS():
         menu = ContextMenu()
         menu.setStyleSheet(self.get_style_class('ContextMenu', 'context_menu'))
         menu.setFont(self.theme_font('context_menu'))
+        menu.addAction(load_icon('copy.png', self.app_dir), 'Copy Item', self.copy_equipment_item)
         menu.addAction(
-                load_icon('external_link.png', self.app_dir), 'Open Wiki', self.open_wiki_equipment)
+                load_icon('paste.png', self.app_dir), 'Paste Item', self.paste_equipment_item)
+        menu.addAction(load_icon('clear.png', self.app_dir), 'Clear Slot', self.clear_slot)
+        menu.addAction(
+                load_icon('external_link.png', self.app_dir), 'Open Wiki', self.open_wiki_context)
         return menu
 
     def hide_tooltips(self):

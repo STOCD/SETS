@@ -480,10 +480,12 @@ class ContextMenu(QMenu):
     """
     def __init__(self):
         super().__init__()
-        self.clicked_item: ItemSlot | None = None
-        self.last_item_type = None
+        self.clicked_slot: ItemSlot = None
+        self.clicked_boff_station: int = -1
+        self.copied_item: dict = None
+        self.copied_item_type: str = None
 
-    def invoke(self, event: QMouseEvent, key: str, subkey: int, environment: str):
+    def invoke(self, event: QMouseEvent, key: str, subkey: int, environment: str, boff: int = -1):
         """
         Opens context menu for equipment
 
@@ -492,6 +494,15 @@ class ContextMenu(QMenu):
         - :param key: slot type in self.build[environment]
         - :param subkey: slot index
         - :param environment: "space" / "ground"
+        - :param boff: id of the boff station
         """
-        self.clicked_item = ItemSlot(key, subkey, environment)
+        self.clicked_slot = ItemSlot(key, subkey, environment)
+        self.clicked_boff_station = boff
+        actions = self.actions()
+        if key in {'boffs', 'rep_traits', 'starship_traits', 'traits', 'active_rep_traits'}:
+            actions[0].setEnabled(False)
+            actions[1].setEnabled(False)
+        else:
+            actions[0].setEnabled(True)
+            actions[1].setEnabled(True)
         self.exec(event.globalPos())
