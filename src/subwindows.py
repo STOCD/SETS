@@ -12,7 +12,91 @@ from .widgets import GridLayout, HBoxLayout, VBoxLayout
 from .style import get_style, get_style_class
 
 
-class Picker(QDialog):
+class BasePicker(QDialog):
+    """
+    Base class of SETS item picker / editor housing shared methods.
+    """
+    @property
+    def empty_item(self):
+        return {
+            'item': '',
+            'rarity': 'Common',
+            'mark': '',
+            'modifiers': [None] * 5
+        }
+
+    def insert_modifiers(self, modifiers: dict = {}):
+        """
+        Inserts the modifiers into the comboboxes
+        """
+        self._modifiers = modifiers
+        self._mod_combos[0].clear()
+        self._mod_combos[0].addItems(self.unique_mods(modifiers))
+        self._mod_combos[1].clear()
+        self._mod_combos[1].addItems(self.standard_mods(modifiers))
+        self._mod_combos[2].clear()
+        self._mod_combos[2].addItems(self.standard_mods(modifiers))
+        self._mod_combos[3].clear()
+        self._mod_combos[3].addItems(self.standard_mods(modifiers))
+        self._mod_combos[4].clear()
+        self._mod_combos[4].addItems(self.epic_mods(modifiers))
+
+    def unique_mods(self, modifiers: dict = {}) -> Iterator[str]:
+        """
+        yields mods for first mod slot from modifier dict
+        """
+        yield ''
+        for mod, details in modifiers.items():
+            if not details['epic']:
+                yield mod
+
+    def standard_mods(self, modifiers: dict = {}) -> Iterator[str]:
+        """
+        yields mods for second to fourth mod slot from modifier list
+        """
+        yield ''
+        for mod, details in modifiers.items():
+            if not details['epic'] and not details['isunique']:
+                yield mod
+
+    def epic_mods(self, modifiers: dict = {}) -> Iterator[str]:
+        """
+        yields mods for fifth mod slot from modifier list
+        """
+        yield ''
+        for mod, details in modifiers.items():
+            if details['epic']:
+                yield mod
+
+    def mark_callback(self, new_mark: str):
+        """
+        called when mark is changed
+        """
+        self._item['mark'] = new_mark
+
+    def rarity_callback(self, new_rarity: str):
+        """
+        called when rarity is changed
+        """
+        self._item['rarity'] = new_rarity
+        for i in range(RARITIES[new_rarity]):
+            self._mod_combos[i].setEnabled(True)
+        for i in range(RARITIES[new_rarity], 5):
+            self._mod_combos[i].setEnabled(False)
+            self._item['modifiers'][i] = None
+
+    def modifier_callback(self, new_mod_index: int, mod_num: int):
+        """
+        called when modifier is changed
+        """
+        new_mod = self._mod_combos[mod_num].itemText(new_mod_index)
+        if new_mod == '' or mod_num > RARITIES[self._item['rarity']] - 1:
+            self._item['modifiers'][mod_num] = ''
+        else:
+            self._item['modifiers'][mod_num] = new_mod
+
+
+class Picker(BasePicker):
     """
     Picker Window
     """
@@ -114,41 +198,6 @@ class Picker(QDialog):
         layout.addLayout(control_layout)
         self.setLayout(layout)
 
-    @property
-    def empty_item(self):
-        return {
-            'item': '',
-            'rarity': 'Common',
-            'mark': '',
-            'modifiers': [None] * 5
-        }
-
-    def mark_callback(self, new_mark: str):
-        """
-        called when mark is changed
-        """
-        self._item['mark'] = new_mark
-
-    def rarity_callback(self, new_rarity: str):
-        """
-        called when rarity is changed
-        """
-        self._item['rarity'] = new_rarity
-        for i in range(RARITIES[new_rarity]):
-            self._mod_combos[i].setEnabled(True)
-        for i in range(RARITIES[new_rarity], 5):
-            self._mod_combos[i].setEnabled(False)
-
-    def modifier_callback(self, new_mod_index: int, mod_num: int):
-        """
-        called when modifier is changed
-        """
-        new_mod = self._mod_combos[mod_num].itemText(new_mod_index)
-        if new_mod == '' or mod_num > RARITIES[self._item['rarity']] - 1:
-            self._item['modifiers'][mod_num] = None
-        else:
-            self._item['modifiers'][mod_num] = new_mod
-
     def slot_item(self, new_index):
         """
         called when item is clicked
@@ -168,49 +217,6 @@ class Picker(QDialog):
         self._item['item'] = new_item
         self._item['modifiers'] = [None] * 5
         self.accept()
-
-    def insert_modifiers(self, modifiers: dict = {}):
-        """
-        Inserts the modifiers into the
-        """
-        self._modifiers = modifiers
-        self._mod_combos[0].clear()
-        self._mod_combos[0].addItems(self.unique_mods(modifiers))
-        self._mod_combos[1].clear()
-        self._mod_combos[1].addItems(self.standard_mods(modifiers))
-        self._mod_combos[2].clear()
-        self._mod_combos[2].addItems(self.standard_mods(modifiers))
-        self._mod_combos[3].clear()
-        self._mod_combos[3].addItems(self.standard_mods(modifiers))
-        self._mod_combos[4].clear()
-        self._mod_combos[4].addItems(self.epic_mods(modifiers))
-
-    def unique_mods(self, modifiers: dict = {}) -> Iterator[str]:
-        """
-        yields mods for first mod slot from modifier dict
-        """
-        yield ''
-        for mod, details in modifiers.items():
-            if not details['epic']:
-                yield mod
-
-    def standard_mods(self, modifiers: dict = {}) -> Iterator[str]:
-        """
-        yields mods for second to fourth mod slot from modifier list
-        """
-        yield ''
-        for mod, details in modifiers.items():
-            if not details['epic'] and not details['isunique']:
-                yield mod
-
-    def epic_mods(self, modifiers: dict = {}) -> Iterator[str]:
-        """
-        yields mods for fifth mod slot from modifier list
-        """
-        yield ''
-        for mod, details in modifiers.items():
-            if details['epic']:
-                yield mod
 
     def pick_item(self, items: Iterable, equipment: bool = False, modifiers: dict = {}):
         """
@@ -336,3 +342,100 @@ class ShipSelector(QDialog):
         self.move(self.x() + pos_delta.x(), self.y() + pos_delta.y())
         self.start_pos = event.globalPosition().toPoint()
         event.accept()
+
+
+class ItemEditor(BasePicker):
+    """
+    Dialog to edit mark, rarity and mods of equipment items.
+    """
+    def __init__(self, sets, parent_window, style: str = 'picker'):
+        """
+        Dialog to edit mark, rarity and mods of equipment items.
+
+        Parameters:
+        - :param sets: SETS object
+        - :param parent_window: parent window of dialog
+        - :param style: style key for sets.theme
+        """
+        super().__init__(parent=parent_window)
+        self.setWindowFlags(
+                self.windowFlags() | Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        self.setStyleSheet(get_style(sets, style))
+        self.setWindowModality(Qt.WindowModality.WindowModal)
+        self.setMinimumSize(10, 10)
+        self.setSizePolicy(SMAXMAX)
+        self._item = self.empty_item
+        self._result = None
+        self._modifiers = {}
+        ui_scale = sets.config['ui_scale']
+        csp = sets.theme['defaults']['csp'] * ui_scale
+        layout = VBoxLayout(spacing=csp)
+        rarity_layout = HBoxLayout(spacing=csp)
+        self._mark_combo = create_combo_box(sets)
+        self._mark_combo.addItems(('', *MARKS))
+        self._mark_combo.currentTextChanged.connect(self.mark_callback)
+        rarity_layout.addWidget(self._mark_combo, 1)
+        self._rarity_combo = create_combo_box(sets)
+        self._rarity_combo.addItems(RARITIES.keys())
+        self._rarity_combo.currentTextChanged.connect(self.rarity_callback)
+        rarity_layout.addWidget(self._rarity_combo, 1)
+        layout.addLayout(rarity_layout)
+        mod_layout = GridLayout(spacing=csp)
+        self._mod_combos = [None] * 5
+        for i in range(4):
+            mod_combo = create_combo_box(sets, style_override={'font': '@font'}, editable=True)
+            mod_combo.currentIndexChanged.connect(lambda mod, i=i: self.modifier_callback(mod, i))
+            self._mod_combos[i] = mod_combo
+            mod_layout.addWidget(mod_combo, i // 2, i % 2)
+        mod_combo = create_combo_box(sets, style_override={'font': '@font'}, editable=True)
+        mod_combo.currentIndexChanged.connect(lambda mod: self.modifier_callback(mod, 4))
+        self._mod_combos[4] = mod_combo
+        mod_layout.addWidget(mod_combo, 2, 0, 1, 2)
+        layout.addLayout(mod_layout)
+        control_layout = HBoxLayout(spacing=csp)
+        cancel_button = create_button(sets, 'Cancel')
+        cancel_button.setSizePolicy(SMINMAX)
+        cancel_button.clicked.connect(self.reject)
+        control_layout.addWidget(cancel_button)
+        save_button = create_button(sets, 'Save')
+        save_button.clicked.connect(self.accept)
+        save_button.setSizePolicy(SMINMAX)
+        control_layout.addWidget(save_button)
+        layout.addLayout(control_layout)
+        content_frame = create_frame(sets)
+        content_frame.setLayout(layout)
+        margin = sets.theme['defaults']['isp'] * ui_scale
+        main_layout = VBoxLayout(margins=margin)
+        main_layout.addWidget(content_frame)
+        self.setLayout(main_layout)
+
+    def edit_item(self, item: dict, modifiers: dict):
+        """
+        Executes editor, returns edited item. Returns None when editor is closed without saving.
+        """
+        self._result = None
+        self.insert_modifiers(modifiers)
+        self._mark_combo.setCurrentText(item['mark'])
+        self._rarity_combo.setCurrentText(item['rarity'])
+        for combo, modifier in zip(self._mod_combos, item['modifiers']):
+            combo.setCurrentText(modifier if modifier is not None else '')
+        self._item = {
+            'item': item['item'],
+            'rarity': item['rarity'],
+            'mark': item['mark'],
+            'modifiers': [mod for mod in item['modifiers']]
+        }
+        action = self.exec()
+        if action == 1:
+            self._result = {
+                'item': self._item['item'],
+                'rarity': self._item['rarity'],
+                'mark': self._item['mark'],
+                'modifiers': [mod for mod in self._item['modifiers']]
+            }
+        self._mark_combo.setCurrentText('')
+        self._rarity_combo.setCurrentText('Common')
+        for mod_combo in self._mod_combos:
+            mod_combo.setCurrentText('')
+        self._item = self.empty_item
+        return self._result

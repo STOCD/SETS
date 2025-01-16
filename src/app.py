@@ -8,7 +8,7 @@ from .constants import (
     ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS,
     SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
-from .subwindows import Picker, ShipSelector
+from .subwindows import ItemEditor, Picker, ShipSelector
 from .widgets import (
     Cache, ContextMenu, GridLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage)
 
@@ -20,10 +20,10 @@ signal(SIGINT, SIG_DFL)
 class SETS():
 
     from .callbacks import (
-            clear_all, clear_slot, clear_build_callback, copy_equipment_item, elite_callback,
-            faction_combo_callback, load_build_callback, open_wiki_context, paste_equipment_item,
-            save_build_callback, set_build_item, select_ship, ship_info_callback,
-            spec_combo_callback, switch_main_tab, tier_callback)
+            clear_all, clear_slot, clear_build_callback, copy_equipment_item, edit_equipment_item,
+            elite_callback, faction_combo_callback, load_build_callback, open_wiki_context,
+            paste_equipment_item, save_build_callback, set_build_item, select_ship,
+            ship_info_callback, spec_combo_callback, switch_main_tab, tier_callback)
     from .datafunctions import autosave, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
@@ -52,6 +52,12 @@ class SETS():
     box_height: int
     # width of items
     box_width: int
+    # for picking items
+    picker_window: Picker
+    # for selecting ships
+    ship_selector_window: ShipSelector
+    # for editing equipment items
+    edit_window: ItemEditor
     # context menu for equipment
     context_menu: ContextMenu
 
@@ -82,6 +88,7 @@ class SETS():
         self.build = self.empty_build()
         self.setup_main_layout()
         self.picker_window = Picker(self, self.window)
+        self.edit_window = ItemEditor(self, self.window)
         self.ship_selector_window = ShipSelector(self, self.window)
         self.context_menu = self.create_context_menu()
         self.window.show()
@@ -561,6 +568,7 @@ class SETS():
         menu.addAction(load_icon('clear.png', self.app_dir), 'Clear Slot', self.clear_slot)
         menu.addAction(
                 load_icon('external_link.png', self.app_dir), 'Open Wiki', self.open_wiki_context)
+        menu.addAction(load_icon('edit.png', self.app_dir), 'Edit Slot', self.edit_equipment_item)
         return menu
 
     def hide_tooltips(self):

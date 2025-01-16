@@ -482,6 +482,7 @@ class ContextMenu(QMenu):
         super().__init__()
         self.clicked_slot: ItemSlot = None
         self.clicked_boff_station: int = -1
+        self.clicked_modifiers: dict = {}
         self.copied_item: dict = None
         self.copied_item_type: str = None
 
@@ -502,7 +503,9 @@ class ContextMenu(QMenu):
         if key in {'boffs', 'rep_traits', 'starship_traits', 'traits', 'active_rep_traits'}:
             actions[0].setEnabled(False)
             actions[1].setEnabled(False)
+            actions[4].setEnabled(False)
         else:
             actions[0].setEnabled(True)
             actions[1].setEnabled(True)
+            actions[4].setEnabled(True)
         self.exec(event.globalPos())

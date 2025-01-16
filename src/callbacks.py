@@ -330,14 +330,14 @@ def copy_equipment_item(self):
     """
     Copies equipment item clicked on.
     """
-    item_slot = self.context_menu.clicked_slot
-    item = self.build[item_slot.environment][item_slot.type][item_slot.index]
+    slot = self.context_menu.clicked_slot
+    item = self.build[slot.environment][slot.type][slot.index]
     if item is None or item == '':
         self.context_menu.copied_item = None
         self.context_menu.copied_item_type = None
     else:
         self.context_menu.copied_item = item
-        item_type = EQUIPMENT_TYPES[self.cache.equipment[item_slot.type][item['item']]['type']]
+        item_type = EQUIPMENT_TYPES[self.cache.equipment[slot.type][item['item']]['type']]
         self.context_menu.copied_item_type = item_type
 
 
@@ -374,3 +374,16 @@ def clear_slot(self):
         self.widgets.build[slot.environment][slot.type][boff_id][slot.index].clear()
         self.build[slot.environment][slot.type][boff_id][slot.index] = ''
     self.autosave()
+
+
+def edit_equipment_item(self):
+    """
+    Edit mark, modifiers and rarity of rightclicked item.
+    """
+    slot = self.context_menu.clicked_slot
+    item = self.build[slot.environment][slot.type][slot.index]
+    modifiers = self.cache.modifiers[slot.type]
+    new_item = self.edit_window.edit_item(item, modifiers)
+    if new_item is not None:
+        slot_equipment_item(self, new_item, slot.environment, slot.type, slot.index)
+        self.autosave()
