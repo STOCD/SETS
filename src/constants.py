@@ -151,7 +151,7 @@ BUILD_CONVERSION = {
         ('warpCore', 'core'),
         ('devices', 'devices'),
         ('deflector', 'deflector'),
-        ('doffs', 'doffs'),
+        # ('doffs', 'doffs'),
         ('engConsoles', 'eng_consoles'),
         ('engines', 'engines'),
         ('experimental', 'experimental'),

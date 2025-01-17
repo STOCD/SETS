@@ -30,8 +30,9 @@ class SETS():
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
     from .widgetbuilder import (
             create_boff_station, create_build_section, create_button, create_button_series,
-            create_checkbox, create_combo_box, create_entry, create_frame, create_item_button,
-            create_label, create_personal_trait_section, create_starship_trait_section)
+            create_checkbox, create_combo_box, create_doff_section, create_entry, create_frame,
+            create_item_button, create_label, create_personal_trait_section,
+            create_starship_trait_section)
 
     app_dir = None
     # (release version, dev version)
@@ -378,7 +379,7 @@ class SETS():
         layout = GridLayout(margins=isp, spacing=isp)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(10, 1)
-        layout.setRowStretch(20, 1)
+        layout.setRowStretch(7, 1)
 
         # Equipment
         fore_layout = self.create_build_section('Fore Weapons', 5, 'space', 'fore_weapons', True)
@@ -469,6 +470,21 @@ class SETS():
         layout.addLayout(trait_layout, 0, 9, 6, 1, alignment=ATOP)
 
         # Doffs
+        spacing = self.theme['defaults']['bw'] * self.config['ui_scale']
+        doff_container = self.create_frame(size_policy=SMINMAX)
+        doff_container_layout = VBoxLayout(spacing=spacing * 2)
+        doff_label = self.create_label('Space Duty Officers')
+        doff_container_layout.addWidget(doff_label, alignment=ALEFT)
+        doff_frame = self.create_frame('doff_frame', size_policy=SMINMAX)
+        doff_frame_layout = VBoxLayout()
+        doff_style_nullifier = self.create_frame(size_policy=SMINMAX)
+        doff_frame_layout.addWidget(doff_style_nullifier)
+        doff_layout = self.create_doff_section('space')
+        doff_style_nullifier.setLayout(doff_layout)
+        doff_frame.setLayout(doff_frame_layout)
+        doff_container_layout.addWidget(doff_frame)
+        doff_container.setLayout(doff_container_layout)
+        layout.addWidget(doff_container, 5, 1, 2, 5)
 
         frame.setLayout(layout)
 

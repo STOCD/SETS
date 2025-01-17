@@ -47,6 +47,9 @@ def insert_cargo_data(self):
     Updates UI elements depending on cargo data with the loaded data
     """
     self.ship_selector_window.set_ships(self.cache.ships.keys())
+    space_doff_specs = [''] + sorted(self.cache.space_doffs.keys())
+    for combobox in self.widgets.build['space']['doffs_spec']:
+        combobox.addItems(space_doff_specs)
 
 
 def populate_cache(self, threaded_worker: ThreadObject):
@@ -604,7 +607,8 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'core': [''],
             'deflector': [''],
             'devices': [None] * 6,
-            'doffs': [''] * 6,
+            'doffs_spec': [''] * 6,
+            'doffs_variant': [''] * 6,
             'eng_consoles': [None] * 5,
             'engines': [''],
             'experimental': [None],

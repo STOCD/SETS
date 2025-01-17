@@ -3,10 +3,10 @@ from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
         QPushButton, QSizePolicy, QVBoxLayout)
 
-from .callbacks import boff_profession_callback, picker
+from .callbacks import boff_profession_callback, doff_spec_callback, doff_variant_callback, picker
 from .constants import ALEFT, ATOP, CALLABLE, SMAXMAX, SMAXMIN, SMINMAX
 from .style import get_style, get_style_class, merge_style, theme_font
-from .widgets import ItemButton, VBoxLayout
+from .widgets import DoffCombobox, GridLayout, ItemButton, VBoxLayout
 
 
 def create_frame(self, style='frame', style_override={}, size_policy=None) -> QFrame:
@@ -151,18 +151,20 @@ def create_button_series(
 
 def create_combo_box(
         self, style: str = 'combobox', editable: bool = False, size_policy: QSizePolicy = None,
-        style_override: dict = {}) -> QComboBox:
+        style_override: dict = {}, class_=QComboBox) -> QComboBox:
     """
     Creates a combobox with given style and returns it.
 
     Parameters:
     - :param style: key for self.theme -> default style
-    - :param editable:
+    - :param editable: set to True to make combobox editable
+    - :param size_policy: size policy for combobox
     - :param style_override: style dict to override default style
+    - :param class_: custom constructor for combobox; must be QCombobox or subclass
 
     :return: styled QCombobox
     """
-    combo_box = QComboBox()
+    combo_box = class_()
     combo_box.setStyleSheet(get_style_class(self, 'QComboBox', style, style_override))
     if 'font' in style_override:
         font = theme_font(self, style, style_override['font'])
@@ -374,3 +376,25 @@ def create_starship_trait_section(self, environment: str) -> QGridLayout:
         layout.addWidget(button, 2, col, alignment=ALEFT)
         widget_storage['starship_traits'][col + 5] = button
     return layout
+
+
+def create_doff_section(self, environment: str) -> GridLayout:
+    """
+    Creates duty officer section
+    """
+    spacing = self.theme['defaults']['bw'] * self.config['ui_scale']
+    doff_layout = GridLayout(spacing=spacing)
+    doff_layout.setColumnStretch(1, 1)
+    for i in range(6):
+        spec_combo = create_combo_box(self, style_override=self.theme['doff_combo'])
+        spec_combo.currentTextChanged.connect(
+                lambda spec, i=i: doff_spec_callback(self, spec, environment, i))
+        doff_layout.addWidget(spec_combo, i, 0)
+        self.widgets.build[environment]['doffs_spec'][i] = spec_combo
+        variant_combo = create_combo_box(
+                self, style_override=self.theme['doff_combo'], class_=DoffCombobox)
+        variant_combo.currentTextChanged.connect(
+            lambda variant, i=i: doff_variant_callback(self, variant, environment, i))
+        doff_layout.addWidget(variant_combo, i, 1)
+        self.widgets.build[environment]['doffs_variant'][i] = variant_combo
+    return doff_layout

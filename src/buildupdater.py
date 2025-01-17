@@ -71,6 +71,7 @@ def load_build(self):
     load_trait_cat(self, 'starship_traits', 'space')
     load_trait_cat(self, 'rep_traits', 'space')
     load_trait_cat(self, 'active_rep_traits', 'space')
+    load_doffs(self, 'space')
 
     self.building = False
     self.autosave()
@@ -360,3 +361,43 @@ def clear_ship(self):
     self.build['space']['ship_name'] = ''
     self.widgets.ship['desc'].setPlainText('')
     self.build['space']['ship_desc'] = ''
+
+
+def load_doffs(self, environment: str):
+    """
+    Updates UI to show doffs in self.build
+
+    Parameters:
+    - :param environment: "space" / "ground"
+    """
+    doff_zipper = zip(
+            self.widgets.build[environment]['doffs_spec'],
+            self.build[environment]['doffs_spec'],
+            self.widgets.build[environment]['doffs_variant'],
+            self.build[environment]['doffs_variant'])
+    for spec_combo, spec, variant_combo, variant in doff_zipper:
+        spec_combo.setCurrentText(spec)
+        if spec != '':
+            variants = getattr(self.cache, f'{environment}_doffs')[spec].keys()
+            variant_combo.addItems({''} | variants)
+            variant_combo.setCurrentText(variant)
+
+
+def clear_doffs(self, environment: str = 'both'):
+    """
+    Clears doff frame(s)
+
+    Parameters:
+    - :param environment: "space" / "ground" / "both"
+    """
+    if environment == 'space' or environment == 'both':
+        for i in range(6):
+            self.widgets.build['space']['doffs_spec'][i].setCurrentText('')
+            self.widgets.build['space']['doffs_variant'][i].setCurrentText('')
+            self.build['space']['doffs_spec'][i] = ''
+            self.build['space']['doffs_variant'][i] = ''
+    # if environment == 'ground' or environment == 'both':
+    #     for i in range(6):
+    #         self.widgets.build['ground']['doffs_spec'][i].setCurrentText('')
+    #         self.build['ground']['doffs_spec'][i] = ''
+    #         self.build['ground']['doffs_variant'][i] = ''

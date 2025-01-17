@@ -1,6 +1,6 @@
 from .buildupdater import (
-        align_space_frame, clear_captain, clear_ship, clear_traits, slot_equipment_item,
-        slot_trait_item)
+        align_space_frame, clear_captain, clear_doffs, clear_ship, clear_traits,
+        slot_equipment_item, slot_trait_item)
 from .constants import EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES
 from .datafunctions import load_build_file, save_build_file
 from .iofunc import browse_path, get_ship_image, image, open_wiki_page
@@ -252,6 +252,7 @@ def clear_space_build(self):
     clear_ship(self)
     align_space_frame(self, SHIP_TEMPLATE, clear=True)
     clear_traits(self, 'space')
+    clear_doffs(self, 'space')
     self.building = False
     self.autosave()
 
@@ -264,6 +265,7 @@ def clear_all(self):
     clear_ship(self)
     align_space_frame(self, SHIP_TEMPLATE, clear=True)
     clear_traits(self)
+    clear_doffs(self)
     clear_captain(self)
     self.building = False
     self.autosave()
@@ -387,3 +389,38 @@ def edit_equipment_item(self):
     if new_item is not None:
         slot_equipment_item(self, new_item, slot.environment, slot.type, slot.index)
         self.autosave()
+
+
+def doff_spec_callback(self, new_spec: str, environment: str, doff_id: int):
+    """
+    Callback for duty officer specialization combobox.
+
+    Parameters:
+    - :param new_spec: selected specialization
+    - :param environment: "space" / "ground"
+    - :param doff_id: index of the doff
+    """
+    if self.building:
+        return
+    self.build[environment]['doffs_spec'][doff_id] = new_spec
+    self.build[environment]['doffs_variant'][doff_id] = ''
+    self.widgets.build[environment]['doffs_variant'][doff_id].clear()
+    if new_spec != '':
+        variants = getattr(self.cache, f'{environment}_doffs')[new_spec].keys()
+        self.widgets.build[environment]['doffs_variant'][doff_id].addItems({''} | variants)
+    self.autosave()
+
+
+def doff_variant_callback(self, new_variant: str, environment: str, doff_id: int):
+    """
+    Callback for duty officer variant combobox.
+
+    Parameters:
+    - :param new_variant: selected variant
+    - :param environment: "space" / "ground"
+    - :param doff_id: index of the doff
+    """
+    if self.building:
+        return
+    self.build[environment]['doffs_variant'][doff_id] = new_variant
+    self.autosave()

@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt, QThread, Signal, Slot
+from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QCursor, QEnterEvent, QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
@@ -53,7 +53,8 @@ class WidgetStorage():
                 'core': [''],
                 'deflector': [''],
                 'devices': [None] * 6,
-                'doffs': [''] * 6,
+                'doffs_spec': [''] * 6,
+                'doffs_variant': [''] * 6,
                 'eng_consoles': [None] * 5,
                 'eng_consoles_label': None,
                 'engines': [''],
@@ -509,3 +510,11 @@ class ContextMenu(QMenu):
             actions[1].setEnabled(True)
             actions[4].setEnabled(True)
         self.exec(event.globalPos())
+
+
+class DoffCombobox(QComboBox):
+    def minimumSizeHint(self) -> QSize:
+        return QSize(100, super().minimumSizeHint().height())
+
+    def sizeHint(self) -> QSize:
+        return QSize(100, super().minimumSizeHint().height())
