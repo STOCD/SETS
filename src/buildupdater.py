@@ -73,6 +73,20 @@ def load_build(self):
     load_trait_cat(self, 'active_rep_traits', 'space')
     load_doffs(self, 'space')
 
+    # Ground Build Section
+    load_equipment_cat(self, 'kit_modules', 'ground')
+    load_equipment_cat(self, 'weapons', 'ground')
+    load_equipment_cat(self, 'ground_devices', 'ground')
+    load_equipment_cat(self, 'kit', 'ground')
+    load_equipment_cat(self, 'armor', 'ground')
+    load_equipment_cat(self, 'ev_suit', 'ground')
+    load_equipment_cat(self, 'personal_shield', 'ground')
+    load_boff_stations(self, 'ground')
+    load_trait_cat(self, 'traits', 'ground')
+    load_trait_cat(self, 'rep_traits', 'ground')
+    load_trait_cat(self, 'active_rep_traits', 'ground')
+    load_doffs(self, 'ground')
+
     self.building = False
     self.autosave()
 
@@ -253,7 +267,7 @@ def load_boff_stations(self, environment: str):
     Updates boff stations to show items from build
 
     Parameters:
-    - :param environment: space/ground
+    - :param environment: "space" / "ground"
     """
     if environment == 'space':
         for boff_id, boff_data in enumerate(self.build['space']['boffs']):
@@ -263,13 +277,24 @@ def load_boff_stations(self, environment: str):
             else:
                 boff_text = f'{boff_spec[0]} / {boff_spec[1]}'
             self.widgets.build['space']['boff_labels'][boff_id].setCurrentText(boff_text)
-            for ability_num, ability in enumerate(boff_data):
+            for ability, slot in zip(boff_data, self.widgets.build['space']['boffs'][boff_id]):
                 if ability is not None and ability != '':
                     tooltip = self.cache.boff_abilities['all'][ability['item']]
-                    self.widgets.build['space']['boffs'][boff_id][ability_num].set_item_full(
-                            image(self, ability['item']), None, tooltip)
+                    slot.set_item_full(image(self, ability['item']), None, tooltip)
                 else:
-                    self.widgets.build['space']['boffs'][boff_id][ability_num].clear()
+                    slot.clear()
+    elif environment == 'ground':
+        for boff_id, boff_data in enumerate(self.build['ground']['boffs']):
+            self.widgets.build['ground']['boff_profs'][boff_id].setCurrentText(
+                    self.build['ground']['boff_profs'][boff_id])
+            self.widgets.build['ground']['boff_specs'][boff_id].setCurrentText(
+                    self.build['ground']['boff_specs'][boff_id])
+            for ability, slot in zip(boff_data, self.widgets.build['ground']['boffs'][boff_id]):
+                if ability is not None and ability != '':
+                    tooltip = self.cache.boff_abilities['all'][ability['item']]
+                    slot.set_item_full(image(self, ability['item']), None, tooltip)
+                else:
+                    slot.clear()
 
 
 def slot_equipment_item(self, item: dict, environment: str, build_key: str, build_subkey: int):

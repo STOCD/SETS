@@ -29,10 +29,10 @@ class SETS():
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
     from .widgetbuilder import (
-            create_boff_station, create_build_section, create_button, create_button_series,
-            create_checkbox, create_combo_box, create_doff_section, create_entry, create_frame,
-            create_item_button, create_label, create_personal_trait_section,
-            create_starship_trait_section)
+            create_boff_station_ground, create_boff_station_space, create_build_section,
+            create_button, create_button_series, create_checkbox, create_combo_box,
+            create_doff_section, create_entry, create_frame, create_item_button, create_label,
+            create_personal_trait_section, create_starship_trait_section)
 
     app_dir = None
     # (release version, dev version)
@@ -369,6 +369,7 @@ class SETS():
         Creates build areas
         """
         self.setup_space_build_frame()
+        self.setup_ground_build_frame()
 
     def setup_space_build_frame(self):
         """
@@ -434,17 +435,17 @@ class SETS():
         layout.addWidget(sep3, 0, 6, 5, 1)
 
         # Boffs
-        boff_1_layout = self.create_boff_station('Universal', 'space', 'Miracle Worker', boff_id=0)
+        boff_1_layout = self.create_boff_station_space('Universal', 'Miracle Worker', boff_id=0)
         layout.addLayout(boff_1_layout, 0, 7, alignment=ALEFT)
-        boff_2_layout = self.create_boff_station('Universal', 'space', 'Command', boff_id=1)
+        boff_2_layout = self.create_boff_station_space('Universal', 'Command', boff_id=1)
         layout.addLayout(boff_2_layout, 1, 7, alignment=ALEFT)
-        boff_3_layout = self.create_boff_station('Universal', 'space', 'Intelligence', boff_id=2)
+        boff_3_layout = self.create_boff_station_space('Universal', 'Intelligence', boff_id=2)
         layout.addLayout(boff_3_layout, 2, 7, alignment=ALEFT)
-        boff_4_layout = self.create_boff_station('Universal', 'space', 'Pilot', boff_id=3)
+        boff_4_layout = self.create_boff_station_space('Universal', 'Pilot', boff_id=3)
         layout.addLayout(boff_4_layout, 3, 7, alignment=ALEFT)
-        boff_5_layout = self.create_boff_station('Universal', 'space', 'Temporal', boff_id=4)
+        boff_5_layout = self.create_boff_station_space('Universal', 'Temporal', boff_id=4)
         layout.addLayout(boff_5_layout, 4, 7, alignment=ALEFT)
-        boff_6_layout = self.create_boff_station('Universal', 'space', boff_id=5)
+        boff_6_layout = self.create_boff_station_space('Universal', boff_id=5)
         width_placeholder = self.create_combo_box(size_policy=SMAXMAX)
         width_placeholder.addItem('Engineering / Miracle Worker')
         width_placeholder_sizepolicy = width_placeholder.sizePolicy()
@@ -460,7 +461,7 @@ class SETS():
         trait_layout = GridLayout(margins=0, spacing=isp)
         personal_trait_layout = self.create_personal_trait_section('space')
         trait_layout.addLayout(personal_trait_layout, 0, 0, alignment=ALEFT)
-        starship_trait_layout = self.create_starship_trait_section('space')
+        starship_trait_layout = self.create_starship_trait_section()
         trait_layout.addLayout(starship_trait_layout, 1, 0)
         rep_trait_layout = self.create_build_section('Reputation Traits', 5, 'space', 'rep_traits')
         trait_layout.addLayout(rep_trait_layout, 2, 0)
@@ -485,6 +486,85 @@ class SETS():
         doff_container_layout.addWidget(doff_frame)
         doff_container.setLayout(doff_container_layout)
         layout.addWidget(doff_container, 5, 1, 2, 5)
+
+        frame.setLayout(layout)
+
+    def setup_ground_build_frame(self):
+        """
+        Creates Ground build frame
+        """
+        frame = self.widgets.build_frames[1]
+        isp = self.theme['defaults']['isp'] * 2 * self.config['ui_scale']
+        layout = GridLayout(margins=isp, spacing=isp)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(8, 1)
+        layout.setRowStretch(5, 1)
+
+        # Equipment
+        modules_layout = self.create_build_section('Kit Modules:', 6, 'ground', 'kit_modules', True)
+        layout.addLayout(modules_layout, 0, 1, alignment=ALEFT)
+        weapons_layout = self.create_build_section('Weapons:', 2, 'ground', 'weapons', True)
+        layout.addLayout(weapons_layout, 1, 1, alignment=ALEFT)
+        devices_layout = self.create_build_section('Devices:', 5, 'ground', 'ground_devices', True)
+        layout.addLayout(devices_layout, 2, 1, alignment=ALEFT)
+        sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
+            'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
+        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        layout.addWidget(sep1, 0, 2)
+        kit_layout = self.create_build_section('Kit Frame:', 1, 'ground', 'kit', True)
+        layout.addLayout(kit_layout, 0, 3, alignment=ALEFT)
+        armor_layout = self.create_build_section('Armor:', 1, 'ground', 'armor', True)
+        layout.addLayout(armor_layout, 1, 3, alignment=ALEFT)
+        ev_layout = self.create_build_section('EV Suit:', 1, 'ground', 'ev_suit', True)
+        layout.addLayout(ev_layout, 2, 3, alignment=ALEFT)
+        shield_layout = self.create_build_section('Shield:', 1, 'ground', 'personal_shield', True)
+        layout.addLayout(shield_layout, 3, 3, alignment=ALEFT)
+        sep2 = self.create_frame(size_policy=SMAXMIN, style_override={
+            'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
+        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        layout.addWidget(sep2, 0, 4)
+
+        # Boffs
+        boff_1_layout = self.create_boff_station_ground(boff_id=0)
+        layout.addLayout(boff_1_layout, 0, 5, alignment=ALEFT)
+        boff_2_layout = self.create_boff_station_ground(boff_id=1)
+        layout.addLayout(boff_2_layout, 1, 5, alignment=ALEFT)
+        boff_3_layout = self.create_boff_station_ground(boff_id=2)
+        layout.addLayout(boff_3_layout, 2, 5, alignment=ALEFT)
+        boff_4_layout = self.create_boff_station_ground(boff_id=3)
+        layout.addLayout(boff_4_layout, 3, 5, alignment=ALEFT)
+        sep3 = self.create_frame(size_policy=SMAXMIN, style_override={
+            'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
+        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        layout.addWidget(sep3, 0, 6)
+
+        # Traits
+        trait_layout = GridLayout(margins=0, spacing=isp)
+        personal_trait_layout = self.create_personal_trait_section('ground')
+        trait_layout.addLayout(personal_trait_layout, 0, 0, alignment=ALEFT)
+        rep_trait_layout = self.create_build_section('Reputation Traits', 5, 'ground', 'rep_traits')
+        trait_layout.addLayout(rep_trait_layout, 1, 0)
+        active_trait_layout = self.create_build_section(
+                'Active Reputation Traits', 5, 'ground', 'active_rep_traits')
+        trait_layout.addLayout(active_trait_layout, 2, 0)
+        layout.addLayout(trait_layout, 0, 7, 4, 1, alignment=ATOP)
+
+        # Doffs
+        spacing = self.theme['defaults']['bw'] * self.config['ui_scale']
+        doff_container = self.create_frame(size_policy=SMINMAX)
+        doff_container_layout = VBoxLayout(spacing=spacing * 2)
+        doff_label = self.create_label('Ground Duty Officers')
+        doff_container_layout.addWidget(doff_label, alignment=ALEFT)
+        doff_frame = self.create_frame('doff_frame', size_policy=SMINMAX)
+        doff_frame_layout = VBoxLayout()
+        doff_style_nullifier = self.create_frame(size_policy=SMINMAX)
+        doff_frame_layout.addWidget(doff_style_nullifier)
+        doff_layout = self.create_doff_section('ground')
+        doff_style_nullifier.setLayout(doff_layout)
+        doff_frame.setLayout(doff_frame_layout)
+        doff_container_layout.addWidget(doff_frame)
+        doff_container.setLayout(doff_container_layout)
+        layout.addWidget(doff_container, 4, 1, 1, 7)
 
         frame.setLayout(layout)
 

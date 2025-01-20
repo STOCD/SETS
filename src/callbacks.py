@@ -116,7 +116,11 @@ def get_boff_abilities(
     - :param rank: rank of the ability slot
     - :param boff_id: id of the boff
     """
-    profession, specialization = self.build[environment]['boff_specs'][boff_id]
+    if environment == 'space':
+        profession, specialization = self.build['space']['boff_specs'][boff_id]
+    else:
+        profession = self.build['ground']['boff_profs'][boff_id]
+        specialization = self.build['ground']['boff_specs'][boff_id]
     abilities = self.cache.boff_abilities[environment][profession][rank].keys()
     if specialization != '':
         abilities |= self.cache.boff_abilities[environment][specialization][rank].keys()
@@ -173,7 +177,7 @@ def picker(
         self.autosave()
 
 
-def boff_profession_callback(self, boff_id: int, new_spec: str):
+def boff_profession_callback_space(self, boff_id: int, new_spec: str):
     """
     updates build with newly assigned profession; clears abilities of the old profession
     """
@@ -196,6 +200,16 @@ def boff_profession_callback(self, boff_id: int, new_spec: str):
                 self.build['space']['boffs'][boff_id][ability_num] = ''
                 self.widgets.build['space']['boffs'][boff_id][ability_num].clear()
     self.build['space']['boff_specs'][boff_id] = [profession, specialization]
+    self.autosave()
+
+
+def boff_label_callback_ground(self, boff_id: int, type_: str, new_text: str):
+    """
+    updates build with newly assigned profession or specialization; clears invalid abilities
+    """
+    if self.building:
+        return
+    self.build['ground'][type_][boff_id] = new_text
     self.autosave()
 
 

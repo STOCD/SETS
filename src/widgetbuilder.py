@@ -3,10 +3,12 @@ from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
         QPushButton, QSizePolicy, QVBoxLayout)
 
-from .callbacks import boff_profession_callback, doff_spec_callback, doff_variant_callback, picker
-from .constants import ALEFT, ATOP, CALLABLE, SMAXMAX, SMAXMIN, SMINMAX
+from .callbacks import (
+        boff_label_callback_ground, boff_profession_callback_space, doff_spec_callback,
+        doff_variant_callback, picker)
+from .constants import ALEFT, ATOP, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX, SMAXMIN, SMINMAX
 from .style import get_style, get_style_class, merge_style, theme_font
-from .widgets import DoffCombobox, GridLayout, ItemButton, VBoxLayout
+from .widgets import DoffCombobox, GridLayout, HBoxLayout, ItemButton, VBoxLayout
 
 
 def create_frame(self, style='frame', style_override={}, size_policy=None) -> QFrame:
@@ -256,6 +258,7 @@ def create_build_section(
     - :param environment: "space" or "ground"
     - :param build_key: key for self.build['space'/'ground']
     - :param is_equipment: True when items are equipment, False if items are abilities or traits
+    - :param label_store: stores category label in self.widgets.build[`label_store`] if set
     """
     layout = QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
@@ -279,15 +282,15 @@ def create_build_section(
     return layout
 
 
-def create_boff_station(
-        self, profession: str, environment: str, specialization: str = '',
-        boff_id: int = 0) -> QGridLayout:
+def create_boff_station_space(
+        self, profession: str, specialization: str = '', boff_id: int = 0) -> QGridLayout:
     """
     Creates a block of item buttons with label / Combobox representing boff station.
 
     Parameters:
     - :param profession: "Tactical", "Science", "Engineering" or "Universal"
     - :param specialization: specialization of the seat; None if it has no specialization
+    - :param boff_id: identifies the boff station
     """
     layout = QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
@@ -303,9 +306,9 @@ def create_boff_station(
         )
     else:
         label_options = (profession + specialization,)
-    widget_storage = self.widgets.build[environment]
+    widget_storage = self.widgets.build['space']
     label = create_combo_box(self, size_policy=SMAXMAX, style_override=self.theme['boff_combo'])
-    label.currentTextChanged.connect(lambda new: boff_profession_callback(self, boff_id, new))
+    label.currentTextChanged.connect(lambda new: boff_profession_callback_space(self, boff_id, new))
     label.addItems(label_options)
     label_size_policy = label.sizePolicy()
     label_size_policy.setRetainSizeWhenHidden(True)
@@ -316,11 +319,50 @@ def create_boff_station(
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
         button.clicked.connect(lambda subkey=i: picker(
-                self, environment, 'boffs', subkey, boff_id=boff_id))
+                self, 'space', 'boffs', subkey, boff_id=boff_id))
         button.rightclicked.connect(
-                lambda e, i=i: self.context_menu.invoke(e, 'boffs', i, environment, boff_id))
+                lambda e, i=i: self.context_menu.invoke(e, 'boffs', i, 'space', boff_id))
         layout.addWidget(button, 1, i, alignment=ALEFT)
         widget_storage['boffs'][boff_id][i] = button
+    return layout
+
+
+def create_boff_station_ground(self, boff_id: int) -> VBoxLayout:
+    """
+    Creates a block of item buttons with label / Combobox representing boff station.
+
+    Parameters:
+    - :param boff_id: identifies the boff station
+    """
+    widget_storage = self.widgets.build['ground']
+    m = self.theme['defaults']['margin'] * self.config['ui_scale']
+    layout = VBoxLayout(spacing=m)
+    label_layout = HBoxLayout(spacing=m)
+    label_layout.setAlignment(ALEFT)
+    prof_label = create_combo_box(self, style_override=self.theme['boff_combo'])
+    prof_label.currentTextChanged.connect(
+            lambda new: boff_label_callback_ground(self, boff_id, 'boff_profs', new))
+    prof_label.addItems(CAREERS)
+    widget_storage['boff_profs'][boff_id] = prof_label
+    label_layout.addWidget(prof_label)
+    spec_label = create_combo_box(self, style_override=self.theme['boff_combo'])
+    spec_label.currentTextChanged.connect(
+            lambda new: boff_label_callback_ground(self, boff_id, 'boff_specs', new))
+    spec_label.addItems(GROUND_BOFF_SPECS)
+    widget_storage['boff_specs'][boff_id] = spec_label
+    label_layout.addWidget(spec_label)
+    layout.addLayout(label_layout)
+    button_layout = HBoxLayout(spacing=m)
+    button_layout.setAlignment(ALEFT)
+    for i in range(4):
+        button = create_item_button(self)
+        button.clicked.connect(lambda subkey=i: picker(
+                self, 'ground', 'boffs', subkey, boff_id=boff_id))
+        button.rightclicked.connect(
+                lambda e, i=i: self.context_menu.invoke(e, 'boffs', i, 'ground', boff_id))
+        button_layout.addWidget(button)
+        widget_storage['boffs'][boff_id][i] = button
+    layout.addLayout(button_layout)
     return layout
 
 
@@ -346,7 +388,7 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
     return layout
 
 
-def create_starship_trait_section(self, environment: str) -> QGridLayout:
+def create_starship_trait_section(self) -> QGridLayout:
     """
     Creates build section for starship traits
     """
@@ -356,23 +398,23 @@ def create_starship_trait_section(self, environment: str) -> QGridLayout:
     label = create_label(self, 'Starship Traits', style_override={'margin': (0, 0, 6, 0)})
     label.sizePolicy().setRetainSizeWhenHidden(True)
     layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
-    widget_storage = self.widgets.build[environment]
+    widget_storage = self.widgets.build['space']
     for col in range(5):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
         button.clicked.connect(lambda subkey=col: picker(
-                self, environment, 'starship_traits', subkey))
+                self, 'space', 'starship_traits', subkey))
         button.rightclicked.connect(
-                lambda e, i=col: self.context_menu.invoke(e, 'starship_traits', i, environment))
+                lambda e, i=col: self.context_menu.invoke(e, 'starship_traits', i, 'space'))
         layout.addWidget(button, 1, col, alignment=ALEFT)
         widget_storage['starship_traits'][col] = button
     for col in range(2):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
         button.clicked.connect(lambda subkey=col + 5: picker(
-                self, environment, 'starship_traits', subkey))
+                self, 'space', 'starship_traits', subkey))
         button.rightclicked.connect(
-                lambda e, i=col + 5: self.context_menu.invoke(e, 'starship_traits', i, environment))
+                lambda e, i=col + 5: self.context_menu.invoke(e, 'starship_traits', i, 'space'))
         layout.addWidget(button, 2, col, alignment=ALEFT)
         widget_storage['starship_traits'][col + 5] = button
     return layout

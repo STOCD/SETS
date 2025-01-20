@@ -56,9 +56,9 @@ MODIFIER_QUERY = (
 )
 
 EQUIPMENT_TYPES = {
-    'Body Armor': 'armor', 'EV Suit': 'ev', 'Experimental Weapon': 'experimental',
+    'Body Armor': 'armor', 'EV Suit': 'ev_suit', 'Experimental Weapon': 'experimental',
     'Ground Device': 'ground_devices', 'Ground Weapon': 'weapons', 'Hangar Bay': 'hangars',
-    'Impulse Engine': 'engines', 'Kit': 'kit', 'Kit Module': 'module',
+    'Impulse Engine': 'engines', 'Kit': 'kit', 'Kit Module': 'kit_modules',
     'Personal Shield': 'personal_shield', 'Ship Aft Weapon': 'aft_weapons',
     'Ship Deflector Dish': 'deflector', 'Ship Device': 'devices',
     'Ship Engineering Console': 'eng_consoles', 'Ship Fore Weapon': 'fore_weapons',
@@ -84,6 +84,8 @@ SPECIES = {
 }
 
 PRIMARY_SPECS = {'Command', 'Intelligence', 'Miracle Worker', 'Temporal', 'Pilot'}
+
+GROUND_BOFF_SPECS = {'Command', 'Intelligence', 'Miracle Worker', 'Temporal'}
 
 SECONDARY_SPECS = {'Strategist', 'Constable', 'Commando'}
 

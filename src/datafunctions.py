@@ -50,6 +50,9 @@ def insert_cargo_data(self):
     space_doff_specs = [''] + sorted(self.cache.space_doffs.keys())
     for combobox in self.widgets.build['space']['doffs_spec']:
         combobox.addItems(space_doff_specs)
+    ground_doff_specs = [''] + sorted(self.cache.ground_doffs.keys())
+    for combobox in self.widgets.build['ground']['doffs_spec']:
+        combobox.addItems(ground_doff_specs)
 
 
 def populate_cache(self, threaded_worker: ThreadObject):
@@ -630,16 +633,18 @@ def empty_build(self, build_type: str = 'full') -> dict:
 
         'ground': {
             'active_rep_traits': [None] * 5,
-            'armor': '',
+            'armor': [''],
             'boffs': [[''] * 4, [''] * 4, [''] * 4, [''] * 4],
-            'boff_profs': [''] * 4,
-            'boff_specs': [''] * 4,
-            'devices': [None] * 5,
-            'ev_suit': '',
-            'kit': '',
+            'boff_profs': ['Tactical'] * 4,
+            'boff_specs': ['Command'] * 4,
+            'ground_devices': [None] * 5,
+            'doffs_spec': [''] * 6,
+            'doffs_variant': [''] * 6,
+            'ev_suit': [''],
+            'kit': [''],
             'kit_modules': [None] * 6,
             'rep_traits': [None] * 5,
-            'personal_shield': '',
+            'personal_shield': [''],
             'traits': [None] * 12,
             'weapons': [''] * 2,
         },
