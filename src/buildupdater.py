@@ -38,9 +38,10 @@ def load_build(self):
     self.widgets.ship['desc'].setPlainText(self.build['space']['ship_desc'])
 
     # Character section
+    elite_captain = self.build['captain']['elite']
     self.widgets.character['name'].setText(self.build['captain']['name'])
-    elite = Qt.CheckState.Checked if self.build['captain']['elite'] else Qt.CheckState.Unchecked
-    self.widgets.character['elite'].setCheckState(elite)
+    elite_state = Qt.CheckState.Checked if elite_captain else Qt.CheckState.Unchecked
+    self.widgets.character['elite'].setCheckState(elite_state)
     self.widgets.character['career'].setCurrentText(self.build['captain']['career'])
     species = self.build['captain']['species']
     self.widgets.character['faction'].setCurrentText(self.build['captain']['faction'])
@@ -68,6 +69,8 @@ def load_build(self):
     load_equipment_cat(self, 'tac_consoles', 'space')
     load_boff_stations(self, 'space')
     load_trait_cat(self, 'traits', 'space')
+    if not elite_captain:
+        self.widgets.build['space']['traits'][9].hide()
     load_trait_cat(self, 'starship_traits', 'space')
     load_trait_cat(self, 'rep_traits', 'space')
     load_trait_cat(self, 'active_rep_traits', 'space')
@@ -75,14 +78,20 @@ def load_build(self):
 
     # Ground Build Section
     load_equipment_cat(self, 'kit_modules', 'ground')
+    if not elite_captain:
+        self.widgets.build['ground']['kit_modules'][5].hide()
     load_equipment_cat(self, 'weapons', 'ground')
     load_equipment_cat(self, 'ground_devices', 'ground')
+    if not elite_captain:
+        self.widgets.build['ground']['ground_devices'][4].hide()
     load_equipment_cat(self, 'kit', 'ground')
     load_equipment_cat(self, 'armor', 'ground')
     load_equipment_cat(self, 'ev_suit', 'ground')
     load_equipment_cat(self, 'personal_shield', 'ground')
     load_boff_stations(self, 'ground')
     load_trait_cat(self, 'traits', 'ground')
+    if not elite_captain:
+        self.widgets.build['ground']['traits'][9].hide()
     load_trait_cat(self, 'rep_traits', 'ground')
     load_trait_cat(self, 'active_rep_traits', 'ground')
     load_doffs(self, 'ground')

@@ -101,8 +101,28 @@ def elite_callback(self, state: bool):
     """
     if state == Qt.CheckState.Checked:
         self.build['captain']['elite'] = True
+        self.widgets.build['space']['traits'][9].show()
+        self.build['space']['traits'][9] = ''
+        self.widgets.build['ground']['traits'][9].show()
+        self.build['ground']['traits'][9] = ''
+        self.widgets.build['ground']['kit_modules'][5].show()
+        self.build['ground']['kit_modules'][5] = ''
+        self.widgets.build['ground']['ground_devices'][4].show()
+        self.build['ground']['ground_devices'][4] = ''
     else:
         self.build['captain']['elite'] = False
+        self.widgets.build['space']['traits'][9].hide()
+        self.widgets.build['space']['traits'][9].clear()
+        self.build['space']['traits'][9] = None
+        self.widgets.build['ground']['traits'][9].hide()
+        self.widgets.build['ground']['traits'][9].clear()
+        self.build['ground']['traits'][9] = None
+        self.widgets.build['ground']['kit_modules'][5].hide()
+        self.widgets.build['ground']['kit_modules'][5].clear()
+        self.build['ground']['kit_modules'][5] = None
+        self.widgets.build['ground']['ground_devices'][4].hide()
+        self.widgets.build['ground']['ground_devices'][4].clear()
+        self.build['ground']['ground_devices'][4] = None
     self.autosave()
 
 
