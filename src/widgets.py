@@ -288,6 +288,8 @@ class ItemButton(QFrame):
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if not self.isEnabled():
+            return
         if (event.button() == Qt.MouseButton.LeftButton
                 and event.localPos().x() < self.width()
                 and event.localPos().y() < self.height()):

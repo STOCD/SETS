@@ -23,7 +23,8 @@ class SETS():
             clear_all, clear_slot, clear_build_callback, copy_equipment_item, edit_equipment_item,
             elite_callback, faction_combo_callback, load_build_callback, open_wiki_context,
             paste_equipment_item, save_build_callback, set_build_item, select_ship,
-            ship_info_callback, spec_combo_callback, switch_main_tab, tier_callback)
+            ship_info_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
+            tier_callback)
     from .datafunctions import autosave, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
@@ -608,8 +609,7 @@ class SETS():
         layout.addWidget(species_label, 5, 0, alignment=ARIGHT)
         species_combo = self.create_combo_box()
         species_combo.addItems({''})
-        species_combo.currentTextChanged.connect(
-                lambda t: self.set_build_item(self.build['captain'], 'species', t))
+        species_combo.currentTextChanged.connect(lambda t: self.species_combo_callback(t))
         layout.addWidget(species_combo, 5, 1)
         primary_label = self.create_label('Primary Spec')
         layout.addWidget(primary_label, 6, 0, alignment=ARIGHT)

@@ -78,9 +78,43 @@ SPECIES = {
     },
     'Klingon': {'Klingon', 'Gorn', 'Lethean', 'Nausicaan', 'Orion', 'Alien'},
     'Romulan': {'Romulan', 'Reman', 'Alien'},
-    'Dominion': {"Jem'Hadar"},
+    'Dominion': {"Jem'Hadar", "Jem'Hadar Vanguard"},
     'TOS Federation': {'Human', 'Andorian', 'Tellarite', 'Vulcan'},
     'DSC Federation': {'Human', 'Vulcan', 'Alien'}
+}
+
+SPECIES_TRAITS = {
+    'space': {
+        'Human': 'Leadership',
+        'Trill': 'Joined Symbiote',
+        'Nausicaan': 'Pirate',
+        # 'Romulan': 'Subterfuge',
+        "Jem'Hadar Vanguard": 'Engineered Soldier (Space)'
+    },
+    'ground': {
+        'Human': 'Teamwork',
+        'Andorian': 'Cold Dwelling',
+        'Bajoran': 'Spiritual',
+        'Benzite': 'Natural Armor',
+        'Betazoid': 'Empathic',
+        'Bolian': 'Corrosive Blood',
+        'Ferengi': 'Lobes',
+        'Pakled': 'Dumb Luck',
+        'Rigelian': 'Spirit Walk',
+        'Saurian': 'Circulatory Redundancies',
+        'Tellarite': 'Pig-Headed',
+        'Trill': 'Hyper Metabolism',
+        'Vulcan': 'Logical',
+        'Klingon': 'Warrior',
+        'Gorn': 'Reptilian Strength',
+        'Lethean': 'Rapture',
+        'Nausicaan': 'Physical Strength',
+        'Orion': 'Seduce',
+        'Romulan': 'Physical Strength',
+        'Reman': 'Mental Discipline',
+        "Jem'Hadar": 'Engineered Soldier',
+        "Jem'Hadar Vanguard": 'Engineered Soldier',
+    }
 }
 
 PRIMARY_SPECS = {'Command', 'Intelligence', 'Miracle Worker', 'Temporal', 'Pilot'}

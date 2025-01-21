@@ -385,6 +385,8 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
                     lambda e, i=i: self.context_menu.invoke(e, 'traits', i, environment))
             layout.addWidget(button, row + 1, col, alignment=ALEFT)
             widget_storage['traits'][i] = button
+    # Last button is for innate trait and should not be clickable
+    button.setEnabled(False)
     return layout
 
 

@@ -1,7 +1,8 @@
 from .buildupdater import (
         align_space_frame, clear_captain, clear_doffs, clear_ship, clear_traits,
         slot_equipment_item, slot_trait_item)
-from .constants import EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES
+from .constants import (
+        EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES, SPECIES_TRAITS)
 from .datafunctions import load_build_file, save_build_file
 from .iofunc import browse_path, get_ship_image, image, open_wiki_page
 from .widgets import exec_in_thread
@@ -43,6 +44,42 @@ def faction_combo_callback(self, new_faction: str):
     if new_faction != '':
         self.widgets.character['species'].addItems(('', *SPECIES[new_faction]))
     self.build['captain']['species'] = ''
+    self.autosave()
+
+
+def species_combo_callback(self, new_species: str):
+    """
+    Saves new species to build and changes species trait
+    """
+    self.build['captain']['species'] = new_species
+    if new_species == 'Alien':
+        self.widgets.build['space']['traits'][10].show()
+        self.widgets.build['ground']['traits'][10].show()
+        self.build['space']['traits'][10] = ''
+        self.build['ground']['traits'][10] = ''
+        self.widgets.build['space']['traits'][11].clear()
+        self.widgets.build['ground']['traits'][11].clear()
+        self.build['space']['traits'][11] = ''
+        self.build['ground']['traits'][11] = ''
+    else:
+        self.widgets.build['space']['traits'][10].hide()
+        self.widgets.build['ground']['traits'][10].hide()
+        self.widgets.build['space']['traits'][10].hide()
+        self.widgets.build['ground']['traits'][10].hide()
+        self.build['space']['traits'][10] = None
+        self.build['ground']['traits'][10] = None
+        new_space_trait = SPECIES_TRAITS['space'].get(new_species, '')
+        new_ground_trait = SPECIES_TRAITS['ground'].get(new_species, '')
+        if new_space_trait == '':
+            self.widgets.build['space']['traits'][11].clear()
+            self.build['space']['traits'][11] = ''
+        else:
+            slot_trait_item(self, {'item': new_space_trait}, 'space', 'traits', 11)
+        if new_ground_trait == '':
+            self.widgets.build['ground']['traits'][11].clear()
+            self.build['ground']['traits'][11] = ''
+        else:
+            slot_trait_item(self, {'item': new_ground_trait}, 'ground', 'traits', 11)
     self.autosave()
 
 
