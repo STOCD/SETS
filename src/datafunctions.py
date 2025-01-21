@@ -563,7 +563,6 @@ def load_build_file(self, filepath: str, update_ui: bool = True):
     elif extension.lower() == 'png':
         decoded_str = decode_from_image(self, QImage(filepath))
         if decoded_str == '':
-            print('NO DATA FOUND!')
             return
         build_data = json_loads(decoded_str)
     else:

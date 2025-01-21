@@ -402,6 +402,18 @@ class VBoxLayout(QVBoxLayout):
         self.setSpacing(spacing)
 
 
+class PySideThread(QThread):
+    def __init__(self, parent, finished_func, worker):
+        self.finished_func = finished_func
+        self.worker = worker
+        super().__init__(parent)
+
+    def worker_finished(self):
+        if self.finished_func is not None:
+            self.finished_func()
+        self.quit()
+
+
 class ThreadObject(QObject):
 
     start = Signal(tuple)
@@ -445,11 +457,9 @@ def exec_in_thread(
     - :param **kwargs: keyword parameters passed to the function [optional]
     """
     worker = ThreadObject(func, *args, **kwargs)
-    thread = QThread(self.app)
+    thread = PySideThread(self.app, finished, worker)
     if result is not None:
         worker.result.connect(result)
-    if finished is not None:
-        thread.finished.connect(finished)
     if update_splash is not None:
         worker.update_splash.connect(update_splash)
     worker.moveToThread(thread)
@@ -457,10 +467,9 @@ def exec_in_thread(
         worker.start.connect(worker.run)
     else:
         thread.started.connect(worker.run)
-    worker.finished.connect(thread.quit)
+    worker.finished.connect(thread.worker_finished)
     thread.finished.connect(worker.deleteLater)
     thread.finished.connect(thread.deleteLater)
-    thread.worker = worker
     thread.start(QThread.Priority.LowestPriority)
     if start_later:
         return worker.start
