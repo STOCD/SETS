@@ -116,7 +116,7 @@ class SETS():
     # Current version encoding [this is not likely to be final, update for packaging]
     # year.month[release-type]day[0-9 for daily iteration]
     # 2023.4b10 = 2023, April, Beta, 1st [of april], 0 [first iteration of the day]
-    version = '2024.12b100'
+    version = '2025.11b230'
 
     daysDelayBeforeReattempt = 7
 
@@ -877,11 +877,14 @@ class SETS():
         textBlock = re.sub('\'"`UNIQ--nowiki-0000002.-QINU`"\'', '*', textBlock)
         textBlock = re.sub('\'"`UNIQ--nowiki-0000003.-QINU`"\'', '*', textBlock)
         textBlock = re.sub('\'"`UNIQ--nowiki-0000004.-QINU`"\'', '*', textBlock)
-        if "[[" and "|" in textBlock:
-            while "[[" and "|" in textBlock:
-                start = textBlock.find("[[")
-                end = textBlock.find("|")
-                textBlock = textBlock[:start] + textBlock[end+1:]
+        if '[[' in textBlock:
+            new_parts = list()
+            for part in textBlock.split('[['):
+                if '|' in part:
+                    new_parts.append(part.split('|')[-1])
+                else:
+                    new_parts.append(part)
+            textBlock = ''.join(new_parts)
         textBlock = textBlock.replace('[[', '')
         textBlock = textBlock.replace(']]', '')
         textBlock = textBlock.replace("{{lc: ","").replace("{{lc:","")
