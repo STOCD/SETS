@@ -264,10 +264,24 @@ def boff_profession_callback_space(self, boff_id: int, new_spec: str):
 def boff_label_callback_ground(self, boff_id: int, type_: str, new_text: str):
     """
     updates build with newly assigned profession or specialization; clears invalid abilities
+
+    Parameters:
+    - :param boff_id: number of the boff station
+    - :param type_: "boff_profs" / "boff_specs"
+    - :param new_text: new profession / specialization
     """
     if self.building:
         return
     self.build['ground'][type_][boff_id] = new_text
+    other_type = 'boff_profs' if type_ == 'boff_specs' else 'boff_specs'
+    other_text = self.build['ground'][other_type][boff_id]
+    for ability_num, ability in enumerate(self.build['ground']['boffs'][boff_id]):
+        if ability is not None and ability != '':
+            # Lt. Commander rank contains all abilities
+            if (ability['item'] not in self.cache.boff_abilities['ground'][new_text][2]
+                    and ability['item'] not in self.cache.boff_abilities['ground'][other_text][2]):
+                self.build['ground']['boffs'][boff_id][ability_num] = ''
+                self.widgets.build['ground']['boffs'][boff_id][ability_num].clear()
     self.autosave()
 
 
