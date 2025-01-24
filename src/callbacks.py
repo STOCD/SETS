@@ -311,8 +311,11 @@ def tier_callback(self, new_tier: str):
         ship_data = SHIP_TEMPLATE
     else:
         ship_data = self.cache.ships[ship_name]
-    uni_consoles, devices, starship_traits = get_variable_slot_counts(self, ship_data)
-    update_equipment_cat(self, 'uni_consoles', uni_consoles, can_hide=True)
+    uni, eng, sci, tac, devices, starship_traits = get_variable_slot_counts(self, ship_data)
+    update_equipment_cat(self, 'uni_consoles', uni, can_hide=True)
+    update_equipment_cat(self, 'eng_consoles', eng)
+    update_equipment_cat(self, 'sci_consoles', sci)
+    update_equipment_cat(self, 'tac_consoles', tac)
     update_equipment_cat(self, 'devices', devices)
     update_starship_traits(self, starship_traits)
     self.autosave()

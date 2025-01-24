@@ -125,7 +125,7 @@ def align_space_frame(self, ship_data: dict, clear: bool = False):
     - :param ship_data: ship specifications
     - :param clear: set to True to clear build
     """
-    uni_consoles, devices, starship_traits = get_variable_slot_counts(self, ship_data)
+    uni, eng, sci, tac, devices, starship_traits = get_variable_slot_counts(self, ship_data)
 
     # Equipment
     update_equipment_cat(self, 'fore_weapons', ship_data['fore'], clear)
@@ -143,10 +143,10 @@ def align_space_frame(self, ship_data: dict, clear: bool = False):
         self.build['space']['core'][0] = ''
         self.widgets.build['space']['shield'][0].clear()
         self.build['space']['shield'][0] = ''
-    update_equipment_cat(self, 'uni_consoles', uni_consoles, clear, can_hide=True)
-    update_equipment_cat(self, 'eng_consoles', ship_data['consoleseng'], clear, can_hide=True)
-    update_equipment_cat(self, 'sci_consoles', ship_data['consolessci'], clear, can_hide=True)
-    update_equipment_cat(self, 'tac_consoles', ship_data['consolestac'], clear, can_hide=True)
+    update_equipment_cat(self, 'uni_consoles', uni, clear, can_hide=True)
+    update_equipment_cat(self, 'eng_consoles', eng, clear, can_hide=True)
+    update_equipment_cat(self, 'sci_consoles', sci, clear, can_hide=True)
+    update_equipment_cat(self, 'tac_consoles', tac, clear, can_hide=True)
 
     # Starship Traits
     update_starship_traits(self, starship_traits, clear)
@@ -167,16 +167,23 @@ def get_variable_slot_counts(self, ship_data: dict):
     Parameters:
     - :param ship_data: ship specifications
 
-    :return: 3-tuple containing universal consoles, devices, starship traits
+    :return: 6-tuple containing universal consoles, engineering consoles, science consoles, \
+        tactical consoles, devices, starship traits
     """
     if ship_data['name'] == '<Pick Ship>':
         uni_consoles = 3
         starship_traits = 7
         devices = 6
+        eng_consoles = 5
+        sci_consoles = 5
+        tac_consoles = 5
     else:
         uni_consoles = 0
         starship_traits = 5
         devices = ship_data['devices']
+        eng_consoles = ship_data['consoleseng']
+        sci_consoles = ship_data['consolessci']
+        tac_consoles = ship_data['consolestac']
         if 'Innovation Effects' in ship_data['abilities']:
             uni_consoles += 1
         if '-X2' in self.build['space']['tier']:
@@ -187,7 +194,14 @@ def get_variable_slot_counts(self, ship_data: dict):
             uni_consoles += 1
             starship_traits += 1
             devices += 1
-    return uni_consoles, devices, starship_traits
+        if self.build['space']['tier'].startswith(('T5-U', 'T5-X')):
+            if ship_data['t5uconsole'] == 'eng':
+                eng_consoles += 1
+            elif ship_data['t5uconsole'] == 'sci':
+                sci_consoles += 1
+            elif ship_data['t5uconsole'] == 'tac':
+                tac_consoles += 1
+    return uni_consoles, eng_consoles, sci_consoles, tac_consoles, devices, starship_traits
 
 
 def update_equipment_cat(
