@@ -125,11 +125,13 @@ def align_space_frame(self, ship_data: dict, clear: bool = False):
     - :param ship_data: ship specifications
     - :param clear: set to True to clear build
     """
+    uni_consoles, devices, starship_traits = get_variable_slot_counts(self, ship_data)
+
     # Equipment
     update_equipment_cat(self, 'fore_weapons', ship_data['fore'], clear)
     update_equipment_cat(self, 'aft_weapons', ship_data['aft'], clear, can_hide=True)
     update_equipment_cat(self, 'experimental', ship_data['experimental'], clear, can_hide=True)
-    update_equipment_cat(self, 'devices', ship_data['devices'], clear)
+    update_equipment_cat(self, 'devices', devices, clear)
     update_equipment_cat(self, 'hangars', ship_data['hangars'], clear, can_hide=True)
     update_equipment_cat(self, 'sec_def', ship_data['secdeflector'], clear, can_hide=True)
     if clear:
@@ -141,19 +143,13 @@ def align_space_frame(self, ship_data: dict, clear: bool = False):
         self.build['space']['core'][0] = ''
         self.widgets.build['space']['shield'][0].clear()
         self.build['space']['shield'][0] = ''
-    uni_consoles = 0
-    if 'Innovation Effects' in ship_data['abilities']:
-        uni_consoles += 1
-    if '-X2' in self.build['space']['tier']:
-        uni_consoles += 2
-    elif '-X' in self.build['space']['tier']:
-        uni_consoles += 1
-    if ship_data['name'] == '<Pick Ship>':
-        uni_consoles = 3
     update_equipment_cat(self, 'uni_consoles', uni_consoles, clear, can_hide=True)
     update_equipment_cat(self, 'eng_consoles', ship_data['consoleseng'], clear, can_hide=True)
     update_equipment_cat(self, 'sci_consoles', ship_data['consolessci'], clear, can_hide=True)
     update_equipment_cat(self, 'tac_consoles', ship_data['consolestac'], clear, can_hide=True)
+
+    # Starship Traits
+    update_starship_traits(self, starship_traits, clear)
 
     # Boffs
     boff_specs = map(lambda s: get_boff_spec(self, s), ship_data['boffs'])
@@ -163,8 +159,40 @@ def align_space_frame(self, ship_data: dict, clear: bool = False):
         update_boff_seat(self, boff_to_hide, rank=0, profession='', clear=clear, hide_seat=True)
 
 
+def get_variable_slot_counts(self, ship_data: dict):
+    """
+    returns the number of universal consoles, devices and starship traits the current build should
+    have
+
+    Parameters:
+    - :param ship_data: ship specifications
+
+    :return: 3-tuple containing universal consoles, devices, starship traits
+    """
+    if ship_data['name'] == '<Pick Ship>':
+        uni_consoles = 3
+        starship_traits = 7
+        devices = 6
+    else:
+        uni_consoles = 0
+        starship_traits = 5
+        devices = ship_data['devices']
+        if 'Innovation Effects' in ship_data['abilities']:
+            uni_consoles += 1
+        if '-X2' in self.build['space']['tier']:
+            uni_consoles += 2
+            starship_traits += 2
+            devices += 2
+        elif '-X' in self.build['space']['tier']:
+            uni_consoles += 1
+            starship_traits += 1
+            devices += 1
+    return uni_consoles, devices, starship_traits
+
+
 def update_equipment_cat(
-        self, build_key: str, target_quantity: int | None, clear: bool, can_hide: bool = False):
+        self, build_key: str, target_quantity: int | None, clear: bool = False,
+        can_hide: bool = False):
     """
     Shows/hides appropriate amount of buttons of the given category; updates build
 
@@ -190,6 +218,26 @@ def update_equipment_cat(
         buttons[hide_index].clear()
         buttons[hide_index].hide()
         self.build['space'][build_key][hide_index] = None
+
+
+def update_starship_traits(self, target_quantity: int, clear: bool = False):
+    """
+    Shows/hides appropriate amount of starship trait buttons; updates `self.build`
+
+    Parameters:
+    - :param target_quantity: number of slots that should be available in this category
+    - :param clear: True to clear build
+    """
+    buttons = self.widgets.build['space']['starship_traits']
+    for show_index in range(target_quantity):
+        buttons[show_index].show()
+        if clear:
+            buttons[show_index].clear()
+            self.build['space']['starship_traits'][show_index] = ''
+    for hide_index in range(target_quantity, 7):
+        buttons[hide_index].clear()
+        buttons[hide_index].hide()
+        self.build['space']['starship_traits'][hide_index] = None
 
 
 def update_boff_seat(

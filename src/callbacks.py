@@ -1,6 +1,7 @@
 from .buildupdater import (
         align_space_frame, clear_captain, clear_doffs, clear_ship, clear_traits,
-        slot_equipment_item, slot_trait_item)
+        get_variable_slot_counts, slot_equipment_item, slot_trait_item, update_equipment_cat,
+        update_starship_traits)
 from .constants import (
         EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES, SPECIES_TRAITS)
 from .datafunctions import load_build_file, save_build_file
@@ -302,7 +303,18 @@ def tier_callback(self, new_tier: str):
     """
     Updates build according to new tier
     """
+    if self.building:
+        return
     self.build['space']['tier'] = new_tier
+    ship_name = self.build['space']['ship']
+    if ship_name == '<Pick Ship>':
+        ship_data = SHIP_TEMPLATE
+    else:
+        ship_data = self.cache.ships[ship_name]
+    uni_consoles, devices, starship_traits = get_variable_slot_counts(self, ship_data)
+    update_equipment_cat(self, 'uni_consoles', uni_consoles, can_hide=True)
+    update_equipment_cat(self, 'devices', devices)
+    update_starship_traits(self, starship_traits)
     self.autosave()
 
 
