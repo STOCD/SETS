@@ -1,5 +1,5 @@
 from .buildupdater import (
-        align_space_frame, clear_captain, clear_doffs, clear_ship, clear_traits,
+        align_space_frame, clear_captain, clear_doffs, clear_ground_build, clear_ship, clear_traits,
         get_variable_slot_counts, slot_equipment_item, slot_trait_item, update_equipment_cat,
         update_starship_traits)
 from .constants import (
@@ -326,8 +326,12 @@ def clear_build_callback(self):
     Clears current build section
     """
     current_tab = self.widgets.build_tabber.currentIndex()
+    self.building = True
     if current_tab == 0:
         clear_space_build(self)
+    elif current_tab == 1:
+        clear_ground_build(self)
+    self.building = False
 
 
 def clear_space_build(self):
@@ -348,10 +352,8 @@ def clear_all(self):
     Clears space and ground build, skills and captain info
     """
     self.building = True
-    clear_ship(self)
-    align_space_frame(self, SHIP_TEMPLATE, clear=True)
-    clear_traits(self)
-    clear_doffs(self)
+    clear_space_build(self)
+    clear_ground_build(self)
     clear_captain(self)
     self.building = False
     self.autosave()

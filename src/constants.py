@@ -119,7 +119,7 @@ SPECIES_TRAITS = {
 
 PRIMARY_SPECS = {'Command', 'Intelligence', 'Miracle Worker', 'Temporal', 'Pilot'}
 
-GROUND_BOFF_SPECS = {'Command', 'Intelligence', 'Miracle Worker', 'Temporal'}
+GROUND_BOFF_SPECS = ('Command', 'Intelligence', 'Miracle Worker', 'Temporal')
 
 SECONDARY_SPECS = {'Strategist', 'Constable', 'Commando'}
 

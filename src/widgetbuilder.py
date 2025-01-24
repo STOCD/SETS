@@ -6,7 +6,8 @@ from PySide6.QtWidgets import (
 from .callbacks import (
         boff_label_callback_ground, boff_profession_callback_space, doff_spec_callback,
         doff_variant_callback, picker)
-from .constants import ALEFT, ATOP, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX, SMAXMIN, SMINMAX
+from .constants import (
+        ALEFT, ATOP, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX, SMAXMIN, SMINMAX)
 from .style import get_style, get_style_class, merge_style, theme_font
 from .widgets import DoffCombobox, GridLayout, HBoxLayout, ItemButton, VBoxLayout
 
