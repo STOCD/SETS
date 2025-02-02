@@ -34,7 +34,8 @@ class SETS():
             create_boff_station_ground, create_boff_station_space, create_build_section,
             create_button, create_button_series, create_checkbox, create_combo_box,
             create_doff_section, create_entry, create_frame, create_item_button, create_label,
-            create_personal_trait_section, create_skill_group_space, create_starship_trait_section)
+            create_personal_trait_section, create_skill_button_ground, create_skill_group_space,
+            create_starship_trait_section)
 
     app_dir = None
     # (release version, dev version)
@@ -372,7 +373,9 @@ class SETS():
         """
         self.setup_space_build_frame()
         self.setup_ground_build_frame()
+        self.cache_skills()
         self.setup_space_skill_frame()
+        self.setup_ground_skill_frame()
 
     def setup_space_build_frame(self):
         """
@@ -640,7 +643,6 @@ class SETS():
         """
         Creates Space skill GUI
         """
-        self.cache_skills()
         frame = self.widgets.build_frames[2]
         isp = self.theme['defaults']['isp'] * self.config['ui_scale']
         csp = self.theme['defaults']['csp'] * self.config['ui_scale']
@@ -671,6 +673,73 @@ class SETS():
 
         scroll_frame.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_frame)
+        seperator = self.create_frame(size_policy=SMAXMIN, style_override={
+                'background-color': '@sets'})
+        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        col_layout.addWidget(seperator, 0, 1)
+        bonus_bar_container = self.create_frame(size_policy=SMINMIN)
+        # bonus bars
+        col_layout.addWidget(bonus_bar_container, 0, 2)
+        frame.setLayout(col_layout)
+
+    def setup_ground_skill_frame(self):
+        """
+        Creates Ground skill GUI
+        """
+        frame = self.widgets.build_frames[3]
+        isp = self.theme['defaults']['isp'] * self.config['ui_scale']
+        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        col_layout = GridLayout(margins=isp, spacing=csp)
+        col_layout.setRowStretch(0, 1)
+        col_layout.setColumnStretch(0, 3)
+        col_layout.setColumnStretch(2, 1)
+        tree_frame = self.create_frame(size_policy=SMINMIN)
+        col_layout.addWidget(tree_frame, 0, 0)
+        # skill tree
+        tree_layout = GridLayout(spacing=5 * isp)
+        tree_layout.setColumnStretch(0, 1)
+        tree_layout.setColumnStretch(3, 1)
+        tree_layout.setRowStretch(0, 1)
+        tree_layout.setRowStretch(3, 1)
+        skills = self.cache.skills['ground']
+        group_layout = GridLayout(spacing=csp)
+        group_layout.addWidget(self.create_skill_button_ground(skills[0], 0, 0), 0, 1)
+        group_layout.addWidget(self.create_skill_button_ground(skills[0], 1, 1), 1, 1)
+        group_layout.addWidget(self.create_skill_button_ground(skills[1], 2, 0), 1, 0)
+        group_layout.addWidget(self.create_skill_button_ground(skills[1], 3, 1), 2, 0)
+        group_layout.addWidget(self.create_skill_button_ground(skills[2], 4, 0), 1, 2)
+        group_layout.addWidget(self.create_skill_button_ground(skills[2], 5, 1), 2, 2)
+        tree_layout.addLayout(group_layout, 1, 1)
+        group_layout = GridLayout(spacing=csp)
+        group_layout.addWidget(self.create_skill_button_ground(skills[3], 0, 0), 0, 1)
+        group_layout.addWidget(self.create_skill_button_ground(skills[3], 1, 1), 1, 1)
+        group_layout.addWidget(self.create_skill_button_ground(skills[4], 2, 0), 1, 0)
+        group_layout.addWidget(self.create_skill_button_ground(skills[4], 3, 1), 2, 0)
+        group_layout.addWidget(self.create_skill_button_ground(skills[5], 4, 0), 1, 2)
+        group_layout.addWidget(self.create_skill_button_ground(skills[5], 5, 1), 2, 2)
+        tree_layout.addLayout(group_layout, 1, 2)
+        group_layout = GridLayout(spacing=csp)
+        group_layout.addWidget(
+                self.create_skill_button_ground(skills[6], 0, 0), 0, 0, 1, 2, alignment=AHCENTER)
+        group_layout.addWidget(
+                self.create_skill_button_ground(skills[6], 1, 1), 1, 0, alignment=ARIGHT)
+        group_layout.addWidget(
+                self.create_skill_button_ground(skills[7], 2, 0), 1, 1, alignment=ALEFT)
+        group_layout.addWidget(
+                self.create_skill_button_ground(skills[7], 3, 1), 2, 1, alignment=ALEFT)
+        tree_layout.addLayout(group_layout, 2, 1)
+        group_layout = GridLayout(spacing=csp)
+        group_layout.addWidget(
+                self.create_skill_button_ground(skills[8], 0, 0), 0, 0, 1, 2, alignment=AHCENTER)
+        group_layout.addWidget(
+                self.create_skill_button_ground(skills[8], 1, 1), 1, 1, alignment=ALEFT)
+        group_layout.addWidget(
+                self.create_skill_button_ground(skills[9], 2, 0), 1, 0, alignment=ARIGHT)
+        group_layout.addWidget(
+                self.create_skill_button_ground(skills[9], 3, 1), 2, 0, alignment=ARIGHT)
+        tree_layout.addLayout(group_layout, 2, 2)
+
+        tree_frame.setLayout(tree_layout)
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
                 'background-color': '@sets'})
         seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])

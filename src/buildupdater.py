@@ -110,6 +110,15 @@ def load_build(self):
                 self.cache.skills['space_points_rank'][int(skill_id / 6)] += 1
     self.cache.skills['space_points_total'] = sum(self.cache.skills['space_points_rank'])
 
+    # ground skills
+    self.cache.skills['ground_points_total'] = 0
+    for skill_data, skill_buttons in zip(
+            self.build['ground_skills'], self.widgets.build['ground_skills']):
+        for enable, skill_button in zip(skill_data, skill_buttons):
+            if enable:
+                skill_button.set_overlay(self.cache.overlays.check)
+                self.cache.skills['ground_points_total'] += 1
+
     self.building = False
     self.autosave()
 

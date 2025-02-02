@@ -60,24 +60,32 @@ def format_skill_tooltip(
     - :param node_index: index of the node within the skill group
     - :param environment: "space" / "ground"
     """
-    if skill_data['grouping'] == 'column':
-        prefix = SKILL_PREFIXES[node_index]
-        global_description = skill_data['gdesc']
-    elif skill_data['grouping'] == 'pair+1':
-        if node_index == 1:
-            prefix = 'Improved '
+    if environment == 'space':
+        if skill_data['grouping'] == 'column':
+            prefix = SKILL_PREFIXES[node_index]
+            global_description = skill_data['gdesc']
+        elif skill_data['grouping'] == 'pair+1':
+            if node_index == 1:
+                prefix = 'Improved '
+            else:
+                prefix = ''
+            global_description = skill_data['gdesc'][node_index]
         else:
             prefix = ''
-        global_description = skill_data['gdesc'][node_index]
-    else:
-        prefix = ''
-        global_description = skill_data['gdesc'][node_index]
-    head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
-    subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
-    return (
-            f"<p style='{head_style}'>{prefix}{skill_name}</p><p style='{subhead_style}'>"
-            f"{CAREER_ABBR[skill_data['career']]} {environment.capitalize()} Skill</p>"
-            f"<p>{global_description}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
+            global_description = skill_data['gdesc'][node_index]
+        head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
+        subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
+        return (
+                f"<p style='{head_style}'>{prefix}{skill_name}</p><p style='{subhead_style}'>"
+                f"{CAREER_ABBR[skill_data['career']]} {environment.capitalize()} Skill</p>"
+                f"<p>{global_description}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
+    elif environment == 'ground':
+        head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
+        subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
+        return (
+                f"<p style='{head_style}'>{skill_name}</p><p style='{subhead_style}'>"
+                f"Ground Skill</p>"
+                f"<p>{skill_data['gdesc']}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
 
 
 # --------------------------------------------------------------------------------------------------

@@ -101,7 +101,13 @@ class WidgetStorage():
                 'eng': [None] * 30,
                 'sci': [None] * 30,
                 'tac': [None] * 30
-            }
+            },
+            'ground_skills': [
+                [False] * 6,
+                [False] * 6,
+                [False] * 4,
+                [False] * 4
+            ]
         }
 
 
@@ -145,6 +151,7 @@ class Cache():
             'space_points_sci': 0,
             'space_points_tac': 0,
             'space_points_rank': [0] * 5,
+            'ground_points_total': 0,
         }
         self.species: dict = {
             'Federation': dict(),

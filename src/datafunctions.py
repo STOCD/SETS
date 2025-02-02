@@ -64,6 +64,9 @@ def slot_skill_images(self):
     for career_block in self.widgets.build['space_skills'].values():
         for skill_button in career_block:
             skill_button.set_item(image(self, skill_button.skill_image_name))
+    for skill_group in self.widgets.build['ground_skills']:
+        for skill_button in skill_group:
+            skill_button.set_item(image(self, skill_button.skill_image_name))
 
 
 def populate_cache(self, threaded_worker: ThreadObject):
@@ -279,6 +282,11 @@ def load_base_images(self, threaded_worker: ThreadObject):
         for skill_group in rank_group:
             for skill_node in skill_group['nodes']:
                 self.cache.images[skill_node['image']] = retrieve_image(
+                    self, skill_node['image'], img_folder, threaded_worker.update_splash,
+                    f'{WIKI_IMAGE_URL}{skill_node['image']}.png')
+    for skill_group in self.cache.skills['ground']:
+        for skill_node in skill_group['nodes']:
+            self.cache.images[skill_node['image']] = retrieve_image(
                     self, skill_node['image'], img_folder, threaded_worker.update_splash,
                     f'{WIKI_IMAGE_URL}{skill_node['image']}.png')
     self.cache.images['arrow-up'] = QImage(get_asset_path('arrow-up.png', self.app_dir))

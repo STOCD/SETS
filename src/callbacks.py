@@ -570,6 +570,27 @@ def toggle_space_skill(self, current_state: bool, career: str, skill_id: int):
     self.autosave()
 
 
+def toggle_ground_skill(self, current_state: bool, skill_group: int, skill_id: int):
+    """
+    Activates ground skill if it's deactivated, deactivates skill if it's activated.
+
+    Parameters:
+    - :param current_state: state of the button before toggling
+    - :param skill_group: number [0, 3] identifying the skill group
+    - :param skill_id: index of the skill within the group
+    """
+    if current_state:
+        self.widgets.build['ground_skills'][skill_group][skill_id].clear_overlay()
+        self.build['ground_skills'][skill_group][skill_id] = False
+        self.cache.skills['ground_points_total'] -= 1
+    else:
+        self.widgets.build['ground_skills'][skill_group][skill_id].set_overlay(
+                self.cache.overlays.check)
+        self.build['ground_skills'][skill_group][skill_id] = True
+        self.cache.skills['ground_points_total'] += 1
+    self.autosave()
+
+
 def skill_callback_space(self, career: str, skill_id: int, grouping: str):
     """
     Callback for space skill node
@@ -601,3 +622,31 @@ def skill_callback_space(self, career: str, skill_id: int, grouping: str):
                 toggle_space_skill(self, skill_active, career, skill_id)
             elif grouping != 'column' and self.build['space_skills'][career][skill_id - skill_lvl]:
                 toggle_space_skill(self, skill_active, career, skill_id)
+
+
+def skill_callback_ground(self, skill_group: int, skill_id: int):
+    """
+    Callback for ground skill node
+
+    Parameters:
+    - :param skill_group: number [0, 3] identifying the skill group
+    - :param skill_id: index of the skill within the group
+    """
+    skill_active = self.build['ground_skills'][skill_group][skill_id]
+    if skill_active:  # check for valid deselect
+        if skill_id == 0 and (
+                self.build['ground_skills'][skill_group][1]
+                or self.build['ground_skills'][skill_group][2]
+                or skill_group <= 1 and self.build['ground_skills'][skill_group][4]):
+            return
+        elif skill_id % 2 == 0 and self.build['ground_skills'][skill_group][skill_id + 1]:
+            return
+        toggle_ground_skill(self, skill_active, skill_group, skill_id)
+    else:  # check for valid select
+        if self.cache.skills['ground_points_total'] < 10:
+            if skill_id % 2 == 1 and self.build['ground_skills'][skill_group][skill_id - 1]:
+                toggle_ground_skill(self, skill_active, skill_group, skill_id)
+            elif skill_id == 0:
+                toggle_ground_skill(self, skill_active, skill_group, skill_id)
+            elif (skill_id == 2 or skill_id == 4) and self.build['ground_skills'][skill_group][0]:
+                toggle_ground_skill(self, skill_active, skill_group, skill_id)

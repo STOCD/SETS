@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 
 from .callbacks import (
         boff_label_callback_ground, boff_profession_callback_space, doff_spec_callback,
-        doff_variant_callback, picker, skill_callback_space)
+        doff_variant_callback, picker, skill_callback_ground, skill_callback_space)
 from .constants import (
         ABOTTOM, AHCENTER, ALEFT, ATOP, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX, SMAXMIN,
         SMINMAX)
@@ -499,3 +499,22 @@ def create_skill_group_space(self, group_data: dict, id_offset: int) -> GridLayo
         layout.addWidget(button, 1, 1, alignment=ATOP)
         self.widgets.build['space_skills'][group_data['career']][id_offset + 2] = button
     return layout
+
+
+def create_skill_button_ground(self, group_data: dict, id: int, node_id: int) -> ItemButton:
+    """
+    Creates ground skill button and returns it
+
+    Parameters:
+    - :param group_data: skill group data
+    - :param id: index of the skill node in self.widgets and self.build
+    - :param node_id: 0 or 1 for first or second node
+    """
+    button = create_item_button(self)
+    button.clicked.connect(lambda: skill_callback_ground(self, group_data['tree'], id))
+    # button.rightclicked.connect(lambda e: None)
+    button.skill_image_name = group_data['nodes'][node_id]['image']
+    button.tooltip = format_skill_tooltip(
+            self, group_data['nodes'][node_id]['name'], group_data, node_id, 'ground')
+    self.widgets.build['ground_skills'][group_data['tree']][id] = button
+    return button
