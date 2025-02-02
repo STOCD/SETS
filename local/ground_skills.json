@@ -4,7 +4,7 @@
 			"gdesc" : "This skill increases the rate at which your hitpoints are passively restored over time. Each point of Health Regeneration skill increases your Regeneration Rate by 0.5% of its base value.<br><br>Players begin with a Regeneration Rate of 1, which translates to naturally restoring 10% of maximum hitpoints every 6 seconds. The effects of this Skill are disabled while in Combat on a ground map.",
 			"tree" : 1,
 			"side" : "r",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Regeneration",
+			"link" : "https://stowiki.net/wiki/Skill:_Regeneration",
 			"nodes" : [
 				{
 					"name" : "Regeneration",
@@ -22,7 +22,7 @@
 			"gdesc" : "This skill increases your maximum hitpoints. Each point of Health Capacity skill grants you an additional .2% health.<br><br>Your maximum hitpoints scale up as you level, starting at 200 and gaining +6 each time you gain a level. This skill increases the base scaling value by a fixed percentage, rounded to the nearest whole number.",
 			"tree" : 1,
 			"side" : "",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Endurance_Training",
+			"link" : "https://stowiki.net/wiki/Skill:_Endurance_Training",
 			"nodes" : [
 				{
 					"name" : "Endurance Training",
@@ -40,7 +40,7 @@
 			"gdesc" : "This skill increases the effectiveness of any Combat Armor you currently have equipped. This skill amplifies the Damage Resistance Ratings offered by your armor, as well as many additional scaling effects such as hitpoint bonuses. Each point of Combat Armor skill offers a 0.5% bonus to the base values of these scaling benefits.",
 			"tree" : 1,
 			"side" : "l",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Armor_Expert",
+			"link" : "https://stowiki.net/wiki/Skill:_Armor_Expert",
 			"nodes" : [
 				{
 					"name" : "Armor Expert",
@@ -58,7 +58,7 @@
 			"gdesc" : "This skill increases the damage dealt by your weapons by penetrating your enemy's Resistances. Each point of this skill grants your weapons +0.1 Armor Penetration.<br><br>Armor Penetration causes your weapons to behave as if the target's Damage Resistance Rating is lower than their actual value by the same amount as your total Armor Penetration value.",
 			"tree" : 0,
 			"side" : "r",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Weapon_Penetration",
+			"link" : "https://stowiki.net/wiki/Skill:_Weapon_Penetration",
 			"nodes" : [
 				{
 					"name" : "Weapon Penetration",
@@ -76,7 +76,7 @@
 			"gdesc" : "This skill increases the base damage of your ranged weapons. Each point of Weapon Proficiency Skill provides a 0.5% increase to the base damage of applicable weapons.<br><br>The total base damage your energy weapons deal is determined by a combination of the weapon's damage, your level, the mark and quality of your weapons, and many other permanent and temporary damage increasing effects.",
 			"tree" : 0,
 			"side" : "",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Weapon_Proficiency",
+			"link" : "https://stowiki.net/wiki/Skill:_Weapon_Proficiency",
 			"nodes" : [
 				{
 					"name" : "Weapon Proficiency",
@@ -94,7 +94,7 @@
 			"gdesc" : "This skill increases both your chance of landing a Critical Hit, as well as your Critical Severity, for all weapons. Per point of Weapon Criticals skill, you gain +0.06% Critical Chance and +0.2% Critical Severity.<br><br>Players start with a base Critical Chance of 2.5% and a Critical Severity of +50%. When a weapon or ability Critical Hits, it grants Bonus Damage equal to your Critical Severity",
 			"tree" : 0,
 			"side" : "l",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Weapon_Criticals",
+			"link" : "https://stowiki.net/wiki/Skill:_Weapon_Criticals",
 			"nodes" : [
 				{
 					"name" : "Weapon Criticals",
@@ -112,7 +112,7 @@
 			"gdesc" : "This skill provides an increase to the effectiveness of Kit Module abilities. The benefit this skill provides will vary on each module, but will always increases at least one aspect of the ability. These increases may include any of the following:<br><br>*Damage Output<br>*Duration of Control Effects<br>*Duration of Buffs and/or Debuffs<br>*Health and/or Shields of Constructs<br>*Magnitude of Repel/Knock Effects",
 			"tree" : 3,
 			"side" : "",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Kit_Performance_Expert",
+			"link" : "https://stowiki.net/wiki/Skill:_Kit_Performance_Expert",
 			"nodes" : [
 				{
 					"name" : "Kit Performance Expert",
@@ -130,7 +130,7 @@
 			"gdesc" : "This skill provides a bonus to your Ability Recharge for all Kit Module Abilities. For each point of Kit Readiness skill, these abilities will recharge 0.2% faster<br><br>100% Ability Recharge bonuses would reduce an ability's recharge time to half of its base value. Most abilities have a minimum recharge time which varies. This skill (and all other Power Recharge bonuses) can never push an ability past their minimum recharge.",
 			"tree" : 3,
 			"side" : "l",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Kit_Efficiency",
+			"link" : "https://stowiki.net/wiki/Skill:_Kit_Efficiency",
 			"nodes" : [
 				{
 					"name" : "Kit Efficiency",
@@ -148,7 +148,7 @@
 			"gdesc" : "This skill increases the amount of damage prevented by your Personal Shields.<br><br>By default, 90% of incoming damage is applied to your Personal Shields (the remaining 10% bleeds through and applies to your health). For each point of Shield Hardness skill, your shields will negate 0.2% of the damage they block.",
 			"tree" : 2,
 			"side" : "r",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Personal_Shield_Resilience",
+			"link" : "https://stowiki.net/wiki/Skill:_Personal_Shield_Resilience",
 			"nodes" : [
 				{
 					"name" : "Personal Shields Resilience",
@@ -166,7 +166,7 @@
 			"gdesc" : "This skill increases the effectiveness of any Personal Shields you currently have equipped. Each point of Personal Shields skill grants a 0.25% increases to the base capacity of your shields.",
 			"tree" : 2,
 			"side" : "",
-			"link" : "https://sto.fandom.com/wiki/Skill:_Personal_Shields_Expert",
+			"link" : "https://stowiki.net/wiki/Skill:_Personal_Shields_Expert",
 			"nodes" : [
 				{
 					"name" : "Personal Shields Expert",

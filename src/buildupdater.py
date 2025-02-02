@@ -96,6 +96,20 @@ def load_build(self):
     load_trait_cat(self, 'active_rep_traits', 'ground')
     load_doffs(self, 'ground')
 
+    # space skills
+    self.cache.skills['space_points_eng'] = 0
+    self.cache.skills['space_points_sci'] = 0
+    self.cache.skills['space_points_tac'] = 0
+    self.cache.skills['space_points_rank'] = [0] * 5
+    for career in ('eng', 'sci', 'tac'):
+        for skill_id, (button, enable) in enumerate(zip(
+                self.widgets.build['space_skills'][career], self.build['space_skills'][career])):
+            if enable:
+                button.set_overlay(self.cache.overlays.check)
+                self.cache.skills[f'space_points_{career}'] += 1
+                self.cache.skills['space_points_rank'][int(skill_id / 6)] += 1
+    self.cache.skills['space_points_total'] = sum(self.cache.skills['space_points_rank'])
+
     self.building = False
     self.autosave()
 

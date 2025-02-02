@@ -5,10 +5,12 @@ from PySide6.QtWidgets import (
 
 from .callbacks import (
         boff_label_callback_ground, boff_profession_callback_space, doff_spec_callback,
-        doff_variant_callback, picker)
+        doff_variant_callback, picker, skill_callback_space)
 from .constants import (
-        ALEFT, ATOP, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX, SMAXMIN, SMINMAX)
+        ABOTTOM, AHCENTER, ALEFT, ATOP, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX, SMAXMIN,
+        SMINMAX)
 from .style import get_style, get_style_class, merge_style, theme_font
+from .textedit import format_skill_tooltip
 from .widgets import DoffCombobox, GridLayout, HBoxLayout, ItemButton, VBoxLayout
 
 
@@ -443,3 +445,57 @@ def create_doff_section(self, environment: str) -> GridLayout:
         doff_layout.addWidget(variant_combo, i, 1)
         self.widgets.build[environment]['doffs_variant'][i] = variant_combo
     return doff_layout
+
+
+def create_skill_group_space(self, group_data: dict, id_offset: int) -> GridLayout:
+    """
+    Creates a skill group (3 related skill nodes) in appropriate shape
+
+    Parameters:
+    - :param group_data: skill group data
+    - :param id_offset: index of the first skill node in self.widgets and self.build
+    """
+    layout = GridLayout(spacing=self.theme['defaults']['csp'] * self.config['ui_scale'])
+    # one skill with 3 ranks
+    if group_data['grouping'] == 'column':
+        for index, node in enumerate(group_data['nodes']):
+            button = create_item_button(self)
+            button.clicked.connect(lambda id=id_offset + index: skill_callback_space(
+                    self, group_data['career'], id, 'column'))
+            # button.rightclicked.connect(lambda e: None)
+            button.skill_image_name = node['image']
+            button.tooltip = format_skill_tooltip(
+                    self, group_data['skill'], group_data, index, 'space')
+            self.widgets.build['space_skills'][group_data['career']][id_offset + index] = button
+            layout.addWidget(button, index, 0)
+    # == 'pair+1': one skill with 2 ranks and one sub-skill with 1 rank
+    # == 'separate': 3 separate skills
+    else:
+        button = create_item_button(self)
+        button.clicked.connect(lambda id=id_offset: skill_callback_space(
+                self, group_data['career'], id, group_data['grouping']))
+        # button.rightclicked.connect(lambda e: None)
+        button.skill_image_name = group_data['nodes'][0]['image']
+        button.tooltip = format_skill_tooltip(
+                self, group_data['skill'][0], group_data, 0, 'space')
+        layout.addWidget(button, 0, 0, 1, 2, alignment=AHCENTER | ABOTTOM)
+        self.widgets.build['space_skills'][group_data['career']][id_offset] = button
+        button = create_item_button(self)
+        button.clicked.connect(lambda id=id_offset + 1: skill_callback_space(
+                self, group_data['career'], id, group_data['grouping']))
+        # button.rightclicked.connect(lambda e: None)
+        button.skill_image_name = group_data['nodes'][1]['image']
+        button.tooltip = format_skill_tooltip(
+                self, group_data['skill'][1], group_data, 1, 'space')
+        layout.addWidget(button, 1, 0, alignment=ATOP)
+        self.widgets.build['space_skills'][group_data['career']][id_offset + 1] = button
+        button = create_item_button(self)
+        button.clicked.connect(lambda id=id_offset + 2: skill_callback_space(
+                self, group_data['career'], id, group_data['grouping']))
+        # button.rightclicked.connect(lambda e: None)
+        button.skill_image_name = group_data['nodes'][2]['image']
+        button.tooltip = format_skill_tooltip(
+                self, group_data['skill'][2], group_data, 2, 'space')
+        layout.addWidget(button, 1, 1, alignment=ATOP)
+        self.widgets.build['space_skills'][group_data['career']][id_offset + 2] = button
+    return layout

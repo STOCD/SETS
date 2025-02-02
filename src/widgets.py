@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QCursor, QEnterEvent, QImage, QMouseEvent, QPainter
+from PySide6.QtGui import QCursor, QEnterEvent, QImage, QMouseEvent, QPainter, QPaintEvent
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
         QPlainTextEdit, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
@@ -97,6 +97,11 @@ class WidgetStorage():
                 'traits': [None] * 12,
                 'weapons': [''] * 2,
             },
+            'space_skills': {
+                'eng': [None] * 30,
+                'sci': [None] * 30,
+                'tac': [None] * 30
+            }
         }
 
 
@@ -134,7 +139,12 @@ class Cache():
             'space': dict(),
             'space_unlocks': dict(),
             'ground': dict(),
-            'ground_unlocks': dict()
+            'ground_unlocks': dict(),
+            'space_points_total': 0,
+            'space_points_eng': 0,
+            'space_points_sci': 0,
+            'space_points_tac': 0,
+            'space_points_rank': [0] * 5,
         }
         self.species: dict = {
             'Federation': dict(),
@@ -177,6 +187,7 @@ class OverlayCache():
         self.veryrare: QImage
         self.ultrarare: QImage
         self.epic: QImage
+        self.check: QImage
 
 
 class ImageLabel(QWidget):
@@ -260,6 +271,7 @@ class ItemButton(QFrame):
         self._tooltip_frame = tooltip_frame
         self._tooltip_frame.setWindowFlags(Qt.WindowType.ToolTip)
         self._total_padding = frame_padding * 2
+        self.skill_image_name = ''
 
     @property
     def tooltip(self):

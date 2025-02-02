@@ -1,6 +1,6 @@
 from re import sub as re_sub
 
-from .constants import RARITY_COLORS
+from .constants import CAREER_ABBR, RARITY_COLORS, SKILL_PREFIXES
 
 
 def get_tooltip(self, name: str, type_: str, environment: str = 'space') -> str:
@@ -47,6 +47,38 @@ def add_equipment_tooltip_header(self, item: dict, tooltip_body: str, item_type:
             f"<p style='{head_style}'>{item_title}</p><p style='{subhead_style}'>"
             f"{item['rarity']} {self.cache.equipment[item_type][item['item']]['type']}</p>")
     return tooltip + tooltip_body
+
+
+def format_skill_tooltip(
+            self, skill_name: str, skill_data: dict, node_index: int, environment: str) -> str:
+    """
+    Formats skill tooltip
+
+    Parameters:
+    - :param skill_name: name of the skill (without prefix)
+    - :param skill_data: contains skill details
+    - :param node_index: index of the node within the skill group
+    - :param environment: "space" / "ground"
+    """
+    if skill_data['grouping'] == 'column':
+        prefix = SKILL_PREFIXES[node_index]
+        global_description = skill_data['gdesc']
+    elif skill_data['grouping'] == 'pair+1':
+        if node_index == 1:
+            prefix = 'Improved '
+        else:
+            prefix = ''
+        global_description = skill_data['gdesc'][node_index]
+    else:
+        prefix = ''
+        global_description = skill_data['gdesc'][node_index]
+    head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
+    subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
+    return (
+            f"<p style='{head_style}'>{prefix}{skill_name}</p><p style='{subhead_style}'>"
+            f"{CAREER_ABBR[skill_data['career']]} {environment.capitalize()} Skill</p>"
+            f"<p>{global_description}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
+
 
 # --------------------------------------------------------------------------------------------------
 # static functions

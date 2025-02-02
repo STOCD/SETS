@@ -15,7 +15,8 @@ from .constants import (
         WIKI_IMAGE_URL)
 from .iofunc import (
         download_image, fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data,
-        get_downloaded_images, load_image, load_json, retrieve_image, store_json, store_to_cache)
+        get_downloaded_images, image, load_image, load_json, retrieve_image, store_json,
+        store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
 from .textedit import (
         create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
@@ -30,6 +31,7 @@ def init_backend(self):
     def finish_backend_init():
         splash_text(self, 'Injecting Cargo Data')
         insert_cargo_data(self)
+        slot_skill_images(self)
         splash_text(self, 'Loading Build')
         load_build(self)
         exec_in_thread(self, load_images, self)
@@ -53,6 +55,15 @@ def insert_cargo_data(self):
     ground_doff_specs = [''] + sorted(self.cache.ground_doffs.keys())
     for combobox in self.widgets.build['ground']['doffs_spec']:
         combobox.addItems(ground_doff_specs)
+
+
+def slot_skill_images(self):
+    """
+    Updates the ground and skill tree, slotting the correct images into the slots.
+    """
+    for career_block in self.widgets.build['space_skills'].values():
+        for skill_button in career_block:
+            skill_button.set_item(image(self, skill_button.skill_image_name))
 
 
 def populate_cache(self, threaded_worker: ThreadObject):
@@ -96,9 +107,6 @@ def load_cargo_cache(self, threaded_worker: ThreadObject) -> bool:
         return False
     self.cache.boff_abilities = get_cached_cargo_data(self, 'boff_abilities.json')
     if len(self.cache.boff_abilities) == 0:
-        return False
-    self.cache.skills = get_cached_cargo_data(self, 'skills.json')
-    if len(self.cache.skills) == 0:
         return False
     self.cache.modifiers = get_cached_cargo_data(self, 'modifiers.json')
     if len(self.cache.modifiers) == 0:
@@ -205,10 +213,6 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
     get_boff_data(self)
     store_to_cache(self, self.cache.boff_abilities, 'boff_abilities.json')
 
-    threaded_worker.update_splash.emit('Loading: Skills')
-    cache_skills(self)
-    store_to_cache(self, self.cache.skills, 'skills.json')
-
     threaded_worker.update_splash.emit('Loading: Modifiers')
     mod_cargo_data = get_cargo_data(self, 'modifiers.json', MODIFIER_QUERY)
     for modifier in mod_cargo_data:
@@ -267,10 +271,11 @@ def load_base_images(self, threaded_worker: ThreadObject):
     self.cache.overlays.veryrare = QImage(get_asset_path('Very_rare_icon.png', self.app_dir))
     self.cache.overlays.ultrarare = QImage(get_asset_path('Ultra_rare_icon.png', self.app_dir))
     self.cache.overlays.epic = QImage(get_asset_path('Epic_icon.png', self.app_dir))
+    self.cache.overlays.check = QImage(get_asset_path('check_overlay.png', self.app_dir))
 
     threaded_worker.update_splash.emit('Loading: Images (Skills)')
     img_folder = self.config['config_subfolders']['images']
-    for rank_group in self.cache.skills['space'].values():
+    for rank_group in self.cache.skills['space']:
         for skill_group in rank_group:
             for skill_node in skill_group['nodes']:
                 self.cache.images[skill_node['image']] = retrieve_image(
@@ -568,7 +573,12 @@ def load_build_file(self, filepath: str, update_ui: bool = True):
     else:
         return
     if 'space' in build_data:
-        self.build = build_data
+        if 'space_skills' in build_data and len(build_data['space_skills']) == 0:
+            del build_data['space_skills']
+        if 'ground_skills' in build_data and len(build_data['ground_skills']) == 0:
+            del build_data['ground_skills']
+        self.build = empty_build(self)
+        self.build.update(build_data)
     else:
         self.build = convert_old_build(self, build_data)
     if update_ui:
@@ -656,12 +666,21 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'primary_spec': '',
             'secondary_spec': '',
             'species': '',
-        }
+        },
     }
 
     new_skills = {
-        'space_skills': dict(),
-        'ground_skills': dict()
+        'space_skills': {
+            'eng': [False] * 30,
+            'sci': [False] * 30,
+            'tac': [False] * 30
+        },
+        'ground_skills': [
+            [False] * 6,
+            [False] * 6,
+            [False] * 4,
+            [False] * 4
+        ]
     }
 
     if build_type == 'build':

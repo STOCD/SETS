@@ -17,6 +17,8 @@ ALEFT = Qt.AlignmentFlag.AlignLeft
 ACENTER = Qt.AlignmentFlag.AlignCenter
 AVCENTER = Qt.AlignmentFlag.AlignVCenter
 AHCENTER = Qt.AlignmentFlag.AlignHCenter
+SCROLLON = Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+SCROLLOFF = Qt.ScrollBarPolicy.ScrollBarAlwaysOff
 
 WIKI_URL = 'https://stowiki.net/wiki/'
 WIKI_IMAGE_URL = WIKI_URL + 'Special:FilePath/'
@@ -68,6 +70,12 @@ EQUIPMENT_TYPES = {
 }
 
 CAREERS = {'Tactical', 'Science', 'Engineering'}
+
+CAREER_ABBR = {
+    'tac': 'Tactical',
+    'sci': 'Science',
+    'eng': 'Engineering'
+}
 
 FACTIONS = {'Federation', 'Klingon', 'Romulan', 'Dominion', 'TOS Federation', 'DSC Federation'}
 
@@ -178,6 +186,10 @@ SHIP_TEMPLATE = {
     'secdeflector': 1,
     'hangars': 2
 }
+
+SKILL_PREFIXES = ['', 'Improved ', 'Advanced ']
+
+SKILL_POINTS_FOR_RANK = (0, 5, 15, 25, 35)
 
 # commented maps must be transferred manually
 BUILD_CONVERSION = {

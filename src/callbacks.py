@@ -3,7 +3,8 @@ from .buildupdater import (
         get_variable_slot_counts, slot_equipment_item, slot_trait_item, update_equipment_cat,
         update_starship_traits)
 from .constants import (
-        EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SPECIES, SPECIES_TRAITS)
+        EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK,
+        SPECIES, SPECIES_TRAITS)
 from .datafunctions import load_build_file, save_build_file
 from .iofunc import browse_path, get_ship_image, image, open_wiki_page
 from .widgets import exec_in_thread
@@ -345,6 +346,8 @@ def clear_build_callback(self):
         clear_space_build(self)
     elif current_tab == 1:
         clear_ground_build(self)
+    elif current_tab == 2:
+        clear_space_skills(self)
     self.building = False
 
 
@@ -361,6 +364,20 @@ def clear_space_build(self):
     self.autosave()
 
 
+def clear_space_skills(self):
+    """
+    resets space skill tree
+    """
+    self.build['space_skills'] = {
+        'eng': [False] * 30,
+        'sci': [False] * 30,
+        'tac': [False] * 30
+    }
+    for career in ('eng', 'sci', 'tac'):
+        for skill_button in self.widgets.build['space_skills'][career]:
+            skill_button.clear_overlay()
+
+
 def clear_all(self):
     """
     Clears space and ground build, skills and captain info
@@ -369,6 +386,7 @@ def clear_all(self):
     clear_space_build(self)
     clear_ground_build(self)
     clear_captain(self)
+    clear_space_skills(self)
     self.building = False
     self.autosave()
 
@@ -526,3 +544,60 @@ def doff_variant_callback(self, new_variant: str, environment: str, doff_id: int
         return
     self.build[environment]['doffs_variant'][doff_id] = new_variant
     self.autosave()
+
+
+def toggle_space_skill(self, current_state: bool, career: str, skill_id: int):
+    """
+    Activates space skill if it's deactivated, deactivates skill if it's activated.
+
+    Parameters:
+    - :param current_state: state of the button before toggling
+    - :param career: "eng" / "tac" / "sci"
+    - :param skill_id: id of the skill node (index in self.build and self.widgets.build)
+    """
+    if current_state:
+        self.widgets.build['space_skills'][career][skill_id].clear_overlay()
+        self.build['space_skills'][career][skill_id] = False
+        self.cache.skills['space_points_total'] -= 1
+        self.cache.skills[f'space_points_{career}'] -= 1
+        self.cache.skills['space_points_rank'][int(skill_id / 6)] -= 1
+    else:
+        self.widgets.build['space_skills'][career][skill_id].set_overlay(self.cache.overlays.check)
+        self.build['space_skills'][career][skill_id] = True
+        self.cache.skills['space_points_total'] += 1
+        self.cache.skills[f'space_points_{career}'] += 1
+        self.cache.skills['space_points_rank'][int(skill_id / 6)] += 1
+    self.autosave()
+
+
+def skill_callback_space(self, career: str, skill_id: int, grouping: str):
+    """
+    Callback for space skill node
+
+    Parameters:
+    - :param career: "eng" / "tac" / "sci"
+    - :param skill_id: id of the skill node (index in self.build and self.widgets.build)
+    - :param grouping: type of skill grouping: "column" / "pair+1" / "separate"
+    """
+    skill_active = self.build['space_skills'][career][skill_id]
+    skill_lvl = skill_id % 3
+    skill_rank = int(skill_id / 6)
+    if skill_active:  # check for valid deselect
+        if (skill_lvl == 2
+                or grouping != 'column' and skill_lvl == 1
+                or not self.build['space_skills'][career][skill_id + 1]):
+            skill_count = sum(self.cache.skills['space_points_rank'][:skill_rank + 1])
+            for rank_offset, points_required in enumerate(SKILL_POINTS_FOR_RANK[skill_rank + 1:]):
+                if (skill_count - 1 < points_required
+                        and self.cache.skills['space_points_total'] - skill_count > 0):
+                    return
+                skill_count += self.cache.skills['space_points_rank'][skill_rank + rank_offset + 1]
+            toggle_space_skill(self, skill_active, career, skill_id)
+    else:  # check for valid select
+        if 46 > self.cache.skills['space_points_total'] >= SKILL_POINTS_FOR_RANK[skill_rank]:
+            if skill_lvl == 0:
+                toggle_space_skill(self, skill_active, career, skill_id)
+            elif grouping == 'column' and self.build['space_skills'][career][skill_id - 1]:
+                toggle_space_skill(self, skill_active, career, skill_id)
+            elif grouping != 'column' and self.build['space_skills'][career][skill_id - skill_lvl]:
+                toggle_space_skill(self, skill_active, career, skill_id)

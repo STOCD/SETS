@@ -2,15 +2,16 @@ import os
 
 from PySide6.QtCore import QSettings, Qt, QThread
 from PySide6.QtGui import QFontDatabase, QTextOption
-from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QTabWidget, QWidget
+from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea, QTabWidget, QWidget
 
 from .constants import (
-    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS,
+    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS, SCROLLOFF, SCROLLON,
     SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
 from .subwindows import ItemEditor, Picker, ShipSelector
 from .widgets import (
-    Cache, ContextMenu, GridLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout, WidgetStorage)
+    Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout,
+    WidgetStorage)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 from signal import signal, SIGINT, SIG_DFL
@@ -25,7 +26,7 @@ class SETS():
             paste_equipment_item, save_build_callback, set_build_item, select_ship,
             ship_info_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
             tier_callback)
-    from .datafunctions import autosave, empty_build, init_backend
+    from .datafunctions import autosave, cache_skills, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
@@ -33,7 +34,7 @@ class SETS():
             create_boff_station_ground, create_boff_station_space, create_build_section,
             create_button, create_button_series, create_checkbox, create_combo_box,
             create_doff_section, create_entry, create_frame, create_item_button, create_label,
-            create_personal_trait_section, create_starship_trait_section)
+            create_personal_trait_section, create_skill_group_space, create_starship_trait_section)
 
     app_dir = None
     # (release version, dev version)
@@ -371,6 +372,7 @@ class SETS():
         """
         self.setup_space_build_frame()
         self.setup_ground_build_frame()
+        self.setup_space_skill_frame()
 
     def setup_space_build_frame(self):
         """
@@ -633,6 +635,50 @@ class SETS():
             'primary': primary_combo,
             'secondary': secondary_combo,
         }
+
+    def setup_space_skill_frame(self):
+        """
+        Creates Space skill GUI
+        """
+        self.cache_skills()
+        frame = self.widgets.build_frames[2]
+        isp = self.theme['defaults']['isp'] * self.config['ui_scale']
+        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        col_layout = GridLayout(margins=isp, spacing=csp)
+        col_layout.setRowStretch(0, 1)
+        col_layout.setColumnStretch(0, 3)
+        col_layout.setColumnStretch(2, 1)
+        scroll_frame = self.create_frame()
+        scroll_area = QScrollArea()
+        scroll_area.setSizePolicy(SMINMIN)
+        scroll_area.setHorizontalScrollBarPolicy(SCROLLOFF)
+        scroll_area.setVerticalScrollBarPolicy(SCROLLON)
+        scroll_area.setAlignment(AHCENTER)
+        col_layout.addWidget(scroll_area, 0, 0)
+        scroll_layout = GridLayout(margins=isp, spacing=isp * 4)
+        scroll_layout.setColumnStretch(0, 1)
+        scroll_layout.setColumnStretch(1, 1)
+        scroll_layout.setColumnStretch(2, 1)
+        scroll_layout.setColumnStretch(3, 1)
+        scroll_layout.setColumnStretch(4, 1)
+        scroll_layout.setColumnStretch(5, 1)
+        # skill tree
+        for rank, skill_groups in enumerate(self.cache.skills['space']):
+            for group_id, group_data in enumerate(skill_groups):
+                id_offset = rank * 6 + (group_id % 2) * 3
+                group_layout = self.create_skill_group_space(group_data, id_offset)
+                scroll_layout.addLayout(group_layout, rank, group_id)
+
+        scroll_frame.setLayout(scroll_layout)
+        scroll_area.setWidget(scroll_frame)
+        seperator = self.create_frame(size_policy=SMAXMIN, style_override={
+                'background-color': '@sets'})
+        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        col_layout.addWidget(seperator, 0, 1)
+        bonus_bar_container = self.create_frame(size_policy=SMINMIN)
+        # bonus bars
+        col_layout.addWidget(bonus_bar_container, 0, 2)
+        frame.setLayout(col_layout)
 
     def setup_splash(self, frame: QFrame):
         """
