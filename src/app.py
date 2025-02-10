@@ -24,18 +24,18 @@ class SETS():
             clear_all, clear_slot, clear_build_callback, copy_equipment_item, edit_equipment_item,
             elite_callback, faction_combo_callback, load_build_callback, open_wiki_context,
             paste_equipment_item, save_build_callback, set_build_item, select_ship,
-            ship_info_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
-            tier_callback)
+            ship_info_callback, skill_unlock_callback, spec_combo_callback, species_combo_callback,
+            switch_main_tab, tier_callback)
     from .datafunctions import autosave, cache_skills, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
     from .widgetbuilder import (
-            create_boff_station_ground, create_boff_station_space, create_build_section,
-            create_button, create_button_series, create_checkbox, create_combo_box,
-            create_doff_section, create_entry, create_frame, create_item_button, create_label,
-            create_personal_trait_section, create_skill_button_ground, create_skill_group_space,
-            create_starship_trait_section)
+            create_boff_station_ground, create_boff_station_space, create_bonus_bar_segment,
+            create_build_section, create_button, create_button_series, create_checkbox,
+            create_combo_box, create_doff_section, create_entry, create_frame, create_item_button,
+            create_label, create_personal_trait_section, create_skill_button_ground,
+            create_skill_group_space, create_starship_trait_section)
 
     app_dir = None
     # (release version, dev version)
@@ -88,6 +88,7 @@ class SETS():
         self.prepare_tooltip_css()
         self.init_environment()
         self.app, self.window = self.create_main_window()
+        self.cache_icons()
         self.building = True
         self.build = self.empty_build()
         self.setup_main_layout()
@@ -142,6 +143,18 @@ class SETS():
         create_folder(self.config['config_subfolders']['ship_images'])
         if not os.path.exists(self.config['autosave_filename']):
             store_json(self.empty_build(), self.config['autosave_filename'])
+
+    def cache_icons(self):
+        """
+        Loads static icons.
+        """
+        self.cache.icons['copy'] = load_icon('copy.png', self.app_dir)
+        self.cache.icons['paste'] = load_icon('paste.png', self.app_dir)
+        self.cache.icons['clear'] = load_icon('clear.png', self.app_dir)
+        self.cache.icons['edit'] = load_icon('edit.png', self.app_dir)
+        self.cache.icons['link'] = load_icon('external_link.png', self.app_dir)
+        self.cache.icons['ground'] = load_icon('ground_icon.png', self.app_dir).pixmap(
+                self.box_width * 1.2, self.box_width * 1.2)
 
     def main_window_close_callback(self, event):
         """
@@ -746,6 +759,26 @@ class SETS():
         col_layout.addWidget(seperator, 0, 1)
         bonus_bar_container = self.create_frame(size_policy=SMINMIN)
         # bonus bars
+        bonus_bar_layout = GridLayout(margins=isp)
+        bonus_bar_layout.setRowStretch(0, 1)
+        bonus_bar_layout.setRowStretch(18, 1)
+        row = 15
+        for i in range(5):
+            seg1 = self.create_bonus_bar_segment('ground', i * 2)
+            bonus_bar_layout.addWidget(seg1, row, 1, alignment=AHCENTER)
+            seg2 = self.create_bonus_bar_segment('ground', i * 2 + 1)
+            bonus_bar_layout.addWidget(seg2, row - 1, 1, alignment=AHCENTER)
+            button = self.create_item_button()
+            button.clicked.connect(lambda i=i: self.skill_unlock_callback('ground', i))
+            bonus_bar_layout.addWidget(button, row - 2, 1, alignment=AHCENTER)
+            self.widgets.build['skill_unlocks']['ground'][i] = button
+            row -= 3
+        icon_label = self.create_label('', style='unlock_label')
+        icon_label.setPixmap(self.cache.icons['ground'])
+        bonus_bar_layout.addWidget(icon_label, 16, 1, alignment=AHCENTER)
+        self.widgets.skill_count_ground = self.create_label('0', 'label_subhead')
+        bonus_bar_layout.addWidget(self.widgets.skill_count_ground, 17, 1, alignment=AHCENTER)
+        bonus_bar_container.setLayout(bonus_bar_layout)
         col_layout.addWidget(bonus_bar_container, 0, 2)
         frame.setLayout(col_layout)
 
@@ -773,13 +806,11 @@ class SETS():
         menu = ContextMenu()
         menu.setStyleSheet(self.get_style_class('ContextMenu', 'context_menu'))
         menu.setFont(self.theme_font('context_menu'))
-        menu.addAction(load_icon('copy.png', self.app_dir), 'Copy Item', self.copy_equipment_item)
-        menu.addAction(
-                load_icon('paste.png', self.app_dir), 'Paste Item', self.paste_equipment_item)
-        menu.addAction(load_icon('clear.png', self.app_dir), 'Clear Slot', self.clear_slot)
-        menu.addAction(
-                load_icon('external_link.png', self.app_dir), 'Open Wiki', self.open_wiki_context)
-        menu.addAction(load_icon('edit.png', self.app_dir), 'Edit Slot', self.edit_equipment_item)
+        menu.addAction(self.cache.icons['copy'], 'Copy Item', self.copy_equipment_item)
+        menu.addAction(self.cache.icons['paste'], 'Paste Item', self.paste_equipment_item)
+        menu.addAction(self.cache.icons['clear'], 'Clear Slot', self.clear_slot)
+        menu.addAction(self.cache.icons['link'], 'Open Wiki', self.open_wiki_context)
+        menu.addAction(self.cache.icons['edit'], 'Edit Slot', self.edit_equipment_item)
         return menu
 
     def hide_tooltips(self):

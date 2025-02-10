@@ -307,7 +307,8 @@ def load_images(self, threaded_worker=None):
     """
     img_folder = self.config['config_subfolders']['images']
     for img_name, img in self.cache.images.items():
-        load_image(img_name, img, img_folder)
+        if img.isNull():
+            load_image(img_name, img, img_folder)
 
 
 def download_images(self, threaded_worker: ThreadObject):
@@ -681,7 +682,13 @@ def empty_build(self, build_type: str = 'full') -> dict:
         'space_skills': {
             'eng': [False] * 30,
             'sci': [False] * 30,
-            'tac': [False] * 30
+            'tac': [False] * 30,
+        },
+        'skill_unlocks': {
+            'eng': [None] * 7,
+            'sci': [None] * 7,
+            'tac': [None] * 7,
+            'ground': [None] * 5
         },
         'ground_skills': [
             [False] * 6,

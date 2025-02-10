@@ -1,7 +1,7 @@
 from .buildupdater import (
         align_space_frame, clear_captain, clear_doffs, clear_ground_build, clear_ship, clear_traits,
-        get_variable_slot_counts, slot_equipment_item, slot_trait_item, update_equipment_cat,
-        update_starship_traits)
+        get_variable_slot_counts, set_skill_unlock_ground, slot_equipment_item, slot_trait_item,
+        update_equipment_cat, update_starship_traits)
 from .constants import (
         EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK,
         SPECIES, SPECIES_TRAITS)
@@ -348,6 +348,8 @@ def clear_build_callback(self):
         clear_ground_build(self)
     elif current_tab == 2:
         clear_space_skills(self)
+    elif current_tab == 3:
+        clear_ground_skills(self)
     self.building = False
 
 
@@ -378,6 +380,28 @@ def clear_space_skills(self):
             skill_button.clear_overlay()
 
 
+def clear_ground_skills(self):
+    """
+    resets ground skill tree
+    """
+    self.build['ground_skills'] = [
+        [False] * 6,
+        [False] * 6,
+        [False] * 4,
+        [False] * 4
+    ]
+    self.build['skill_unlocks']['ground'] = [None] * 5
+    self.cache.skills['ground_points_total'] = 0
+    self.widgets.skill_count_ground.setText('0')
+    for skill_subtree in self.widgets.build['ground_skills']:
+        for skill_button in skill_subtree:
+            skill_button.clear_overlay()
+    for unlock_button in self.widgets.build['skill_unlocks']['ground']:
+        unlock_button.clear()
+    for bar_segment in self.widgets.skill_bonus_bars['ground']:
+        bar_segment.setChecked(False)
+
+
 def clear_all(self):
     """
     Clears space and ground build, skills and captain info
@@ -387,6 +411,7 @@ def clear_all(self):
     clear_ground_build(self)
     clear_captain(self)
     clear_space_skills(self)
+    clear_ground_skills(self)
     self.building = False
     self.autosave()
 
@@ -570,6 +595,22 @@ def toggle_space_skill(self, current_state: bool, career: str, skill_id: int):
     self.autosave()
 
 
+def skill_unlock_callback(self, environment: str, unlock_id: int):
+    """
+    """
+    if environment == 'space':
+        pass
+    elif environment == 'ground':
+        current_state = self.build['skill_unlocks'][environment][unlock_id]
+        if current_state is None:
+            return
+        elif current_state == 0:
+            set_skill_unlock_ground(self, unlock_id, 1)
+        elif current_state == 1:
+            set_skill_unlock_ground(self, unlock_id, 0)
+        self.autosave()
+
+
 def toggle_ground_skill(self, current_state: bool, skill_group: int, skill_id: int):
     """
     Activates ground skill if it's deactivated, deactivates skill if it's activated.
@@ -583,11 +624,22 @@ def toggle_ground_skill(self, current_state: bool, skill_group: int, skill_id: i
         self.widgets.build['ground_skills'][skill_group][skill_id].clear_overlay()
         self.build['ground_skills'][skill_group][skill_id] = False
         self.cache.skills['ground_points_total'] -= 1
+        segment_index = self.cache.skills['ground_points_total']
+        self.widgets.skill_bonus_bars['ground'][segment_index].setChecked(False)
+        if segment_index % 2 == 1:
+            button_index = (segment_index - 1) // 2
+            set_skill_unlock_ground(self, button_index, None)
     else:
         self.widgets.build['ground_skills'][skill_group][skill_id].set_overlay(
                 self.cache.overlays.check)
         self.build['ground_skills'][skill_group][skill_id] = True
         self.cache.skills['ground_points_total'] += 1
+        segment_index = self.cache.skills['ground_points_total'] - 1
+        self.widgets.skill_bonus_bars['ground'][segment_index].setChecked(True)
+        if segment_index % 2 == 1:
+            button_index = (segment_index - 1) // 2
+            set_skill_unlock_ground(self, button_index, 0)
+    self.widgets.skill_count_ground.setText(str(self.cache.skills['ground_points_total']))
     self.autosave()
 
 

@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.02b021'
+    version = '2025.02b210'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -446,6 +446,29 @@ class Launcher():
             'border-color': '@bc',
             'padding': 2
         },
+        # segment of the bonus bar
+        'bonus_bar': {
+            ':disabled': {
+                'border-style': 'solid',
+                'border-top-style': 'none',
+                'border-bottom-style': 'none',
+                'border-width': '@bw',
+                'border-color': '@bc',
+                'background-color': '@bg',
+            },
+            ':checked': {
+                'background-color': '@sets'
+            }
+        },
+        # label holding career / ground icon
+        'unlock_label': {
+            'border-style': 'none',
+            'border-top-style': 'solid',
+            'border-top-width': 1,
+            'border-top-color': '@bc',
+            'margin': (0, 0, 3, 0),
+            'padding': (3, 10, 0, 10)
+        }
     }
 
     @staticmethod

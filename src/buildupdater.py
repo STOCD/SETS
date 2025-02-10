@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt
 
 from .constants import BOFF_RANKS, SHIP_TEMPLATE
 from .iofunc import get_ship_image, image
-from .textedit import get_tooltip, add_equipment_tooltip_header
+from .textedit import add_equipment_tooltip_header, get_tooltip, get_skill_unlock_tooltip_ground
 from .widgets import exec_in_thread
 
 
@@ -118,6 +118,14 @@ def load_build(self):
             if enable:
                 skill_button.set_overlay(self.cache.overlays.check)
                 self.cache.skills['ground_points_total'] += 1
+    self.widgets.skill_count_ground.setText(str(self.cache.skills['ground_points_total']))
+    for i in range(self.cache.skills['ground_points_total']):
+        self.widgets.skill_bonus_bars['ground'][i].setChecked(True)
+    for i in range(self.cache.skills['ground_points_total'], 10, 1):
+        self.widgets.skill_bonus_bars['ground'][i].setChecked(False)
+    for unlock_id, unlock_choice in enumerate(self.build['skill_unlocks']['ground']):
+        if unlock_choice is not None:
+            set_skill_unlock_ground(self, unlock_id, unlock_choice)
 
     self.building = False
     self.autosave()
@@ -452,6 +460,36 @@ def slot_trait_item(self, item: dict, environment: str, build_key: str, build_su
     item_image = image(self, item['item'])
     self.widgets.build[environment][build_key][build_subkey].set_item_full(
             item_image, None, get_tooltip(self, item['item'], build_key, environment))
+
+
+def set_skill_unlock_ground(self, id: int, state: int | None):
+    """
+    Sets unlock button to state and updates build
+
+    Parameters:
+    - :param id: id of the unlock, counted from the unlock with the lowest requirement
+    - :param state: `0`, `1` set the button to the respective unlock, `None` clears
+    """
+    unlock_button = self.widgets.build['skill_unlocks']['ground'][id]
+    if state == 0:
+        unlock_button.set_item(
+                self.cache.images['arrow-down'])
+        unlock_button.tooltip = get_skill_unlock_tooltip_ground(self, id, 0)
+        self.build['skill_unlocks']['ground'][id] = 0
+        if not self.building:
+            unlock_button.hide()
+            unlock_button.show()
+    elif state == 1:
+        unlock_button.set_item(
+                self.cache.images['arrow-up'])
+        unlock_button.tooltip = get_skill_unlock_tooltip_ground(self, id, 1)
+        self.build['skill_unlocks']['ground'][id] = 1
+        if not self.building:
+            unlock_button.hide()
+            unlock_button.show()
+    else:
+        unlock_button.clear()
+        self.build['skill_unlocks']['ground'][id] = None
 
 
 def clear_traits(self, environment: str = 'both'):

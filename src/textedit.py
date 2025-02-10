@@ -88,6 +88,21 @@ def format_skill_tooltip(
                 f"<p>{skill_data['gdesc']}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
 
 
+def get_skill_unlock_tooltip_ground(self, unlock_id: int, unlock_choice: int):
+    """
+    gets tooltip for ground unlock from cache and formats it
+
+    Parameters:
+    - :param unlock_id: id of the unlock, counted from the unlock with the lowest requirement
+    - :param unlock_choice: `0` (first choice; "down") or `1` (second choice; "up")
+    """
+    unlock = self.cache.skills['ground_unlocks'][unlock_id]['nodes'][unlock_choice]
+    head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
+    subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
+    return (
+            f"<p style='{head_style}'>{unlock['name']}</p><p style='{subhead_style}'>"
+            f"Ground Skill</p><p>{unlock['desc']}</p>")
+
 # --------------------------------------------------------------------------------------------------
 # static functions
 # --------------------------------------------------------------------------------------------------

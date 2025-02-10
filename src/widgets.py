@@ -42,6 +42,14 @@ class WidgetStorage():
             'secondary': QComboBox,
         }
 
+        self.skill_bonus_bars = {
+            'eng': [None] * 24,
+            'sci': [None] * 24,
+            'tac': [None] * 24,
+            'ground': [None] * 10,
+        }
+        self.skill_count_ground: QLabel
+
         self.build: dict = {
             'space': {
                 'active_rep_traits': [None] * 5,
@@ -106,8 +114,14 @@ class WidgetStorage():
                 [False] * 6,
                 [False] * 6,
                 [False] * 4,
-                [False] * 4
-            ]
+                [False] * 4,
+            ],
+            'skill_unlocks': {
+                'eng': [None] * 5,
+                'sci': [None] * 5,
+                'tac': [None] * 5,
+                'ground': [None] * 5
+            }
         }
 
 
@@ -165,6 +179,7 @@ class Cache():
 
         self.empty_image: QImage
         self.overlays: OverlayCache = OverlayCache()
+        self.icons: dict = dict()
         self.images: dict = dict()
         self.images_set: set = set()
         self.images_populated: bool = False

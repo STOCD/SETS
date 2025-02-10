@@ -518,3 +518,24 @@ def create_skill_button_ground(self, group_data: dict, id: int, node_id: int) ->
             self, group_data['nodes'][node_id]['name'], group_data, node_id, 'ground')
     self.widgets.build['ground_skills'][group_data['tree']][id] = button
     return button
+
+
+def create_bonus_bar_segment(
+        self, bar: str, index: int, style: str = 'bonus_bar',
+        style_override: dict = {}) -> QPushButton:
+    """
+    Creates segment of bar showing the spent skill points.
+
+    Parameters:
+    - :param bar: identifies the bar ("tac" / "sci" / "eng" / "ground")
+    - :param index: index of the segment within the bar
+    - :param style: style key
+    - :param style_override: overrides style specified by self.theme
+    """
+    seg = QPushButton()
+    seg.setEnabled(False)
+    seg.setCheckable(True)
+    seg.setStyleSheet(get_style_class(self, 'QPushButton', style, style_override))
+    seg.setFixedSize(7 * self.config['ui_scale'], 21 * self.config['ui_scale'])
+    self.widgets.skill_bonus_bars[bar][index] = seg
+    return seg
