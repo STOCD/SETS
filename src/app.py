@@ -5,8 +5,8 @@ from PySide6.QtGui import QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea, QTabWidget, QWidget
 
 from .constants import (
-    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, CAREERS, FACTIONS, PRIMARY_SPECS, SCROLLOFF, SCROLLON,
-    SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
+    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, PRIMARY_SPECS, SCROLLOFF,
+    SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
 from .subwindows import ItemEditor, Picker, ShipSelector
 from .widgets import (
@@ -32,10 +32,10 @@ class SETS():
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
     from .widgetbuilder import (
             create_boff_station_ground, create_boff_station_space, create_bonus_bar_segment,
-            create_build_section, create_button, create_button_series, create_checkbox,
-            create_combo_box, create_doff_section, create_entry, create_frame, create_item_button,
-            create_label, create_personal_trait_section, create_skill_button_ground,
-            create_skill_group_space, create_starship_trait_section)
+            create_bonus_bar_space, create_build_section, create_button, create_button_series,
+            create_checkbox, create_combo_box, create_doff_section, create_entry, create_frame,
+            create_item_button, create_label, create_personal_trait_section,
+            create_skill_button_ground, create_skill_group_space, create_starship_trait_section)
 
     app_dir = None
     # (release version, dev version)
@@ -155,6 +155,12 @@ class SETS():
         self.cache.icons['link'] = load_icon('external_link.png', self.app_dir)
         self.cache.icons['ground'] = load_icon('ground_icon.png', self.app_dir).pixmap(
                 self.box_width * 1.2, self.box_width * 1.2)
+        self.cache.icons['tac'] = load_icon('tac_icon.png', self.app_dir).pixmap(
+                self.box_width, self.box_width)
+        self.cache.icons['sci'] = load_icon('sci_icon.png', self.app_dir).pixmap(
+                self.box_width, self.box_width)
+        self.cache.icons['eng'] = load_icon('eng_icon.png', self.app_dir).pixmap(
+                self.box_width, self.box_width)
 
     def main_window_close_callback(self, event):
         """
@@ -671,6 +677,7 @@ class SETS():
         scroll_area.setAlignment(AHCENTER)
         col_layout.addWidget(scroll_area, 0, 0)
         scroll_layout = GridLayout(margins=isp, spacing=isp * 4)
+        scroll_layout.setVerticalSpacing(isp)
         scroll_layout.setColumnStretch(0, 1)
         scroll_layout.setColumnStretch(1, 1)
         scroll_layout.setColumnStretch(2, 1)
@@ -678,11 +685,34 @@ class SETS():
         scroll_layout.setColumnStretch(4, 1)
         scroll_layout.setColumnStretch(5, 1)
         # skill tree
+        rank_texts = (
+            'Lieutenant<br><small>(0 points required)</small>',
+            'Lieutenant Commander<br><small>(5 points required)</small>',
+            'Commander<br><small>(15 points required)</small>',
+            'Captain<br><small>(25 points required)</small>',
+            'Admiral<br><small>(35 points required)</small>'
+        )
+        sep_height = self.theme['hr']['height'] * self.config['ui_scale']
         for rank, skill_groups in enumerate(self.cache.skills['space']):
+            header_layout = GridLayout(spacing=isp)
+            left_sep = self.create_frame('hr', size_policy=SMINMAX)
+            left_sep.setFixedHeight(sep_height)
+            header_layout.addWidget(left_sep, 0, 0, alignment=AVCENTER)
+            rank_label = self.create_label(rank_texts[rank], 'label_subhead')
+            rank_label.setAlignment(AHCENTER)
+            header_layout.addWidget(rank_label, 0, 1)
+            right_sep = self.create_frame('hr', size_policy=SMINMAX)
+            right_sep.setFixedHeight(sep_height)
+            header_layout.addWidget(right_sep, 0, 2, alignment=AVCENTER)
+            scroll_layout.addLayout(header_layout, rank * 3, 0, 1, 6)
             for group_id, group_data in enumerate(skill_groups):
                 id_offset = rank * 6 + (group_id % 2) * 3
                 group_layout = self.create_skill_group_space(group_data, id_offset)
-                scroll_layout.addLayout(group_layout, rank, group_id)
+                scroll_layout.addLayout(group_layout, rank * 3 + 1, group_id)
+            spacer = self.create_frame()
+            spacer.setFixedHeight(isp)
+            scroll_layout.addWidget(spacer, rank * 3 + 2, 0)
+        VBoxLayout().addWidget(spacer)
 
         scroll_frame.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_frame)
@@ -692,6 +722,31 @@ class SETS():
         col_layout.addWidget(seperator, 0, 1)
         bonus_bar_container = self.create_frame(size_policy=SMINMIN)
         # bonus bars
+        bonus_bar_layout = GridLayout(margins=isp)
+        bonus_bar_layout.setRowStretch(0, 1)
+        bonus_bar_layout.setRowStretch(32, 1)
+        self.create_bonus_bar_space('eng', bonus_bar_layout, 1)
+        eng_label = self.create_label('', style='unlock_label')
+        eng_label.setPixmap(self.cache.icons['eng'])
+        bonus_bar_layout.addWidget(eng_label, 30, 1, alignment=AHCENTER)
+        eng_count = self.create_label('0', 'label_subhead')
+        bonus_bar_layout.addWidget(eng_count, 31, 1, alignment=AHCENTER)
+        self.widgets.skill_counts_space['eng'] = eng_count
+        self.create_bonus_bar_space('sci', bonus_bar_layout, 2)
+        sci_label = self.create_label('', style='unlock_label')
+        sci_label.setPixmap(self.cache.icons['sci'])
+        bonus_bar_layout.addWidget(sci_label, 30, 2, alignment=AHCENTER)
+        sci_count = self.create_label('0', 'label_subhead')
+        bonus_bar_layout.addWidget(sci_count, 31, 2, alignment=AHCENTER)
+        self.widgets.skill_counts_space['sci'] = sci_count
+        self.create_bonus_bar_space('tac', bonus_bar_layout, 3)
+        tac_label = self.create_label('', style='unlock_label')
+        tac_label.setPixmap(self.cache.icons['tac'])
+        bonus_bar_layout.addWidget(tac_label, 30, 3, alignment=AHCENTER)
+        tac_count = self.create_label('0', 'label_subhead')
+        bonus_bar_layout.addWidget(tac_count, 31, 3, alignment=AHCENTER)
+        self.widgets.skill_counts_space['tac'] = tac_count
+        bonus_bar_container.setLayout(bonus_bar_layout)
         col_layout.addWidget(bonus_bar_container, 0, 2)
         frame.setLayout(col_layout)
 

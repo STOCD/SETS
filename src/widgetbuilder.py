@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (
 
 from .callbacks import (
         boff_label_callback_ground, boff_profession_callback_space, doff_spec_callback,
-        doff_variant_callback, picker, skill_callback_ground, skill_callback_space)
+        doff_variant_callback, picker, skill_callback_ground, skill_callback_space,
+        skill_unlock_callback)
 from .constants import (
         ABOTTOM, AHCENTER, ALEFT, ATOP, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX, SMAXMIN,
         SMINMAX)
@@ -539,3 +540,35 @@ def create_bonus_bar_segment(
     seg.setFixedSize(7 * self.config['ui_scale'], 21 * self.config['ui_scale'])
     self.widgets.skill_bonus_bars[bar][index] = seg
     return seg
+
+
+def create_bonus_bar_space(self, career: str, layout: GridLayout, column: int):
+    """
+    Creates bonus bar for space career and inserts it into the given layout.
+
+    Parameters:
+    - :param career: "tac" / "eng" / "sci"
+    - :param layout: layout to insert the bar into
+    - :param column: column of the layout to use
+    """
+    segment_index = 0
+    button_index = 0
+    for row in range(29, 5, -1):
+        if row % 6 == 0:
+            button = create_item_button(self)
+            button.clicked.connect(lambda i=button_index: skill_unlock_callback(self, career, i))
+            layout.addWidget(button, row, column, alignment=AHCENTER)
+            self.widgets.build['skill_unlocks'][career][button_index] = button
+            button_index += 1
+        else:
+            segment = create_bonus_bar_segment(self, career, segment_index)
+            layout.addWidget(segment, row, column, alignment=AHCENTER)
+            segment_index += 1
+    for row in range(5, 1, -1):
+        segment = create_bonus_bar_segment(self, career, segment_index)
+        layout.addWidget(segment, row, column, alignment=AHCENTER)
+        segment_index += 1
+    button = create_item_button(self)
+    button.clicked.connect(lambda: skill_unlock_callback(self, career, 4))
+    layout.addWidget(button, 1, column, alignment=AHCENTER)
+    self.widgets.build['skill_unlocks'][career][4] = button

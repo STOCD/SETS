@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.02b210'
+    version = '2025.02b130'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -356,6 +356,11 @@ class Launcher():
                 'font-size': 10,
                 'margin': (0, 0, 10, 0)
             },
+            'skill_ultimate_name': {
+                'color': '#ffd700;',
+                'font-size': 12,
+                'margin': (10, 0, 0, 0)
+            },
         },
         # picker window
         'picker': {
@@ -468,7 +473,13 @@ class Launcher():
             'border-top-color': '@bc',
             'margin': (0, 0, 3, 0),
             'padding': (3, 10, 0, 10)
-        }
+        },
+        # horizontal seperator
+        'hr': {
+            'background-color': '@lbg',
+            'border-style': 'none',
+            'height': 1
+        },
     }
 
     @staticmethod

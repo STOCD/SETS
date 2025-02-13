@@ -1,7 +1,7 @@
 from .buildupdater import (
         align_space_frame, clear_captain, clear_doffs, clear_ground_build, clear_ship, clear_traits,
-        get_variable_slot_counts, set_skill_unlock_ground, slot_equipment_item, slot_trait_item,
-        update_equipment_cat, update_starship_traits)
+        get_variable_slot_counts, set_skill_unlock_ground, set_skill_unlock_space,
+        slot_equipment_item, slot_trait_item, update_equipment_cat, update_starship_traits)
 from .constants import (
         EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK,
         SPECIES, SPECIES_TRAITS)
@@ -375,9 +375,22 @@ def clear_space_skills(self):
         'sci': [False] * 30,
         'tac': [False] * 30
     }
+    self.cache.skills['space_points_total'] = 0
+    self.cache.skills['space_points_eng'] = 0
+    self.widgets.skill_counts_space['eng'].setText('0')
+    self.cache.skills['space_points_sci'] = 0
+    self.widgets.skill_counts_space['sci'].setText('0')
+    self.cache.skills['space_points_tac'] = 0
+    self.widgets.skill_counts_space['tac'].setText('0')
+    self.cache.skills['space_points_rank'] = [0] * 5
     for career in ('eng', 'sci', 'tac'):
         for skill_button in self.widgets.build['space_skills'][career]:
             skill_button.clear_overlay()
+        self.build['skill_unlocks'][career] = [None] * 5
+        for bar_segment in self.widgets.skill_bonus_bars[career]:
+            bar_segment.setChecked(False)
+        for unlock_button in self.widgets.build['skill_unlocks'][career]:
+            unlock_button.clear()
 
 
 def clear_ground_skills(self):
@@ -586,29 +599,68 @@ def toggle_space_skill(self, current_state: bool, career: str, skill_id: int):
         self.cache.skills['space_points_total'] -= 1
         self.cache.skills[f'space_points_{career}'] -= 1
         self.cache.skills['space_points_rank'][int(skill_id / 6)] -= 1
+        segment_index = self.cache.skills[f'space_points_{career}']
+        if segment_index < 24:
+            self.widgets.skill_bonus_bars[career][segment_index].setChecked(False)
+            if segment_index % 5 == 4:
+                button_index = (segment_index - 4) // 5
+                set_skill_unlock_space(self, career, button_index, None)
+            elif segment_index == 23:
+                set_skill_unlock_space(self, career, 4, None)
+        elif 25 <= segment_index <= 26:
+            set_skill_unlock_space(self, career, 4, 0, segment_index)
     else:
         self.widgets.build['space_skills'][career][skill_id].set_overlay(self.cache.overlays.check)
         self.build['space_skills'][career][skill_id] = True
         self.cache.skills['space_points_total'] += 1
         self.cache.skills[f'space_points_{career}'] += 1
         self.cache.skills['space_points_rank'][int(skill_id / 6)] += 1
+        segment_index = self.cache.skills[f'space_points_{career}'] - 1
+        if segment_index < 24:
+            self.widgets.skill_bonus_bars[career][segment_index].setChecked(True)
+            if segment_index % 5 == 4:
+                button_index = (segment_index - 4) // 5
+                set_skill_unlock_space(self, career, button_index, 0)
+            elif segment_index == 23:
+                set_skill_unlock_space(self, career, 4, -1, 24)
+        elif 24 <= segment_index <= 25:
+            set_skill_unlock_space(self, career, 4, 0, segment_index + 1)
+        elif segment_index == 26:
+            set_skill_unlock_space(self, career, 4, 3, 27)
+    self.widgets.skill_counts_space[career].setText(
+            str(self.cache.skills[f'space_points_{career}']))
     self.autosave()
 
 
-def skill_unlock_callback(self, environment: str, unlock_id: int):
+def skill_unlock_callback(self, bar: str, unlock_id: int):
     """
+    Callback for skill unlock buttons
+
+    Parameters:
+    - :param bar: "eng" / "sci" / "tac" / "ground"
+    - :param unlock_id: index of the unlock button
     """
-    if environment == 'space':
-        pass
-    elif environment == 'ground':
-        current_state = self.build['skill_unlocks'][environment][unlock_id]
-        if current_state is None:
-            return
-        elif current_state == 0:
+    current_state = self.build['skill_unlocks'][bar][unlock_id]
+    if current_state is None:
+        return
+    if bar == 'ground':
+        if current_state == 0:
             set_skill_unlock_ground(self, unlock_id, 1)
         elif current_state == 1:
             set_skill_unlock_ground(self, unlock_id, 0)
         self.autosave()
+    else:
+        if unlock_id < 4:
+            if current_state == 0:
+                set_skill_unlock_space(self, bar, unlock_id, 1)
+            elif current_state == 1:
+                set_skill_unlock_space(self, bar, unlock_id, 0)
+            self.autosave()
+        else:
+            points_spent = self.cache.skills[f'space_points_{bar}']
+            if 25 <= points_spent <= 26:
+                set_skill_unlock_space(self, bar, 4, (current_state + 1) % 3, points_spent)
+                self.autosave()
 
 
 def toggle_ground_skill(self, current_state: bool, skill_group: int, skill_id: int):

@@ -2,7 +2,9 @@ from PySide6.QtCore import Qt
 
 from .constants import BOFF_RANKS, SHIP_TEMPLATE
 from .iofunc import get_ship_image, image
-from .textedit import add_equipment_tooltip_header, get_tooltip, get_skill_unlock_tooltip_ground
+from .textedit import (
+        add_equipment_tooltip_header, get_tooltip, get_skill_unlock_tooltip_ground,
+        get_skill_unlock_tooltip_space, get_ultimate_skill_unlock_tooltip)
 from .widgets import exec_in_thread
 
 
@@ -109,6 +111,18 @@ def load_build(self):
                 self.cache.skills[f'space_points_{career}'] += 1
                 self.cache.skills['space_points_rank'][int(skill_id / 6)] += 1
     self.cache.skills['space_points_total'] = sum(self.cache.skills['space_points_rank'])
+    for career in ('eng', 'sci', 'tac'):
+        skill_points = self.cache.skills[f'space_points_{career}']
+        self.widgets.skill_counts_space[career].setText(str(skill_points))
+        for unlock_id, unlock_choice in enumerate(self.build['skill_unlocks'][career]):
+            if unlock_choice is not None:
+                set_skill_unlock_space(self, career, unlock_id, unlock_choice, skill_points)
+        if skill_points > 24:
+            skill_points = 24
+        for i in range(skill_points):
+            self.widgets.skill_bonus_bars[career][i].setChecked(True)
+        for i in range(skill_points, 24, 1):
+            self.widgets.skill_bonus_bars[career][i].setChecked(False)
 
     # ground skills
     self.cache.skills['ground_points_total'] = 0
@@ -477,19 +491,71 @@ def set_skill_unlock_ground(self, id: int, state: int | None):
         unlock_button.tooltip = get_skill_unlock_tooltip_ground(self, id, 0)
         self.build['skill_unlocks']['ground'][id] = 0
         if not self.building:
-            unlock_button.hide()
-            unlock_button.show()
+            unlock_button.force_tooltip_update()
     elif state == 1:
         unlock_button.set_item(
                 self.cache.images['arrow-up'])
         unlock_button.tooltip = get_skill_unlock_tooltip_ground(self, id, 1)
         self.build['skill_unlocks']['ground'][id] = 1
         if not self.building:
-            unlock_button.hide()
-            unlock_button.show()
+            unlock_button.force_tooltip_update()
     else:
         unlock_button.clear()
         self.build['skill_unlocks']['ground'][id] = None
+
+
+def set_skill_unlock_space(
+            self, career: str, id: int, state: int | None = None, points_spent: int = -1):
+    """
+    Sets unlock button to state and updates build
+
+    Parameters:
+    - :param career: "eng" / "sci" / "tac"
+    - :param id: id of the unlock, counted from the unlock with the lowest requirement
+    - :param state: `0`, `1` set the button to the respective unlock, `None` clears
+    """
+    unlock_button = self.widgets.build['skill_unlocks'][career][id]
+    if id == 4:
+        if points_spent > 27 and state == self.build['skill_unlocks'][career][id]:
+            return
+        if state is None:
+            unlock_button.clear()
+            self.build['skill_unlocks'][career][id] = None
+        else:
+            unlock_button.set_item(
+                    self.cache.images[self.cache.skills['space_unlocks']['_icons'][career]])
+            if points_spent == 24:
+                unlock_button.tooltip = get_ultimate_skill_unlock_tooltip(self, career, -1, 0)
+                self.build['skill_unlocks'][career][id] = -1
+            elif points_spent == 25:
+                unlock_button.tooltip = get_ultimate_skill_unlock_tooltip(self, career, state, 1)
+                self.build['skill_unlocks'][career][id] = state
+            elif points_spent == 26:
+                unlock_button.tooltip = get_ultimate_skill_unlock_tooltip(self, career, state, 2)
+                self.build['skill_unlocks'][career][id] = state
+            else:
+                unlock_button.tooltip = get_ultimate_skill_unlock_tooltip(self, career, 4, 3)
+                self.build['skill_unlocks'][career][id] = 3
+            if not self.building:
+                unlock_button.force_tooltip_update()
+    else:
+        if state == 0:
+            unlock_button.set_item(
+                    self.cache.images['arrow-down'])
+            unlock_button.tooltip = get_skill_unlock_tooltip_space(self, career, id, 0)
+            self.build['skill_unlocks'][career][id] = 0
+            if not self.building:
+                unlock_button.force_tooltip_update()
+        elif state == 1:
+            unlock_button.set_item(
+                    self.cache.images['arrow-up'])
+            unlock_button.tooltip = get_skill_unlock_tooltip_space(self, career, id, 1)
+            self.build['skill_unlocks'][career][id] = 1
+            if not self.building:
+                unlock_button.force_tooltip_update()
+        else:
+            unlock_button.clear()
+            self.build['skill_unlocks'][career][id] = None
 
 
 def clear_traits(self, environment: str = 'both'):

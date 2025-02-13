@@ -78,7 +78,7 @@ def populate_cache(self, threaded_worker: ThreadObject):
     """
     success = load_cargo_cache(self, threaded_worker)
     if not success:
-        self.cache.reset_cache()
+        self.cache.reset_cache(keep_skills=True)
         load_cargo_data(self, threaded_worker)
     self.cache.empty_image = QImage()
     self.cache.images_failed = get_cached_cargo_data(self, 'images_failed.json')
@@ -685,9 +685,9 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'tac': [False] * 30,
         },
         'skill_unlocks': {
-            'eng': [None] * 7,
-            'sci': [None] * 7,
-            'tac': [None] * 7,
+            'eng': [None] * 5,
+            'sci': [None] * 5,
+            'tac': [None] * 5,
             'ground': [None] * 5
         },
         'ground_skills': [

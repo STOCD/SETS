@@ -103,6 +103,58 @@ def get_skill_unlock_tooltip_ground(self, unlock_id: int, unlock_choice: int):
             f"<p style='{head_style}'>{unlock['name']}</p><p style='{subhead_style}'>"
             f"Ground Skill</p><p>{unlock['desc']}</p>")
 
+
+def get_skill_unlock_tooltip_space(self, career: str, unlock_id: int, unlock_choice: int):
+    """
+    gets tooltip for space unlock from cache and formats it
+
+    Parameters:
+    - :param career: "eng" / "sci" / "tac"
+    - :param unlock_id: id of the unlock, counted from the unlock with the lowest requirement
+    - :param unlock_choice: `0` (first choice; "down") or `1` (second choice; "up")
+    """
+    unlock = self.cache.skills['space_unlocks'][career][unlock_id]['nodes'][unlock_choice]
+    head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
+    subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
+    return (
+            f"<p style='{head_style}'>{unlock['name']}</p><p style='{subhead_style}'>"
+            f"Space Skill</p><p>{unlock['desc']}</p>")
+
+
+def get_ultimate_skill_unlock_tooltip(self, career: str, unlock_choice: int, enhancements: int):
+    """
+    gets tooltip for space unlock from cache and formats it
+
+    Parameters:
+    - :param unlock_id: id of the unlock, counted from the unlock with the lowest requirement
+    - :param unlock_choice: `0` (first choice; "down") or `1` (second choice; "up")
+    """
+    unlock = self.cache.skills['space_unlocks'][career][4]
+    head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
+    subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
+    enhancement_style = self.theme['tooltip']['skill_ultimate_name']
+    tooltip = (
+            f"<p style='{head_style}'>{unlock['name']}</p><p style='{subhead_style}'>"
+            f"Space Skill</p><p>{unlock['desc']}</p>")
+    if enhancements == 1:
+        tooltip += (
+                f"<p style='{enhancement_style}'>{unlock['options'][unlock_choice]['name']}</p>"
+                f"<p>{unlock['options'][unlock_choice]['desc']}</p>")
+    elif enhancements == 2:
+        e1 = (unlock_choice - 1) % 3
+        e2 = (unlock_choice + 1) % 3
+        tooltip += (
+                f"<p style='{enhancement_style}'>{unlock['options'][e1]['name']}</p>"
+                f"<p>{unlock['options'][e1]['desc']}</p>"
+                f"<p style='{enhancement_style}'>{unlock['options'][e2]['name']}</p>"
+                f"<p>{unlock['options'][e2]['desc']}</p>")
+    elif enhancements != 0:
+        for i in range(3):
+            tooltip += (
+                    f"<p style='{enhancement_style}'>{unlock['options'][i]['name']}</p>"
+                    f"<p>{unlock['options'][i]['desc']}</p>")
+    return tooltip
+
 # --------------------------------------------------------------------------------------------------
 # static functions
 # --------------------------------------------------------------------------------------------------

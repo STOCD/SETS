@@ -49,6 +49,11 @@ class WidgetStorage():
             'ground': [None] * 10,
         }
         self.skill_count_ground: QLabel
+        self.skill_counts_space: dict = {
+            'eng': None,
+            'sci': None,
+            'tac': None
+        }
 
         self.build: dict = {
             'space': {
@@ -132,7 +137,7 @@ class Cache():
     def __init__(self):
         self.reset_cache()
 
-    def reset_cache(self):
+    def reset_cache(self, keep_skills=False):
         self.ships: dict = dict()
         self.equipment: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
         self.starship_traits: dict = dict()
@@ -155,18 +160,21 @@ class Cache():
             'ground': self.boff_dict(),
             'all': dict()
         }
-        self.skills = {
-            'space': dict(),
-            'space_unlocks': dict(),
-            'ground': dict(),
-            'ground_unlocks': dict(),
-            'space_points_total': 0,
-            'space_points_eng': 0,
-            'space_points_sci': 0,
-            'space_points_tac': 0,
-            'space_points_rank': [0] * 5,
-            'ground_points_total': 0,
-        }
+
+        if not keep_skills:
+            self.skills = {
+                'space': dict(),
+                'space_unlocks': dict(),
+                'ground': dict(),
+                'ground_unlocks': dict(),
+                'space_points_total': 0,
+                'space_points_eng': 0,
+                'space_points_sci': 0,
+                'space_points_tac': 0,
+                'space_points_rank': [0] * 5,
+                'ground_points_total': 0,
+            }
+
         self.species: dict = {
             'Federation': dict(),
             'Klingon': dict(),
@@ -366,6 +374,11 @@ class ItemButton(QFrame):
     def clear_overlay(self):
         self._overlay = None
         self._image_space.update()
+
+    def force_tooltip_update(self):
+        if self.underMouse():
+            self._tooltip_frame.hide()
+            self._tooltip_frame.show()
 
 
 class ItemImage(QWidget):
