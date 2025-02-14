@@ -581,12 +581,8 @@ def load_build_file(self, filepath: str, update_ui: bool = True):
         build_data = json_loads(decoded_str)
     else:
         return
-    if 'space' in build_data:
-        if 'space_skills' in build_data and len(build_data['space_skills']) == 0:
-            del build_data['space_skills']
-        if 'ground_skills' in build_data and len(build_data['ground_skills']) == 0:
-            del build_data['ground_skills']
-        self.build = empty_build(self)
+    self.build = empty_build(self)
+    if len(build_data.keys() & self.build.keys()) == 7:
         self.build.update(build_data)
     else:
         self.build = convert_old_build(self, build_data)
@@ -655,6 +651,7 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'boffs': [[''] * 4, [''] * 4, [''] * 4, [''] * 4],
             'boff_profs': ['Tactical'] * 4,
             'boff_specs': ['Command'] * 4,
+            'ground_desc': '',
             'ground_devices': ['', '', '', '', None],
             'doffs_spec': [''] * 6,
             'doffs_variant': [''] * 6,
@@ -695,7 +692,11 @@ def empty_build(self, build_type: str = 'full') -> dict:
             [False] * 6,
             [False] * 4,
             [False] * 4
-        ]
+        ],
+        'skill_desc': {
+            'space': '',
+            'ground': ''
+        }
     }
 
     if build_type == 'build':

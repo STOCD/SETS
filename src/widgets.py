@@ -41,6 +41,7 @@ class WidgetStorage():
             'primary': QComboBox,
             'secondary': QComboBox,
         }
+        self.ground_desc: QPlainTextEdit
 
         self.skill_bonus_bars = {
             'eng': [None] * 24,
@@ -126,6 +127,10 @@ class WidgetStorage():
                 'sci': [None] * 5,
                 'tac': [None] * 5,
                 'ground': [None] * 5
+            },
+            'skill_desc': {
+                'space': None,
+                'ground': None
             }
         }
 

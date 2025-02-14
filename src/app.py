@@ -593,6 +593,23 @@ class SETS():
 
         frame.setLayout(layout)
 
+        # sidebar
+        sidebar_frame = self.widgets.sidebar_frames[1]
+        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        sidebar_layout = GridLayout(margins=(csp, isp, csp, csp), spacing=csp)
+        sidebar_layout.setColumnStretch(0, 1)
+        desc_label = self.create_label('Build Description:')
+        sidebar_layout.addWidget(desc_label, 0, 0)
+        desc_edit = QPlainTextEdit()
+        desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
+        desc_edit.setFont(self.theme_font('textedit'))
+        desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+        desc_edit.textChanged.connect(lambda: self.set_build_item(
+                self.build['ground'], 'ground_desc', desc_edit.toPlainText(), autosave=False))
+        self.widgets.ground_desc = desc_edit
+        sidebar_layout.addWidget(desc_edit, 1, 0)
+        sidebar_frame.setLayout(sidebar_layout)
+
     def setup_character_frame(self, frame: QFrame):
         """
         Creates character customization area.
@@ -750,6 +767,22 @@ class SETS():
         col_layout.addWidget(bonus_bar_container, 0, 2)
         frame.setLayout(col_layout)
 
+        # sidebar
+        sidebar_frame = self.widgets.sidebar_frames[2]
+        sidebar_layout = GridLayout(margins=(csp, isp * 2, csp, csp), spacing=csp)
+        sidebar_layout.setColumnStretch(0, 1)
+        desc_label = self.create_label('Space Skill Notes:')
+        sidebar_layout.addWidget(desc_label, 0, 0)
+        desc_edit = QPlainTextEdit()
+        desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
+        desc_edit.setFont(self.theme_font('textedit'))
+        desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+        desc_edit.textChanged.connect(lambda: self.set_build_item(
+                self.build['skill_desc'], 'space', desc_edit.toPlainText(), autosave=False))
+        self.widgets.build['skill_desc']['space'] = desc_edit
+        sidebar_layout.addWidget(desc_edit, 1, 0)
+        sidebar_frame.setLayout(sidebar_layout)
+
     def setup_ground_skill_frame(self):
         """
         Creates Ground skill GUI
@@ -836,6 +869,22 @@ class SETS():
         bonus_bar_container.setLayout(bonus_bar_layout)
         col_layout.addWidget(bonus_bar_container, 0, 2)
         frame.setLayout(col_layout)
+
+        # sidebar
+        sidebar_frame = self.widgets.sidebar_frames[3]
+        sidebar_layout = GridLayout(margins=(csp, isp * 2, csp, csp), spacing=csp)
+        sidebar_layout.setColumnStretch(0, 1)
+        desc_label = self.create_label('Ground Skill Notes:')
+        sidebar_layout.addWidget(desc_label, 0, 0)
+        desc_edit = QPlainTextEdit()
+        desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
+        desc_edit.setFont(self.theme_font('textedit'))
+        desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+        desc_edit.textChanged.connect(lambda: self.set_build_item(
+                self.build['skill_desc'], 'ground', desc_edit.toPlainText(), autosave=False))
+        self.widgets.build['skill_desc']['ground'] = desc_edit
+        sidebar_layout.addWidget(desc_edit, 1, 0)
+        sidebar_frame.setLayout(sidebar_layout)
 
     def setup_splash(self, frame: QFrame):
         """

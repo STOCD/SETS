@@ -370,6 +370,8 @@ def clear_space_skills(self):
     """
     resets space skill tree
     """
+    self.widgets.build['skill_desc']['space'].clear()
+    self.build['skill_desc']['space'] = ''
     self.build['space_skills'] = {
         'eng': [False] * 30,
         'sci': [False] * 30,
@@ -397,6 +399,8 @@ def clear_ground_skills(self):
     """
     resets ground skill tree
     """
+    self.widgets.build['skill_desc']['ground'].clear()
+    self.build['skill_desc']['ground'] = ''
     self.build['ground_skills'] = [
         [False] * 6,
         [False] * 6,

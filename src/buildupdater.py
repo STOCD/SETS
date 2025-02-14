@@ -79,6 +79,7 @@ def load_build(self):
     load_doffs(self, 'space')
 
     # Ground Build Section
+    self.widgets.ground_desc.setPlainText(self.build['ground']['ground_desc'])
     load_equipment_cat(self, 'kit_modules', 'ground')
     if not elite_captain:
         self.widgets.build['ground']['kit_modules'][5].hide()
@@ -99,6 +100,7 @@ def load_build(self):
     load_doffs(self, 'ground')
 
     # space skills
+    self.widgets.build['skill_desc']['space'].setPlainText(self.build['skill_desc']['space'])
     self.cache.skills['space_points_eng'] = 0
     self.cache.skills['space_points_sci'] = 0
     self.cache.skills['space_points_tac'] = 0
@@ -125,6 +127,7 @@ def load_build(self):
             self.widgets.skill_bonus_bars[career][i].setChecked(False)
 
     # ground skills
+    self.widgets.build['skill_desc']['ground'].setPlainText(self.build['skill_desc']['ground'])
     self.cache.skills['ground_points_total'] = 0
     for skill_data, skill_buttons in zip(
             self.build['ground_skills'], self.widgets.build['ground_skills']):
@@ -628,6 +631,8 @@ def clear_ground_build(self):
     """
     Clears ground build
     """
+    self.widgets.ground_desc.clear()
+    self.build['ground']['ground_desc'] = ''
     clear_equipment_cat(self, 'kit_modules')
     clear_equipment_cat(self, 'weapons')
     clear_equipment_cat(self, 'ground_devices')
