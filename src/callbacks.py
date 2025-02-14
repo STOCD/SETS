@@ -66,8 +66,8 @@ def species_combo_callback(self, new_species: str):
     else:
         self.widgets.build['space']['traits'][10].hide()
         self.widgets.build['ground']['traits'][10].hide()
-        self.widgets.build['space']['traits'][10].hide()
-        self.widgets.build['ground']['traits'][10].hide()
+        self.widgets.build['space']['traits'][10].clear()
+        self.widgets.build['ground']['traits'][10].clear()
         self.build['space']['traits'][10] = None
         self.build['ground']['traits'][10] = None
         new_space_trait = SPECIES_TRAITS['space'].get(new_species, '')
