@@ -441,7 +441,6 @@ def convert_old_build(self, build: dict) -> dict:
     new_build['captain']['name'] = build['playerName'] + build['playerHandle']
     new_build['captain']['faction'] = build['captain']['faction']
 
-    # skills TODO
     return new_build
 
 
@@ -581,11 +580,14 @@ def load_build_file(self, filepath: str, update_ui: bool = True):
         build_data = json_loads(decoded_str)
     else:
         return
-    self.build = empty_build(self)
-    if len(build_data.keys() & self.build.keys()) == 7:
-        self.build.update(build_data)
+    new_build = empty_build(self)
+    if len(build_data.keys() | new_build.keys()) == 7:
+        merge_build(self, new_build, build_data)
+    elif 'versionJSON' in build_data:
+        new_build.update(convert_old_build(self, build_data))
     else:
-        self.build = convert_old_build(self, build_data)
+        return
+    self.build = new_build
     if update_ui:
         load_build(self)
 
@@ -706,6 +708,20 @@ def empty_build(self, build_type: str = 'full') -> dict:
         return new_build
     elif build_type == 'skills':
         return new_skills
+
+
+def merge_build(self, original_build: dict, new_build: dict):
+    """
+    updates `original_build` with contents of `new_build`
+    """
+    for build_segment in original_build:
+        subdict = new_build.get(build_segment, None)
+        if subdict is None:
+            continue
+        if isinstance(subdict, dict):
+            original_build[build_segment].update(subdict)
+        else:
+            original_build[build_segment] = subdict
 
 
 def pixel_range(num: int = 0, range_start: int = 0, /):
