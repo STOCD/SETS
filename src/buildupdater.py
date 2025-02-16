@@ -99,6 +99,16 @@ def load_build(self):
     load_trait_cat(self, 'active_rep_traits', 'ground')
     load_doffs(self, 'ground')
 
+    load_skill_pages(self)
+
+    self.building = False
+    self.autosave()
+
+
+def load_skill_pages(self):
+    """
+    Updates UI to show skill trees in self.build
+    """
     # space skills
     self.widgets.build['skill_desc']['space'].setPlainText(self.build['skill_desc']['space'])
     self.cache.skills['space_points_eng'] = 0
@@ -143,9 +153,6 @@ def load_build(self):
     for unlock_id, unlock_choice in enumerate(self.build['skill_unlocks']['ground']):
         if unlock_choice is not None:
             set_skill_unlock_ground(self, unlock_id, unlock_choice)
-
-    self.building = False
-    self.autosave()
 
 
 def get_boff_spec(self, seat_details: str) -> tuple[int, str, str]:

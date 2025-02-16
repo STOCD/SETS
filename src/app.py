@@ -22,10 +22,10 @@ class SETS():
 
     from .callbacks import (
             clear_all, clear_slot, clear_build_callback, copy_equipment_item, edit_equipment_item,
-            elite_callback, faction_combo_callback, load_build_callback, open_wiki_context,
-            paste_equipment_item, save_build_callback, set_build_item, select_ship,
-            ship_info_callback, skill_unlock_callback, spec_combo_callback, species_combo_callback,
-            switch_main_tab, tier_callback)
+            elite_callback, faction_combo_callback, load_build_callback, load_skills_callback,
+            open_wiki_context, paste_equipment_item, save_build_callback, save_skills_callback,
+            set_build_item, select_ship, ship_info_callback, skill_unlock_callback,
+            spec_combo_callback, species_combo_callback, switch_main_tab, tier_callback)
     from .datafunctions import autosave, cache_skills, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
@@ -770,9 +770,8 @@ class SETS():
         # sidebar
         sidebar_frame = self.widgets.sidebar_frames[2]
         sidebar_layout = GridLayout(margins=(csp, isp * 2, csp, csp), spacing=csp)
-        sidebar_layout.setColumnStretch(0, 1)
         desc_label = self.create_label('Space Skill Notes:')
-        sidebar_layout.addWidget(desc_label, 0, 0)
+        sidebar_layout.addWidget(desc_label, 0, 0, 1, 2)
         desc_edit = QPlainTextEdit()
         desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
         desc_edit.setFont(self.theme_font('textedit'))
@@ -780,7 +779,13 @@ class SETS():
         desc_edit.textChanged.connect(lambda: self.set_build_item(
                 self.build['skill_desc'], 'space', desc_edit.toPlainText(), autosave=False))
         self.widgets.build['skill_desc']['space'] = desc_edit
-        sidebar_layout.addWidget(desc_edit, 1, 0)
+        sidebar_layout.addWidget(desc_edit, 1, 0, 1, 2)
+        load_skills_button = self.create_button('Load Skills')
+        load_skills_button.clicked.connect(self.load_skills_callback)
+        sidebar_layout.addWidget(load_skills_button, 2, 0, alignment=AHCENTER)
+        save_skills_button = self.create_button('Save Skills')
+        save_skills_button.clicked.connect(self.save_skills_callback)
+        sidebar_layout.addWidget(save_skills_button, 2, 1, alignment=AHCENTER)
         sidebar_frame.setLayout(sidebar_layout)
 
     def setup_ground_skill_frame(self):
@@ -873,9 +878,8 @@ class SETS():
         # sidebar
         sidebar_frame = self.widgets.sidebar_frames[3]
         sidebar_layout = GridLayout(margins=(csp, isp * 2, csp, csp), spacing=csp)
-        sidebar_layout.setColumnStretch(0, 1)
         desc_label = self.create_label('Ground Skill Notes:')
-        sidebar_layout.addWidget(desc_label, 0, 0)
+        sidebar_layout.addWidget(desc_label, 0, 0, 1, 2)
         desc_edit = QPlainTextEdit()
         desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
         desc_edit.setFont(self.theme_font('textedit'))
@@ -883,7 +887,13 @@ class SETS():
         desc_edit.textChanged.connect(lambda: self.set_build_item(
                 self.build['skill_desc'], 'ground', desc_edit.toPlainText(), autosave=False))
         self.widgets.build['skill_desc']['ground'] = desc_edit
-        sidebar_layout.addWidget(desc_edit, 1, 0)
+        sidebar_layout.addWidget(desc_edit, 1, 0, 1, 2)
+        load_skills_button = self.create_button('Load Skills')
+        load_skills_button.clicked.connect(self.load_skills_callback)
+        sidebar_layout.addWidget(load_skills_button, 2, 0, alignment=AHCENTER)
+        save_skills_button = self.create_button('Save Skills')
+        save_skills_button.clicked.connect(self.save_skills_callback)
+        sidebar_layout.addWidget(save_skills_button, 2, 1, alignment=AHCENTER)
         sidebar_frame.setLayout(sidebar_layout)
 
     def setup_splash(self, frame: QFrame):

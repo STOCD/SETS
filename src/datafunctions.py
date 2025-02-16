@@ -8,7 +8,7 @@ from PySide6.QtGui import QImage
 from requests.exceptions import Timeout
 from requests_html import Element
 
-from .buildupdater import get_boff_spec, load_build
+from .buildupdater import get_boff_spec, load_build, load_skill_pages
 from .constants import (
         BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES, ITEM_QUERY_URL,
         MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL,
@@ -607,6 +607,54 @@ def save_build_file(self, filepath: str):
     elif extension.lower() == 'png':
         image = self.window.grab().toImage()
         encode_in_image(self, image, json_dumps(self.build))
+        image.save(filepath)
+
+
+def load_skill_tree_file(self, filepath: str):
+    """
+    Loads skill tree from json or png file and puts it into self.build
+
+    Parameters:
+    - :param filepath: path to skill tree file
+    """
+    _, _, extension = filepath.rpartition('.')
+    if extension.lower() == 'json':
+        build_data = load_json(filepath)
+    elif extension.lower() == 'png':
+        decoded_str = decode_from_image(self, QImage(filepath))
+        if decoded_str == '':
+            return
+        build_data = json_loads(decoded_str)
+    else:
+        return
+    new_build = empty_build(self, 'skills')
+    merge_build(self, new_build, build_data)
+    self.build['space_skills'] = new_build['space_skills']
+    self.build['ground_skills'] = new_build['ground_skills']
+    self.build['skill_unlocks'] = new_build['skill_unlocks']
+    self.build['skill_desc'] = new_build['skill_desc']
+    load_skill_pages(self)
+
+
+def save_skill_tree_file(self, filepath: str):
+    """
+    Saves skill tree to json or png file
+
+    Parameters:
+    - :param filepath: path to skill tree file
+    """
+    _, _, extension = filepath.rpartition('.')
+    skill_tree = {
+        'space_skills': self.build['space_skills'],
+        'ground_skills': self.build['ground_skills'],
+        'skill_unlocks': self.build['skill_unlocks'],
+        'skill_desc': self.build['skill_desc'],
+    }
+    if extension.lower() == 'json':
+        store_json(skill_tree, filepath)
+    elif extension.lower() == 'png':
+        image = self.window.grab().toImage()
+        encode_in_image(self, image, json_dumps(skill_tree))
         image.save(filepath)
 
 

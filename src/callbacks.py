@@ -5,7 +5,8 @@ from .buildupdater import (
 from .constants import (
         EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK,
         SPECIES, SPECIES_TRAITS)
-from .datafunctions import load_build_file, save_build_file
+from .datafunctions import (
+        load_build_file, load_skill_tree_file, save_build_file, save_skill_tree_file)
 from .iofunc import browse_path, get_ship_image, image, open_wiki_page
 from .widgets import exec_in_thread
 
@@ -444,6 +445,17 @@ def load_build_callback(self):
         load_build_file(self, load_path)
 
 
+def load_skills_callback(self):
+    """
+    Loads skills from file
+    """
+    load_path = browse_path(
+            self, self.config['config_subfolders']['library'],
+            'SETS Files (*.json *.png);;JSON file (*.json);;PNG image (*.png);;Any File (*.*)')
+    if load_path != '':
+        load_skill_tree_file(self, load_path)
+
+
 def save_build_callback(self):
     """
     Saves build to file
@@ -460,6 +472,18 @@ def save_build_callback(self):
             'JSON file (*.json);;PNG image (*.png);;Any File (*.*)', save=True)
     if save_path != '':
         save_build_file(self, save_path)
+
+
+def save_skills_callback(self):
+    """
+    Save skills to file
+    """
+    default_path = f"{self.config['config_subfolders']['library']}\\Skill Tree.json"
+    save_path = browse_path(
+            self, default_path,
+            'JSON file (*.json);;PNG image (*.png);;Any File (*.*)', save=True)
+    if save_path != '':
+        save_skill_tree_file(self, save_path)
 
 
 def ship_info_callback(self):
