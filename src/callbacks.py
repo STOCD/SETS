@@ -434,6 +434,18 @@ def clear_all(self):
     self.autosave()
 
 
+def set_ui_scale_setting(self, new_value: int):
+    """
+    Calculates new_value / 50 and stores it to settings.
+
+    Parameters:
+    - :param new_value: 50 times the ui scale percentage
+    """
+    setting_value = f'{new_value / 50:.2f}'
+    self.settings.setValue('ui_scale', setting_value)
+    return setting_value
+
+
 def load_build_callback(self):
     """
     Loads build from file

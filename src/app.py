@@ -24,18 +24,20 @@ class SETS():
             clear_all, clear_slot, clear_build_callback, copy_equipment_item, edit_equipment_item,
             elite_callback, faction_combo_callback, load_build_callback, load_skills_callback,
             open_wiki_context, paste_equipment_item, save_build_callback, save_skills_callback,
-            set_build_item, select_ship, ship_info_callback, skill_unlock_callback,
-            spec_combo_callback, species_combo_callback, switch_main_tab, tier_callback)
+            select_ship, set_build_item, set_ui_scale_setting, ship_info_callback,
+            skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
+            tier_callback)
     from .datafunctions import autosave, cache_skills, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
     from .widgetbuilder import (
-            create_boff_station_ground, create_boff_station_space, create_bonus_bar_segment,
-            create_bonus_bar_space, create_build_section, create_button, create_button_series,
-            create_checkbox, create_combo_box, create_doff_section, create_entry, create_frame,
-            create_item_button, create_label, create_personal_trait_section,
-            create_skill_button_ground, create_skill_group_space, create_starship_trait_section)
+            create_annotated_slider, create_boff_station_ground, create_boff_station_space,
+            create_bonus_bar_segment, create_bonus_bar_space, create_build_section, create_button,
+            create_button_series, create_checkbox, create_combo_box, create_doff_section,
+            create_entry, create_frame, create_item_button, create_label,
+            create_personal_trait_section, create_skill_button_ground, create_skill_group_space,
+            create_starship_trait_section)
 
     app_dir = None
     # (release version, dev version)
@@ -185,6 +187,8 @@ class SETS():
         font_database = QFontDatabase()
         font_database.addApplicationFont(
                 get_asset_path('Overpass-VariableFont_wght.ttf', self.app_dir))
+        font_database.addApplicationFont(
+                get_asset_path('RobotoMono-Regular.ttf', self.app_dir))
         app.setStyleSheet(self.create_style_sheet(self.theme['app']['style']))
         window = QWidget()
         window.setWindowIcon(load_icon('SETS_icon_small.png', self.app_dir))
@@ -321,6 +325,7 @@ class SETS():
             self.widgets.build_frames.append(tab_frame)
         content_layout.addWidget(build_tabber, 1, 1)
         self.setup_build_frames()
+        self.setup_settings_frame()
 
         content_frame.setLayout(content_layout)
 
@@ -935,3 +940,45 @@ class SETS():
             for window in self.app.topLevelWindows():
                 if window.type() == Qt.WindowType.ToolTip:
                     window.hide()
+
+    def setup_settings_frame(self):
+        """
+        Populates the settings frame.
+        """
+        settings_frame = self.widgets.build_frames[5]
+        isp = self.theme['defaults']['isp'] * self.config['ui_scale']
+        settings_layout = HBoxLayout(margins=(2 * isp, isp, isp, isp), spacing=isp)
+        scroll_layout = VBoxLayout(margins=(0, isp, 0, 0), spacing=isp)
+        scroll_layout.setSpacing(isp)
+        scroll_frame = self.create_frame()
+        scroll_area = QScrollArea()
+        scroll_area.setSizePolicy(SMINMIN)
+        scroll_area.setHorizontalScrollBarPolicy(SCROLLOFF)
+        scroll_area.setVerticalScrollBarPolicy(SCROLLON)
+        # scroll_area.setAlignment(AHCENTER)
+        settings_layout.addWidget(scroll_area)
+        settings_frame.setLayout(settings_layout)
+
+        # first section
+        settings_header = self.create_label('Settings:', 'label_heading')
+        scroll_layout.addWidget(settings_header, alignment=ALEFT)
+        sec_1 = GridLayout()
+        sec_1.setVerticalSpacing(isp)
+        sec_1.setHorizontalSpacing(self.theme['defaults']['csp'] * self.config['ui_scale'])
+        sec_1.setColumnMinimumWidth(1, 3 * isp)
+        sec_1.setColumnMinimumWidth(3, 3 * isp)
+        ui_scale_label = self.create_label('UI Scale')
+        sec_1.addWidget(ui_scale_label, 0, 0, alignment=ALEFT)
+        ui_scale_slider = self.create_annotated_slider(
+                default_value=round(self.settings.value('ui_scale', type=float) * 50, 0),
+                min=25, max=75, callback=self.set_ui_scale_setting)
+        sec_1.addLayout(ui_scale_slider, 0, 2, alignment=ALEFT)
+        ui_scale_desc = self.create_label('Requires restart.', 'hint_label')
+        sec_1.addWidget(ui_scale_desc, 0, 4, alignment=ALEFT)
+
+        scroll_layout.addLayout(sec_1)
+
+        # second section
+
+        scroll_frame.setLayout(scroll_layout)
+        scroll_area.setWidget(scroll_frame)

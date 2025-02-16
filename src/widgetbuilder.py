@@ -1,15 +1,17 @@
+from typing import Callable
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-        QPushButton, QSizePolicy, QVBoxLayout)
+        QPushButton, QSizePolicy, QSlider, QVBoxLayout)
 
 from .callbacks import (
         boff_label_callback_ground, boff_profession_callback_space, doff_spec_callback,
         doff_variant_callback, picker, skill_callback_ground, skill_callback_space,
         skill_unlock_callback)
 from .constants import (
-        ABOTTOM, AHCENTER, ALEFT, ATOP, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX, SMAXMIN,
-        SMINMAX)
+        ABOTTOM, AHCENTER, ALEFT, ATOP, AVCENTER, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX,
+        SMAXMIN, SMINMAX)
 from .style import get_style, get_style_class, merge_style, theme_font
 from .textedit import format_skill_tooltip
 from .widgets import DoffCombobox, GridLayout, HBoxLayout, ItemButton, VBoxLayout
@@ -572,3 +574,48 @@ def create_bonus_bar_space(self, career: str, layout: GridLayout, column: int):
     button.clicked.connect(lambda: skill_unlock_callback(self, career, 4))
     layout.addWidget(button, 1, column, alignment=AHCENTER)
     self.widgets.build['skill_unlocks'][career][4] = button
+
+
+def create_annotated_slider(
+        self, default_value: int = 1, min: int = 0, max: int = 3,
+        style: str = 'slider', style_override_slider: dict = {}, style_override_label: dict = {},
+        callback: Callable = lambda v: v) -> QHBoxLayout:
+    """
+    Creates Slider with label to display the current value.
+
+    Parameters:
+    - :param default_value: start value for the slider
+    - :param min: lowest value of the slider
+    - :param max: highest value of the slider
+    - :param style: key for self.theme -> default style
+    - :param style_override_slider: style dict to override default style
+    - :param style_override_label: style dict to override default style
+    - :param callback: callable to be attached to the valueChanged signal of the slider; will be \
+    passed value the slider was moved to; must return value that the label should be set to
+
+    :return: layout with slider
+    """
+    def label_updater(new_value):
+        if isinstance(callback, CALLABLE):
+            new_text = callback(new_value)
+            slider_label.setText(str(new_text))
+
+    layout = QHBoxLayout()
+    layout.setContentsMargins(0, 0, 0, 3)
+    layout.setSpacing(self.theme['defaults']['margin'])
+    slider_label = create_label(
+            self, '', style, style_override=style_override_label)
+    layout.addWidget(slider_label, alignment=AVCENTER)
+    slider = QSlider(Qt.Orientation.Horizontal)
+    slider.setRange(min, max)
+    slider.setSingleStep(1)
+    slider.setPageStep(1)
+    slider.setValue(default_value)
+    slider.setTickPosition(QSlider.TickPosition.NoTicks)
+    slider.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
+    slider.setSizePolicy(SMINMAX)
+    slider.setStyleSheet(get_style_class(self, 'QSlider', style, style_override_slider))
+    slider.valueChanged.connect(label_updater)
+    layout.addWidget(slider, stretch=1, alignment=AVCENTER)
+    label_updater(default_value)
+    return layout

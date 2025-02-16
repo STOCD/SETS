@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.02b161'
+    version = '2025.02b162'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -95,6 +95,14 @@ class Launcher():
         # default text (non-button, non-entry, non table)
         'label': {
             'color': '@fg',
+            'margin': (3, 0, 3, 0),
+            'qproperty-indent': '0',  # disables auto-indent
+            'border-style': 'none',
+            'font': '@font'
+        },
+        # default text (non-button, non-entry, non table)
+        'hint_label': {
+            'color': '@mfg',
             'margin': (3, 0, 3, 0),
             'qproperty-indent': '0',  # disables auto-indent
             'border-style': 'none',
@@ -479,6 +487,32 @@ class Launcher():
             'background-color': '@lbg',
             'border-style': 'none',
             'height': 1
+        },
+        # horizontal sliding selector
+        'slider': {
+            'font': ('Roboto Mono', 11, 'Normal'),
+            'color': '@fg',
+            '::groove:horizontal': {
+                'border-style': 'none',
+                'background-color': '@lbg',
+                'border-radius': '@bw',
+                'height': 3
+            },
+            '::handle:horizontal': {
+                'border-style': 'solid',
+                'border-width': '@bw',
+                'border-color': '@bc',
+                'background-color': '@bc',
+                'width': 6,
+                'margin-top': -7,
+                'margin-bottom': -7
+            },
+            '::handle:horizontal:hover': {
+                'border-color': '@sets'
+            },
+            '::handle:horizontal:pressed': {
+                'background-color': '#666666'
+            },
         },
     }
 
