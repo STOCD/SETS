@@ -27,7 +27,9 @@ class SETS():
             select_ship, set_build_item, set_ui_scale_setting, ship_info_callback,
             skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
             tier_callback)
-    from .datafunctions import autosave, backup_cargo_data, cache_skills, empty_build, init_backend
+    from .datafunctions import (
+            autosave, backup_cargo_data, cache_skills, empty_build, init_backend,
+            load_legacy_build_image)
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
@@ -1005,6 +1007,7 @@ class SETS():
         scroll_layout.addWidget(maintenance_header, alignment=ALEFT)
         sec_2 = GridLayout(spacing=isp)
         sec_2.setColumnMinimumWidth(1, 3 * isp)
+        sec_2.setColumnStretch(3, 1)
         cargo_clear_button = self.create_button('Clear Cargo Data')
         cargo_clear_button.clicked.connect(
                 lambda: delete_folder_contents(self.config['config_subfolders']['cargo']))
@@ -1026,6 +1029,24 @@ class SETS():
                 'Creates cargo backup to protect against download failures.', 'hint_label')
         sec_2.addWidget(backup_cargo_label, 2, 2, alignment=ALEFT)
         scroll_layout.addLayout(sec_2)
+
+        # third section
+        sep = self.create_frame()
+        sep.setFixedHeight(isp)
+        scroll_layout.addWidget(sep)
+        compatibility_header = self.create_label('Compatibility:', 'label_heading')
+        scroll_layout.addWidget(compatibility_header, alignment=ALEFT)
+        sec_3 = GridLayout(spacing=isp)
+        sec_3.setColumnMinimumWidth(1, 3 * isp)
+        sec_3.setColumnStretch(3, 1)
+        build_image_button = self.create_button('Convert Legacy Build Image')
+        build_image_button.clicked.connect(self.load_legacy_build_image)
+        sec_3.addWidget(build_image_button, 0, 0, alignment=ALEFT)
+        build_image_label = self.create_label(
+                'Loads build from legacy build image. Use the "Load" button to load legacy '
+                'JSON build files.', 'hint_label')
+        sec_3.addWidget(build_image_label, 0, 2, alignment=ALEFT)
+        scroll_layout.addLayout(sec_3)
 
         scroll_frame.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_frame)

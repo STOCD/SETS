@@ -15,7 +15,7 @@ from .constants import (
         MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL,
         WIKI_IMAGE_URL)
 from .iofunc import (
-        copy_file, download_image, fetch_html, get_asset_path, get_cached_cargo_data,
+        browse_path, copy_file, download_image, fetch_html, get_asset_path, get_cached_cargo_data,
         get_cargo_data, get_downloaded_images, image, load_image, load_json, retrieve_image,
         store_json, store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
@@ -388,7 +388,10 @@ def map_build_items(self, old_build: dict, new_build: dict, mapping):
         try:
             if isinstance(new_build[target_key], list):
                 for index, element in enumerate(old_build[source_key]):
-                    new_build[target_key][index] = element
+                    try:
+                        new_build[target_key][index] = element
+                    except IndexError:
+                        break
             else:
                 new_build[target_key] = old_build[source_key]
         except KeyError:
@@ -439,10 +442,22 @@ def convert_old_build(self, build: dict) -> dict:
 
     # captain
     map_build_items(self, build, new_build['captain'], BUILD_CONVERSION['captain'])
-    new_build['captain']['name'] = build['playerName'] + build['playerHandle']
-    new_build['captain']['faction'] = build['captain']['faction']
+    try:
+        new_build['captain']['name'] = build['playerName'] + build['playerHandle']
+        new_build['captain']['faction'] = build['captain']['faction']
+    except KeyError:
+        pass
 
     return new_build
+
+
+def compensate_old_build(self, build: str):
+    """
+    replaces known wrong terms in build string
+    """
+    build = build.replace('Ultra rare', 'Ultra Rare')
+    build = build.replace('Very rare', 'Very Rare')
+    return build
 
 
 def encode_in_image(self, image: QImage, data: str):
@@ -566,6 +581,29 @@ def legacy_decode_from_image(self, image_path: str) -> str:
     return message.split('$t3g0', maxsplit=1)[0]
 
 
+def load_legacy_build_image(self):
+    """
+    Loads legacy build from image file
+    """
+    load_path = browse_path(
+            self, self.config['config_subfolders']['library'],
+            'PNG image (*.png);;Any File (*.*)')
+    if load_path != '':
+        _, _, extension = load_path.rpartition('.')
+        if extension.lower() != 'png':
+            return
+        try:
+            raw_build = legacy_decode_from_image(self, load_path)
+            build_data = json__loads(compensate_old_build(self, raw_build))
+        except JSONDecodeError:
+            sys.stderr.write('[Error] Image contains no build or is corrupted.')
+        if 'versionJSON' in build_data:
+            new_build = empty_build(self)
+            new_build.update(convert_old_build(self, build_data))
+            self.build = new_build
+            load_build(self)
+
+
 def load_build_file(self, filepath: str, update_ui: bool = True):
     """
     Loads build from json or png file and puts it into self.build
@@ -587,6 +625,7 @@ def load_build_file(self, filepath: str, update_ui: bool = True):
     if len(build_data.keys() | new_build.keys()) == 7:
         merge_build(self, new_build, build_data)
     elif 'versionJSON' in build_data:
+        build_data = json__loads(compensate_old_build(self, json__dumps(build_data)))
         new_build.update(convert_old_build(self, build_data))
     else:
         return
@@ -818,6 +857,7 @@ def get_boff_data(self):
         if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
             try:
                 self.cache.boff_abilities = load_json(filepath)
+                self.cache.images_set |= self.cache.boff_abilities['all'].keys()
                 return
             except JSONDecodeError:
                 pass
@@ -832,6 +872,7 @@ def get_boff_data(self):
                 cargo_data = load_json(backup_path)
                 store_json(cargo_data, filepath)
                 self.cache.boff_abilities = cargo_data
+                self.cache.images_set |= self.cache.boff_abilities['all'].keys()
                 return
             except JSONDecodeError:
                 pass

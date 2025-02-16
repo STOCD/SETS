@@ -15,12 +15,12 @@ def load_build(self):
     self.building = True
     # ship section
     ship = self.build['space']['ship']
-    if ship == '<Pick Ship>':
+    if ship == '<Pick Ship>' or ship == '':
         ship_data = SHIP_TEMPLATE
         self.widgets.ship['button'].setText('<Pick Ship>')
         self.widgets.ship['tier'].clear()
         self.widgets.ship['image'].set_image(self.cache.empty_image)
-    elif ship != '':
+    else:
         self.widgets.ship['button'].setText(ship)
         ship_data = self.cache.ships[ship]
         exec_in_thread(
@@ -53,7 +53,9 @@ def load_build(self):
     self.widgets.character['secondary'].setCurrentText(self.build['captain']['secondary_spec'])
 
     # Space Build Section
-    if ship != '':
+    if ship == '' or ship == '<Pick Ship>':
+        align_space_frame(self, ship_data, clear=True)
+    else:
         align_space_frame(self, ship_data)
     load_equipment_cat(self, 'fore_weapons', 'space')
     load_equipment_cat(self, 'aft_weapons', 'space')
@@ -353,16 +355,18 @@ def update_boff_seat(
     else:
         label.show()
         if specialization != '':
-            specialization = f' / {specialization}'
+            spec_label = f' / {specialization}'
+        else:
+            spec_label = ''
         if profession == 'Universal':
             label_options = (
-                f'Tactical{specialization}',
-                f'Science{specialization}',
-                f'Engineering{specialization}'
+                f'Tactical{spec_label}',
+                f'Science{spec_label}',
+                f'Engineering{spec_label}'
             )
             label.setDisabled(False)
         else:
-            label_options = (profession + specialization,)
+            label_options = (profession + spec_label,)
             label.setDisabled(True)
         label.addItems(label_options)
     if clear:
