@@ -466,6 +466,7 @@ def encode_in_image(self, image: QImage, data: str):
     additional_pixels = (total_bits - full_rows * w * 3) // 3
     additional_subpixels = total_bits % 3
     i = -1
+    row = -1
     for row in range(full_rows):
         row_data = image.scanLine(row)
         for i, subpixel in pixel_range(w, i + 1):
@@ -508,6 +509,7 @@ def decode_from_image(self, image: QImage) -> str:
     additional_pixels = (total_bits - full_rows * w * 3) // 3
     additional_subpixels = total_bits % 3
     i = -1
+    row = -1
     for row in range(full_rows):
         row_data = image.constScanLine(row)
         for i, subpixel in pixel_range(w, i + 1):
