@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea,
 from .constants import (
     ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS, PRIMARY_SPECS,
     RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
-from .iofunc import create_folder, get_asset_path, load_icon, store_json
+from .iofunc import create_folder, delete_folder_contents, get_asset_path, load_icon, store_json
 from .subwindows import ItemEditor, Picker, ShipSelector
 from .widgets import (
     Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout,
@@ -27,7 +27,7 @@ class SETS():
             select_ship, set_build_item, set_ui_scale_setting, ship_info_callback,
             skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
             tier_callback)
-    from .datafunctions import autosave, cache_skills, empty_build, init_backend
+    from .datafunctions import autosave, backup_cargo_data, cache_skills, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
@@ -146,6 +146,7 @@ class SETS():
         create_folder(self.config['config_subfolders']['cargo'])
         create_folder(self.config['config_subfolders']['images'])
         create_folder(self.config['config_subfolders']['ship_images'])
+        create_folder(self.config['config_subfolders']['backups'])
         if not os.path.exists(self.config['autosave_filename']):
             store_json(self.empty_build(), self.config['autosave_filename'])
 
@@ -965,11 +966,11 @@ class SETS():
         # first section
         settings_header = self.create_label('Settings:', 'label_heading')
         scroll_layout.addWidget(settings_header, alignment=ALEFT)
-        sec_1 = GridLayout()
-        sec_1.setVerticalSpacing(isp)
-        sec_1.setHorizontalSpacing(self.theme['defaults']['csp'] * self.config['ui_scale'])
+        sec_1 = GridLayout(spacing=isp)
         sec_1.setColumnMinimumWidth(1, 3 * isp)
+        sec_1.setColumnMinimumWidth(2, 12 * isp)
         sec_1.setColumnMinimumWidth(3, 3 * isp)
+        sec_1.setColumnStretch(5, 1)
         ui_scale_label = self.create_label('UI Scale')
         sec_1.addWidget(ui_scale_label, 0, 0, alignment=ALEFT)
         ui_scale_slider = self.create_annotated_slider(
@@ -994,10 +995,37 @@ class SETS():
         rarity_combo.currentTextChanged.connect(
                 lambda new_rarity: self.settings.setValue('default_rarity', new_rarity))
         sec_1.addWidget(rarity_combo, 2, 2, alignment=ALEFT | AVCENTER)
-
         scroll_layout.addLayout(sec_1)
 
         # second section
+        sep = self.create_frame()
+        sep.setFixedHeight(isp)
+        scroll_layout.addWidget(sep)
+        maintenance_header = self.create_label('Maintenance:', 'label_heading')
+        scroll_layout.addWidget(maintenance_header, alignment=ALEFT)
+        sec_2 = GridLayout(spacing=isp)
+        sec_2.setColumnMinimumWidth(1, 3 * isp)
+        cargo_clear_button = self.create_button('Clear Cargo Data')
+        cargo_clear_button.clicked.connect(
+                lambda: delete_folder_contents(self.config['config_subfolders']['cargo']))
+        sec_2.addWidget(cargo_clear_button, 0, 0, alignment=ALEFT)
+        cargo_clear_label = self.create_label(
+                'Clears cargo data. Restart to refresh data.', 'hint_label')
+        sec_2.addWidget(cargo_clear_label, 0, 2, alignment=ALEFT)
+        cache_clear_button = self.create_button('Clear Cache')
+        cache_clear_button.clicked.connect(
+                lambda: delete_folder_contents(self.config['config_subfolders']['cache']))
+        sec_2.addWidget(cache_clear_button, 1, 0, alignment=ALEFT)
+        cache_clear_label = self.create_label(
+                'Clears cache. Restart to rebuild cache.', 'hint_label')
+        sec_2.addWidget(cache_clear_label, 1, 2, alignment=ALEFT)
+        backup_cargo_button = self.create_button('Backup Cargo Data')
+        backup_cargo_button.clicked.connect(self.backup_cargo_data)
+        sec_2.addWidget(backup_cargo_button, 2, 0, alignment=ALEFT)
+        backup_cargo_label = self.create_label(
+                'Creates cargo backup to protect against download failures.', 'hint_label')
+        sec_2.addWidget(backup_cargo_label, 2, 2, alignment=ALEFT)
+        scroll_layout.addLayout(sec_2)
 
         scroll_frame.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_frame)

@@ -1,11 +1,12 @@
 from datetime import datetime
-from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
+from json import dumps as json__dumps, loads as json__loads, JSONDecodeError
 import os
 import sys
 from zlib import compress as zlib_compress, decompress as zlib_decompress
 from numpy import array, append, fromiter, packbits, uint8, unpackbits, zeros
 from PySide6.QtGui import QImage
-from requests.exceptions import Timeout
+from requests.exceptions import (
+        ConnectionError as requests__ConnectionError, Timeout as requests__Timeout)
 from requests_html import Element
 
 from .buildupdater import get_boff_spec, load_build, load_skill_pages
@@ -14,9 +15,9 @@ from .constants import (
         MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL,
         WIKI_IMAGE_URL)
 from .iofunc import (
-        download_image, fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data,
-        get_downloaded_images, image, load_image, load_json, retrieve_image, store_json,
-        store_to_cache)
+        copy_file, download_image, fetch_html, get_asset_path, get_cached_cargo_data,
+        get_cargo_data, get_downloaded_images, image, load_image, load_json, retrieve_image,
+        store_json, store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
 from .textedit import (
         create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
@@ -579,7 +580,7 @@ def load_build_file(self, filepath: str, update_ui: bool = True):
         decoded_str = decode_from_image(self, QImage(filepath))
         if decoded_str == '':
             return
-        build_data = json_loads(decoded_str)
+        build_data = json__loads(decoded_str)
     else:
         return
     new_build = empty_build(self)
@@ -606,7 +607,7 @@ def save_build_file(self, filepath: str):
         store_json(self.build, filepath)
     elif extension.lower() == 'png':
         image = self.window.grab().toImage()
-        encode_in_image(self, image, json_dumps(self.build))
+        encode_in_image(self, image, json__dumps(self.build))
         image.save(filepath)
 
 
@@ -624,7 +625,7 @@ def load_skill_tree_file(self, filepath: str):
         decoded_str = decode_from_image(self, QImage(filepath))
         if decoded_str == '':
             return
-        build_data = json_loads(decoded_str)
+        build_data = json__loads(decoded_str)
     else:
         return
     new_build = empty_build(self, 'skills')
@@ -654,7 +655,7 @@ def save_skill_tree_file(self, filepath: str):
         store_json(skill_tree, filepath)
     elif extension.lower() == 'png':
         image = self.window.grab().toImage()
-        encode_in_image(self, image, json_dumps(skill_tree))
+        encode_in_image(self, image, json__dumps(skill_tree))
         image.save(filepath)
 
 
@@ -789,6 +790,21 @@ def pixel_range(num: int = 0, range_start: int = 0, /):
         counter += 1
 
 
+def backup_cargo_data(self):
+    """
+    Saves current cargo data to backup folder.
+    """
+    cargo_files = (
+            'boff_abilities.json', 'doffs.json', 'equipment.json', 'modifiers.json',
+            'ship_list.json', 'starship_traits.json', 'traits.json')
+    cargo_folder = self.config['config_subfolders']['cargo']
+    backups_folder = self.config['config_subfolders']['backups']
+    for file_name in cargo_files:
+        cargo_path = f'{cargo_folder}\\{file_name}'
+        backups_path = f'{backups_folder}\\{file_name}'
+        copy_file(cargo_path, backups_path)
+
+
 def get_boff_data(self):
     """
     Populates self.cache.boff_abilities until boff abilties are available from cargo
@@ -796,28 +812,29 @@ def get_boff_data(self):
     filename = 'boff_abilities.json'
     filepath = f"{self.config['config_subfolders']['cargo']}\\{filename}"
 
-    # # try loading from cache
-    # if os.path.exists(filepath) and os.path.isfile(filepath):
-    #     last_modified = os.path.getmtime(filepath)
-    #     if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
-    #         try:
-    #             self.cache.boff_abilities = load_json(filepath)
-    #             return
-    #         except JSONDecodeError:
-    #             backup_filepath = f"{self.config['config_subfolders']['backups']}\\{filename}"
-    #             if os.path.exists(backup_filepath) and os.path.isfile(backup_filepath):
-    #                 try:
-    #                     cargo_data = load_json(backup_filepath)
-    #                     store_json(cargo_data, filepath)
-    #                     self.cache.boff_abilities = cargo_data
-    #                     return
-    #                 except JSONDecodeError:
-    #                     pass
+    # try loading from cache
+    if os.path.exists(filepath) and os.path.isfile(filepath):
+        last_modified = os.path.getmtime(filepath)
+        if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
+            try:
+                self.cache.boff_abilities = load_json(filepath)
+                return
+            except JSONDecodeError:
+                pass
 
     # download if not exists
     try:
         boff_html = fetch_html(BOFF_URL)
-    except Timeout:
+    except (requests__Timeout, requests__ConnectionError):
+        backup_path = f"{self.config['config_subfolders']['backups']}\\{filename}"
+        if os.path.exists(backup_path) and os.path.isfile(backup_path):
+            try:
+                cargo_data = load_json(backup_path)
+                store_json(cargo_data, filepath)
+                self.cache.boff_abilities = cargo_data
+                return
+            except JSONDecodeError:
+                pass
         sys.stderr.write(f'[Error] Html could not be retrieved ({filename})\n')
         sys.exit(1)
 

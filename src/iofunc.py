@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 import os
-from re import sub as re_sub
+from shutil import copyfile as shutil__copyfile, rmtree as shutil__rmtree
 import sys
 from urllib.parse import quote_plus, unquote_plus
 from webbrowser import open as webbrowser_open
@@ -67,6 +67,14 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
         return cargo_data
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError):
         if ignore_cache_age:
+            backup_path = f"{self.config['config_subfolders']['backups']}\\{filename}"
+            if os.path.exists(backup_path) and os.path.isfile(backup_path):
+                try:
+                    cargo_data = load_json(backup_path)
+                    store_json(cargo_data, filepath)
+                    return cargo_data
+                except json.JSONDecodeError:
+                    pass
             sys.stderr.write(f'[Error] Cargo table could not be retrieved ({filename})\n')
             sys.exit(1)
         else:
@@ -215,10 +223,34 @@ def create_folder(path_to_folder):
     Creates the folder at path_to_folder in case it does not exist.
 
     Parameters:
-    - :path_to_folder: absolute path to folder
+    - :param path_to_folder: absolute path to folder
     """
     if not os.path.exists(path_to_folder) and not os.path.isdir(path_to_folder):
         os.mkdir(path_to_folder)
+
+
+def delete_folder_contents(path_to_folder):
+    """
+    Delets all files and folders within a folder.
+
+    Parameters:
+    - :param path_to_folder: absolute path to folder
+    """
+    if os.path.exists(path_to_folder) and os.path.isdir(path_to_folder):
+        shutil__rmtree(path_to_folder)
+        os.mkdir(path_to_folder)
+
+
+def copy_file(source_path, target_path):
+    """
+    Tries to copy file from `source_path` to `target_path`
+
+    Parameters:
+    - :param source_path: file to copy
+    - :param target_path: location and name of the target file
+    """
+    if os.path.exists(source_path) and os.path.isfile(source_path):
+        shutil__copyfile(source_path, target_path)
 
 
 def get_asset_path(asset_name: str, app_directory: str) -> str:
@@ -281,8 +313,8 @@ def store_json(data: dict | list, path: str):
 
 def fetch_json(url: str) -> dict | list:
     """
-    Fetches json from url and returns parsed object. Raises requests.exceptions.JSONDecodeError if
-    result cannot be decoded or 2 download attempts failed.
+    Fetches json from url and returns parsed object. Raises `requests.exceptions.JSONDecodeError` if
+    result cannot be decoded. Raises `requests.exceptions.Timeout` or 2 download attempts failed.
 
     Parameters:
     - :param url: URL to file

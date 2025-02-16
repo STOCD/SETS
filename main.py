@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.02b163'
+    version = '2025.02b164'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -535,7 +535,8 @@ class Launcher():
                 'cache': '\\cache',
                 'cargo': '\\cargo',
                 'images': '\\images',
-                'ship_images': '\\ship_images'
+                'ship_images': '\\ship_images',
+                'backups': '\\backups'
             },
             'autosave_filename': '.autosave.json',
             'box_width': 49,
