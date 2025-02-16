@@ -5,8 +5,8 @@ from PySide6.QtGui import QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea, QTabWidget, QWidget
 
 from .constants import (
-    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, PRIMARY_SPECS, SCROLLOFF,
-    SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
+    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS, PRIMARY_SPECS,
+    RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
 from .iofunc import create_folder, get_asset_path, load_icon, store_json
 from .subwindows import ItemEditor, Picker, ShipSelector
 from .widgets import (
@@ -94,7 +94,10 @@ class SETS():
         self.building = True
         self.build = self.empty_build()
         self.setup_main_layout()
-        self.picker_window = Picker(self, self.window)
+        self.picker_window = Picker(
+                self, self.window,
+                default_rarity_getter=lambda: self.settings.value('default_rarity'),
+                default_mark_getter=lambda: self.settings.value('default_mark'))
         self.edit_window = ItemEditor(self, self.window)
         self.ship_selector_window = ShipSelector(self, self.window)
         self.context_menu = self.create_context_menu()
@@ -975,6 +978,22 @@ class SETS():
         sec_1.addLayout(ui_scale_slider, 0, 2, alignment=ALEFT)
         ui_scale_desc = self.create_label('Requires restart.', 'hint_label')
         sec_1.addWidget(ui_scale_desc, 0, 4, alignment=ALEFT)
+        mark_label = self.create_label('Default Mark')
+        sec_1.addWidget(mark_label, 1, 0, alignment=ALEFT)
+        mark_combo = self.create_combo_box(style_override={'font': '@small_text'})
+        mark_combo.addItems(('',) + MARKS)
+        mark_combo.setCurrentText(self.settings.value('default_mark'))
+        mark_combo.currentTextChanged.connect(
+                lambda new_mark: self.settings.setValue('default_mark', new_mark))
+        sec_1.addWidget(mark_combo, 1, 2, alignment=ALEFT)
+        rarity_label = self.create_label('Default Rarity')
+        sec_1.addWidget(rarity_label, 2, 0, alignment=ALEFT)
+        rarity_combo = self.create_combo_box(style_override={'font': '@small_text'})
+        rarity_combo.addItems(RARITIES.keys())
+        rarity_combo.setCurrentText(self.settings.value('default_rarity'))
+        rarity_combo.currentTextChanged.connect(
+                lambda new_rarity: self.settings.setValue('default_rarity', new_rarity))
+        sec_1.addWidget(rarity_combo, 2, 2, alignment=ALEFT | AVCENTER)
 
         scroll_layout.addLayout(sec_1)
 

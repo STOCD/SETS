@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator
+from typing import Callable, Iterable, Iterator
 
 from PySide6.QtCore import QPoint, QSortFilterProxyModel, QStringListModel, Qt
 from PySide6.QtGui import QMouseEvent
@@ -100,7 +100,10 @@ class Picker(BasePicker):
     """
     Picker Window
     """
-    def __init__(self, sets, parent_window, style: str = 'picker'):
+    def __init__(
+                self, sets, parent_window, style: str = 'picker',
+                default_rarity_getter: Callable = lambda: 'Common',
+                default_mark_getter: Callable = lambda: ''):
         super().__init__(parent=parent_window)
         self.setWindowFlags(
                 self.windowFlags() | Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
@@ -198,6 +201,9 @@ class Picker(BasePicker):
         layout.addLayout(control_layout)
         self.setLayout(layout)
 
+        self._get_default_rarity = default_rarity_getter
+        self._get_default_mark = default_mark_getter
+
     def slot_item(self, new_index):
         """
         called when item is clicked
@@ -234,6 +240,8 @@ class Picker(BasePicker):
         self._items_list.scrollToTop()
         if equipment:
             self.insert_modifiers(modifiers)
+            self._mark_combo.setCurrentText(self._get_default_mark())
+            self._rarity_combo.setCurrentText(self._get_default_rarity())
             self._prop_frame.show()
         else:
             self._prop_frame.hide()
