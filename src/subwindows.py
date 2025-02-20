@@ -184,7 +184,6 @@ class Picker(BasePicker):
         self._items_list.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._items_list.clicked.connect(self.slot_item)
         self._items_list.doubleClicked.connect(self.select_item)
-        self._items_list.doubleClicked
         layout.addWidget(self._items_list)
         spacer_4 = create_frame(sets)
         spacer_4.setFixedHeight(spacing)

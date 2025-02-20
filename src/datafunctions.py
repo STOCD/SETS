@@ -389,6 +389,8 @@ def map_build_items(self, old_build: dict, new_build: dict, mapping):
             if isinstance(new_build[target_key], list):
                 for index, element in enumerate(old_build[source_key]):
                     try:
+                        if isinstance(element, dict) and 'modifiers' in element:
+                            element['modifiers'] += [None] * (5 - len(element['modifiers']))
                         new_build[target_key][index] = element
                     except IndexError:
                         break
