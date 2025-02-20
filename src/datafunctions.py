@@ -460,6 +460,33 @@ def compensate_old_build(self, build: str):
     return build
 
 
+def remove_invalid_build_items(self, build: dict):
+    """
+    Checks build for invalid items and removes these to maintain compatibility.
+
+    Parameters:
+    - :param build: build to remove items from (in place)
+    """
+    for environment in ('space', 'ground'):
+        for category, category_items in build[environment].items():
+            if isinstance(category_items, str):
+                continue
+            elif category == 'boffs':
+                for station in category_items:
+                    for index, ability in enumerate(station):
+                        if (isinstance(ability, dict)
+                                and ability['item'] not in self.cache.images_set):
+                            station[index] = ''
+            elif (category.startswith('doff')
+                  or category == 'boff_specs'
+                  or category == 'boff_profs'):
+                continue
+            elif isinstance(category_items, list):
+                for index, item in enumerate(category_items):
+                    if isinstance(item, dict) and item['item'] not in self.cache.images_set:
+                        category_items[index] = ''
+
+
 def encode_in_image(self, image: QImage, data: str):
     """
     Embeds data into image
@@ -601,7 +628,11 @@ def load_legacy_build_image(self):
             new_build = empty_build(self)
             new_build.update(convert_old_build(self, build_data))
             self.build = new_build
-            load_build(self)
+            try:
+                load_build(self)
+            except KeyError:
+                remove_invalid_build_items(self, self.build)
+                load_build(self)
 
 
 def load_build_file(self, filepath: str, update_ui: bool = True):
@@ -631,7 +662,11 @@ def load_build_file(self, filepath: str, update_ui: bool = True):
         return
     self.build = new_build
     if update_ui:
-        load_build(self)
+        try:
+            load_build(self)
+        except KeyError:
+            remove_invalid_build_items(self, self.build)
+            load_build(self)
 
 
 def save_build_file(self, filepath: str):
@@ -733,7 +768,7 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'starship_traits': [None] * 7,
             'tac_consoles': [None] * 5,
             'tier': '',
-            'traits': [None] * 12,
+            'traits': ['', '', '', '', '', '', '', '', '', None, None, ''],
             'uni_consoles': [None] * 3,
         },
 
