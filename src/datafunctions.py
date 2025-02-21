@@ -408,39 +408,65 @@ def convert_old_build(self, build: dict) -> dict:
 
     # space
     map_build_items(self, build, new_build['space'], BUILD_CONVERSION['space'])
+
     new_build['space']['traits'] = build['personalSpaceTrait'] + build['personalSpaceTrait2']
     if len(new_build['space']['traits']) < 12:
         new_build['space']['traits'] += [None] * (12 - len(new_build['space']['traits']))
+    elite_captain_trait = new_build['space']['traits'][5]
+    new_build['space']['traits'][5] = new_build['space']['traits'][9]
+    new_build['space']['traits'][9] = elite_captain_trait
+
     ship_data = self.cache.ships[new_build['space']['ship']]
     boff_data = sorted(map(lambda s: get_boff_spec(self, s), ship_data['boffs']), reverse=True)
-    for boff_id in range(5):
-        # taking profession from ship specifications
-        if boff_data[boff_id][1] == 'Universal':
-            new_profession = build['boffseats']['space'][boff_id]
+    boff_data_old = []
+    for boff_id, boff_profession in enumerate(build['boffseats']['space']):
+        if f'spaceBoff_{boff_id}' in build['boffs'] and boff_profession is not None:
+            abilities = build['boffs'][f'spaceBoff_{boff_id}']
+            boff_data_old.append((len(abilities), boff_profession, abilities))
+    boff_data_old.sort(reverse=True)
+    for boff_id, (new_station, old_station) in enumerate(zip(boff_data, boff_data_old)):
+        if new_station[1] == old_station[1] or new_station[1] == 'Universal':
+            continue
+        for i, test_station in enumerate(boff_data):
+            if old_station[0] == test_station[0] and old_station[1] == test_station[1]:
+                boff_data_old[boff_id] = boff_data_old[i]
+                boff_data_old[i] = old_station
+                break
         else:
-            new_profession = boff_data[boff_id][1]
-        # taking specialization from ship specifications
-        new_specialization = boff_data[boff_id][2]
-        new_build['space']['boff_specs'][boff_id] = [new_profession, new_specialization]
-        for i, ability in enumerate(build['boffs'][f'spaceBoff_{boff_id}']):
+            for i, test_station in enumerate(boff_data):
+                if old_station[0] == test_station[0] and test_station[1] == 'Universal':
+                    boff_data_old[boff_id] = boff_data_old[i]
+                    boff_data_old[i] = old_station
+                    break
+    for boff_id, station in enumerate(boff_data_old):
+        new_build['space']['boff_specs'][boff_id] = [station[1], boff_data[boff_id][2]]
+        for i, ability in enumerate(station[2]):
             if ability is None or ability == '':
-                new_build['space']['boffs'][boff_id][i]
+                new_build['space']['boffs'][boff_id][i] = ''
             else:
                 new_build['space']['boffs'][boff_id][i] = {'item': ability}
 
     # ground
     map_build_items(self, build, new_build['ground'], BUILD_CONVERSION['ground'])
-    for boff_id in range(4):
-        new_build['ground']['boff_profs'][boff_id] = build['boffseats']['ground'][boff_id]
-        new_build['ground']['boff_specs'][boff_id] = build['boffseats']['ground_spec'][boff_id]
-        for i, ability in enumerate(build['boffs'][f'groundBoff_{boff_id}']):
-            if ability is None or ability == '':
-                new_build['ground']['boffs'][boff_id][i]
-            else:
-                new_build['ground']['boffs'][boff_id][i] = {'item': ability}
+
+    try:
+        for boff_id in range(4):
+            new_build['ground']['boff_profs'][boff_id] = build['boffseats']['ground'][boff_id]
+            new_build['ground']['boff_specs'][boff_id] = build['boffseats']['ground_spec'][boff_id]
+            for i, ability in enumerate(build['boffs'][f'groundBoff_{boff_id}']):
+                if ability is None or ability == '':
+                    new_build['ground']['boffs'][boff_id][i]
+                else:
+                    new_build['ground']['boffs'][boff_id][i] = {'item': ability}
+    except KeyError:
+        pass
+
     new_build['ground']['traits'] = build['personalGroundTrait'] + build['personalGroundTrait2']
     if len(new_build['ground']['traits']) < 12:
         new_build['ground']['traits'] += [None] * (12 - len(new_build['ground']['traits']))
+    elite_captain_trait = new_build['ground']['traits'][5]
+    new_build['ground']['traits'][5] = new_build['ground']['traits'][9]
+    new_build['ground']['traits'][9] = elite_captain_trait
 
     # captain
     map_build_items(self, build, new_build['captain'], BUILD_CONVERSION['captain'])
@@ -449,6 +475,19 @@ def convert_old_build(self, build: dict) -> dict:
         new_build['captain']['faction'] = build['captain']['faction']
     except KeyError:
         pass
+
+    # doffs
+    for environment in ('space', 'ground'):
+        for doff_index, doff in enumerate(build['doffs'][environment]):
+            if doff is not None and doff != '':
+                new_build[environment]['doffs_spec'][doff_index] = doff['spec']
+                try:
+                    for variant in getattr(self.cache, f'{environment}_doffs')[doff['spec']]:
+                        if doff['effect'] in variant:
+                            new_build[environment]['doffs_variant'][doff_index] = variant
+                            break
+                except KeyError:
+                    pass
 
     return new_build
 

@@ -48,7 +48,9 @@ def load_build(self):
     species = self.build['captain']['species']
     self.widgets.character['faction'].setCurrentText(self.build['captain']['faction'])
     self.widgets.character['species'].setCurrentText(species)
-    self.build['captain']['species'] = species
+    if species != 'Alien':
+        self.widgets.build['space']['traits'][10].hide()
+        self.widgets.build['ground']['traits'][10].hide()
     self.widgets.character['primary'].setCurrentText(self.build['captain']['primary_spec'])
     self.widgets.character['secondary'].setCurrentText(self.build['captain']['secondary_spec'])
 

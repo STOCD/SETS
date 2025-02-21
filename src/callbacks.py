@@ -56,14 +56,15 @@ def species_combo_callback(self, new_species: str):
     """
     self.build['captain']['species'] = new_species
     if new_species == 'Alien':
+        if not self.building:
+            self.build['space']['traits'][10] = ''
+            self.build['ground']['traits'][10] = ''
+            self.build['space']['traits'][11] = ''
+            self.build['ground']['traits'][11] = ''
         self.widgets.build['space']['traits'][10].show()
         self.widgets.build['ground']['traits'][10].show()
-        self.build['space']['traits'][10] = ''
-        self.build['ground']['traits'][10] = ''
         self.widgets.build['space']['traits'][11].clear()
         self.widgets.build['ground']['traits'][11].clear()
-        self.build['space']['traits'][11] = ''
-        self.build['ground']['traits'][11] = ''
     else:
         self.widgets.build['space']['traits'][10].hide()
         self.widgets.build['ground']['traits'][10].hide()
@@ -132,7 +133,7 @@ def set_build_item(self, dictionary, key, value, autosave: bool = True):
         self.autosave()
 
 
-def elite_callback(self, state: bool):
+def elite_callback(self, state):
     """
     Saves new state and updates build.
 
@@ -140,29 +141,31 @@ def elite_callback(self, state: bool):
     - :param state: new state of the checkbox
     """
     if state == Qt.CheckState.Checked:
-        self.build['captain']['elite'] = True
+        if not self.building:
+            self.build['captain']['elite'] = True
+            self.build['space']['traits'][9] = ''
+            self.build['ground']['traits'][9] = ''
+            self.build['ground']['kit_modules'][5] = ''
+            self.build['ground']['ground_devices'][4] = ''
         self.widgets.build['space']['traits'][9].show()
-        self.build['space']['traits'][9] = ''
         self.widgets.build['ground']['traits'][9].show()
-        self.build['ground']['traits'][9] = ''
         self.widgets.build['ground']['kit_modules'][5].show()
-        self.build['ground']['kit_modules'][5] = ''
         self.widgets.build['ground']['ground_devices'][4].show()
-        self.build['ground']['ground_devices'][4] = ''
     else:
-        self.build['captain']['elite'] = False
+        if not self.building:
+            self.build['captain']['elite'] = False
+            self.build['space']['traits'][9] = None
+            self.build['ground']['traits'][9] = None
+            self.build['ground']['kit_modules'][5] = None
+            self.build['ground']['ground_devices'][4] = None
         self.widgets.build['space']['traits'][9].hide()
         self.widgets.build['space']['traits'][9].clear()
-        self.build['space']['traits'][9] = None
         self.widgets.build['ground']['traits'][9].hide()
         self.widgets.build['ground']['traits'][9].clear()
-        self.build['ground']['traits'][9] = None
         self.widgets.build['ground']['kit_modules'][5].hide()
         self.widgets.build['ground']['kit_modules'][5].clear()
-        self.build['ground']['kit_modules'][5] = None
         self.widgets.build['ground']['ground_devices'][4].hide()
         self.widgets.build['ground']['ground_devices'][4].clear()
-        self.build['ground']['ground_devices'][4] = None
     self.autosave()
 
 
