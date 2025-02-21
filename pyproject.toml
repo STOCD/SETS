@@ -22,5 +22,5 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://stobuilds.com/SETS/"
+homepage = "https://stobuilds.com/apps/sets"
 repository = "https://github.com/STOCD/SETS"
