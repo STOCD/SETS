@@ -247,7 +247,12 @@ class Picker(BasePicker):
             self._prop_frame.hide()
         action = self.exec()
         if action == 1 and self._item['item'] != '':
-            self._result = {**self._item}
+            self._result = {
+                'item': self._item['item'],
+                'rarity': self._item['rarity'],
+                'mark': self._item['mark'],
+                'modifiers': [mod for mod in self._item['modifiers']]
+            }
         self._item_button.clear()
         self._search_bar.clear()
         self._item_label.setText('')
