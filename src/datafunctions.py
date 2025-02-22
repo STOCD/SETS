@@ -11,9 +11,9 @@ from requests_html import Element
 
 from .buildupdater import get_boff_spec, load_build, load_skill_pages
 from .constants import (
-        BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES, ITEM_QUERY_URL,
-        MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL,
-        WIKI_IMAGE_URL)
+        BOFF_URL, BOFF_RANKS_MD, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES,
+        ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL,
+        TRAIT_QUERY_URL, WIKI_IMAGE_URL)
 from .iofunc import (
         browse_path, copy_file, download_image, fetch_html, get_asset_path, get_cached_cargo_data,
         get_cargo_data, get_downloaded_images, image, load_image, load_json, retrieve_image,
@@ -21,8 +21,8 @@ from .iofunc import (
 from .splash import enter_splash, exit_splash, splash_text
 from .textedit import (
         create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
-        sanitize_equipment_name)
-from .widgets import exec_in_thread, TagStyles, ThreadObject
+        sanitize_equipment_name, wiki_url)
+from .widgets import exec_in_thread, notempty, TagStyles, ThreadObject
 
 
 def init_backend(self):
@@ -918,6 +918,178 @@ def backup_cargo_data(self):
         cargo_path = f'{cargo_folder}\\{file_name}'
         backups_path = f'{backups_folder}\\{file_name}'
         copy_file(cargo_path, backups_path)
+
+
+def create_md_table(self, table: list[list[str]], alignment: list = []) -> str:
+    """
+    Creates markdown-formatted table from two-dimensional list
+
+    Parameters:
+    - :param table: two-dimenional list representing the table
+    - :param alignment: contains column alignment codes for the table
+    """
+    text = '|'.join(table[0]) + '\n'
+    if len(alignment) == 0:
+        text += '|'.join([':-'] * len(table[0])) + '\n'
+    else:
+        text += '|'.join(alignment) + '\n'
+    for row in table[1:]:
+        text += '|'.join(row) + '\n'
+    return text
+
+
+def md_equipment_table(
+        self, environment: str, key: str, header: str, extra_cols: int = 1,
+        single_line: bool = False) -> str:
+    """
+    Returns table segment of equipment table for markdown export.
+
+    Parameters:
+    - :param environment: "space" / "ground"
+    - :param key: key to `self.build[environment]`
+    - :param header: header text for section
+    - :param extra_cols: how many empty cols should be added
+    - :param single_line: whether the sections consists of a single line
+    """
+    section = [[f'**{header}**']]
+    if single_line:
+        item = self.build[environment][key][0]
+        if item is not None and item != '':
+            section[0].append(
+                    f"[{item['item']} {item['mark']} {''.join(notempty(item['modifiers']))}]"
+                    f"({wiki_url(self.cache.equipment[key][item['item']]['Page'])})")
+        else:
+            section[0].append('')
+        section[0] += [''] * extra_cols
+    else:
+        category_items = self.build[environment][key]
+        for i, item in enumerate(category_items):
+            if item is None:
+                if i == 0:
+                    section[0] += [''] * (extra_cols + 1)
+                continue
+            if i > 0:
+                section.append(['&nbsp;'])
+            if item == '':
+                section[i] += [''] * (extra_cols + 1)
+            else:
+                section[i].append(
+                        f"[{item['item']} {item['mark']} {''.join(notempty(item['modifiers']))}]"
+                        f"({wiki_url(self.cache.equipment[key][item['item']]['Page'])})")
+                section[i] += [''] * extra_cols
+        section.append(['--------------', '--------------'] + [''] * extra_cols)
+    return section
+
+
+def md_boff_table(self, station: list, header: str, extra_cols: int = 1) -> list:
+    """
+    Returns table segment of bridge officer table for markdown export.
+
+    Parameters:
+    - :param station: boff station to convert
+    - :param header: station name
+    - :param extra_cols: how many empty cols should be added
+    """
+    section = [[f'**{header}**']]
+    for i, ability in enumerate(station):
+        if i > 0:
+            section.append(['&nbsp;'])
+        if ability == '':
+            section[i] += [''] * (extra_cols + 1)
+        elif ability is None:
+            section.pop()
+        else:
+            section[i].append(f"[{ability['item']}]({wiki_url(ability['item'], 'Ability: ')})")
+            section[i] += [''] * extra_cols
+    section.append(['--------------', '--------------'] + [''] * extra_cols)
+    return section
+
+
+def get_build_markdown(self, environment: str, type_: str) -> str:
+    """
+    Converts part of build in self.build to markdown.
+
+    Parameters:
+    - :param environment: "space" / "ground"; determines which build environment is generated
+    - :param type_: "build" / "skills"; determines whether build or skill tree is generated
+    """
+    if environment == 'space' and type_ == 'build':
+        md = (
+            f"# SPACE BUILD\n\n**Basic Information** | **Data** \n:--- | :--- \n"
+            f"*Ship Name* | {self.build['space']['ship_name']} \n"
+            f"*Ship Class* | {self.build['space']['ship']} \n"
+            f"*Ship Tier* | {self.build['space']['tier']} \n"
+            f"*Player Career* | {self.build['captain']['career']} \n"
+            f"*Elite Captain* | {'✓' if self.build['captain']['elite'] else '✗'}\n"
+            f"*Player Species* | {self.build['captain']['species']} \n"
+            f"*Primary Specialization* | {self.build['captain']['primary_spec']} \n"
+            f"*Secondary Specialization* | {self.build['captain']['secondary_spec']} \n\n\n"
+        )
+        if self.build['space']['ship_desc']:
+            md += f"## Build Description\n\n{self.build['space']['ship_desc']}\n\n\n"
+
+        md += '## Ship Equipment\n\n'
+        equip_table = [['****Basic Information****', '****Component****', '****Notes****']]
+        equip_table += md_equipment_table(self, 'space', 'fore_weapons', 'Fore Weapons')
+        equip_table += md_equipment_table(self, 'space', 'aft_weapons', 'Aft Weapons')
+        equip_table += md_equipment_table(self, 'space', 'deflector', 'Deflector', single_line=True)
+        if self.build['space']['sec_def'][0]:
+            equip_table += md_equipment_table(
+                    self, 'space', 'sec_def', 'Secondary Deflector', single_line=True)
+        equip_table += md_equipment_table(
+                self, 'space', 'engines', 'Impulse Engines', single_line=True)
+        equip_table += md_equipment_table(self, 'space', 'core', 'Warp', single_line=True)
+        equip_table += md_equipment_table(self, 'space', 'devices', 'Devices')
+        if self.build['space']['experimental'][0]:
+            equip_table += md_equipment_table(
+                    self, 'space', 'experimental', 'Experimental Weapon', single_line=True)
+        if self.build['space']['hangars'][0] or self.build['space']['hangars'][1]:
+            equip_table += md_equipment_table(self, 'space', 'hangars', 'Hangars')
+        equip_table += md_equipment_table(self, 'space', 'uni_consoles', 'Universal Consoles')
+        equip_table += md_equipment_table(self, 'space', 'eng_consoles', 'Engineering Consoles')
+        equip_table += md_equipment_table(self, 'space', 'sci_consoles', 'Science Consoles')
+        equip_table += md_equipment_table(self, 'space', 'tac_consoles', 'Tactical Consoles')
+        md += create_md_table(self, equip_table)
+
+        md += '\n\n\n## Bridge Officer Stations\n\n'
+        boff_table = [['****Profession****', '****Power****', '****Notes****']]
+        for specs, station in zip(self.build['space']['boff_specs'], self.build['space']['boffs']):
+            if any(specs):
+                station_name = BOFF_RANKS_MD[station.count(None)] + ' ' + specs[0]
+                if specs[1] != '':
+                    station_name += ' / ' + specs[1]
+                boff_table += md_boff_table(self, station, station_name)
+        md += create_md_table(self, boff_table)
+
+        md += '\n\n\n## Traits\n\n'
+        trait_table = [['****Starship Traits****', '****Notes****']]
+        for trait in notempty(self.build['space']['starship_traits']):
+            trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
+        md += create_md_table(self, trait_table)
+        md += '\n\n&#x200B;\n\n'
+        trait_table = [['****Personal Space Traits****', '****Notes****']]
+        for trait in notempty(self.build['space']['traits']):
+            trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
+        md += create_md_table(self, trait_table)
+        md += '\n\n&#x200B;\n\n'
+        trait_table = [['****Space Reputation Traits****', '****Notes****']]
+        for trait in notempty(self.build['space']['rep_traits']):
+            trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
+        md += create_md_table(self, trait_table)
+        md += '\n\n&#x200B;\n\n'
+        trait_table = [['****Active Space Reputation Traits****', '****Notes****']]
+        for trait in notempty(self.build['space']['active_rep_traits']):
+            trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
+        md += create_md_table(self, trait_table)
+
+        md += '\n\n\n## Active Space Duty Officers\n\n'
+        doff_table = [['****Specialization****', '****Power****', '****Notes****']]
+        for spec, variant in zip(
+                self.build['space']['doffs_spec'], self.build['space']['doffs_variant']):
+            if spec != '':
+                doff_table.append([f"[{spec}]({wiki_url(spec, 'Specialization: ')})", variant, ''])
+        md += create_md_table(self, doff_table)
+        return md
 
 
 def get_boff_data(self):

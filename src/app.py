@@ -8,7 +8,7 @@ from .constants import (
     ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS, PRIMARY_SPECS,
     RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
 from .iofunc import create_folder, delete_folder_contents, get_asset_path, load_icon, store_json
-from .subwindows import ItemEditor, Picker, ShipSelector
+from .subwindows import ExportWindow, ItemEditor, Picker, ShipSelector
 from .widgets import (
     Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout,
     WidgetStorage)
@@ -28,8 +28,8 @@ class SETS():
             skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
             tier_callback)
     from .datafunctions import (
-            autosave, backup_cargo_data, cache_skills, empty_build, init_backend,
-            load_legacy_build_image)
+            autosave, backup_cargo_data, cache_skills, empty_build, get_build_markdown,
+            init_backend, load_legacy_build_image)
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
@@ -68,6 +68,8 @@ class SETS():
     edit_window: ItemEditor
     # context menu for equipment
     context_menu: ContextMenu
+    # shows markdown export
+    export_window: ExportWindow
 
     def __init__(self, theme, args, path, config, versions):
         """
@@ -95,6 +97,7 @@ class SETS():
         self.cache_icons()
         self.building = True
         self.build = self.empty_build()
+        self.export_window = ExportWindow(self, self.window, self.get_build_markdown)
         self.setup_main_layout()
         self.picker_window = Picker(
                 self, self.window,
@@ -269,7 +272,7 @@ class SETS():
         center_buttons = self.create_button_series(center_button_group, 'heavy_button')
         menu_layout.addLayout(center_buttons, 0, 1)
         right_button_group = {
-            'Export': {'callback': lambda: None},
+            'Export': {'callback': self.export_window.invoke},
             'Settings': {'callback': lambda: self.switch_main_tab(5)},
         }
         menu_layout.addLayout(self.create_button_series(right_button_group), 0, 2, ARIGHT | ATOP)

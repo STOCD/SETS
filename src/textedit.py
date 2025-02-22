@@ -1,6 +1,6 @@
 from re import sub as re_sub
 
-from .constants import CAREER_ABBR, RARITY_COLORS, SKILL_PREFIXES
+from .constants import CAREER_ABBR, RARITY_COLORS, SKILL_PREFIXES, WIKI_URL
 
 
 def get_tooltip(self, name: str, type_: str, environment: str = 'space') -> str:
@@ -369,3 +369,7 @@ def sanitize_equipment_name(name: str) -> str:
     if name[-2:] == '-S':
         name = name[:-2]
     return name.strip()
+
+
+def wiki_url(page_name: str, prefix: str = ''):
+    return (WIKI_URL + prefix + page_name).replace(' ', '_')

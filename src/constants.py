@@ -163,6 +163,8 @@ BOFF_RANKS = {
     'Ensign': 1
 }
 
+BOFF_RANKS_MD = ('Commander', 'Lieutenant Commander', 'Lieutenant', 'Ensign')
+
 SHIP_TEMPLATE = {
     'name': '<Pick Ship>',
     'boffs': [

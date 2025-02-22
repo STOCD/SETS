@@ -598,3 +598,14 @@ class DoffCombobox(QComboBox):
 
     def sizeHint(self) -> QSize:
         return QSize(100, super().minimumSizeHint().height())
+
+
+class notempty():
+    """
+    Yields items from iterable that are neither None nor an empty string.
+    """
+    def __init__(self, iterable):
+        self._gen = (element for element in iterable if element is not None and element != '')
+
+    def __iter__(self):
+        return self._gen

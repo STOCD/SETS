@@ -1,15 +1,16 @@
 from typing import Callable, Iterable, Iterator
 
 from PySide6.QtCore import QPoint, QSortFilterProxyModel, QStringListModel, Qt
-from PySide6.QtGui import QMouseEvent
-from PySide6.QtWidgets import QAbstractItemView, QDialog, QListView
+from PySide6.QtGui import QMouseEvent, QTextOption
+from PySide6.QtWidgets import QAbstractItemView, QDialog, QListView, QPlainTextEdit
 
-from .constants import AHCENTER, ALEFT, MARKS, RARITIES, SMAXMAX, SMINMAX, SMINMIN
+from .constants import AHCENTER, ALEFT, ATOP, MARKS, RARITIES, SMAXMAX, SMINMAX, SMINMIN
 from .iofunc import image
 from .widgetbuilder import (
-    create_button, create_combo_box, create_entry, create_frame, create_item_button, create_label)
+    create_button, create_button_series, create_combo_box, create_entry, create_frame,
+    create_item_button, create_label)
 from .widgets import GridLayout, HBoxLayout, VBoxLayout
-from .style import get_style, get_style_class
+from .style import get_style, get_style_class, theme_font
 
 
 class BasePicker(QDialog):
@@ -446,3 +447,71 @@ class ItemEditor(BasePicker):
             mod_combo.setCurrentText('')
         self._item = self.empty_item
         return self._result
+
+
+class ExportWindow(QDialog):
+    """
+    Holds Export Window
+    """
+    def __init__(self, sets, parent_window, data_getter: Callable):
+        super().__init__(parent=parent_window)
+        thick = sets.theme['app']['frame_thickness'] * sets.config['ui_scale']
+        dialog_layout = VBoxLayout(margins=thick)
+        main_frame = create_frame(sets, size_policy=SMINMIN)
+        dialog_layout.addWidget(main_frame)
+        main_layout = VBoxLayout(margins=thick, spacing=thick)
+        content_frame = create_frame(sets, size_policy=SMINMIN)
+        content_layout = VBoxLayout(spacing=thick)
+        content_layout.setAlignment(ATOP)
+
+        header_label = create_label(sets, 'Markdown Export:', 'label_heading')
+        content_layout.addWidget(header_label, alignment=ALEFT)
+        md_textedit = QPlainTextEdit()
+        button_def = {
+            'default': {'margin-top': 0},
+            'Space Build': {
+                'callback': lambda: md_textedit.setPlainText(data_getter('space', 'build'))
+            },
+            'Ground Build': {'callback': lambda: None},
+            'Space Skills': {'callback': lambda: None},
+            'Ground Skills': {'callback': lambda: None},
+        }
+        top_buttons, (self._space_button, *_) = create_button_series(sets, button_def, ret=True)
+        top_buttons.setAlignment(AHCENTER)
+        content_layout.addLayout(top_buttons)
+        md_textedit.setSizePolicy(SMINMIN)
+        md_textedit.setStyleSheet(get_style_class(sets, 'QPlainTextEdit', 'textedit'))
+        md_textedit.setFont(theme_font(sets, 'textedit'))
+        md_textedit.setWordWrapMode(QTextOption.WrapMode.NoWrap)
+        content_layout.addWidget(md_textedit, stretch=1)
+        content_frame.setLayout(content_layout)
+        main_layout.addWidget(content_frame, stretch=1)
+
+        seperator = create_frame(sets, style='light_frame', size_policy=SMINMAX)
+        seperator.setFixedHeight(1)
+        main_layout.addWidget(seperator)
+        footer_button_def = {
+            'Copy': {'callback': lambda: sets.app.clipboard().setText(md_textedit.toPlainText())},
+            'Close': {'callback': lambda: self.done(0)}
+        }
+        footer_buttons = create_button_series(sets, footer_button_def)
+        footer_buttons.setAlignment(AHCENTER)
+        main_layout.addLayout(footer_buttons)
+        main_frame.setLayout(main_layout)
+
+        self.setLayout(dialog_layout)
+        self.setWindowTitle('SETS - Markdown Export')
+        self.setStyleSheet(get_style(sets, 'dialog_window'))
+
+    def invoke(self):
+        """
+        Shows Export Window.
+        """
+        window_rect = self.parent().geometry()
+        self.setGeometry(
+                window_rect.x() + window_rect.width() * 0.25,
+                window_rect.y() + window_rect.height() * 0.25,
+                window_rect.width() * 0.5,
+                window_rect.height() * 0.5)
+        self._space_button.click()
+        self.exec()
