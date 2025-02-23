@@ -11,9 +11,9 @@ from requests_html import Element
 
 from .buildupdater import get_boff_spec, load_build, load_skill_pages
 from .constants import (
-        BOFF_URL, BOFF_RANKS_MD, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES,
-        ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL,
-        TRAIT_QUERY_URL, WIKI_IMAGE_URL)
+        BOFF_URL, BOFF_RANKS_MD, BUILD_CONVERSION, CAREER_ABBR, CAREERS, DOFF_QUERY_URL,
+        EQUIPMENT_TYPES, ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL,
+        STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, WIKI_IMAGE_URL)
 from .iofunc import (
         browse_path, copy_file, download_image, fetch_html, get_asset_path, get_cached_cargo_data,
         get_cargo_data, get_downloaded_images, image, load_image, load_json, retrieve_image,
@@ -1007,6 +1007,70 @@ def md_boff_table(self, station: list, header: str, extra_cols: int = 1) -> list
     return section
 
 
+def md_skill_table_space(self, skills: dict, offset: int) -> list:
+    """
+    Returns table segment (one rank) of space skills for markdown export.
+
+    Parameters:
+    """
+    section = [[], []]
+    offsets = {'eng': offset, 'tac': offset, 'sci': offset}
+    for skill in skills:
+        if skill['grouping'] == 'column':
+            section[0].append(f"[{skill['skill']}]({skill['link']})")
+            unlocked_skills = ''
+            if self.build['space_skills'][skill['career']][offsets[skill['career']]]:
+                unlocked_skills += '[X] > '
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;] > '
+            if self.build['space_skills'][skill['career']][offsets[skill['career']] + 1]:
+                unlocked_skills += '[X] > '
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;] > '
+            if self.build['space_skills'][skill['career']][offsets[skill['career']] + 2]:
+                unlocked_skills += '[X]'
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;]'
+            section[1].append(unlocked_skills)
+        elif skill['grouping'] == 'pair+1':
+            section[0].append(skill['skill'][0])
+            unlocked_skills = ''
+            if self.build['space_skills'][skill['career']][offsets[skill['career']] + 1]:
+                unlocked_skills += f"[[X]]({skill['link'][1]}) < "
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;] < '
+            if self.build['space_skills'][skill['career']][offsets[skill['career']]]:
+                unlocked_skills += f"[[X]]({skill['link'][0]}) > "
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;] > '
+            if self.build['space_skills'][skill['career']][offsets[skill['career']] + 2]:
+                unlocked_skills += f"[[X]]({skill['link'][2]})"
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;]'
+            section[1].append(unlocked_skills)
+        elif skill['grouping'] == 'separate':
+            section[0].append(f"[{skill['skill'][0]}]({skill['link']})")
+            unlocked_skills = ''
+            if self.build['space_skills'][skill['career']][offsets[skill['career']] + 1]:
+                unlocked_skills += '[X] < '
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;] < '
+            if self.build['space_skills'][skill['career']][offsets[skill['career']]]:
+                unlocked_skills += '[X] > '
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;] > '
+            if self.build['space_skills'][skill['career']][offsets[skill['career']] + 2]:
+                unlocked_skills += '[X]'
+            else:
+                unlocked_skills += '[&nbsp;&nbsp;&nbsp;]'
+            section[1].append(unlocked_skills)
+        if len(section[0]) == 2 or len(section[0]) == 5:
+            section[0].append('')
+            section[1].append('')
+        offsets[skill['career']] += 3
+    return section
+
+
 def get_build_markdown(self, environment: str, type_: str) -> str:
     """
     Converts part of build in self.build to markdown.
@@ -1149,6 +1213,67 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
             station_name = f"{profession} / {specialization}"
             boff_table += md_boff_table(self, station, station_name)
         md += create_md_table(self, boff_table)
+        return md
+    elif environment == 'space' and type_ == 'skills':
+        md = '# Space Skills\n\n'
+        skill_table = [[
+            '****Engineering****', '', '',
+            '****Science****', '', '',
+            '****Tactical****', '&nbsp;'
+        ]]
+        offset = 0
+        for rank_skills in self.cache.skills['space']:
+            skill_table += md_skill_table_space(self, rank_skills, offset)
+            skill_table.append(['&nbsp;'] + [''] * 6 + ['&nbsp;'])
+            offset += 6
+        md += create_md_table(self, skill_table, alignment=[':-:'] * 8)
+        md += '\n\n&#x200B;\n\n'
+
+        unlock_table = [
+            [f"****[Unlocks]({wiki_url('Skill#Space_2')})****"] + [''] * 7 + ['&nbsp;']
+        ]
+        for career, career_name in CAREER_ABBR.items():
+            row = [f"**{career_name}**"]
+            for i, unlock_state in enumerate(self.build['skill_unlocks'][career]):
+                if unlock_state is None:
+                    row.append('')
+                else:
+                    unlock_slot = self.cache.skills['space_unlocks'][career][i]
+                    if unlock_slot['points_required'] == 24:
+                        skill_count = self.cache.skills[f"space_points_{career}"]
+                        link = wiki_url(unlock_slot['name'], 'Ability: ')
+                        if unlock_state is None:
+                            row += ['', '', '', '&nbsp;']
+                        elif unlock_state == -1:
+                            row += [f"[{unlock_slot['name']}]({link})", '', '', '&nbsp;']
+                        elif unlock_state == 3:
+                            row += [
+                                f"[{unlock_slot['name']}]({link})",
+                                unlock_slot['options'][0]['name'],
+                                unlock_slot['options'][1]['name'],
+                                unlock_slot['options'][2]['name'],
+                            ]
+                        elif skill_count == 25:
+                            row += [
+                                f"[{unlock_slot['name']}]({link})",
+                                unlock_slot['options'][unlock_state]['name']
+                            ]
+                        elif skill_count == 26:
+                            row.append(f"[{unlock_slot['name']}]({link})")
+                            enhancements = [
+                                unlock_slot['options'][0]['name'],
+                                unlock_slot['options'][1]['name'],
+                                unlock_slot['options'][2]['name'],
+                                '&nbsp;'
+                            ]
+                            enhancements.pop(unlock_state)
+                            row += enhancements
+                    else:
+                        row.append(unlock_slot['nodes'][unlock_state]['name'])
+            if row[-1] == '':
+                row[-1] = '&nbsp;'
+            unlock_table.append(row)
+        md += create_md_table(self, unlock_table)
         return md
     return 'Not Implemented.'
 

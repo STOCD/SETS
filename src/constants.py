@@ -72,9 +72,9 @@ EQUIPMENT_TYPES = {
 CAREERS = {'Tactical', 'Science', 'Engineering'}
 
 CAREER_ABBR = {
-    'tac': 'Tactical',
+    'eng': 'Engineering',
     'sci': 'Science',
-    'eng': 'Engineering'
+    'tac': 'Tactical'
 }
 
 FACTIONS = {'Federation', 'Klingon', 'Romulan', 'Dominion', 'TOS Federation', 'DSC Federation'}
