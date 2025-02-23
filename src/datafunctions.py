@@ -453,6 +453,8 @@ def convert_old_build(self, build: dict) -> dict:
         for boff_id in range(4):
             new_build['ground']['boff_profs'][boff_id] = build['boffseats']['ground'][boff_id]
             new_build['ground']['boff_specs'][boff_id] = build['boffseats']['ground_spec'][boff_id]
+            if new_build['ground']['boff_specs'][boff_id] is None:
+                new_build['ground']['boff_specs'][boff_id] = 'Command'
             for i, ability in enumerate(build['boffs'][f'groundBoff_{boff_id}']):
                 if ability is None or ability == '':
                     new_build['ground']['boffs'][boff_id][i]
