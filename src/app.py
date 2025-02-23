@@ -5,9 +5,11 @@ from PySide6.QtGui import QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea, QTabWidget, QWidget
 
 from .constants import (
-    ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS, PRIMARY_SPECS,
-    RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX, SMINMIN)
-from .iofunc import create_folder, delete_folder_contents, get_asset_path, load_icon, store_json
+    ABOTTOM, ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS,
+    PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
+    SMINMIN)
+from .iofunc import (
+        create_folder, delete_folder_contents, get_asset_path, load_icon, open_url, store_json)
 from .subwindows import ExportWindow, ItemEditor, Picker, ShipSelector
 from .widgets import (
     Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout,
@@ -173,6 +175,8 @@ class SETS():
                 self.box_width, self.box_width)
         self.cache.icons['eng'] = load_icon('eng_icon.png', self.app_dir).pixmap(
                 self.box_width, self.box_width)
+        self.cache.icons['STOCD'] = load_icon('stocd.png', self.app_dir).pixmap(
+                self.box_height, self.box_height * 182 / 106)
 
     def main_window_close_callback(self, event):
         """
@@ -1054,3 +1058,48 @@ class SETS():
 
         scroll_frame.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_frame)
+
+        # sidebar
+        sidebar_frame = self.widgets.sidebar_frames[5]
+        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        sidebar_layout = VBoxLayout(margins=csp, spacing=isp)
+        sidebar_layout.setAlignment(ATOP)
+        sidebar_layout.addWidget(self.create_label('About SETS:', 'label_heading'), alignment=ALEFT)
+        about_label = self.create_label(
+                'Thank you for using the STO Equipment and Trait Selector (SETS)! Make sure to '
+                'check out other projects of the STO Community Developers on our Github page and '
+                'contact us on Discord for support.')
+        about_label.setWordWrap(True)
+        about_label.setMinimumWidth(50)  # to fix the word wrap
+        about_label.setSizePolicy(SMINMAX)
+        sidebar_layout.addWidget(about_label)
+        link_button_style = {
+            'Website': {
+                'callback': lambda: open_url(self.config['link_website']), 'align': AHCENTER},
+            'Github': {
+                'callback': lambda: open_url(self.config['link_github']), 'align': AHCENTER},
+            'STOBuilds Discord': {
+                'callback': lambda: open_url(self.config['link_discord']), 'align': AHCENTER},
+            'Downloads': {
+                'callback': lambda: open_url(self.config['link_downloads']), 'align': AHCENTER}
+        }
+        button_layout, buttons = self.create_button_series(
+                link_button_style, 'button', shape='column', ret=True)
+        buttons[0].setToolTip(self.config['link_website'])
+        buttons[1].setToolTip(self.config['link_github'])
+        buttons[2].setToolTip(self.config['link_discord'])
+        buttons[3].setToolTip(self.config['link_downloads'])
+        link_button_frame = self.create_frame()
+        link_button_frame.setLayout(button_layout)
+        sidebar_layout.addWidget(link_button_frame, alignment=AHCENTER)
+        sidebar_frame.setLayout(sidebar_layout)
+
+        footer_frame = self.widgets.character_frames[2]
+        footer_layout = GridLayout(margins=csp, spacing=isp)
+        version_label = self.create_label(
+                f"Version: {self.versions[0]}\n({self.versions[1]})", 'hint_label')
+        footer_layout.addWidget(version_label, 0, 0, alignment=ALEFT | ABOTTOM)
+        stocd_label = self.create_label('')
+        stocd_label.setPixmap(self.cache.icons['STOCD'])
+        footer_layout.addWidget(stocd_label, 0, 1, alignment=ARIGHT | ABOTTOM)
+        footer_frame.setLayout(footer_layout)

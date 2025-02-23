@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.02b236'
+    version = '2025.02b237'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -139,6 +139,16 @@ class Launcher():
             },
             ':disabled': {
                 'color': '@bc'
+            },
+            # Tooltip
+            '~QToolTip': {
+                'background-color': '@mbg',
+                'border-style': 'solid',
+                'border-color': '@lbg',
+                'border-width': '@bw',
+                'padding': (0, 0, 0, 0),
+                'color': '@fg',
+                'font': 'Overpass'
             }
         },
         # heavy button
@@ -545,6 +555,10 @@ class Launcher():
             'autosave_filename': '.autosave.json',
             'box_width': 49,
             'box_height': 64,
+            'link_website': 'https://stobuilds.com/apps/sets',
+            'link_github': 'https://github.com/STOCD',
+            'link_discord': 'https://discord.gg/kxwHxbsqzF',
+            'link_downloads': 'https://github.com/STOCD/SETS/releases',
             'default_settings': {
                 'ui_scale': 1.0,
                 'default_mark': '',
