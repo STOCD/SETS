@@ -282,9 +282,11 @@ def boff_label_callback_ground(self, boff_id: int, type_: str, new_text: str):
     other_text = self.build['ground'][other_type][boff_id]
     for ability_num, ability in enumerate(self.build['ground']['boffs'][boff_id]):
         if ability is not None and ability != '':
-            # Lt. Commander rank contains all abilities
+            # Lt. Commander and Commander rank combined contain all abilities
             if (ability['item'] not in self.cache.boff_abilities['ground'][new_text][2]
-                    and ability['item'] not in self.cache.boff_abilities['ground'][other_text][2]):
+                    and ability['item'] not in self.cache.boff_abilities['ground'][new_text][3]
+                    and ability['item'] not in self.cache.boff_abilities['ground'][other_text][2]
+                    and ability['item'] not in self.cache.boff_abilities['ground'][other_text][3]):
                 self.build['ground']['boffs'][boff_id][ability_num] = ''
                 self.widgets.build['ground']['boffs'][boff_id][ability_num].clear()
     self.autosave()
