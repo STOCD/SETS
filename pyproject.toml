@@ -24,3 +24,13 @@ dependencies = [
 [project.urls]
 homepage = "https://stobuilds.com/apps/sets"
 repository = "https://github.com/STOCD/SETS"
+
+[tool.cxfreeze]
+executables = [
+    { script = "main.py", base = "gui", icon = "local/icon", target_name = "SETS" }
+]
+
+[tool.cxfreeze.build_exe]
+include_files = ["local", "LICENSE", "README.md"]
+packages = ["PySide6", "requests", "numpy", "requests_html", "lxml_html_clean"]
+optimize = 2
