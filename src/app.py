@@ -28,8 +28,9 @@ class SETS():
             skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
             tier_callback)
     from .datafunctions import (
-            autosave, backup_cargo_data, cache_skills, empty_build, get_build_markdown,
+            autosave, backup_cargo_data, cache_skills, empty_build,
             init_backend, load_legacy_build_image)
+    from .export import get_build_markdown
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
