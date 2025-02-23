@@ -652,7 +652,7 @@ def toggle_space_skill(self, current_state: bool, career: str, skill_id: int):
                 set_skill_unlock_space(self, career, button_index, None)
             elif segment_index == 23:
                 set_skill_unlock_space(self, career, 4, None)
-        elif 25 <= segment_index <= 26:
+        elif 24 <= segment_index <= 26:
             set_skill_unlock_space(self, career, 4, 0, segment_index)
     else:
         self.widgets.build['space_skills'][career][skill_id].set_overlay(self.cache.overlays.check)
