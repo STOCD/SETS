@@ -477,9 +477,15 @@ class ExportWindow(QDialog):
             'Space Build': {
                 'callback': lambda: md_textedit.setPlainText(data_getter('space', 'build'))
             },
-            'Ground Build': {'callback': lambda: None},
-            'Space Skills': {'callback': lambda: None},
-            'Ground Skills': {'callback': lambda: None},
+            'Ground Build': {
+                'callback': lambda: md_textedit.setPlainText(data_getter('ground', 'build'))
+            },
+            'Space Skills': {
+                'callback': lambda: md_textedit.setPlainText(data_getter('space', 'skills'))
+            },
+            'Ground Skills': {
+                'callback': lambda: md_textedit.setPlainText(data_getter('ground', 'skills'))
+            },
         }
         top_buttons, (self._space_button, *_) = create_button_series(sets, button_def, ret=True)
         top_buttons.setAlignment(AHCENTER)

@@ -971,7 +971,7 @@ def md_equipment_table(
             if i > 0:
                 section.append(['&nbsp;'])
             if item == '':
-                section[i] += [''] * (extra_cols + 1)
+                section[-1] += [''] * (extra_cols + 1)
             else:
                 section[i].append(
                         f"[{item['item']} {item['mark']} {''.join(notempty(item['modifiers']))}]"
@@ -1090,6 +1090,65 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
                 doff_table.append([f"[{spec}]({wiki_url(spec, 'Specialization: ')})", variant, ''])
         md += create_md_table(self, doff_table)
         return md
+    elif environment == 'ground' and type_ == 'build':
+        md = (
+            f"# GROUND BUILD\n\n**Basic Information** | **Data** \n:--- | :--- \n"
+            f"*Player Name* | {self.build['captain']['name']} \n"
+            f"*Player Species* | {self.build['captain']['species']} \n"
+            f"*Player Career* | {self.build['captain']['career']} \n"
+            f"*Elite Captain* | {'✓' if self.build['captain']['elite'] else '✗'}\n"
+            f"*Primary Specialization* | {self.build['captain']['primary_spec']} \n"
+            f"*Secondary Specialization* | {self.build['captain']['secondary_spec']} \n\n\n"
+        )
+        if self.build['ground']['ground_desc'] != '':
+            md += f"## Build Description\n\n{self.build['ground']['ground_desc']}\n\n\n"
+
+        md += '## Personal Equipment\n\n'
+        equip_table = [['&nbsp;', '****Component****', '****Notes****']]
+        equip_table += md_equipment_table(self, 'ground', 'kit', 'Kit Frame', single_line=True)
+        equip_table += md_equipment_table(self, 'ground', 'kit_modules', 'Kit Modules')
+        equip_table += md_equipment_table(self, 'ground', 'armor', 'Body Armor', single_line=True)
+        equip_table += md_equipment_table(self, 'ground', 'ev_suit', 'EV Suit', single_line=True)
+        equip_table += md_equipment_table(
+                self, 'ground', 'personal_shield', 'Personal Shield', single_line=True)
+        equip_table += md_equipment_table(self, 'ground', 'weapons', 'Weapons')
+        equip_table += md_equipment_table(self, 'ground', 'ground_devices', 'Devices')
+        md += create_md_table(self, equip_table)
+
+        md += '\n\n\n## Traits\n\n'
+        trait_table = [['****Personal Ground Traits****', '****Notes****']]
+        for trait in notempty(self.build['ground']['traits']):
+            trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
+        md += create_md_table(self, trait_table)
+        md += '\n\n&#x200B;\n\n'
+        trait_table = [['****Ground Reputation Traits****', '****Notes****']]
+        for trait in notempty(self.build['ground']['rep_traits']):
+            trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
+        md += create_md_table(self, trait_table)
+        md += '\n\n&#x200B;\n\n'
+        trait_table = [['****Active Ground Reputation Traits****', '****Notes****']]
+        for trait in notempty(self.build['ground']['active_rep_traits']):
+            trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
+        md += create_md_table(self, trait_table)
+
+        md += '\n\n\n## Active Ground Duty Officers\n\n'
+        doff_table = [['****Specialization****', '****Power****', '****Notes****']]
+        for spec, variant in zip(
+                self.build['ground']['doffs_spec'], self.build['ground']['doffs_variant']):
+            if spec != '':
+                doff_table.append([f"[{spec}]({wiki_url(spec, 'Specialization: ')})", variant, ''])
+        md += create_md_table(self, doff_table)
+
+        md += '\n\n\n## Away Team\n\n'
+        boff_table = [['****Profession****', '****Power****', '****Notes****']]
+        for profession, specialization, station in zip(
+                self.build['ground']['boff_profs'], self.build['ground']['boff_specs'],
+                self.build['ground']['boffs']):
+            station_name = f"{profession} / {specialization}"
+            boff_table += md_boff_table(self, station, station_name)
+        md += create_md_table(self, boff_table)
+        return md
+    return 'Not Implemented.'
 
 
 def get_boff_data(self):
