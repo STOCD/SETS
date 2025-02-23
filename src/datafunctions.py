@@ -1007,11 +1007,13 @@ def md_boff_table(self, station: list, header: str, extra_cols: int = 1) -> list
     return section
 
 
-def md_skill_table_space(self, skills: dict, offset: int) -> list:
+def md_skill_table_space(self, skills: list, offset: int) -> list:
     """
     Returns table segment (one rank) of space skills for markdown export.
 
     Parameters:
+    - :param skills: contains all skill groups of one rank
+    - :param offset: offset of the first skill node for indexing into `self.build`
     """
     section = [[], []]
     offsets = {'eng': offset, 'tac': offset, 'sci': offset}
@@ -1275,7 +1277,35 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
             unlock_table.append(row)
         md += create_md_table(self, unlock_table)
         return md
-    return 'Not Implemented.'
+    elif environment == 'ground' and type_ == 'skills':
+        md = '# Ground Skills\n\n'
+        skill_table = [['****Skill****', '**I**', '**II**']]
+        id_offset = 0
+        for skill in self.cache.skills['ground']:
+            row = [f"[{skill['nodes'][0]['name']}]({skill['link']})"]
+            if self.build['ground_skills'][skill['tree']][id_offset]:
+                row.append('[X]')
+            else:
+                row.append('[&nbsp;&nbsp;&nbsp;]')
+            if self.build['ground_skills'][skill['tree']][id_offset + 1]:
+                row.append('[X]')
+            else:
+                row.append('[&nbsp;&nbsp;&nbsp;]')
+            skill_table.append(row)
+            if skill['tree'] < 2 and id_offset == 4 or skill['tree'] >= 2 and id_offset == 2:
+                id_offset = 0
+            else:
+                id_offset += 2
+        md += create_md_table(self, skill_table, alignment=[':--', ':-:', ':-:'])
+        md += '\n\n&#x200B;\n\n'
+
+        unlock_table = [['', f"****[Unlocks]({wiki_url('Skill#Ground_2')})****", '']]
+        for unlock, unlock_state in zip(
+                self.cache.skills['ground_unlocks'], self.build['skill_unlocks']['ground']):
+            if unlock_state is not None:
+                unlock_table.append(['', unlock['nodes'][unlock_state]['name'], ''])
+        md += create_md_table(self, unlock_table, alignment=['', ':-:', ''])
+        return md
 
 
 def get_boff_data(self):
