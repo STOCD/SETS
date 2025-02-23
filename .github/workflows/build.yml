@@ -40,5 +40,9 @@ jobs:
         with:
           name: build_release
           path: .
+      - name: Bundle App
+        run: zip -r SETS.zip .
       - name: Create release
         uses: ncipollo/release-action@v1
+        with:
+          artifacts: SETS.zip
