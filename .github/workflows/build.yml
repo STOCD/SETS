@@ -24,7 +24,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: build_release
-        path: build/exe.win*/
+        path: build/exe.win*/*
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
