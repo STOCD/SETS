@@ -181,6 +181,8 @@ def get_boff_abilities(
     """
     if environment == 'space':
         profession, specialization = self.build['space']['boff_specs'][boff_id]
+        if specialization == 'Temporal Operative':
+            specialization = 'Temporal'
     else:
         profession = self.build['ground']['boff_profs'][boff_id]
         specialization = self.build['ground']['boff_specs'][boff_id]
