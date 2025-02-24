@@ -1,6 +1,9 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "SETS"
-version = "2.0"
 description = "A Star Trek Online build tool in Python"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,10 +23,21 @@ dependencies = [
   "requests_html",
   "lxml_html_clean"
 ]
+dynamic = ["version"]
 
 [project.urls]
 homepage = "https://stobuilds.com/apps/sets"
 repository = "https://github.com/STOCD/SETS"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[project.scripts]
+sets = "main:Launcher.launch"
+
+[tool.hatch.version]
+path = "main.py"
+pattern = "\\s*version = '(?P<version>.*)'"
 
 [tool.cxfreeze]
 executables = [
