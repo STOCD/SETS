@@ -48,7 +48,7 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
     - :param url: url to cargo table
     - :param ignore_cache_age: True if cache of any age should be accepted
     """
-    filepath = f"{self.config['config_subfolders']['cargo']}\\{filename}"
+    filepath = os.path.join(self.config['config_subfolders']['cargo'], filename)
     cargo_data = None
 
     # try loading from cache
@@ -67,7 +67,7 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
         return cargo_data
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError):
         if ignore_cache_age:
-            backup_path = f"{self.config['config_subfolders']['backups']}\\{filename}"
+            backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)
             if os.path.exists(backup_path) and os.path.isfile(backup_path):
                 try:
                     cargo_data = load_json(backup_path)
@@ -89,7 +89,7 @@ def get_cached_cargo_data(self, filename: str) -> dict | list:
     Parameters:
     - :param filename: name of the cache file
     """
-    filepath = f"{self.config['config_subfolders']['cache']}\\{filename}"
+    filepath = os.path.join(self.config['config_subfolders']['cache'], filename)
     if os.path.exists(filepath) and os.path.isfile(filepath):
         last_modified = os.path.getmtime(filepath)
         if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
@@ -108,7 +108,7 @@ def store_to_cache(self, data, filename: str):
     - :param data: data that will be stored
     - :param filename: filename of the cache file
     """
-    filepath = f"{self.config['config_subfolders']['cache']}\\{filename}"
+    filepath = os.path.join(self.config['config_subfolders']['cache'], filename)
     store_json(data, filepath)
 
 
@@ -124,7 +124,7 @@ def retrieve_image(
     - :param url_override: non default image url (optional)
     """
     filename = get_image_file_name(name)
-    filepath = f'{image_folder_path}\\{filename}'
+    filepath = os.path.join(image_folder_path, filename)
     image = QImage(filepath)
     if image.isNull():
         if signal is not None:
@@ -142,7 +142,7 @@ def download_image(self, name: str, image_folder_path: str, url_override: str = 
     - :param image_folder_path: path to the image folder
     - :param url_override: non default image url (optional)
     """
-    filepath = f'{image_folder_path}\\{get_image_file_name(name)}'
+    filepath = os.path.join(image_folder_path, get_image_file_name(name))
     if url_override == '':
         image_url = f'{WIKI_IMAGE_URL}{name.replace(' ', '_')}_icon.png'
     else:
@@ -166,7 +166,8 @@ def get_ship_image(self, image_name: str, threaded_worker):
     - :param threaded_worker: thread object supplying signals
     """
     image_url = WIKI_IMAGE_URL + image_name.replace(' ', '_')
-    image_path = f"{self.config['config_subfolders']['ship_images']}\\{quote_plus(image_name)}"
+    image_path = os.path.join(
+            self.config['config_subfolders']['ship_images'], quote_plus(image_name))
     _, _, fmt = image_name.rpartition('.')
     image = QImage(image_path)
     if image.isNull():
@@ -187,7 +188,7 @@ def load_image(image_name: str, image: QImage, image_folder_path: str) -> QImage
     - :param image: preconstructed (empty) Image
     - :param image_folder_path: path to the image folder
     """
-    image_path = f"{image_folder_path}\\{get_image_file_name(image_name)}"
+    image_path = os.path.join(image_folder_path, get_image_file_name(image_name))
     image.load(image_path)
 
 

@@ -1,3 +1,5 @@
+import os
+
 from .buildupdater import (
         align_space_frame, clear_captain, clear_doffs, clear_ground_build, clear_ship, clear_traits,
         get_variable_slot_counts, set_skill_unlock_ground, set_skill_unlock_space,
@@ -485,7 +487,7 @@ def save_build_callback(self):
         proposed_filename = f"({self.widgets.ship['button'].text()}).json"
     if self.widgets.ship['name'].text() != '':
         proposed_filename = f"{self.widgets.ship['name'].text()} {proposed_filename}"
-    default_path = f"{self.config['config_subfolders']['library']}\\{proposed_filename}"
+    default_path = os.path.join(self.config['config_subfolders']['library'], proposed_filename)
     save_path = browse_path(
             self, default_path,
             'JSON file (*.json);;PNG image (*.png);;Any File (*.*)', save=True)
@@ -497,7 +499,7 @@ def save_skills_callback(self):
     """
     Save skills to file
     """
-    default_path = f"{self.config['config_subfolders']['library']}\\Skill Tree.json"
+    default_path = os.path.join(self.config['config_subfolders']['library'], 'Skill Tree.json')
     save_path = browse_path(
             self, default_path,
             'JSON file (*.json);;PNG image (*.png);;Any File (*.*)', save=True)

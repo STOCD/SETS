@@ -124,7 +124,7 @@ class SETS():
         """
         Prepares settings. Loads stored settings. Saves current settings for next startup.
         """
-        settings_path = os.path.abspath(self.app_dir + self.config['settings_path'])
+        settings_path = os.path.abspath(os.path.join(self.app_dir, self.config['settings_path']))
         self.settings = QSettings(settings_path, QSettings.Format.IniFormat)
         for setting, value in self.config['default_settings'].items():
             if self.settings.value(setting, None) is None:
@@ -134,12 +134,13 @@ class SETS():
         """
         Prepares config.
         """
-        config_folder = os.path.abspath(
-                self.app_dir + self.config['config_folder_path'])
+        config_folder = os.path.abspath(os.path.join(
+                self.app_dir, self.config['config_folder_path']))
         self.config['config_folder_path'] = config_folder
         for folder, path in self.config['config_subfolders'].items():
-            self.config['config_subfolders'][folder] = config_folder + path
-        self.config['autosave_filename'] = f'{config_folder}\\{self.config['autosave_filename']}'
+            self.config['config_subfolders'][folder] = os.path.join(config_folder, path)
+        self.config['autosave_filename'] = os.path.join(
+                config_folder, self.config['autosave_filename'])
         self.config['ui_scale'] = self.settings.value('ui_scale', type=float)
         self.box_width = self.config['box_width'] * self.config['ui_scale'] * 0.8
         self.box_height = self.config['box_height'] * self.config['ui_scale'] * 0.8

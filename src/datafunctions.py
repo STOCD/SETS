@@ -917,8 +917,8 @@ def backup_cargo_data(self):
     cargo_folder = self.config['config_subfolders']['cargo']
     backups_folder = self.config['config_subfolders']['backups']
     for file_name in cargo_files:
-        cargo_path = f'{cargo_folder}\\{file_name}'
-        backups_path = f'{backups_folder}\\{file_name}'
+        cargo_path = os.path.join(cargo_folder, file_name)
+        backups_path = os.path.join(backups_folder, file_name)
         copy_file(cargo_path, backups_path)
 
 
@@ -927,7 +927,7 @@ def get_boff_data(self):
     Populates self.cache.boff_abilities until boff abilties are available from cargo
     """
     filename = 'boff_abilities.json'
-    filepath = f"{self.config['config_subfolders']['cargo']}\\{filename}"
+    filepath = os.path.join(self.config['config_subfolders']['cargo'], filename)
 
     # try loading from cache
     if os.path.exists(filepath) and os.path.isfile(filepath):
@@ -944,7 +944,7 @@ def get_boff_data(self):
     try:
         boff_html = fetch_html(BOFF_URL)
     except (requests__Timeout, requests__ConnectionError):
-        backup_path = f"{self.config['config_subfolders']['backups']}\\{filename}"
+        backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)
         if os.path.exists(backup_path) and os.path.isfile(backup_path):
             try:
                 cargo_data = load_json(backup_path)
