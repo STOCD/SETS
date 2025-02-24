@@ -24,7 +24,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: build_release
-        path: build/exe.win*/*
+        path: build/exe.win*/
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -41,7 +41,10 @@ jobs:
           name: build_release
           path: .
       - name: Bundle App
+        run: cd exe.win*
         run: zip -r SETS.zip .
+        run: mv SETS.zip ..
+        run: cd ..
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
