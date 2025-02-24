@@ -82,10 +82,11 @@ FACTIONS = {'Federation', 'Klingon', 'Romulan', 'Dominion', 'TOS Federation', 'D
 SPECIES = {
     'Federation': {
         'Human', 'Andorian', 'Bajoran', 'Benzite', 'Betazoid', 'Bolian', 'Ferengi', 'Pakled',
-        'Rigelian', 'Saurian', 'Tellarite', 'Trill', 'Vulcan', 'Alien'
+        'Rigelian', 'Saurian', 'Tellarite', 'Trill', 'Joined Trill', 'Vulcan', 'Alien',
+        'Liberated Borg'
     },
-    'Klingon': {'Klingon', 'Gorn', 'Lethean', 'Nausicaan', 'Orion', 'Alien'},
-    'Romulan': {'Romulan', 'Reman', 'Alien'},
+    'Klingon': {'Klingon', 'Gorn', 'Lethean', 'Nausicaan', 'Orion', 'Alien', 'Liberated Borg'},
+    'Romulan': {'Romulan', 'Reman', 'Alien', 'Liberated Borg'},
     'Dominion': {"Jem'Hadar", "Jem'Hadar Vanguard"},
     'TOS Federation': {'Human', 'Andorian', 'Tellarite', 'Vulcan'},
     'DSC Federation': {'Human', 'Vulcan', 'Alien'}
@@ -94,7 +95,7 @@ SPECIES = {
 SPECIES_TRAITS = {
     'space': {
         'Human': 'Leadership',
-        'Trill': 'Joined Symbiote',
+        'Joined Trill': 'Joined Symbiote',
         'Nausicaan': 'Pirate',
         # 'Romulan': 'Subterfuge',
         "Jem'Hadar Vanguard": 'Engineered Soldier (Space)'
@@ -112,6 +113,7 @@ SPECIES_TRAITS = {
         'Saurian': 'Circulatory Redundancies',
         'Tellarite': 'Pig-Headed',
         'Trill': 'Hyper Metabolism',
+        'Joined Trill': 'Hyper Metabolism',
         'Vulcan': 'Logical',
         'Klingon': 'Warrior',
         'Gorn': 'Reptilian Strength',
@@ -122,6 +124,7 @@ SPECIES_TRAITS = {
         'Reman': 'Mental Discipline',
         "Jem'Hadar": 'Engineered Soldier',
         "Jem'Hadar Vanguard": 'Engineered Soldier',
+        'Liberated Borg': 'Borg Nanites'
     }
 }
 
