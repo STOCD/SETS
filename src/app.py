@@ -1014,6 +1014,14 @@ class SETS():
         picker_rel_combo.currentIndexChanged.connect(
                 lambda new_i: self.settings.setValue('picker_relative', new_i))
         sec_1.addWidget(picker_rel_combo, 3, 2, alignment=ALEFT | AVCENTER)
+        picker_rel_label = self.create_label('Default Save Format')
+        sec_1.addWidget(picker_rel_label, 4, 0, alignment=ALEFT)
+        picker_rel_combo = self.create_combo_box(style_override={'font': '@small_text'})
+        picker_rel_combo.addItems(('JSON', 'PNG'))
+        picker_rel_combo.setCurrentText(self.settings.value('default_save_format'))
+        picker_rel_combo.currentTextChanged.connect(
+                lambda new_t: self.settings.setValue('default_save_format', new_t))
+        sec_1.addWidget(picker_rel_combo, 4, 2, alignment=ALEFT | AVCENTER)
         scroll_layout.addLayout(sec_1)
 
         # second section

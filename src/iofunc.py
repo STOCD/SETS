@@ -32,7 +32,10 @@ def browse_path(self, default_path: str = None, types: str = 'Any File (*.*)', s
     if not os.path.exists(os.path.dirname(default_path)):
         default_path = self.app_dir
     if save:
-        file, _ = QFileDialog.getSaveFileName(self.window, 'Save...', default_path, types)
+        file, filter = QFileDialog.getSaveFileName(self.window, 'Save...', default_path, types)
+        selected_extension = filter.rpartition('.')[2][:-1]
+        if file.rpartition('.')[2].lower() != selected_extension:
+            file += f".{selected_extension}"
     else:
         file, _ = QFileDialog.getOpenFileName(self.window, 'Open...', default_path, types)
     return file

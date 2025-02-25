@@ -487,15 +487,17 @@ def save_build_callback(self):
     Saves build to file
     """
     if self.widgets.ship['button'].text() == '<Pick Ship>':
-        proposed_filename = '(Ship Template).json'
+        proposed_filename = '(Ship Template)'
     else:
-        proposed_filename = f"({self.widgets.ship['button'].text()}).json"
+        proposed_filename = f"({self.widgets.ship['button'].text()})"
     if self.widgets.ship['name'].text() != '':
         proposed_filename = f"{self.widgets.ship['name'].text()} {proposed_filename}"
     default_path = os.path.join(self.config['config_subfolders']['library'], proposed_filename)
-    save_path = browse_path(
-            self, default_path,
-            'JSON file (*.json);;PNG image (*.png);;Any File (*.*)', save=True)
+    if self.settings.value('default_save_format') == 'PNG':
+        file_types = 'PNG image (*.png);;JSON file (*.json);;Any File (*.*)'
+    else:
+        file_types = 'JSON file (*.json);;PNG image (*.png);;Any File (*.*)'
+    save_path = browse_path(self, default_path, file_types, save=True)
     if save_path != '':
         save_build_file(self, save_path)
 
@@ -504,10 +506,12 @@ def save_skills_callback(self):
     """
     Save skills to file
     """
-    default_path = os.path.join(self.config['config_subfolders']['library'], 'Skill Tree.json')
-    save_path = browse_path(
-            self, default_path,
-            'JSON file (*.json);;PNG image (*.png);;Any File (*.*)', save=True)
+    default_path = os.path.join(self.config['config_subfolders']['library'], 'Skill Tree')
+    if self.settings.value('default_save_format') == 'PNG':
+        file_types = 'PNG image (*.png);;JSON file (*.json);;Any File (*.*)'
+    else:
+        file_types = 'JSON file (*.json);;PNG image (*.png);;Any File (*.*)'
+    save_path = browse_path(self, default_path, file_types, save=True)
     if save_path != '':
         save_skill_tree_file(self, save_path)
 
