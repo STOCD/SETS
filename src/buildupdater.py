@@ -119,6 +119,7 @@ def load_skill_pages(self):
     self.cache.skills['space_points_sci'] = 0
     self.cache.skills['space_points_tac'] = 0
     self.cache.skills['space_points_rank'] = [0] * 5
+    self.cache.skills['space_points_total'] = 0
     for career in ('eng', 'sci', 'tac'):
         for skill_id, (button, enable) in enumerate(zip(
                 self.widgets.build['space_skills'][career], self.build['space_skills'][career])):
@@ -126,13 +127,14 @@ def load_skill_pages(self):
                 button.set_overlay(self.cache.overlays.check)
                 self.cache.skills[f'space_points_{career}'] += 1
                 self.cache.skills['space_points_rank'][int(skill_id / 6)] += 1
+            else:
+                button.clear_overlay()
     self.cache.skills['space_points_total'] = sum(self.cache.skills['space_points_rank'])
     for career in ('eng', 'sci', 'tac'):
         skill_points = self.cache.skills[f'space_points_{career}']
         self.widgets.skill_counts_space[career].setText(str(skill_points))
         for unlock_id, unlock_choice in enumerate(self.build['skill_unlocks'][career]):
-            if unlock_choice is not None:
-                set_skill_unlock_space(self, career, unlock_id, unlock_choice, skill_points)
+            set_skill_unlock_space(self, career, unlock_id, unlock_choice, skill_points)
         if skill_points > 24:
             skill_points = 24
         for i in range(skill_points):
@@ -149,14 +151,15 @@ def load_skill_pages(self):
             if enable:
                 skill_button.set_overlay(self.cache.overlays.check)
                 self.cache.skills['ground_points_total'] += 1
+            else:
+                skill_button.clear_overlay()
     self.widgets.skill_count_ground.setText(str(self.cache.skills['ground_points_total']))
     for i in range(self.cache.skills['ground_points_total']):
         self.widgets.skill_bonus_bars['ground'][i].setChecked(True)
     for i in range(self.cache.skills['ground_points_total'], 10, 1):
         self.widgets.skill_bonus_bars['ground'][i].setChecked(False)
     for unlock_id, unlock_choice in enumerate(self.build['skill_unlocks']['ground']):
-        if unlock_choice is not None:
-            set_skill_unlock_ground(self, unlock_id, unlock_choice)
+        set_skill_unlock_ground(self, unlock_id, unlock_choice)
 
 
 def get_boff_spec(self, seat_details: str) -> tuple[int, str, str]:
