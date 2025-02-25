@@ -40,11 +40,10 @@ jobs:
         with:
           name: build_release
           path: .
-      - name: Bundle App
-        run: cd exe.win*
-        run: zip -r SETS.zip .
-        run: mv SETS.zip ..
-        run: cd ..
+      - run: cd exe.win*
+      - run: zip -r SETS.zip .
+      - run: mv SETS.zip ..
+      - run: cd ..
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
