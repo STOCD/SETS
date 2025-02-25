@@ -640,10 +640,12 @@ def legacy_decode_from_image(self, image_path: str) -> str:
             decoded_binary[bin_index + 2] = data[pixel_index] & 0b1
         if bit_diff == 0:
             decoded_bytes = packbits(append(extra_bits, decoded_binary))
+            extra_bits = zeros(0, dtype=uint8)
+            bit_diff = pixel_num % 8
         else:
             decoded_bytes = packbits(append(extra_bits, decoded_binary[:-1 * bit_diff]))
+            extra_bits = decoded_binary[-1 * bit_diff:].copy()
             bit_diff = (pixel_num + len(extra_bits)) % 8
-            bit_diff = (pixel_num + bit_diff) % 8
         new_message = ''.join(map(chr, decoded_bytes))
         message += new_message
         if '$t3g0' in new_message:
@@ -667,6 +669,7 @@ def load_legacy_build_image(self):
             build_data = json__loads(compensate_old_build(self, raw_build))
         except JSONDecodeError:
             sys.stderr.write('[Error] Image contains no build or is corrupted.')
+            return
         if 'versionJSON' in build_data:
             new_build = empty_build(self)
             new_build.update(convert_old_build(self, build_data))
