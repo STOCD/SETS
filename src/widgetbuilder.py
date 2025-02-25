@@ -279,8 +279,8 @@ def create_build_section(
         widget_storage[label_store] = label
     for i in range(button_count):
         button = create_item_button(self)
-        button.clicked.connect(lambda subkey=i: picker(
-                self, environment, build_key, subkey, is_equipment))
+        button.clicked.connect(lambda subkey=i, bt=button: picker(
+                self, environment, build_key, subkey, bt, is_equipment))
         button.rightclicked.connect(
                 lambda e, i=i: self.context_menu.invoke(e, build_key, i, environment))
         widget_storage[build_key][i] = button
@@ -324,8 +324,8 @@ def create_boff_station_space(
     for i in range(4):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
-        button.clicked.connect(lambda subkey=i: picker(
-                self, 'space', 'boffs', subkey, boff_id=boff_id))
+        button.clicked.connect(lambda subkey=i, bt=button: picker(
+                self, 'space', 'boffs', subkey, bt, boff_id=boff_id))
         button.rightclicked.connect(
                 lambda e, i=i: self.context_menu.invoke(e, 'boffs', i, 'space', boff_id))
         layout.addWidget(button, 1, i, alignment=ALEFT)
@@ -362,8 +362,8 @@ def create_boff_station_ground(self, boff_id: int) -> VBoxLayout:
     button_layout.setAlignment(ALEFT)
     for i in range(4):
         button = create_item_button(self)
-        button.clicked.connect(lambda subkey=i: picker(
-                self, 'ground', 'boffs', subkey, boff_id=boff_id))
+        button.clicked.connect(lambda subkey=i, bt=button: picker(
+                self, 'ground', 'boffs', subkey, bt, boff_id=boff_id))
         button.rightclicked.connect(
                 lambda e, i=i: self.context_menu.invoke(e, 'boffs', i, 'ground', boff_id))
         button_layout.addWidget(button)
@@ -386,7 +386,8 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
         for col in range(4):
             i = row * 4 + col
             button = create_item_button(self)
-            button.clicked.connect(lambda subkey=i: picker(self, environment, 'traits', subkey))
+            button.clicked.connect(
+                    lambda subkey=i, bt=button: picker(self, environment, 'traits', subkey, bt))
             button.rightclicked.connect(
                     lambda e, i=i: self.context_menu.invoke(e, 'traits', i, environment))
             layout.addWidget(button, row + 1, col, alignment=ALEFT)
@@ -410,8 +411,8 @@ def create_starship_trait_section(self) -> QGridLayout:
     for col in range(5):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
-        button.clicked.connect(lambda subkey=col: picker(
-                self, 'space', 'starship_traits', subkey))
+        button.clicked.connect(lambda subkey=col, bt=button: picker(
+                self, 'space', 'starship_traits', subkey, bt))
         button.rightclicked.connect(
                 lambda e, i=col: self.context_menu.invoke(e, 'starship_traits', i, 'space'))
         layout.addWidget(button, 1, col, alignment=ALEFT)
@@ -419,8 +420,8 @@ def create_starship_trait_section(self) -> QGridLayout:
     for col in range(2):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)
-        button.clicked.connect(lambda subkey=col + 5: picker(
-                self, 'space', 'starship_traits', subkey))
+        button.clicked.connect(lambda subkey=col + 5, bt=button: picker(
+                self, 'space', 'starship_traits', subkey, bt))
         button.rightclicked.connect(
                 lambda e, i=col + 5: self.context_menu.invoke(e, 'starship_traits', i, 'space'))
         layout.addWidget(button, 2, col, alignment=ALEFT)

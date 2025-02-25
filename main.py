@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.02b251'
+    version = '2025.02b252'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -563,6 +563,7 @@ class Launcher():
                 'ui_scale': 1.0,
                 'default_mark': '',
                 'default_rarity': 'Common',
+                'picker_relative': 0,
                 'geometry': None
             }
         }

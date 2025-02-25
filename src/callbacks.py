@@ -195,7 +195,7 @@ def get_boff_abilities(
 
 
 def picker(
-        self, environment: str, build_key: str, build_subkey: int, equipment: bool = False,
+        self, environment: str, build_key: str, build_subkey: int, button, equipment: bool = False,
         boff_id=None):
     """
     opens dialog to select item, stores it to build and updates item button
@@ -205,6 +205,7 @@ def picker(
     - :param environment: space or ground
     - :param build_key: key to self.build[environment]; for storing picked item
     - :param build_subkey: index of the item within its build_key (category)
+    - :param button: reference to the button clicked
     - :param equipment: set to True to show rarity, mark, and modifier selector (optional)
     - :param boff_id: id of the boff; only set when picking boff abilities! (optional)
     """
@@ -224,7 +225,11 @@ def picker(
         items = self.cache.traits[environment]['active_rep'].keys()
     else:
         items = []
-    new_item = self.picker_window.pick_item(items, equipment, modifiers)
+    if self.settings.value('picker_relative', type=int) == 1:
+        pos = button.parent().mapToGlobal(button.pos())
+    else:
+        pos = None
+    new_item = self.picker_window.pick_item(items, pos, equipment, modifiers)
     if new_item is not None:
         widget_storage = self.widgets.build[environment]
         if equipment:

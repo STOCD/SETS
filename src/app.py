@@ -1006,6 +1006,14 @@ class SETS():
         rarity_combo.currentTextChanged.connect(
                 lambda new_rarity: self.settings.setValue('default_rarity', new_rarity))
         sec_1.addWidget(rarity_combo, 2, 2, alignment=ALEFT | AVCENTER)
+        picker_rel_label = self.create_label('Picker Position')
+        sec_1.addWidget(picker_rel_label, 3, 0, alignment=ALEFT)
+        picker_rel_combo = self.create_combo_box(style_override={'font': '@small_text'})
+        picker_rel_combo.addItems(('Absolute', 'Relative'))
+        picker_rel_combo.setCurrentIndex(self.settings.value('picker_relative', type=int))
+        picker_rel_combo.currentIndexChanged.connect(
+                lambda new_i: self.settings.setValue('picker_relative', new_i))
+        sec_1.addWidget(picker_rel_combo, 3, 2, alignment=ALEFT | AVCENTER)
         scroll_layout.addLayout(sec_1)
 
         # second section

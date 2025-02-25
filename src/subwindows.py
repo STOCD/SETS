@@ -106,6 +106,7 @@ class Picker(BasePicker):
                 default_rarity_getter: Callable = lambda: 'Common',
                 default_mark_getter: Callable = lambda: ''):
         super().__init__(parent=parent_window)
+        self.start_pos = None
         self.setWindowFlags(
                 self.windowFlags() | Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setStyleSheet(get_style(sets, style))
@@ -224,13 +225,21 @@ class Picker(BasePicker):
         self._item['modifiers'] = [None] * 5
         self.accept()
 
-    def pick_item(self, items: Iterable, equipment: bool = False, modifiers: dict = {}):
+    def pick_item(
+            self, items: Iterable, button_pos: QPoint | None, equipment: bool = False,
+            modifiers: dict = {}):
         """
         Executes picker, returns selected item. Returns None when picker is closed without saving.
         """
         window = self.parentWidget()
-        window_size = (window.width() * 0.2, window.height() * 0.9)
-        window_position = (window.x() + window_size[0] / 4, window.y() + window_size[1] / 18)
+        if button_pos is None:
+            window_size = (window.width() * 0.2, window.height() * 0.9)
+            window_position = (window.x() + window_size[0] / 4, window.y() + window_size[1] / 18)
+        else:
+            if button_pos.y() > window.y() + window.frameGeometry().height() * 0.5:
+                button_pos.setY(window.y() + window.frameGeometry().height() * 0.5)
+            window_size = (window.width() * 0.2, (window.height() - button_pos.y()) * 0.95)
+            window_position = (button_pos.x() - window_size[0] * 1.05, button_pos.y())
         self._result = None
         self.setFixedSize(*window_size)
         self.move(*window_position)
@@ -245,6 +254,7 @@ class Picker(BasePicker):
             self._prop_frame.show()
         else:
             self._prop_frame.hide()
+        self._search_bar.setFocus()
         action = self.exec()
         if action == 1 and self._item['item'] != '':
             self._result = {
@@ -265,13 +275,21 @@ class Picker(BasePicker):
         return self._result
 
     def mousePressEvent(self, event: QMouseEvent):
-        self.start_pos = event.globalPosition().toPoint()
+        pr = self._prop_frame.rect()
+        pr.moveTopLeft(self._prop_frame.pos())
+        if pr.contains(event.pos()):
+            self.start_pos = None
+        else:
+            self.start_pos = event.globalPosition().toPoint()
         event.accept()
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        pos_delta = QPoint(event.globalPosition().toPoint() - self.start_pos)
-        self.move(self.x() + pos_delta.x(), self.y() + pos_delta.y())
-        self.start_pos = event.globalPosition().toPoint()
+        pr = self._prop_frame.rect()
+        pr.moveTopLeft(self._prop_frame.pos())
+        if self.start_pos is not None and not pr.contains(event.pos()):
+            pos_delta = QPoint(event.globalPosition().toPoint() - self.start_pos)
+            self.move(self.x() + pos_delta.x(), self.y() + pos_delta.y())
+            self.start_pos = event.globalPosition().toPoint()
         event.accept()
 
 
