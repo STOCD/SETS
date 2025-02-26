@@ -56,10 +56,10 @@ def md_equipment_table(
             if item == '':
                 section[-1] += [''] * (extra_cols + 1)
             else:
-                section[i].append(
+                section[-1].append(
                         f"[{item['item']} {item['mark']} {''.join(notempty(item['modifiers']))}]"
                         f"({wiki_url(self.cache.equipment[key][item['item']]['Page'])})")
-                section[i] += [''] * extra_cols
+                section[-1] += [''] * extra_cols
         section.append(['--------------', '--------------'] + [''] * extra_cols)
     return section
 
@@ -188,6 +188,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         equip_table += md_equipment_table(
                 self, 'space', 'engines', 'Impulse Engines', single_line=True)
         equip_table += md_equipment_table(self, 'space', 'core', 'Warp', single_line=True)
+        equip_table += md_equipment_table(self, 'space', 'shield', 'Shield', single_line=True)
         equip_table += md_equipment_table(self, 'space', 'devices', 'Devices')
         if self.build['space']['experimental'][0]:
             equip_table += md_equipment_table(
