@@ -150,9 +150,11 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
     subhead_s = self.theme['tooltip']['equipment_subhead']
     who_s = self.theme['tooltip']['equipment_who']
     for item in equipment_cargo_data:
-        if item['type'] in equipment_types and not (
-                item['name'].startswith('Hangar - Advanced')
-                or item['name'].startswith('Hangar - Elite')):
+        if item['type'] in equipment_types:
+            if 'Valor' not in item['name'] and (
+                    item['name'].startswith('Hangar - Advanced')
+                    or item['name'].startswith('Hangar - Elite')):
+                continue
             name = sanitize_equipment_name(item['name'])
             self.cache.equipment[EQUIPMENT_TYPES[item['type']]][name] = {
                 'Page': item['Page'],
