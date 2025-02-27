@@ -54,7 +54,7 @@ TRAYSKILL_QUERY = (
 )
 MODIFIER_QUERY = (
     WIKI_URL + 'Special:CargoExport?tables=Modifiers&fields=_pageName,modifier,type,stats,'
-    'available,isunique,info&format=json&limit=1000'
+    'available,isunique,isepic,info&format=json&limit=1000'
 )
 
 EQUIPMENT_TYPES = {

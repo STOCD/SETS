@@ -229,12 +229,12 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
             modifier['available'] = list()
         for mod_type in modifier['type']:
             try:
-                epic = True if modifier['info'] == 'Epic Modifier' else False
+                epic = bool(modifier['isepic'])
                 self.cache.modifiers[EQUIPMENT_TYPES[mod_type]][modifier['modifier']] = {
                     'stats': modifier['stats'],
                     'available': modifier['available'],
                     'epic': epic,
-                    'isunique': False if epic else bool(modifier['isunique'])
+                    'isunique': False if epic else bool(modifier['isunique']),
                 }
             except KeyError:
                 pass
