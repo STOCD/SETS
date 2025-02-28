@@ -241,6 +241,9 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
     self.cache.modifiers['fore_weapons'].update(self.cache.modifiers['ship_weapon'])
     self.cache.modifiers['aft_weapons'].update(self.cache.modifiers['ship_weapon'])
     del self.cache.modifiers['ship_weapon']
+    self.cache.modifiers['uni_consoles'].update(self.cache.modifiers['sci_consoles'])
+    self.cache.modifiers['uni_consoles'].update(self.cache.modifiers['eng_consoles'])
+    self.cache.modifiers['uni_consoles'].update(self.cache.modifiers['tac_consoles'])
     store_to_cache(self, self.cache.modifiers, 'modifiers.json')
 
     threaded_worker.update_splash.emit('Loading: Duty Officers')

@@ -233,6 +233,11 @@ def picker(
     if new_item is not None:
         widget_storage = self.widgets.build[environment]
         if equipment:
+            if 'consoles' in build_key:
+                item_type = EQUIPMENT_TYPES[self.cache.equipment[build_key]['type']]
+                for i, mod in enumerate(new_item['modifiers']):
+                    if mod not in self.cache.modifiers[item_type]:
+                        new_item['modifiers'][i] = ''
             slot_equipment_item(self, new_item, environment, build_key, build_subkey)
         else:
             if boff_id is None:
@@ -600,7 +605,11 @@ def edit_equipment_item(self):
     """
     slot = self.context_menu.clicked_slot
     item = self.build[slot.environment][slot.type][slot.index]
-    modifiers = self.cache.modifiers[slot.type]
+    if slot.type == 'fore_weapons' or slot.type == 'aft_weapons':
+        item_type = slot.type
+    else:
+        item_type = EQUIPMENT_TYPES[self.cache.equipment[slot.type][item['item']]['type']]
+    modifiers = self.cache.modifiers[item_type]
     new_item = self.edit_window.edit_item(item, modifiers)
     if new_item is not None:
         slot_equipment_item(self, new_item, slot.environment, slot.type, slot.index)

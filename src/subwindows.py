@@ -23,7 +23,7 @@ class BasePicker(QDialog):
             'item': '',
             'rarity': 'Common',
             'mark': '',
-            'modifiers': [None] * 5
+            'modifiers': [''] * 5
         }
 
     def insert_modifiers(self, modifiers: dict = {}):
@@ -83,8 +83,9 @@ class BasePicker(QDialog):
         for i in range(RARITIES[new_rarity]):
             self._mod_combos[i].setEnabled(True)
         for i in range(RARITIES[new_rarity], 5):
+            self._mod_combos[i].setCurrentText('')
             self._mod_combos[i].setEnabled(False)
-            self._item['modifiers'][i] = None
+            self._item['modifiers'][i] = ''
 
     def modifier_callback(self, new_mod_index: int, mod_num: int):
         """
@@ -222,7 +223,6 @@ class Picker(BasePicker):
         """
         new_item = str(new_index.data(Qt.ItemDataRole.DisplayRole))
         self._item['item'] = new_item
-        self._item['modifiers'] = [None] * 5
         self.accept()
 
     def pick_item(
@@ -414,7 +414,7 @@ class ItemEditor(BasePicker):
         mod_layout = GridLayout(spacing=csp)
         self._mod_combos = [None] * 5
         for i in range(4):
-            mod_combo = create_combo_box(sets, style_override={'font': '@font'}, editable=True)
+            mod_combo = create_combo_box(sets, style_override={'font': '@font'}, editable=True, size_policy=SMINMAX)
             mod_combo.currentIndexChanged.connect(lambda mod, i=i: self.modifier_callback(mod, i))
             self._mod_combos[i] = mod_combo
             mod_layout.addWidget(mod_combo, i // 2, i % 2)
