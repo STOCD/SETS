@@ -228,9 +228,10 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
         except (IndexError, TypeError):
             modifier['available'] = list()
         for mod_type in modifier['type']:
+            mod_name = modifier['modifier'].replace('&gt;', '>')
             try:
                 epic = bool(modifier['isepic'])
-                self.cache.modifiers[EQUIPMENT_TYPES[mod_type]][modifier['modifier']] = {
+                self.cache.modifiers[EQUIPMENT_TYPES[mod_type]][mod_name] = {
                     'stats': modifier['stats'],
                     'available': modifier['available'],
                     'epic': epic,

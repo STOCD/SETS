@@ -32,13 +32,13 @@ class BasePicker(QDialog):
         """
         self._modifiers = modifiers
         self._mod_combos[0].clear()
-        self._mod_combos[0].addItems(self.unique_mods(modifiers))
+        self._mod_combos[0].addItems(self.not_epic_mods(modifiers))
         self._mod_combos[1].clear()
-        self._mod_combos[1].addItems(self.standard_mods(modifiers))
+        self._mod_combos[1].addItems(self.not_epic_mods(modifiers))
         self._mod_combos[2].clear()
-        self._mod_combos[2].addItems(self.standard_mods(modifiers))
+        self._mod_combos[2].addItems(self.not_epic_mods(modifiers))
         self._mod_combos[3].clear()
-        self._mod_combos[3].addItems(self.standard_mods(modifiers))
+        self._mod_combos[3].addItems(self.not_epic_mods(modifiers))
         self._mod_combos[4].clear()
         self._mod_combos[4].addItems(self.epic_mods(modifiers))
 
@@ -58,6 +58,15 @@ class BasePicker(QDialog):
         yield ''
         for mod, details in modifiers.items():
             if not details['epic'] and not details['isunique']:
+                yield mod
+
+    def not_epic_mods(self, modifiers: dict = {}) -> Iterator[str]:
+        """
+        yields mods for first to fourth mod slot from modifier list
+        """
+        yield ''
+        for mod, details in modifiers.items():
+            if not details['epic']:
                 yield mod
 
     def epic_mods(self, modifiers: dict = {}) -> Iterator[str]:
@@ -414,7 +423,8 @@ class ItemEditor(BasePicker):
         mod_layout = GridLayout(spacing=csp)
         self._mod_combos = [None] * 5
         for i in range(4):
-            mod_combo = create_combo_box(sets, style_override={'font': '@font'}, editable=True, size_policy=SMINMAX)
+            mod_combo = create_combo_box(
+                    sets, style_override={'font': '@font'}, editable=True, size_policy=SMINMAX)
             mod_combo.currentIndexChanged.connect(lambda mod, i=i: self.modifier_callback(mod, i))
             self._mod_combos[i] = mod_combo
             mod_layout.addWidget(mod_combo, i // 2, i % 2)
@@ -433,7 +443,7 @@ class ItemEditor(BasePicker):
         save_button.setSizePolicy(SMINMAX)
         control_layout.addWidget(save_button)
         layout.addLayout(control_layout)
-        content_frame = create_frame(sets)
+        content_frame = create_frame(sets, size_policy=SMINMIN)
         content_frame.setLayout(layout)
         margin = sets.theme['defaults']['isp'] * ui_scale
         main_layout = VBoxLayout(margins=margin)
