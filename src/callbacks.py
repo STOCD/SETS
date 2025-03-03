@@ -234,9 +234,9 @@ def picker(
         widget_storage = self.widgets.build[environment]
         if equipment:
             if 'consoles' in build_key:
-                item_type = EQUIPMENT_TYPES[self.cache.equipment[build_key]['type']]
+                type_ = EQUIPMENT_TYPES[self.cache.equipment[build_key][new_item['item']]['type']]
                 for i, mod in enumerate(new_item['modifiers']):
-                    if mod not in self.cache.modifiers[item_type]:
+                    if mod not in self.cache.modifiers[type_]:
                         new_item['modifiers'][i] = ''
             slot_equipment_item(self, new_item, environment, build_key, build_subkey)
         else:
