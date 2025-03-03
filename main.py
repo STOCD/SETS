@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.03b030'
+    version = '2025.03b031'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -175,6 +175,13 @@ class Launcher():
             'border-style': 'solid',
             'border-width': '@bw',
             'border-color': '@bc',
+        },
+        # build item button
+        'item_dark': {
+            'background-color': '@bg',
+            'border-style': 'solid',
+            'border-width': '@bw',
+            'border-color': '@lbg',
         },
         # checkbox
         'checkbox': {

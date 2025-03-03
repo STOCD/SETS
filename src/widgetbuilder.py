@@ -394,6 +394,7 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
             widget_storage['traits'][i] = button
     # Last button is for innate trait and should not be clickable
     button.setEnabled(False)
+    button.setStyleSheet(get_style_class(self, 'ItemButton', 'item_dark'))
     return layout
 
 
