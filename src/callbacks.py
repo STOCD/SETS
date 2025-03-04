@@ -263,6 +263,8 @@ def boff_profession_callback_space(self, boff_id: int, new_spec: str):
         return
     if ' / ' in new_spec:
         profession, specialization = new_spec.split(' / ')
+        if specialization == 'Temporal Operative':
+            specialization = 'Temporal'
         for ability_num, ability in enumerate(self.build['space']['boffs'][boff_id]):
             if ability is not None and ability != '':
                 # Lt. Commander rank contains all abilities
