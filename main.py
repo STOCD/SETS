@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.03b250'
+    version = '2025.03b251'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -171,17 +171,16 @@ class Launcher():
         },
         # build item button
         'item': {
-            'background-color': '@mbg',
-            'border-style': 'solid',
-            'border-width': '@bw',
-            'border-color': '@bc',
+            'background-color': '#242424',
+            'border-width': 1,
+            'border-color': '#888888',
+            'border-highlight-color': '#ffd700'
         },
         # build item button
         'item_dark': {
-            'background-color': '@bg',
-            'border-style': 'solid',
-            'border-width': '@bw',
-            'border-color': '@lbg',
+            'background-color': '#1a1a1a',
+            'border-width': 1,
+            'border-color': '#404040',
         },
         # checkbox
         'checkbox': {

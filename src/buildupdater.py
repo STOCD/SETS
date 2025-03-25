@@ -125,10 +125,12 @@ def load_skill_pages(self):
                 self.widgets.build['space_skills'][career], self.build['space_skills'][career])):
             if enable:
                 button.set_overlay(self.cache.overlays.check)
+                button.highlight = True
                 self.cache.skills[f'space_points_{career}'] += 1
                 self.cache.skills['space_points_rank'][int(skill_id / 6)] += 1
             else:
                 button.clear_overlay()
+                button.highlight = False
     self.cache.skills['space_points_total'] = sum(self.cache.skills['space_points_rank'])
     for career in ('eng', 'sci', 'tac'):
         skill_points = self.cache.skills[f'space_points_{career}']
@@ -150,9 +152,11 @@ def load_skill_pages(self):
         for enable, skill_button in zip(skill_data, skill_buttons):
             if enable:
                 skill_button.set_overlay(self.cache.overlays.check)
+                skill_button.highlight = True
                 self.cache.skills['ground_points_total'] += 1
             else:
                 skill_button.clear_overlay()
+                skill_button.highlight = False
     self.widgets.skill_count_ground.setText(str(self.cache.skills['ground_points_total']))
     for i in range(self.cache.skills['ground_points_total']):
         self.widgets.skill_bonus_bars['ground'][i].setChecked(True)

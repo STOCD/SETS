@@ -664,6 +664,7 @@ def toggle_space_skill(self, current_state: bool, career: str, skill_id: int):
     """
     if current_state:
         self.widgets.build['space_skills'][career][skill_id].clear_overlay()
+        self.widgets.build['space_skills'][career][skill_id].highlight = False
         self.build['space_skills'][career][skill_id] = False
         self.cache.skills['space_points_total'] -= 1
         self.cache.skills[f'space_points_{career}'] -= 1
@@ -680,6 +681,7 @@ def toggle_space_skill(self, current_state: bool, career: str, skill_id: int):
             set_skill_unlock_space(self, career, 4, 0, segment_index)
     else:
         self.widgets.build['space_skills'][career][skill_id].set_overlay(self.cache.overlays.check)
+        self.widgets.build['space_skills'][career][skill_id].highlight = True
         self.build['space_skills'][career][skill_id] = True
         self.cache.skills['space_points_total'] += 1
         self.cache.skills[f'space_points_{career}'] += 1
@@ -743,6 +745,7 @@ def toggle_ground_skill(self, current_state: bool, skill_group: int, skill_id: i
     """
     if current_state:
         self.widgets.build['ground_skills'][skill_group][skill_id].clear_overlay()
+        self.widgets.build['ground_skills'][skill_group][skill_id].highlight = False
         self.build['ground_skills'][skill_group][skill_id] = False
         self.cache.skills['ground_points_total'] -= 1
         segment_index = self.cache.skills['ground_points_total']
@@ -753,6 +756,7 @@ def toggle_ground_skill(self, current_state: bool, skill_group: int, skill_id: i
     else:
         self.widgets.build['ground_skills'][skill_group][skill_id].set_overlay(
                 self.cache.overlays.check)
+        self.widgets.build['ground_skills'][skill_group][skill_id].highlight = True
         self.build['ground_skills'][skill_group][skill_id] = True
         self.cache.skills['ground_points_total'] += 1
         segment_index = self.cache.skills['ground_points_total'] - 1

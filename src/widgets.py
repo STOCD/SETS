@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QCursor, QEnterEvent, QImage, QMouseEvent, QPainter, QPaintEvent
+from PySide6.QtGui import QBrush, QColor, QCursor, QEnterEvent, QImage, QMouseEvent, QPainter, QPen
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
         QPlainTextEdit, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
@@ -283,23 +283,19 @@ class ItemButton(QFrame):
     rightclicked = Signal(QMouseEvent)
 
     def __init__(
-            self, width=49, height=64, stylesheet: str = '',
+            self, width=49, height=64, style: dict = {},
             tooltip_label: QLabel = '', tooltip_frame: QFrame = '', frame_padding: int = 0, *args,
             **kwargs):
         super().__init__(*args, *kwargs)
         size_policy = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         size_policy.setRetainSizeWhenHidden(True)
         self.setSizePolicy(size_policy)
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        self._image_space = ItemImage(self, width, height)
-        self._image_space.setFixedWidth(width)
-        self._image_space.setFixedHeight(height)
-        layout.addWidget(self._image_space)
-        self.setLayout(layout)
         self._base: QImage = None
         self._overlay: QImage = None
-        self.setStyleSheet(stylesheet)
+        self._border_width = style['border-width']
+        self._pen = QPen(QColor(style['border-color']), self._border_width)
+        self._brush = QBrush(style['background-color'])
+        self._highlight_color = style.get('border-highlight-color', style['border-color'])
         self._tooltip_label = tooltip_label
         self._tooltip_label.setAlignment(ATOP)
         self._tooltip_label.setWordWrap(True)
@@ -307,6 +303,10 @@ class ItemButton(QFrame):
         self._tooltip_frame.setWindowFlags(Qt.WindowType.ToolTip)
         self._total_padding = frame_padding * 2
         self.skill_image_name = ''
+        self._width = width
+        self._height = height
+        self._highlight = False
+        self.setFixedSize(width + 2 * self._border_width, height + 2 * self._border_width)
 
     @property
     def tooltip(self):
@@ -315,6 +315,15 @@ class ItemButton(QFrame):
     @tooltip.setter
     def tooltip(self, new_tooltip):
         self._tooltip_label.setText(new_tooltip)
+
+    @property
+    def highlight(self):
+        return self._highlight
+
+    @highlight.setter
+    def highlight(self, new_highlight_state: bool):
+        self._highlight = new_highlight_state
+        self.update()
 
     def enterEvent(self, event: QEnterEvent) -> None:
         if self.tooltip != '':
@@ -349,57 +358,62 @@ class ItemButton(QFrame):
 
     def set_item(self, image: QImage):
         self._base = image
-        self._image_space.update()
+        self.update()
 
     def set_overlay(self, image: QImage):
         self._overlay = image
-        self._image_space.update()
+        self.update()
 
     def set_item_overlay(self, item_image: QImage, overlay_image: QImage):
         self._base = item_image
         self._overlay = overlay_image
-        self._image_space.update()
+        self.update()
 
     def set_item_full(self, item_image: QImage, overlay_image: QImage, tooltip: str):
         self._base = item_image
         self._overlay = overlay_image
         self._tooltip_label.setText(tooltip)
-        self._image_space.update()
+        self.update()
 
     def clear(self):
         self._base = None
         self._overlay = None
         self._tooltip_label.setText('')
-        self._image_space.update()
+        self.update()
 
     def clear_item(self):
         self._base = None
-        self._image_space.update()
+        self.update()
 
     def clear_overlay(self):
         self._overlay = None
-        self._image_space.update()
+        self.update()
 
     def force_tooltip_update(self):
         if self.underMouse():
             self._tooltip_frame.hide()
             self._tooltip_frame.show()
 
-
-class ItemImage(QWidget):
-    def __init__(self, button: ItemButton, width, height, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._button = button
-        self._rect = QRect(0, 0, width, height)
-        self.setFixedSize(width, height)
+    def set_style(self, style):
+        self._border_width = style['border-width']
+        self._pen = QPen(QColor(style['border-color']), self._border_width)
+        self._brush = QBrush(style['background-color'])
+        self._highlight_color = style.get('border-highlight-color', style['border-color'])
 
     def paintEvent(self, event):
         painter = QPainter(self)
+        painter.setBrush(self._brush)
+        painter.setPen(self._pen)
+        if self._highlight:
+            painter.setPen(QPen(QColor(self._highlight_color), self._border_width))
+        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-        if self._button._base is not None:
-            painter.drawImage(self._rect, self._button._base)
-        if self._button._overlay is not None:
-            painter.drawImage(self._rect, self._button._overlay)
+        image_rect = self.rect().adjusted(
+                self._border_width, self._border_width, -self._border_width, -self._border_width)
+        if self._base is not None:
+            painter.drawImage(image_rect, self._base)
+        if self._overlay is not None:
+            painter.drawImage(image_rect, self._overlay)
 
 
 class GridLayout(QGridLayout):

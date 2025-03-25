@@ -131,9 +131,12 @@ class Picker(BasePicker):
         spacing = sets.theme['defaults']['isp'] * ui_scale
         layout = VBoxLayout(margins=(spacing, 0, spacing, spacing), spacing=0)
         top_layout = HBoxLayout(spacing=spacing)
-        self._item_button = create_item_button(
-                sets, style_override={'margin-top': '@isp', 'margin-bottom': '@isp'})
-        top_layout.addWidget(self._item_button, alignment=ALEFT)
+        button_layout = VBoxLayout(margins=(0, spacing, 0, spacing))
+        button_frame = create_frame(sets, style_override={'background': 'none'})
+        self._item_button = create_item_button(sets)
+        button_layout.addWidget(self._item_button)
+        button_frame.setLayout(button_layout)
+        top_layout.addWidget(button_frame, alignment=ALEFT)
         self._item_label = create_label(
                 sets, '<Item Name>', 'label_subhead', style_override={'margin-bottom': 0})
         self._item_label.setWordWrap(True)

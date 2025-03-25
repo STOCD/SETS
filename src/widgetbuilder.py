@@ -247,7 +247,7 @@ def create_item_button(self, style_override: dict = {}) -> ItemButton:
     layout.addWidget(label, alignment=ATOP)
     frame.setLayout(layout)
     button = ItemButton(
-            self.box_width, self.box_height, get_style(self, 'item', style_override), label, frame,
+            self.box_width, self.box_height, self.theme['item'], label, frame,
             margin + self.theme['defaults']['bw'] * self.config['ui_scale'])
     return button
 
@@ -394,7 +394,7 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
             widget_storage['traits'][i] = button
     # Last button is for innate trait and should not be clickable
     button.setEnabled(False)
-    button.setStyleSheet(get_style_class(self, 'ItemButton', 'item_dark'))
+    button.set_style(self.theme['item_dark'])
     return layout
 
 
