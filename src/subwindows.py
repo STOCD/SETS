@@ -247,7 +247,10 @@ class Picker(BasePicker):
         else:
             if button_pos.y() > window.y() + window.frameGeometry().height() * 0.5:
                 button_pos.setY(window.y() + window.frameGeometry().height() * 0.5)
-            window_size = (window.width() * 0.2, (window.height() - button_pos.y()) * 0.95)
+            window_size = (
+                window.width() * 0.2,
+                (window.height() - button_pos.y() + window.y()) * 0.95
+            )
             window_position = (button_pos.x() - window_size[0] * 1.05, button_pos.y())
         self._result = None
         self.setFixedSize(*window_size)
