@@ -1,23 +1,13 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
-
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "SETS"
-version = "2023.4b192"
-authors = [
-  { name="Mara 'Sizer' Morrigan", email="mara.mos714@gmail.com" },
-  { name="Stephen Hill", email="stephen@zosimple.net" },
-  { name="Liraal2" },
-  { name="Serious Table" },
-  { name="Shinga" },
-]
 description = "A Star Trek Online build tool in Python"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
-keywords = ["star trek online"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -27,18 +17,34 @@ classifiers = [
     "Development Status :: 4 - Beta"
 ]
 dependencies = [
-  "Pillow>=8.3.1",
-  "requests-html==0.10.0",
+  "PySide6",
   "requests",
   "numpy",
-  "tkmacosx; sys_platform == 'darwin'"
+  "requests_html",
+  "lxml_html_clean"
 ]
-
+dynamic = ["version"]
 
 [project.urls]
-homepage = "https://stobuilds.com/SETS/"
+homepage = "https://stobuilds.com/apps/sets"
 repository = "https://github.com/STOCD/SETS"
 
+[tool.hatch.build.targets.wheel]
+packages = ["."]
 
-[tool.setuptools_scm]
-write_to = "SETS/_version.py"
+[project.scripts]
+sets = "main:Launcher.launch"
+
+[tool.hatch.version]
+path = "main.py"
+pattern = "\\s*version = '(?P<version>.*)'"
+
+[tool.cxfreeze]
+executables = [
+    { script = "main.py", base = "gui", icon = "local/icon", target_name = "SETS" }
+]
+
+[tool.cxfreeze.build_exe]
+include_files = ["local", "LICENSE", "README.md"]
+packages = ["PySide6", "requests", "numpy", "requests_html", "lxml_html_clean"]
+optimize = 2
