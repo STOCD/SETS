@@ -178,7 +178,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
             md += f"## Build Description\n\n{self.build['space']['ship_desc']}\n\n\n"
 
         md += '## Ship Equipment\n\n'
-        equip_table = [['****Basic Information****', '****Component****', '****Notes****']]
+        equip_table = [['**Basic Information**', '**Component**', '**Notes**']]
         equip_table += md_equipment_table(self, 'space', 'fore_weapons', 'Fore Weapons')
         equip_table += md_equipment_table(self, 'space', 'aft_weapons', 'Aft Weapons')
         equip_table += md_equipment_table(self, 'space', 'deflector', 'Deflector', single_line=True)
@@ -202,7 +202,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         md += create_md_table(self, equip_table)
 
         md += '\n\n\n## Bridge Officer Stations\n\n'
-        boff_table = [['****Profession****', '****Power****', '****Notes****']]
+        boff_table = [['**Profession**', '**Power**', '**Notes**']]
         for specs, station in zip(self.build['space']['boff_specs'], self.build['space']['boffs']):
             if any(specs):
                 station_name = BOFF_RANKS_MD[station.count(None)] + ' ' + specs[0]
@@ -212,28 +212,28 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         md += create_md_table(self, boff_table)
 
         md += '\n\n\n## Traits\n\n'
-        trait_table = [['****Starship Traits****', '****Notes****']]
+        trait_table = [['**Starship Traits**', '**Notes**']]
         for trait in notempty(self.build['space']['starship_traits']):
             trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
         md += create_md_table(self, trait_table)
         md += '\n\n&#x200B;\n\n'
-        trait_table = [['****Personal Space Traits****', '****Notes****']]
+        trait_table = [['**Personal Space Traits**', '**Notes**']]
         for trait in notempty(self.build['space']['traits']):
             trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
         md += create_md_table(self, trait_table)
         md += '\n\n&#x200B;\n\n'
-        trait_table = [['****Space Reputation Traits****', '****Notes****']]
+        trait_table = [['**Space Reputation Traits**', '**Notes**']]
         for trait in notempty(self.build['space']['rep_traits']):
             trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
         md += create_md_table(self, trait_table)
         md += '\n\n&#x200B;\n\n'
-        trait_table = [['****Active Space Reputation Traits****', '****Notes****']]
+        trait_table = [['**Active Space Reputation Traits**', '**Notes**']]
         for trait in notempty(self.build['space']['active_rep_traits']):
             trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
         md += create_md_table(self, trait_table)
 
         md += '\n\n\n## Active Space Duty Officers\n\n'
-        doff_table = [['****Specialization****', '****Power****', '****Notes****']]
+        doff_table = [['**Specialization**', '**Power**', '**Notes**']]
         for spec, variant in zip(
                 self.build['space']['doffs_spec'], self.build['space']['doffs_variant']):
             if spec != '':
@@ -254,7 +254,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
             md += f"## Build Description\n\n{self.build['ground']['ground_desc']}\n\n\n"
 
         md += '## Personal Equipment\n\n'
-        equip_table = [['&nbsp;', '****Component****', '****Notes****']]
+        equip_table = [['&nbsp;', '**Component**', '**Notes**']]
         equip_table += md_equipment_table(self, 'ground', 'kit', 'Kit Frame', single_line=True)
         equip_table += md_equipment_table(self, 'ground', 'kit_modules', 'Kit Modules')
         equip_table += md_equipment_table(self, 'ground', 'armor', 'Body Armor', single_line=True)
@@ -266,23 +266,23 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         md += create_md_table(self, equip_table)
 
         md += '\n\n\n## Traits\n\n'
-        trait_table = [['****Personal Ground Traits****', '****Notes****']]
+        trait_table = [['**Personal Ground Traits**', '**Notes**']]
         for trait in notempty(self.build['ground']['traits']):
             trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
         md += create_md_table(self, trait_table)
         md += '\n\n&#x200B;\n\n'
-        trait_table = [['****Ground Reputation Traits****', '****Notes****']]
+        trait_table = [['**Ground Reputation Traits**', '**Notes**']]
         for trait in notempty(self.build['ground']['rep_traits']):
             trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
         md += create_md_table(self, trait_table)
         md += '\n\n&#x200B;\n\n'
-        trait_table = [['****Active Ground Reputation Traits****', '****Notes****']]
+        trait_table = [['**Active Ground Reputation Traits**', '**Notes**']]
         for trait in notempty(self.build['ground']['active_rep_traits']):
             trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
         md += create_md_table(self, trait_table)
 
         md += '\n\n\n## Active Ground Duty Officers\n\n'
-        doff_table = [['****Specialization****', '****Power****', '****Notes****']]
+        doff_table = [['**Specialization**', '**Power**', '**Notes**']]
         for spec, variant in zip(
                 self.build['ground']['doffs_spec'], self.build['ground']['doffs_variant']):
             if spec != '':
@@ -290,7 +290,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         md += create_md_table(self, doff_table)
 
         md += '\n\n\n## Away Team\n\n'
-        boff_table = [['****Profession****', '****Power****', '****Notes****']]
+        boff_table = [['**Profession**', '**Power**', '**Notes**']]
         for profession, specialization, station in zip(
                 self.build['ground']['boff_profs'], self.build['ground']['boff_specs'],
                 self.build['ground']['boffs']):
@@ -301,9 +301,9 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
     elif environment == 'space' and type_ == 'skills':
         md = '# Space Skills\n\n'
         skill_table = [[
-            '****Engineering****', '', '',
-            '****Science****', '', '',
-            '****Tactical****', '&nbsp;'
+            '**Engineering**', '', '',
+            '**Science**', '', '',
+            '**Tactical**', '&nbsp;'
         ]]
         offset = 0
         for rank_skills in self.cache.skills['space']:
@@ -314,7 +314,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         md += '\n\n&#x200B;\n\n'
 
         unlock_table = [
-            [f"****[Unlocks]({wiki_url('Skill#Space_2')})****"] + [''] * 7 + ['&nbsp;']
+            [f"**[Unlocks]({wiki_url('Skill#Space_2')})**"] + [''] * 7 + ['&nbsp;']
         ]
         for career, career_name in CAREER_ABBR.items():
             row = [f"**{career_name}**"]
@@ -361,7 +361,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         return md
     elif environment == 'ground' and type_ == 'skills':
         md = '# Ground Skills\n\n'
-        skill_table = [['****Skill****', '**I**', '**II**']]
+        skill_table = [['**Skill**', '**I**', '**II**']]
         id_offset = 0
         for skill in self.cache.skills['ground']:
             row = [f"[{skill['nodes'][0]['name']}]({skill['link']})"]
@@ -381,7 +381,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         md += create_md_table(self, skill_table, alignment=[':--', ':-:', ':-:'])
         md += '\n\n&#x200B;\n\n'
 
-        unlock_table = [['', f"****[Unlocks]({wiki_url('Skill#Ground_2')})****", '']]
+        unlock_table = [['', f"**[Unlocks]({wiki_url('Skill#Ground_2')})**", '']]
         for unlock, unlock_state in zip(
                 self.cache.skills['ground_unlocks'], self.build['skill_unlocks']['ground']):
             if unlock_state is not None:
