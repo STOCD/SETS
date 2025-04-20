@@ -646,6 +646,7 @@ def clear_ship(self):
     self.widgets.ship['button'].setText('<Pick Ship>')
     self.build['space']['ship'] = '<Pick Ship>'
     self.widgets.ship['tier'].clear()
+    self.widgets.ship['dc'].hide()
     self.widgets.ship['name'].setText('')
     self.build['space']['ship_name'] = ''
     self.widgets.ship['desc'].setPlainText('')
