@@ -26,6 +26,7 @@ class WidgetStorage():
             'image': ShipImage,
             'button': ShipButton,
             'tier': QComboBox,
+            'dc': TooltipLabel,
             'name': QLineEdit,
             'desc': QPlainTextEdit
         }
@@ -623,3 +624,23 @@ class notempty():
 
     def __iter__(self):
         return self._gen
+
+
+class TooltipLabel(QLabel):
+    """Label with tooltip"""
+    def __init__(self, text: str, tooltip: QLabel):
+        super().__init__(text)
+        self._tooltip = tooltip
+        self._tooltip.setWindowFlags(Qt.WindowType.ToolTip)
+
+    def enterEvent(self, event: QEnterEvent) -> None:
+        position = self.parentWidget().mapToGlobal(self.geometry().bottomLeft())
+        position.setY(position.y() + 1)
+        self._tooltip.move(position)
+        self._tooltip.updateGeometry()
+        self._tooltip.show()
+        event.accept()
+
+    def leaveEvent(self, event: QEvent) -> None:
+        self._tooltip.hide()
+        event.accept()

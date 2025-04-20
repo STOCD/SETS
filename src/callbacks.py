@@ -331,6 +331,10 @@ def select_ship(self):
         self.widgets.ship['tier'].addItem(f'T{tier}')
     self.build['space']['ship'] = new_ship
     self.build['space']['tier'] = f'T{tier}'
+    if ship_data['equipcannons'] == 'yes':
+        self.widgets.ship['dc'].show()
+    else:
+        self.widgets.ship['dc'].hide()
     align_space_frame(self, ship_data, clear=True)
     self.building = False
     self.autosave()

@@ -12,8 +12,8 @@ from .iofunc import (
         create_folder, delete_folder_contents, get_asset_path, load_icon, open_url, store_json)
 from .subwindows import ExportWindow, ItemEditor, Picker, ShipSelector
 from .widgets import (
-    Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, VBoxLayout,
-    WidgetStorage)
+    Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, TooltipLabel,
+    VBoxLayout, WidgetStorage)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 from signal import signal, SIGINT, SIG_DFL
@@ -168,6 +168,7 @@ class SETS():
         self.cache.icons['clear'] = load_icon('clear.png', self.app_dir)
         self.cache.icons['edit'] = load_icon('edit.png', self.app_dir)
         self.cache.icons['link'] = load_icon('external_link.png', self.app_dir)
+        self.cache.icons['dual_cannons'] = load_icon('DC_icon.svg', self.app_dir).pixmap(16, 24.5)
         self.cache.icons['ground'] = load_icon('ground_icon.png', self.app_dir).pixmap(
                 self.box_width * 1.2, self.box_width * 1.2)
         self.cache.icons['tac'] = load_icon('tac_icon.png', self.app_dir).pixmap(
@@ -372,7 +373,7 @@ class SETS():
         ship_selector.setFont(self.theme_font(font_spec='@subhead'))
         ship_selector.clicked.connect(self.select_ship)
         self.widgets.ship['button'] = ship_selector
-        ship_layout.addWidget(ship_selector, 0, 0, 1, 3, alignment=ATOP)
+        ship_layout.addWidget(ship_selector, 0, 0, 1, 4, alignment=ATOP)
         tier_label = self.create_label('Ship Tier:')
         ship_layout.addWidget(tier_label, 1, 0)
         tier_combo = self.create_combo_box()
@@ -380,9 +381,17 @@ class SETS():
         tier_combo.setSizePolicy(SMAXMAX)
         self.widgets.ship['tier'] = tier_combo
         ship_layout.addWidget(tier_combo, 1, 1, alignment=ALEFT)
+        dc_tooltip = self.create_label('Can equip Dual Cannons', 'label_tooltip')
+        dc_label = TooltipLabel('', dc_tooltip)
+        dc_label.setPixmap(self.cache.icons['dual_cannons'])
+        dc_label_size_policy = dc_label.sizePolicy()
+        dc_label_size_policy.setRetainSizeWhenHidden(True)
+        dc_label.setSizePolicy(dc_label_size_policy)
+        self.widgets.ship['dc'] = dc_label
+        ship_layout.addWidget(dc_label, 1, 2, alignment=ARIGHT)
         info_button = self.create_button('Ship Info', style_override={'margin': 0})
         info_button.clicked.connect(self.ship_info_callback)
-        ship_layout.addWidget(info_button, 1, 2, alignment=ARIGHT)
+        ship_layout.addWidget(info_button, 1, 3, alignment=ARIGHT)
         name_label = self.create_label('Ship Name:')
         ship_layout.addWidget(name_label, 2, 0)
         name_entry = self.create_entry()
@@ -390,9 +399,9 @@ class SETS():
                 lambda: self.set_build_item(self.build['space'], 'ship_name', name_entry.text()))
         self.widgets.ship['name'] = name_entry
         name_entry.setSizePolicy(SMINMAX)
-        ship_layout.addWidget(name_entry, 2, 1, 1, 2)
+        ship_layout.addWidget(name_entry, 2, 1, 1, 3)
         desc_label = self.create_label('Build Description:')
-        ship_layout.addWidget(desc_label, 3, 0, 1, 3)
+        ship_layout.addWidget(desc_label, 3, 0, 1, 4)
         desc_edit = QPlainTextEdit()
         desc_edit.setSizePolicy(SMINMIN)
         desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
@@ -401,7 +410,7 @@ class SETS():
         desc_edit.textChanged.connect(lambda: self.set_build_item(
                 self.build['space'], 'ship_desc', desc_edit.toPlainText(), autosave=False))
         self.widgets.ship['desc'] = desc_edit
-        ship_layout.addWidget(desc_edit, 4, 0, 1, 3)
+        ship_layout.addWidget(desc_edit, 4, 0, 1, 4)
         ship_frame.setLayout(ship_layout)
         layout.addWidget(ship_frame, stretch=2)
         frame.setLayout(layout)

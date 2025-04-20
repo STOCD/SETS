@@ -20,6 +20,7 @@ def load_build(self):
         self.widgets.ship['button'].setText('<Pick Ship>')
         self.widgets.ship['tier'].clear()
         self.widgets.ship['image'].set_image(self.cache.empty_image)
+        self.widgets.ship['dc'].hide()
     else:
         self.widgets.ship['button'].setText(ship)
         ship_data = self.cache.ships[ship]
@@ -36,6 +37,10 @@ def load_build(self):
         else:
             self.widgets.ship['tier'].addItem(f'T{ship_tier}')
         self.widgets.ship['tier'].setCurrentText(tier)
+        if ship_data['equipcannons'] == 'yes':
+            self.widgets.ship['dc'].show()
+        else:
+            self.widgets.ship['dc'].hide()
     self.widgets.ship['name'].setText(self.build['space']['ship_name'])
     self.widgets.ship['desc'].setPlainText(self.build['space']['ship_desc'])
 

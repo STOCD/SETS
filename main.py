@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.04b180'
+    version = '2025.04b200'
     __version__ = '2.0'
 
     # holds the style of the app
@@ -326,6 +326,18 @@ class Launcher():
             'border-radius': '@br',
             # 'margin': 0,
             # 'padding': '@sep',
+        },
+        # tooltip for TooltipLabel
+        'label_tooltip': {
+            'color': '@fg',
+            'background-color': '@bg',
+            'border-color': '@lbg',
+            'border-radius': '@br',
+            'border-style': 'solid',
+            'border-width': '@bw',
+            'font': '@font',
+            'padding': 2,
+            'qproperty-indent': '0',  # disables auto-indent
         },
         # for formatting tooltip text, will contain css from tooltip_def
         'tooltip': {},
