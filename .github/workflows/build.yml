@@ -16,7 +16,7 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: "3.12"
-    - run: python3 -m pip install virtualenv cx_Freeze
+    - run: python3 -m pip install virtualenv cx-Freeze==8.0.0
     - run: python3 -m virtualenv venv
     - run: .\venv\Scripts\activate.bat
     - run: pip install .

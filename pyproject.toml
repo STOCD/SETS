@@ -10,7 +10,6 @@ requires-python = ">=3.11"
 license = {file = "LICENSE"}
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Natural Language :: English",
     "Topic :: Games/Entertainment",

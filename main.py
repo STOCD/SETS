@@ -6,7 +6,7 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.04b201'
+    version = '2025.04b220'
     __version__ = '2.0'
 
     # holds the style of the app
