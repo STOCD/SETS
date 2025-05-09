@@ -13,7 +13,7 @@ def create_md_table(self, table: list[list[str]], alignment: list = []) -> str:
     """
     text = '|'.join(table[0]) + '\n'
     if len(alignment) == 0:
-        text += '|'.join([':-'] * len(table[0])) + '\n'
+        text += '|'.join([':--'] * len(table[0])) + '\n'
     else:
         text += '|'.join(alignment) + '\n'
     for row in table[1:]:
