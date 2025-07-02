@@ -149,9 +149,13 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
     head_s = self.theme['tooltip']['equipment_head']
     subhead_s = self.theme['tooltip']['equipment_subhead']
     who_s = self.theme['tooltip']['equipment_who']
+    elite_hangar = {
+        'Hangar - Elite Federation Mission Scout Ships',
+        'Hangar - Elite Valor Fighters'
+    }
     for item in equipment_cargo_data:
         if item['type'] in equipment_types:
-            if 'Valor' not in item['name'] and (
+            if item['type'] == 'Hangar Bay' and item['name'] not in elite_hangar and (
                     item['name'].startswith('Hangar - Advanced')
                     or item['name'].startswith('Hangar - Elite')):
                 continue
