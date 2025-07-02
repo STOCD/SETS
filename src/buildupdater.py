@@ -257,6 +257,8 @@ def get_variable_slot_counts(self, ship_data: dict):
         tac_consoles = ship_data['consolestac']
         if 'Innovation Effects' in ship_data['abilities']:
             uni_consoles += 1
+        elif ship_data['name'] == 'Federation Intel Holoship':
+            uni_consoles += 1
         if '-X2' in self.build['space']['tier']:
             uni_consoles += 2
             starship_traits += 2
