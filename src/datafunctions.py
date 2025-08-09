@@ -185,7 +185,7 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
     subhead_s = self.theme['tooltip']['trait_subheader']
     for trait in trait_cargo_data:
         name = trait['name']
-        if trait['chartype'] == 'char' and name is not None:
+        if trait['type'] != 'doff' and trait['type'] != 'boff' and name is not None:
             if trait['type'] == 'reputation':
                 trait_type = 'rep'
             elif trait['type'] == 'activereputation':
@@ -201,7 +201,8 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
                             subhead_s, tags)
                 }
                 self.cache.images_set.add(name)
-            except KeyError:
+            # catch wrong values in trait['environment'] (cargo issue)
+            except (KeyError, AttributeError):
                 pass
     store_to_cache(self, self.cache.traits, 'traits.json')
 

@@ -544,13 +544,15 @@ def open_wiki_context(self):
         boff_id = self.context_menu.clicked_boff_station
         item = self.build[slot.environment][slot.type][boff_id][slot.index]
         if item is not None and item != '':
-            open_wiki_page(f"Ability: {item['item']}")
+            open_wiki_page(f"{item['item']}_(ability)")
         return
     item = self.build[slot.environment][slot.type][slot.index]
     if item is None or item == '':
         return
-    if 'traits' in slot.type:
-        open_wiki_page(f"Trait: {item['item']}")
+    if slot.type == 'starship_traits':
+        open_wiki_page(f"{item['item']}_(starship_trait)")
+    elif 'traits' in slot.type:
+        open_wiki_page(f"{item['item']}_({slot.environment}_trait)")
     else:
         open_wiki_page(f"{self.cache.equipment[slot.type][item['item']]['Page']}#{item['item']}")
 
