@@ -6,19 +6,8 @@ Build management and sharing tool for STO.
 Builds can be exported to a PNG or JSON file that can be opened by another person using SETS.
 
 ## Installation
-### Images library
-All installation methods require an images library containing the game icons. The app will download these automatically, but as this takes a very long time, it is recommended to download the newest compressed image library from the [release](https://github.com/STOCD/SETS/releases) page. Once downloaded this has to be decompressed and placed in into the `.config/images` folder. You might need to create a folder with the name `.config` manually. The folder structure should look like below:
-```
-SETS
- +- .config
- |  `- images
- |    `- <lots of images>
- +- SETS.exe / main.py
- +- ...
-```
-
 ### Executable for Windows
-Download the zipped app from the [release](https://github.com/STOCD/SETS/releases) page. Unzip it into a folder where you want your app to live. To speed up the image downloading process, obtain the images library as detailed above. Double-clicking `SETS.exe` will start the app.
+Download the zipped app from the [release](https://github.com/STOCD/SETS/releases) page. Unzip it into a folder where you want your app to live. To speed up the image downloading process, obtain the images library as detailed [below](#Images library). Double-clicking `SETS.exe` will start the app.
 
 You can create a desktop shortcut by rightclicking on `SETS.exe` and clicking on "Create shortcut" in the context menu. Then move the created shortcut to your desktop. To create a start menu entry, open the start menu folder by rightclicking on an arbitrary app in your start menu and clicking on "Open file location". Then move the created shortcut to the folder that opened.
 
@@ -41,6 +30,26 @@ To speed up the image download process on first start of the app, download the l
 To run the app, navigate to your apps folder. Then:
 - Windows: Use `python main.py` to start the app.
 - Linux: Use `python3 main.py` to start the app.
+
+### Images library
+All installation methods require an images library containing the game icons. The app will download these automatically, but as this takes a very long time, it is recommended to download the newest compressed image library from the [release](https://github.com/STOCD/SETS/releases) page. Once downloaded this has to be decompressed and placed in into the `.config/images` folder. You might need to create a folder with the name `.config` manually. The folder structure should look like below:
+```
+SETS
+ +- .config
+ |  `- images
+ |    `- <lots of images>
+ +- SETS.exe / main.py
+ +- ...
+```
+
+## Updating the app
+### Executable for Windows
+Navigate to your SETS folder and delete all files and folders **except** the `.config` folder and the `.SETS_settings.ini` file. Download the newest version from the [release](https://github.com/STOCD/SETS/releases) page and unpack it into the SETS folder to replace the files and folders deleted before.
+
+### Script (Cross-Platform)
+When using Git, open a command line at the location of your SETS folder and type `git pull` to get the newest version of the app.
+
+Otherwise, navigate to your SETS folder and delete all files and folders **except** the `.config` folder and the `.SETS_settings.ini` file. Also keep your *virtual environment* folder in place if you used a virtual environment to install dependencies. Download the app into the same folder as detailed in the installation section above. Open a command line at the location of your SETS folder and update dependencies by running `python -m pip install .`.
 
 ## Contributing
 If you find any information or images missing, please check or update the [official wiki](https://stowiki.net) -- where SETS gets this information. You can report wiki issues on the [Star Trek Online Community Discord Server](https://discord.gg/eApUvTRr5q) in the "#wiki-discussion" channel or on the [STOBuilds Discord Server](https://discord.gg/kxwHxbsqzF) in the "#wiki-update-talk" channel.
