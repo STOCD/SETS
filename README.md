@@ -7,7 +7,7 @@ Builds can be exported to a PNG or JSON file that can be opened by another perso
 
 ## Installation
 ### Executable for Windows
-Download the zipped app from the [release](https://github.com/STOCD/SETS/releases) page. Unzip it into a folder where you want your app to live. To speed up the image downloading process, obtain the images library as detailed [below](#Images library). Double-clicking `SETS.exe` will start the app.
+Download the zipped app from the [release](https://github.com/STOCD/SETS/releases) page. Unzip it into a folder where you want your app to live. To speed up the image downloading process, obtain the images library as detailed below (Images library section). Double-clicking `SETS.exe` will start the app.
 
 You can create a desktop shortcut by rightclicking on `SETS.exe` and clicking on "Create shortcut" in the context menu. Then move the created shortcut to your desktop. To create a start menu entry, open the start menu folder by rightclicking on an arbitrary app in your start menu and clicking on "Open file location". Then move the created shortcut to the folder that opened.
 
