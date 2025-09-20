@@ -7,7 +7,7 @@ Builds can be exported to a PNG or JSON file that can be opened by another perso
 
 ## Installation
 ### Images library
-All installation methods require an images library containing the game icons. The app will download these automatically, but as this takes a very long time, it is recommended to download the newest compressed image library from the [release](https://github.com/STOCD/SETS/releases) page. Once downloaded this has to be decompressed and placed in into the `.config/images` folder.
+All installation methods require an images library containing the game icons. The app will download these automatically, but as this takes a very long time, it is recommended to download the newest compressed image library from the [release](https://github.com/STOCD/SETS/releases) page. Once downloaded this has to be decompressed and placed in into the `.config/images` folder. You might need to create a folder with the name `.config` manually. The folder structure should look like below:
 ```
 SETS
  +- .config
