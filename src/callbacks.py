@@ -418,6 +418,7 @@ def clear_space_skills(self):
     for career in ('eng', 'sci', 'tac'):
         for skill_button in self.widgets.build['space_skills'][career]:
             skill_button.clear_overlay()
+            skill_button.highlight = False
         self.build['skill_unlocks'][career] = [None] * 5
         for bar_segment in self.widgets.skill_bonus_bars[career]:
             bar_segment.setChecked(False)
@@ -443,6 +444,7 @@ def clear_ground_skills(self):
     for skill_subtree in self.widgets.build['ground_skills']:
         for skill_button in skill_subtree:
             skill_button.clear_overlay()
+            skill_button.highlight = False
     for unlock_button in self.widgets.build['skill_unlocks']['ground']:
         unlock_button.clear()
     for bar_segment in self.widgets.skill_bonus_bars['ground']:
