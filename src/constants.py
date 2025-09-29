@@ -37,7 +37,7 @@ ITEM_QUERY_URL = (
 )
 TRAIT_QUERY_URL = (
     WIKI_URL + 'Special:CargoExport?tables=Traits&fields=_pageName%3DPage,name,type,'
-    'environment,description&limit=2500&format=json'
+    'environment,description,icon_name=icon_name&limit=2500&format=json'
 )
 STARSHIP_TRAIT_QUERY_URL = (
     WIKI_URL + 'Special:CargoExport?tables=StarshipTraits&fields=_pageName%3DPage,name,short,type,'

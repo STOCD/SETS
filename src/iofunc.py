@@ -209,6 +209,21 @@ def image(self, image_name: str) -> QImage:
     return img
 
 
+def alt_image(self, image_name: str, image_suffix: str) -> QImage:
+    """
+    Returns image from cache if cached, loads and returns image if not cached. If `image_suffix` is
+    not empty, tries to get alternate image first.
+
+    Parameters:
+    - :param image_name: name of the image
+    - :param image_suffix: suffix to check in self.cache.alt_images
+    """
+    if image_name + image_suffix in self.cache.alt_images:
+        return image(self, self.cache.alt_images[image_name + image_suffix])
+    else:
+        return image(self, image_name)
+
+
 def get_downloaded_images(self) -> set:
     """
     Returns set containing all images currently in the images folder.

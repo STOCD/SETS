@@ -12,16 +12,10 @@ def get_tooltip(self, name: str, type_: str, environment: str = 'space') -> str:
     - :param type_: type of the trait ("rep_traits", "traits", "starship_traits", ...)
     - :param environment: "space" / "ground"
     """
-    if type_ == 'rep_traits':
-        return self.cache.traits[environment]['rep'][name]['tooltip']
-    elif type_ == 'traits':
-        return self.cache.traits[environment]['personal'][name]['tooltip']
-    elif type_ == 'active_rep_traits':
-        return self.cache.traits[environment]['active_rep'][name]['tooltip']
-    elif type_ == 'starship_traits':
+    if type_ == 'starship_traits':
         return self.cache.starship_traits[name]['tooltip']
     else:
-        return 'Something is wrong!'
+        return self.cache.traits[environment][type_][name]['tooltip']
 
 
 def add_equipment_tooltip_header(self, item: dict, tooltip_body: str, item_type: str) -> str:
@@ -198,23 +192,23 @@ def create_trait_tooltip(
     Parameters:
     - :param name: name of the trait
     - :param description: description of the trait
-    - :param type_: type of the trait; one of "personal", "rep", "active_rep"
+    - :param type_: type of the trait; one of "traits", "rep_traits", "active_rep_traits"
     - :param environment: "space" / "ground"
     - :param head_style: css style for head
     - :param subhead_style: css style for subhead
     - :param tags: css styles for the wikitext parser
     """
-    if type_ == 'personal':
+    if type_ == 'traits':
         tooltip = (
                 f"<p style='{head_style}'>{name}</p><p style='{subhead_style}'>"
                 f"Personal {environment.capitalize()} Trait</p><p>"
                 f"{parse_wikitext(dewikify(description), tags)}</p>")
-    elif type_ == 'rep':
+    elif type_ == 'rep_traits':
         tooltip = (
                 f"<p style='{head_style}'>{name}</p><p style='{subhead_style}'>"
                 f"{environment.capitalize()} Reputation Trait</p><p>"
                 f"{parse_wikitext(dewikify(description), tags)}</p>")
-    elif type_ == 'active_rep':
+    elif type_ == 'active_rep_traits':
         tooltip = (
                 f"<p style='{head_style}'>{name}</p><p style='{subhead_style}'>"
                 f"Active {environment.capitalize()} Reputation Trait</p><p style='margin:0'>"

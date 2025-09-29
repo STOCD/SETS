@@ -210,26 +210,30 @@ def picker(
     - :param boff_id: id of the boff; only set when picking boff abilities! (optional)
     """
     modifiers = {}
+    image_suffix = ''
     if equipment:
         items = self.cache.equipment[build_key].keys()
         modifiers = self.cache.modifiers[build_key]
     elif build_key == 'boffs':
         items = get_boff_abilities(self, environment, build_subkey, boff_id)
     elif build_key == 'traits':
-        items = self.cache.traits[environment]['personal'].keys()
+        items = self.cache.traits[environment]['traits'].keys()
+        image_suffix = f'__{environment}__{build_key}'
     elif build_key == 'starship_traits':
         items = self.cache.starship_traits.keys()
     elif build_key == 'rep_traits':
-        items = self.cache.traits[environment]['rep'].keys()
+        items = self.cache.traits[environment]['rep_traits'].keys()
+        image_suffix = f'__{environment}__{build_key}'
     elif build_key == 'active_rep_traits':
-        items = self.cache.traits[environment]['active_rep'].keys()
+        items = self.cache.traits[environment]['active_rep_traits'].keys()
+        image_suffix = f'__{environment}__{build_key}'
     else:
         items = []
     if self.settings.value('picker_relative', type=int) == 1:
         pos = button.parent().mapToGlobal(button.pos())
     else:
         pos = None
-    new_item = self.picker_window.pick_item(items, pos, equipment, modifiers)
+    new_item = self.picker_window.pick_item(items, pos, equipment, modifiers, image_suffix)
     if new_item is not None:
         widget_storage = self.widgets.build[environment]
         if equipment:

@@ -501,7 +501,12 @@ def slot_trait_item(self, item: dict, environment: str, build_key: str, build_su
     - :param build_subkey: index of the item within its build_key (category)
     """
     self.build[environment][build_key][build_subkey] = item
-    item_image = image(self, item['item'])
+    alt_image_key = f"{item['item']}__{environment}__{build_key}"
+    if alt_image_key in self.cache.alt_images:
+        image_name = self.cache.alt_images[alt_image_key]
+    else:
+        image_name = item['item']
+    item_image = image(self, image_name)
     self.widgets.build[environment][build_key][build_subkey].set_item_full(
             item_image, None, get_tooltip(self, item['item'], build_key, environment))
 

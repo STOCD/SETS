@@ -5,7 +5,7 @@ from PySide6.QtGui import QMouseEvent, QTextOption
 from PySide6.QtWidgets import QAbstractItemView, QDialog, QListView, QPlainTextEdit
 
 from .constants import AHCENTER, ALEFT, ATOP, MARKS, RARITIES, SMAXMAX, SMINMAX, SMINMIN
-from .iofunc import image
+from .iofunc import alt_image
 from .widgetbuilder import (
     create_button, create_button_series, create_combo_box, create_entry, create_frame,
     create_item_button, create_label)
@@ -123,10 +123,11 @@ class Picker(BasePicker):
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setMinimumSize(10, 10)
         self.setSizePolicy(SMAXMAX)
-        self._image_getter = lambda image_name: image(sets, image_name)
+        self._sets = sets
         self._item = self.empty_item
         self._result = None
         self._modifiers = {}
+        self._image_suffix = ''
         ui_scale = sets.config['ui_scale']
         spacing = sets.theme['defaults']['isp'] * ui_scale
         layout = VBoxLayout(margins=(spacing, 0, spacing, spacing), spacing=0)
@@ -224,7 +225,7 @@ class Picker(BasePicker):
         """
         new_item = str(new_index.data(Qt.ItemDataRole.DisplayRole))
         self._item['item'] = new_item
-        self._item_button.set_item(self._image_getter(new_item))
+        self._item_button.set_item(alt_image(self._sets, new_item, self._image_suffix))
         self._item_label.setText(new_item)
         for i in range(5):
             self._mod_combos[i].setCurrentText('')
@@ -239,7 +240,7 @@ class Picker(BasePicker):
 
     def pick_item(
             self, items: Iterable, button_pos: QPoint | None, equipment: bool = False,
-            modifiers: dict = {}):
+            modifiers: dict = {}, image_suffix: str = ''):
         """
         Executes picker, returns selected item. Returns None when picker is closed without saving.
         """
@@ -269,6 +270,7 @@ class Picker(BasePicker):
             self._prop_frame.show()
         else:
             self._prop_frame.hide()
+        self._image_suffix = image_suffix
         self._search_bar.setFocus()
         action = self.exec()
         if action == 1 and self._item['item'] != '':

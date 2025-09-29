@@ -121,6 +121,9 @@ def load_cargo_cache(self, threaded_worker: ThreadObject) -> bool:
     self.cache.ground_doffs = get_cached_cargo_data(self, 'ground_doffs.json')
     if len(self.cache.ground_doffs) == 0:
         return False
+    self.cache.alt_images = get_cached_cargo_data(self, 'alt_images.json')
+    if len(self.cache.alt_images) == 0:
+        return False
     self.cache.images_set = set(get_cached_cargo_data(self, 'images_list.json'))
     if len(self.cache.images_set) == 0:
         return False
@@ -187,11 +190,11 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
         name = trait['name']
         if trait['type'] != 'doff' and trait['type'] != 'boff' and name is not None:
             if trait['type'] == 'reputation':
-                trait_type = 'rep'
+                trait_type = 'rep_traits'
             elif trait['type'] == 'activereputation':
-                trait_type = 'active_rep'
+                trait_type = 'active_rep_traits'
             else:
-                trait_type = 'personal'
+                trait_type = 'traits'
             try:
                 self.cache.traits[trait['environment']][trait_type][name] = {
                     'Page': trait['Page'],
@@ -200,11 +203,17 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
                             name, trait['description'], trait_type, trait['environment'], head_s,
                             subhead_s, tags)
                 }
-                self.cache.images_set.add(name)
+                if trait['icon_name'] is None:
+                    self.cache.images_set.add(name)
+                else:
+                    self.cache.images_set.add(trait['icon_name'])
+                    self.cache.alt_images[f'{name}__{trait["environment"]}__{trait_type}'] = (
+                            trait['icon_name'])
             # catch wrong values in trait['environment'] (cargo issue)
             except (KeyError, AttributeError):
                 pass
     store_to_cache(self, self.cache.traits, 'traits.json')
+    store_to_cache(self, self.cache.alt_images, 'alt_images.json')
 
     threaded_worker.update_splash.emit('Loading: Starship Traits')
     shiptrait_cargo = get_cargo_data(self, 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL)

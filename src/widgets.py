@@ -149,14 +149,14 @@ class Cache():
         self.starship_traits: dict = dict()
         self.traits: dict = {
             'space': {
-                'personal': dict(),
-                'rep': dict(),
-                'active_rep': dict()
+                'traits': dict(),
+                'rep_traits': dict(),
+                'active_rep_traits': dict()
             },
             'ground': {
-                'personal': dict(),
-                'rep': dict(),
-                'active_rep': dict()
+                'traits': dict(),
+                'rep_traits': dict(),
+                'active_rep_traits': dict()
             }
         }
         self.ground_doffs: dict = dict()
@@ -195,6 +195,7 @@ class Cache():
         self.overlays: OverlayCache = OverlayCache()
         self.icons: dict = dict()
         self.images: dict = dict()
+        self.alt_images: dict = dict()
         self.images_set: set = set()
         self.images_populated: bool = False
         self.images_failed: dict = dict()
