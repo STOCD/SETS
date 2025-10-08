@@ -3,3 +3,4 @@ images/
 ..debug/
 __pycache__/
 *.py[cod]
+.SETS_settings.ini
