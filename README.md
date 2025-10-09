@@ -11,9 +11,24 @@ Download the zipped app from the [release](https://github.com/STOCD/SETS/release
 
 You can create a desktop shortcut by rightclicking on `SETS.exe` and clicking on "Create shortcut" in the context menu. Then move the created shortcut to your desktop. To create a start menu entry, open the start menu folder by rightclicking on an arbitrary app in your start menu and clicking on "Open file location". Then move the created shortcut to the folder that opened.
 
+### Script (UNIX-like systems)
+*Before installation, make sure python 3 is installed on your system alongside the python package manager pip.*
+
+First, create a folder to house your app and open it in your file manager or shell.
+
+Download the source code. This can be done using `git` or manual download:
+- Manual Download: On the GitHub page of [this repository](https://github.com/STOCD/SETS), click on the green `CODE` button and select "Download ZIP". Save the archive and unpack it so that the files and folders seen on the repository page are *directly* inside your app folder.
+- Git: run `git clone https://github.com/STOCD/SETS.git .`
+
+Run the `install.sh` script by double-clicking it in your file manager or running `./install.sh` in your shell. If you cannot run the file, make sure it is executable using your file manager or the command `chmod +x install.sh`.
+
+To speed up the image download process on first start of the app, download the latest image archive from [releases](https://github.com/STOCD/SETS/releases). Create a `.config` folder and unpack the images archive into it. The images should be in `<app_root>/.config/images/`.
+
+Start the app by running the `run.sh` file by double-clicking it in your file manager or running `.run.sh` in your shell. If you cannot run the file, make sure it is executable using your file manager or the command `chmod +x run.sh`.
+
 
 ### Script (Cross-Platform)
-*The commands below are for Windows. If you want to install the app on Linux, use `python3` instead of `python`. A more comprehensive guide for installing the script version can be found on the [website](https://stobuilds.com/apps/sets/installation).*
+*The commands below are for Windows and require a version of python 3 to be installed. If you want to install the app on Linux, use `python3` instead of `python`. A more comprehensive guide for installing the script version can be found on the [website](https://stobuilds.com/apps/sets/installation).*
 
 First, create a folder to house your app. Open a command prompt and navigate *inside* the created folder.
 
