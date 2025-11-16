@@ -66,18 +66,26 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
     # download cargo data if loading from cache failed or data should be updated
     try:
         cargo_data = fetch_json(url)
+        auto_backup_cargo_file(self, filename)
         store_json(cargo_data, filepath)
         return cargo_data
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError):
+    except (requests.exceptions.RequestException, json.JSONDecodeError):
         if ignore_cache_age:
             backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)
-            if os.path.exists(backup_path) and os.path.isfile(backup_path):
-                try:
-                    cargo_data = load_json(backup_path)
-                    store_json(cargo_data, filepath)
-                    return cargo_data
-                except json.JSONDecodeError:
-                    pass
+            auto_backup_path = os.path.join(
+                    self.config['config_subfolders']['auto_backups'], filename)
+            if self.settings.value('pref_backup', type=int) == 0:
+                backup_paths = (auto_backup_path, backup_path)
+            else:
+                backup_paths = (backup_path, auto_backup_path)
+            for path in backup_paths:
+                if os.path.exists(path) and os.path.isfile(path):
+                    try:
+                        cargo_data = load_json(path)
+                        store_json(cargo_data, filepath)
+                        return cargo_data
+                    except json.JSONDecodeError:
+                        pass
             sys.stderr.write(f'[Error] Cargo table could not be retrieved ({filename})\n')
             sys.exit(1)
         else:
@@ -230,6 +238,19 @@ def get_downloaded_images(self) -> set:
     """
     img_folder = self.config['config_subfolders']['images']
     return set(map(lambda x: unquote_plus(x)[:-4], os.listdir(img_folder)))
+
+
+def auto_backup_cargo_file(self, filename: str):
+    """
+    Backs up given cargo data file to the auto backups folder
+
+    Parameters:
+    - :param filename: name of the file to back up
+    """
+    source_path = os.path.join(self.config['config_subfolders']['cargo'], filename)
+    if os.path.exists(source_path):
+        target_path = os.path.join(self.config['config_subfolders']['auto_backups'], filename)
+        shutil__copyfile(source_path, target_path)
 
 
 # --------------------------------------------------------------------------------------------------

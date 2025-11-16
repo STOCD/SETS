@@ -15,9 +15,9 @@ from .constants import (
         EQUIPMENT_TYPES, ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL,
         STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, WIKI_IMAGE_URL)
 from .iofunc import (
-        browse_path, copy_file, download_image, fetch_html, get_asset_path, get_cached_cargo_data,
-        get_cargo_data, get_downloaded_images, image, load_image, load_json, retrieve_image,
-        store_json, store_to_cache)
+        auto_backup_cargo_file, browse_path, copy_file, download_image, fetch_html, get_asset_path,
+        get_cached_cargo_data, get_cargo_data, get_downloaded_images, image, load_image, load_json,
+        retrieve_image, store_json, store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
 from .textedit import (
         create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
@@ -963,8 +963,9 @@ def get_boff_data(self):
             except JSONDecodeError:
                 pass
 
-    # download if not exists
+    # download if not exists or outdated
     try:
+        auto_backup_cargo_file(self, filename)
         boff_html = fetch_html(BOFF_URL)
     except (requests__Timeout, requests__ConnectionError):
         backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)

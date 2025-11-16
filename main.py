@@ -568,7 +568,8 @@ class Launcher():
                 'cargo': 'cargo',
                 'images': 'images',
                 'ship_images': 'ship_images',
-                'backups': 'backups'
+                'backups': 'backups',
+                'auto_backups': 'auto_backups'
             },
             'autosave_filename': '.autosave.json',
             'box_width': 49,
@@ -583,7 +584,8 @@ class Launcher():
                 'default_rarity': 'Common',
                 'picker_relative': 0,
                 'default_save_format': 'JSON',
-                'geometry': None
+                'geometry': None,
+                'pref_backup': 0
             }
         }
         return config

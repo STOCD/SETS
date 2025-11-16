@@ -156,6 +156,7 @@ class SETS():
         create_folder(self.config['config_subfolders']['images'])
         create_folder(self.config['config_subfolders']['ship_images'])
         create_folder(self.config['config_subfolders']['backups'])
+        create_folder(self.config['config_subfolders']['auto_backups'])
         if not os.path.exists(self.config['autosave_filename']):
             store_json(self.empty_build(), self.config['autosave_filename'])
 
@@ -1031,6 +1032,14 @@ class SETS():
         picker_rel_combo.currentTextChanged.connect(
                 lambda new_t: self.settings.setValue('default_save_format', new_t))
         sec_1.addWidget(picker_rel_combo, 4, 2, alignment=ALEFT | AVCENTER)
+        backup_label = self.create_label('Preferred Backup')
+        sec_1.addWidget(backup_label, 5, 0, alignment=ALEFT)
+        backup_combo = self.create_combo_box(style_override={'font': '@small_text'})
+        backup_combo.addItems(('Auto', 'Manual'))
+        backup_combo.setCurrentIndex(self.settings.value('pref_backup', type=int))
+        backup_combo.currentIndexChanged.connect(
+                lambda new_i: self.settings.setValue('pref_backup', new_i))
+        sec_1.addWidget(backup_combo, 5, 2, alignment=ALEFT | AVCENTER)
         scroll_layout.addLayout(sec_1)
 
         # second section
