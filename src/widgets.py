@@ -181,14 +181,6 @@ class Cache():
                 'ground_points_total': 0,
             }
 
-        self.species: dict = {
-            'Federation': dict(),
-            'Klingon': dict(),
-            'Romulan': dict(),
-            'Dominion': dict(),
-            'TOS Federation': dict(),
-            'DSC Federation': dict()
-        }
         self.modifiers: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
 
         self.empty_image: QImage
