@@ -27,8 +27,8 @@ then
             "\".venv\"."
     fi
 fi
-source ".venv/bin/activate"
-python3 -m pip install .
+. ".venv/bin/activate"
+python3 -m pip install -e .
 if [ $? != 0 ]
 then
     echo "[Error] Package installation failed. Please refer to the error message above"
