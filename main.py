@@ -6,8 +6,8 @@ from src import SETS
 
 class Launcher():
 
-    version = '2025.11b160'
-    __version__ = '2.1'
+    version = '2026.01b110'
+    __version__ = '2.2'
 
     # holds the style of the app
     theme = {

@@ -110,7 +110,7 @@ def load_cargo_cache(self, threaded_worker: ThreadObject) -> bool:
     if len(self.cache.starship_traits) == 0:
         return False
     self.cache.boff_abilities = get_cached_cargo_data(self, 'boff_abilities.json')
-    if len(self.cache.boff_abilities) == 0:
+    if len(self.cache.boff_abilities) == 0 or len(self.cache.boff_abilities.get('all', {})) == 0:
         return False
     self.cache.modifiers = get_cached_cargo_data(self, 'modifiers.json')
     if len(self.cache.modifiers) == 0:
@@ -945,12 +945,20 @@ def backup_cargo_data(self):
         copy_file(cargo_path, backups_path)
 
 
-def get_boff_data(self):
+def get_boff_data(self, force_offline_data: bool = False):
     """
     Populates self.cache.boff_abilities until boff abilties are available from cargo
+
+    Parameters:
+    - :param force_offline_data: Set to True to force the use of cargo backup in case the online
+    source is unavailable
     """
+    class ThisIsTerribleError(RuntimeError):
+        pass
+
     filename = 'boff_abilities.json'
     filepath = os.path.join(self.config['config_subfolders']['cargo'], filename)
+    bad_cache = False
 
     # try loading from cache
     if os.path.exists(filepath) and os.path.isfile(filepath):
@@ -958,24 +966,42 @@ def get_boff_data(self):
         if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
             try:
                 self.cache.boff_abilities = load_json(filepath)
-                self.cache.images_set |= self.cache.boff_abilities['all'].keys()
-                return
+                if len(self.cache.boff_abilities.get('all', {})) > 0:
+                    self.cache.images_set |= self.cache.boff_abilities['all'].keys()
+                    return
+                else:
+                    bad_cache = True
             except JSONDecodeError:
                 pass
 
     # download if not exists or outdated
     try:
-        auto_backup_cargo_file(self, filename)
+        if not bad_cache:
+            auto_backup_cargo_file(self, filename)
+        if force_offline_data:
+            raise ThisIsTerribleError
         boff_html = fetch_html(BOFF_URL)
-    except (requests__Timeout, requests__ConnectionError):
+    except (requests__Timeout, requests__ConnectionError, ThisIsTerribleError):
         backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)
         if os.path.exists(backup_path) and os.path.isfile(backup_path):
             try:
                 cargo_data = load_json(backup_path)
                 store_json(cargo_data, filepath)
                 self.cache.boff_abilities = cargo_data
-                self.cache.images_set |= self.cache.boff_abilities['all'].keys()
-                return
+                if len(self.cache.boff_abilities.get('all', {})) > 0:
+                    self.cache.images_set |= self.cache.boff_abilities['all'].keys()
+                    return
+            except JSONDecodeError:
+                pass
+        backup_path = os.path.join(self.config['config_subfolders']['auto_backups'], filename)
+        if os.path.exists(backup_path) and os.path.isfile(backup_path):
+            try:
+                cargo_data = load_json(backup_path)
+                store_json(cargo_data, filepath)
+                self.cache.boff_abilities = cargo_data
+                if len(self.cache.boff_abilities.get('all', {})) > 0:
+                    self.cache.images_set |= self.cache.boff_abilities['all'].keys()
+                    return
             except JSONDecodeError:
                 pass
         sys.stderr.write(f'[Error] Html could not be retrieved ({filename})\n')
@@ -1018,4 +1044,7 @@ def get_boff_data(self):
                         if i == 2 and tds[rank1 + i].text.strip() in ['I', 'II']:
                             self.cache.boff_abilities[environment][category][i + 1][cname] \
                                 = desc
-    store_json(self.cache.boff_abilities, filepath)
+    if len(self.cache.boff_abilities.get('all', {})) == 0:
+        get_boff_data(self, force_offline_data=True)
+    else:
+        store_json(self.cache.boff_abilities, filepath)
