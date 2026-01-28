@@ -83,10 +83,11 @@ SPECIES = {
     'Federation': {
         'Human', 'Andorian', 'Bajoran', 'Benzite', 'Betazoid', 'Bolian', 'Ferengi', 'Pakled',
         'Rigelian', 'Saurian', 'Tellarite', 'Trill', 'Joined Trill', 'Vulcan', 'Alien',
-        'Liberated Borg', 'Caitian'
+        'Liberated Borg', 'Caitian', 'Klingon', 'Talaxian'
     },
     'Klingon': {
         'Klingon', 'Gorn', 'Lethean', 'Nausicaan', 'Orion', 'Alien', 'Liberated Borg', 'Ferasan',
+        'Talaxian'
     },
     'Romulan': {'Romulan', 'Reman', 'Alien', 'Liberated Borg'},
     'Dominion': {"Jem'Hadar", "Jem'Hadar Vanguard"},
