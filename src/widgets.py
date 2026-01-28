@@ -191,6 +191,7 @@ class Cache():
         self.images_set: set = set()
         self.images_populated: bool = False
         self.images_failed: dict = dict()
+        self.item_aliases: dict = dict()
 
     def boff_dict(self):
         return {

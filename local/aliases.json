@@ -1,0 +1,9 @@
+{
+    "boff_abilities": {
+        "Auxiliary to Battery": "Auxiliary Power to the Emergency Battery",
+        "Auxiliary to Dampeners": "Auxiliary Power to the Inertial Dampers",
+        "Auxiliary to Structural": "Auxiliary Power to the Structural Integrity Field"
+    },
+    "equipment": {},
+    "traits": {}
+}

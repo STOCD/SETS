@@ -9,7 +9,8 @@ from .constants import (
     PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
     SMINMIN)
 from .iofunc import (
-        create_folder, delete_folder_contents, get_asset_path, load_icon, open_url, store_json)
+        create_folder, delete_folder_contents, get_asset_path, load_icon, load_json, open_url,
+        store_json)
 from .subwindows import ExportWindow, ItemEditor, Picker, ShipSelector
 from .widgets import (
     Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, TooltipLabel,
@@ -98,6 +99,7 @@ class SETS():
         self.init_environment()
         self.app, self.window = self.create_main_window()
         self.cache_icons()
+        self.cache_item_aliases()
         self.building = True
         self.build = self.empty_build()
         self.export_window = ExportWindow(self, self.window, self.get_build_markdown)
@@ -180,6 +182,12 @@ class SETS():
                 self.box_width, self.box_width)
         self.cache.icons['STOCD'] = load_icon('stocd.png', self.app_dir).pixmap(
                 self.box_height, self.box_height * 182 / 106)
+
+    def cache_item_aliases(self):
+        """
+        Loads item aliases into cache (used for fixing renamed items).
+        """
+        self.cache.item_aliases = load_json(get_asset_path('aliases.json', self.app_dir))
 
     def main_window_close_callback(self, event):
         """

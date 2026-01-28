@@ -453,8 +453,26 @@ def load_boff_stations(self, environment: str):
             self.widgets.build['space']['boff_labels'][boff_id].setCurrentText(boff_text)
             for ability, slot in zip(boff_data, self.widgets.build['space']['boffs'][boff_id]):
                 if ability is not None and ability != '':
-                    tooltip = self.cache.boff_abilities['all'][ability['item']]
-                    slot.set_item_full(image(self, ability['item']), None, tooltip)
+                    tooltip = self.cache.boff_abilities['all'].get(ability['item'], None)
+                    if tooltip is None:
+                        new_name = self.cache.item_aliases['boff_abilities'].get(
+                            ability['item'], None)
+                        if new_name is None:
+                            slot.clear()
+                        else:
+                            tooltip = self.cache.boff_abilities['all'].get(new_name, None)
+                            if tooltip is None:
+                                slot.clear()
+                            else:
+                                slot.set_item_full(image(self, new_name), None, tooltip)
+                                for id, old_ability in enumerate(boff_data):
+                                    if not isinstance(old_ability, dict):
+                                        continue
+                                    if ability['item'] == old_ability['item']:
+                                        self.build['space']['boffs'][boff_id][id]['item'] = new_name
+                                        break
+                    else:
+                        slot.set_item_full(image(self, ability['item']), None, tooltip)
                 else:
                     slot.clear()
     elif environment == 'ground':
@@ -465,8 +483,27 @@ def load_boff_stations(self, environment: str):
                     self.build['ground']['boff_specs'][boff_id])
             for ability, slot in zip(boff_data, self.widgets.build['ground']['boffs'][boff_id]):
                 if ability is not None and ability != '':
-                    tooltip = self.cache.boff_abilities['all'][ability['item']]
-                    slot.set_item_full(image(self, ability['item']), None, tooltip)
+                    tooltip = self.cache.boff_abilities['all'].get(ability['item'], None)
+                    if tooltip is None:
+                        new_name = self.cache.item_aliases['boff_abilities'].get(
+                            ability['item'], None)
+                        if new_name is None:
+                            slot.clear()
+                        else:
+                            tooltip = self.cache.boff_abilities['all'].get(new_name, None)
+                            if tooltip is None:
+                                slot.clear()
+                            else:
+                                slot.set_item_full(image(self, new_name), None, tooltip)
+                                for id, old_ability in enumerate(boff_data):
+                                    if not isinstance(old_ability, dict):
+                                        continue
+                                    if ability['item'] == old_ability['item']:
+                                        self.build['ground']['boffs'][boff_id][id]['item'] = (
+                                            new_name)
+                                        break
+                    else:
+                        slot.set_item_full(image(self, ability['item']), None, tooltip)
                 else:
                     slot.clear()
 
