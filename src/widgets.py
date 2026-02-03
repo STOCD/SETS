@@ -143,7 +143,7 @@ class Cache():
     def __init__(self):
         self.reset_cache()
 
-    def reset_cache(self, keep_skills=False):
+    def reset_cache(self, keep_static_data: bool = False):
         self.ships: dict = dict()
         self.equipment: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
         self.starship_traits: dict = dict()
@@ -167,7 +167,8 @@ class Cache():
             'all': dict()
         }
 
-        if not keep_skills:
+        if not keep_static_data:
+            self.item_aliases: dict = dict()
             self.skills = {
                 'space': dict(),
                 'space_unlocks': dict(),
@@ -191,7 +192,6 @@ class Cache():
         self.images_set: set = set()
         self.images_populated: bool = False
         self.images_failed: dict = dict()
-        self.item_aliases: dict = dict()
 
     def boff_dict(self):
         return {

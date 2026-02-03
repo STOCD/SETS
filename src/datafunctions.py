@@ -79,7 +79,7 @@ def populate_cache(self, threaded_worker: ThreadObject):
     """
     success = load_cargo_cache(self, threaded_worker)
     if not success:
-        self.cache.reset_cache(keep_skills=True)
+        self.cache.reset_cache(keep_static_data=True)
         load_cargo_data(self, threaded_worker)
     self.cache.empty_image = QImage()
     self.cache.images_failed = get_cached_cargo_data(self, 'images_failed.json')
