@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import os
+from pathlib import Path
 from shutil import copyfile as shutil__copyfile, rmtree as shutil__rmtree
 import sys
 from urllib.parse import quote_plus, unquote_plus
@@ -449,3 +450,52 @@ def open_wiki_page(page_name: str):
     Converts page name to URL and opens page in webbrowser.
     """
     open_url(WIKI_URL + page_name.replace(' ', '_'))
+
+
+def read_env_file(path: Path, names: list[str]) -> dict[str, str]:
+    """
+    Reads given `names` from env file at `path` and returns dictionary containing them.
+
+    Parameters:
+    - :param path: path to env file
+    - :param names: variables to read from env file
+    """
+    env_variables = dict()
+    if not path.exists():
+        return env_variables
+    with path.open(encoding='utf-8') as env_file:
+        for line in env_file:
+            for identifier in names:
+                if line.startswith(f'{identifier}='):
+                    if line[-1] == '\n':
+                        env_variables[identifier] = line[len(identifier) + 1:-1]
+                    else:
+                        env_variables[identifier] = line[len(identifier) + 1:]
+                    break
+    return env_variables
+
+
+def cache_cargo_data(cache_file: Path, url: str, session: requests.Session) -> bool:
+    """
+    Obtains cargo data from `url` and stores it. Returns `True` on success, `False` on failure.
+
+    Parameters:
+    - :param cache_file: path to file that the cargo data should be stored to
+    - :param url: url to request data from
+    - :param session: request session to use for the request
+    """
+    try:
+        response = session.get(url, timeout=10)
+    except requests.exceptions.Timeout:
+        sys.stdout.write(f'[Error] Requesting the following URL timed out:\n[Error] {url}\n')
+        return False
+    if response.ok:
+        response.encoding = 'utf-8'
+        try:
+            cargo_data = json.loads(compensate_json(response.text))
+            store_json(cargo_data, str(cache_file))
+            return True
+        except json.JSONDecodeError:
+            sys.stdout.write(
+                f'[Error] Decoding the response failed for the following URL:\n[Error] {url}\n')
+    return False

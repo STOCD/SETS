@@ -1,10 +1,13 @@
 from datetime import datetime
 from json import dumps as json__dumps, loads as json__loads, JSONDecodeError
 import os
+from pathlib import Path
 import sys
 from zlib import compress as zlib_compress, decompress as zlib_decompress
 from numpy import array, append, fromiter, packbits, uint8, unpackbits, zeros
 from PySide6.QtGui import QImage
+from requests import Session
+from requests.cookies import create_cookie
 from requests.exceptions import (
         ConnectionError as requests__ConnectionError, Timeout as requests__Timeout)
 from requests_html import Element
@@ -15,9 +18,9 @@ from .constants import (
         EQUIPMENT_TYPES, ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL,
         STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, WIKI_IMAGE_URL)
 from .iofunc import (
-        auto_backup_cargo_file, browse_path, copy_file, download_image, fetch_html, get_asset_path,
-        get_cached_cargo_data, get_cargo_data, get_downloaded_images, image, load_image, load_json,
-        retrieve_image, store_json, store_to_cache)
+        auto_backup_cargo_file, browse_path, cache_cargo_data, copy_file, download_image,
+        fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data, get_downloaded_images,
+        image, load_image, load_json, read_env_file, retrieve_image, store_json, store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
 from .textedit import (
         create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
@@ -1048,3 +1051,32 @@ def get_boff_data(self, force_offline_data: bool = False):
         get_boff_data(self, force_offline_data=True)
     else:
         store_json(self.cache.boff_abilities, filepath)
+
+
+def build_cache(config_path: Path) -> int:
+    """
+    Builds cache in config folder indicated by `config_path`. Returns status: success: `0`,
+    failure: `1`
+
+    Parameters:
+    - :param config_path: path to build cache into
+    """
+    env_variables = read_env_file(config_path / '.env', ['SETS_CF_CLEARANCE', 'SETS_USER_AGENT'])
+    requests_session = Session()
+    if 'SETS_CF_CLEARANCE' in env_variables:
+        requests_session.cookies.set_cookie(
+            create_cookie(name='cf_clearance', value=env_variables['SETS_CF_CLEARANCE']))
+    if 'SETS_USER_AGENT' in env_variables:
+        requests_session.headers['User-Agent'] = env_variables['SETS_USER_AGENT']
+    cargo_dir = config_path / 'cargo'
+    success = list()
+    success.append(cache_cargo_data(cargo_dir / 'ship_list.json', SHIP_QUERY_URL, requests_session))
+    success.append(cache_cargo_data(cargo_dir / 'equipment.json', ITEM_QUERY_URL, requests_session))
+    success.append(cache_cargo_data(cargo_dir / 'traits.json', TRAIT_QUERY_URL, requests_session))
+    success.append(cache_cargo_data(
+        cargo_dir / 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL, requests_session))
+    success.append(cache_cargo_data(cargo_dir / 'modifiers.json', MODIFIER_QUERY, requests_session))
+    success.append(cache_cargo_data(cargo_dir / 'doffs.json', DOFF_QUERY_URL, requests_session))
+    if False in success:
+        return 1
+    return 0

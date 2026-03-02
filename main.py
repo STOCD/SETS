@@ -1,7 +1,10 @@
+from argparse import ArgumentParser
 import os
+from pathlib import Path
 import sys
 
 from src import SETS
+from src.datafunctions import build_cache
 
 
 class Launcher():
@@ -592,7 +595,14 @@ class Launcher():
 
     @staticmethod
     def launch():
-        args = {}
+        argparser = ArgumentParser(prog='SETS', description='STO Equipment and Trait Selector')
+        argparser.add_argument(
+            '--build-cache', action='store_true', required=False,
+            help='Provide this flag to build the cache instead of starting the app.')
+        args, _ = argparser.parse_known_args()
+        if args.build_cache:
+            exit_code = build_cache(Path(Launcher.base_path(), '.config'))
+            sys.exit(exit_code)
         exit_code = SETS(
                 theme=Launcher.theme, args=args,
                 path=Launcher.base_path(), config=Launcher.app_config(),
