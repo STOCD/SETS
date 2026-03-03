@@ -509,13 +509,10 @@ def cache_cargo_data(cache_file: Path, url: str, session: requests.Session) -> b
         try:
             cargo_data = json.loads(compensate_json(response.text))
             store_json(cargo_data, str(cache_file))
-            print(response.text)
             return True
         except json.JSONDecodeError:
             sys.stdout.write(
                 f'[Error] Decoding the response failed for the following URL:\n[Error] {url}\n')
-    else:
-        print(response.status_code, response.text)
     return False
 
 
