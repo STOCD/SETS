@@ -11,6 +11,7 @@ from requests.cookies import create_cookie
 from requests.exceptions import (
         ConnectionError as requests__ConnectionError, Timeout as requests__Timeout)
 from requests_html import Element
+from urllib.parse import unquote_plus
 
 from .buildupdater import get_boff_spec, load_build, load_skill_pages
 from .constants import (
@@ -19,8 +20,9 @@ from .constants import (
         STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, WIKI_IMAGE_URL)
 from .iofunc import (
         auto_backup_cargo_file, browse_path, cache_cargo_data, copy_file, download_image,
-        fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data, get_downloaded_images,
-        image, load_image, load_json, read_env_file, retrieve_image, store_json, store_to_cache)
+        download_images_fast, fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data,
+        get_downloaded_images, image, load_image, load_json, read_env_file, retrieve_image,
+        store_json, store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
 from .textedit import (
         create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
@@ -347,7 +349,8 @@ def download_images(self, threaded_worker: ThreadObject):
             no_retry_images.add(img)
         else:
             self.cache.images_failed.pop(img)
-    images = self.cache.images_set - no_retry_images - get_downloaded_images(self)
+    images = self.cache.images_set - no_retry_images - get_downloaded_images(
+        Path(self.config['config_subfolders']['images']))
     img_folder = self.config['config_subfolders']['images']
 
     images_to_download = images - self.cache.boff_abilities['all'].keys()
@@ -378,16 +381,16 @@ def cache_doff_single(self, cache: dict, doff: dict):
         cache[doff['spec']][doff['description']] = doff
 
 
-def cache_skills(self):
+def cache_skills(skill_cache: dict[str, dict], app_directory: str):
     """
     Loads skills into cache.
     """
-    space_skill_data = load_json(get_asset_path('space_skills.json', self.app_dir))
-    self.cache.skills['space'] = space_skill_data['space']
-    self.cache.skills['space_unlocks'] = space_skill_data['space_unlocks']
-    ground_skill_data = load_json(get_asset_path('ground_skills.json', self.app_dir))
-    self.cache.skills['ground'] = ground_skill_data['ground']
-    self.cache.skills['ground_unlocks'] = ground_skill_data['ground_unlocks']
+    space_skill_data = load_json(get_asset_path('space_skills.json', app_directory))
+    skill_cache['space'] = space_skill_data['space']
+    skill_cache['space_unlocks'] = space_skill_data['space_unlocks']
+    ground_skill_data = load_json(get_asset_path('ground_skills.json', app_directory))
+    skill_cache['ground'] = ground_skill_data['ground']
+    skill_cache['ground_unlocks'] = ground_skill_data['ground_unlocks']
 
 
 def autosave(self):
@@ -1053,7 +1056,66 @@ def get_boff_data(self, force_offline_data: bool = False):
         store_json(self.cache.boff_abilities, filepath)
 
 
-def build_cache(config_path: Path) -> int:
+def get_icon_set(cargo_dir: Path) -> set[str]:
+    """
+    Creates set of all required icons from cargo data and required static images.
+
+    Parameters:
+    - :param cargo_dir: path to cargo data directory
+    """
+    images_set = set()
+    equipment_cargo_data = load_json(str(cargo_dir / 'equipment.json'))
+    equipment_types = set(EQUIPMENT_TYPES.keys())
+    elite_hangar = {
+        'Hangar - Elite Federation Mission Scout Ships',
+        'Hangar - Elite Valor Fighters'
+    }
+    for item in equipment_cargo_data:
+        if item['type'] in equipment_types:
+            if item['type'] == 'Hangar Bay' and item['name'] not in elite_hangar and (
+                    item['name'].startswith('Hangar - Advanced')
+                    or item['name'].startswith('Hangar - Elite')):
+                continue
+            images_set.add(sanitize_equipment_name(item['name']))
+    trait_cargo_data = load_json(str(cargo_dir / 'traits.json'))
+    for trait in trait_cargo_data:
+        if trait['type'] != 'doff' and trait['type'] != 'boff' and trait['name'] is not None:
+            if trait['icon_name'] is None:
+                images_set.add(trait['name'])
+            else:
+                images_set.add(trait['icon_name'])
+    shiptrait_cargo_data = load_json(str(cargo_dir / 'starship_traits.json'))
+    images_set |= set(ship_trait['name'] for ship_trait in shiptrait_cargo_data)
+    return images_set
+
+
+def get_skill_icons(skill_cache: dict[str, dict]) -> set[str]:
+    """
+    """
+    icons = set()
+    for rank_group in skill_cache['space']:
+        for skill_group in rank_group:
+            for skill_node in skill_group['nodes']:
+                icons.add(skill_node['image'])
+    for skill_group in skill_cache['ground']:
+        for skill_node in skill_group['nodes']:
+            icons.add(skill_node['image'])
+    return icons
+
+
+def get_boff_icons(boff_cache: dict[str, dict]) -> set[str]:
+    """
+    """
+    return set(boff_cache['all'].keys())
+
+
+def get_ship_icons(ship_list: list[dict[str]]) -> set[str]:
+    """
+    """
+    return set(ship['image'][5:] for ship in ship_list)
+
+
+def build_cache(app_dir: Path) -> int:
     """
     Builds cache in config folder indicated by `config_path`. Returns status: success: `0`,
     failure: `1`
@@ -1061,6 +1123,7 @@ def build_cache(config_path: Path) -> int:
     Parameters:
     - :param config_path: path to build cache into
     """
+    config_path = app_dir / '.config'
     env_variables = read_env_file(config_path / '.env', ['SETS_CF_CLEARANCE', 'SETS_USER_AGENT'])
     requests_session = Session()
     if 'SETS_CF_CLEARANCE' in env_variables:
@@ -1077,6 +1140,32 @@ def build_cache(config_path: Path) -> int:
         cargo_dir / 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL, requests_session))
     success.append(cache_cargo_data(cargo_dir / 'modifiers.json', MODIFIER_QUERY, requests_session))
     success.append(cache_cargo_data(cargo_dir / 'doffs.json', DOFF_QUERY_URL, requests_session))
+
+    image_dir = config_path / 'images'
+    downloaded_images = get_downloaded_images(image_dir)
+    ultimate_icons = {'Focused Frenzy', 'Probability Manipulation', 'EPS Corruption'}
+    images_set = (get_icon_set(cargo_dir) | ultimate_icons) - downloaded_images
+    if len(images_set) > 0:
+        download_images_fast(list(images_set), env_variables, image_dir)
+    skill_cache = dict()
+    cache_skills(skill_cache, app_dir)
+    skill_images = get_skill_icons(skill_cache) - downloaded_images
+    if len(skill_images) > 0:
+        download_images_fast(list(skill_images), env_variables, image_dir, image_suffix='.png')
+    boff_cache = load_json(cargo_dir / 'boff_abilities.json')
+    boff_images = get_boff_icons(boff_cache) - downloaded_images
+    if len(boff_images) > 0:
+        download_images_fast(
+            list(boff_images), env_variables, image_dir, image_suffix='_icon_(Federation).png')
+
+    downloaded_ship_images = set(
+        map(lambda x: unquote_plus(x), os.listdir(str(config_path / 'ship_images'))))
+    ship_list = load_json(str(cargo_dir / 'ship_list.json'))
+    ship_images = get_ship_icons(ship_list) - downloaded_ship_images
+    if len(ship_images) > 0:
+        download_images_fast(
+            list(ship_images), env_variables, config_path / 'ship_images', image_suffix='')
+
     if False in success:
         return 1
     return 0

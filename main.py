@@ -601,7 +601,7 @@ class Launcher():
             help='Provide this flag to build the cache instead of starting the app.')
         args, _ = argparser.parse_known_args()
         if args.build_cache:
-            exit_code = build_cache(Path(Launcher.base_path(), '.config'))
+            exit_code = build_cache(Path(Launcher.base_path()))
             sys.exit(exit_code)
         exit_code = SETS(
                 theme=Launcher.theme, args=args,

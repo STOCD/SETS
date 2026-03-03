@@ -4,16 +4,32 @@ import os
 from pathlib import Path
 from shutil import copyfile as shutil__copyfile, rmtree as shutil__rmtree
 import sys
+from threading import Thread
 from urllib.parse import quote_plus, unquote_plus
 from webbrowser import open as webbrowser_open
 
 from PySide6.QtGui import QIcon, QImage
 from PySide6.QtWidgets import QFileDialog
 import requests
+from requests.cookies import create_cookie as requests__create_cookie
 from requests_html import HTMLSession
 
 from .constants import WIKI_IMAGE_URL, WIKI_URL
 from .textedit import compensate_json
+
+
+class ReturnValueThread(Thread):
+    def __init__(self, target, args: tuple = tuple()):
+        super().__init__(target=target, args=args)
+        self._return = None
+
+    def run(self):
+        if self._target is not None:
+            self._return = self._target(*self._args)
+
+    def join(self):
+        super().join()
+        return self._return
 
 
 def browse_path(self, default_path: str = None, types: str = 'Any File (*.*)', save=False) -> str:
@@ -233,14 +249,6 @@ def alt_image(self, image_name: str, image_suffix: str) -> QImage:
         return image(self, image_name)
 
 
-def get_downloaded_images(self) -> set:
-    """
-    Returns set containing all images currently in the images folder.
-    """
-    img_folder = self.config['config_subfolders']['images']
-    return set(map(lambda x: unquote_plus(x)[:-4], os.listdir(img_folder)))
-
-
 def auto_backup_cargo_file(self, filename: str):
     """
     Backs up given cargo data file to the auto backups folder
@@ -257,6 +265,13 @@ def auto_backup_cargo_file(self, filename: str):
 # --------------------------------------------------------------------------------------------------
 # static functions
 # --------------------------------------------------------------------------------------------------
+
+
+def get_downloaded_images(images_dir: Path) -> set:
+    """
+    Returns set containing all images currently in the images folder.
+    """
+    return set(map(lambda x: unquote_plus(x)[:-4], os.listdir(str(images_dir))))
 
 
 def create_folder(path_to_folder):
@@ -499,3 +514,70 @@ def cache_cargo_data(cache_file: Path, url: str, session: requests.Session) -> b
             sys.stdout.write(
                 f'[Error] Decoding the response failed for the following URL:\n[Error] {url}\n')
     return False
+
+
+def download_image_session(
+        session: requests.Session, name: str, image_folder_path: Path,
+        failed_images: dict[str, int], image_suffix: str = '_icon.png'):
+    """
+    """
+    if image_suffix == '':
+        # exception for ship images
+        filepath = image_folder_path / quote_plus(name)
+        image_type = None
+    else:
+        filepath = image_folder_path / get_image_file_name(name)
+        image_type = 'png'
+    image_url = WIKI_IMAGE_URL + name.replace(' ', '_') + image_suffix
+    image_response = session.get(image_url)
+    image = QImage()
+    if image_response.ok:
+        image.loadFromData(image_response.content, image_type)
+        image.save(str(filepath))
+    else:
+        failed_images[name] = int(datetime.now().timestamp())
+
+
+def download_images_list(
+        images_list: list[str], env_variables: dict[str, str], images_path: Path,
+        image_suffix: str = '_icon.png') -> dict[str, int]:
+    """
+    """
+    requests_session = requests.Session()
+    if 'SETS_CF_CLEARANCE' in env_variables:
+        requests_session.cookies.set_cookie(
+            requests__create_cookie(name='cf_clearance', value=env_variables['SETS_CF_CLEARANCE']))
+    if 'SETS_USER_AGENT' in env_variables:
+        requests_session.headers['User-Agent'] = env_variables['SETS_USER_AGENT']
+    failed_images = dict()
+    for image_name in images_list:
+        download_image_session(
+            requests_session, image_name, images_path, failed_images, image_suffix)
+    return failed_images
+
+
+def download_images_fast(
+        images_list: list[str], env_variables: dict[str, str], images_dir: Path,
+        image_suffix: str = '_icon.png'):
+    """
+    Downloads images using multiple threads.
+    """
+    total_threads = 16
+    image_chunk_size = len(images_list) // total_threads
+    while image_chunk_size < 4 and total_threads > 1:
+        total_threads -= 1
+        image_chunk_size = len(images_list) // total_threads
+    threads: list[ReturnValueThread] = list()
+    for thread_num in range(total_threads):
+        if thread_num == total_threads - 1:
+            images = images_list[image_chunk_size * thread_num:]
+        else:
+            images = images_list[image_chunk_size * thread_num:image_chunk_size * (thread_num + 1)]
+        thread = ReturnValueThread(
+            target=download_images_list, args=(images, env_variables, images_dir, image_suffix))
+        thread.start()
+        threads.append(thread)
+    failed_images = dict()
+    for thread in threads:
+        failed_images.update(thread.join())
+    print(failed_images)

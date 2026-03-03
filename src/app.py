@@ -8,6 +8,7 @@ from .constants import (
     ABOTTOM, ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS,
     PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
     SMINMIN)
+from .datafunctions import cache_skills
 from .iofunc import (
         create_folder, delete_folder_contents, get_asset_path, load_icon, load_json, open_url,
         store_json)
@@ -31,7 +32,7 @@ class SETS():
             skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
             tier_callback)
     from .datafunctions import (
-            autosave, backup_cargo_data, cache_skills, empty_build,
+            autosave, backup_cargo_data, empty_build,
             init_backend, load_legacy_build_image)
     from .export import get_build_markdown
     from .splash import enter_splash, exit_splash, splash_text
@@ -430,7 +431,7 @@ class SETS():
         """
         self.setup_space_build_frame()
         self.setup_ground_build_frame()
-        self.cache_skills()
+        cache_skills(self.cache.skills, self.app_dir)
         self.setup_space_skill_frame()
         self.setup_ground_skill_frame()
 
