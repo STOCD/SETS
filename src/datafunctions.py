@@ -1142,6 +1142,9 @@ def build_cache(app_dir: Path) -> int:
         cargo_dir / 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL, requests_session))
     success.append(cache_cargo_data(cargo_dir / 'modifiers.json', MODIFIER_QUERY, requests_session))
     success.append(cache_cargo_data(cargo_dir / 'doffs.json', DOFF_QUERY_URL, requests_session))
+    print(str(app_dir), os.listdir(str(app_dir)))
+    print(str(config_path), os.listdir(str(config_path)))
+    print(str(cargo_dir), os.listdir(str(cargo_dir)))
 
     image_dir = config_path / 'images'
     downloaded_images = get_downloaded_images(image_dir)
