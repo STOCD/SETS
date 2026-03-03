@@ -1127,7 +1127,7 @@ def build_cache(app_dir: Path) -> int:
     env_variables = read_env_file(config_path / '.env', ['SETS_CF_CLEARANCE', 'SETS_USER_AGENT'])
     requests_session = Session()
     if 'SETS_CF_CLEARANCE' in env_variables:
-        print(f'[Info] "SETS_CF_CLEARANCE" variable: "{env_variables["SETS_CF_CLEARANCE"]}"...')
+        print(f'[Info] "SETS_CF_CLEARANCE" variable: "{env_variables["SETS_CF_CLEARANCE"][:10]}"')
         requests_session.cookies.set_cookie(
             create_cookie(name='cf_clearance', value=env_variables['SETS_CF_CLEARANCE']))
     if 'SETS_USER_AGENT' in env_variables:
