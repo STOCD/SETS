@@ -15,8 +15,8 @@ from urllib.parse import unquote_plus
 
 from .buildupdater import get_boff_spec, load_build, load_skill_pages
 from .constants import (
-        BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL,
-        EQUIPMENT_TYPES, ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL,
+        BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES,
+        GITHUB_CACHE_URL, ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL,
         STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, WIKI_IMAGE_URL)
 from .iofunc import (
         auto_backup_cargo_file, browse_path, cache_cargo_data, copy_file, download_image,
@@ -988,6 +988,12 @@ def get_boff_data(self, force_offline_data: bool = False):
             raise ThisIsTerribleError
         boff_html = fetch_html(BOFF_URL)
     except (requests__Timeout, requests__ConnectionError, ThisIsTerribleError):
+        if not force_offline_data:
+            boff_data = self.downloader.fetch_json(f'{GITHUB_CACHE_URL}/cargo/boff_abilities.json')
+            if boff_data is not None and len(boff_data.get('all', {})) > 0:
+                self.cache.boff_abilities = boff_data
+                self.cache.images_set |= boff_data['all'].keys()
+                return
         backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)
         if os.path.exists(backup_path) and os.path.isfile(backup_path):
             try:
@@ -1051,6 +1057,12 @@ def get_boff_data(self, force_offline_data: bool = False):
                             self.cache.boff_abilities[environment][category][i + 1][cname] \
                                 = desc
     if len(self.cache.boff_abilities.get('all', {})) == 0:
+        if not force_offline_data:
+            boff_data = self.downloader.fetch_json(f'{GITHUB_CACHE_URL}/cargo/boff_abilities.json')
+            if boff_data is not None and len(boff_data.get('all', {})) > 0:
+                self.cache.boff_abilities = boff_data
+                self.cache.images_set |= boff_data['all'].keys()
+                return
         get_boff_data(self, force_offline_data=True)
     else:
         store_json(self.cache.boff_abilities, filepath)

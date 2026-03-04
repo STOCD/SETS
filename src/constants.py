@@ -57,6 +57,8 @@ MODIFIER_QUERY = (
     'available,isunique,isepic,info&format=json&limit=1000'
 )
 
+GITHUB_CACHE_URL = 'https://github.com/STOCD/SETS-Data/raw/refs/heads/main/'
+
 EQUIPMENT_TYPES = {
     'Body Armor': 'armor', 'EV Suit': 'ev_suit', 'Experimental Weapon': 'experimental',
     'Ground Device': 'ground_devices', 'Ground Weapon': 'weapons', 'Hangar Bay': 'hangars',

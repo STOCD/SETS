@@ -9,6 +9,7 @@ from .constants import (
     PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
     SMINMIN)
 from .datafunctions import cache_skills
+from .downloader import Downloader
 from .iofunc import (
         create_folder, delete_folder_contents, get_asset_path, load_icon, load_json, open_url,
         store_json)
@@ -98,6 +99,7 @@ class SETS():
         self.init_config()
         self.prepare_tooltip_css()
         self.init_environment()
+        self.downloader = Downloader()
         self.app, self.window = self.create_main_window()
         self.cache_icons()
         self.cache_item_aliases()

@@ -82,10 +82,11 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
 
     # download cargo data if loading from cache failed or data should be updated
     try:
-        cargo_data = fetch_json(url)
-        auto_backup_cargo_file(self, filename)
-        store_json(cargo_data, filepath)
-        return cargo_data
+        cargo_data = self.downloader.download_cargo_table(url, filename)
+        if cargo_data is not None:
+            auto_backup_cargo_file(self, filename)
+            store_json(cargo_data, filepath)
+            return cargo_data
     except (requests.exceptions.RequestException, json.JSONDecodeError):
         if ignore_cache_age:
             backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)
