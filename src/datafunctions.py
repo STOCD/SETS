@@ -88,8 +88,15 @@ def populate_cache(self, threaded_worker: ThreadObject):
         load_cargo_data(self, threaded_worker)
     self.cache.empty_image = QImage()
     self.cache.images_failed = get_cached_cargo_data(self, 'images_failed.json')
-    download_images(self, threaded_worker)
-    store_to_cache(self, self.cache.images_failed, 'images_failed.json')
+
+    # temporary: until self.cache has been replaced
+    self.images.image_set = self.cache.images_set
+    self.images.failed_images = self.cache.images_failed
+    self.cargo.boff_abilities = self.cache.boff_abilities
+
+    threaded_worker.update_splash.emit('Loading: Images')
+    self.images.download_images(self.cache.skills)
+    store_to_cache(self, self.images.failed_images, 'images_failed.json')
     load_base_images(self, threaded_worker)
 
 

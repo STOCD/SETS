@@ -4,12 +4,14 @@ from PySide6.QtCore import QSettings, Qt, QThread
 from PySide6.QtGui import QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea, QTabWidget, QWidget
 
+from .cargomanager import CargoManager
 from .constants import (
     ABOTTOM, ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS,
     PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
     SMINMIN)
 from .datafunctions import cache_skills
 from .downloader import Downloader
+from .imagemanager import ImageManager
 from .iofunc import (
         create_folder, delete_folder_contents, get_asset_path, load_icon, load_json, open_url,
         store_json)
@@ -102,6 +104,11 @@ class SETS():
         self.downloader = Downloader(
             self.config['config_subfolders']['images'],
             self.config['config_subfolders']['ship_images'])
+        self.cargo: CargoManager = CargoManager(self.config['config_subfolders'])
+        self.images: ImageManager = ImageManager(
+            self.config['config_subfolders']['images'],
+            self.config['config_subfolders']['ship_images'],
+            self.cargo, self.downloader)
         self.app, self.window = self.create_main_window()
         self.cache_icons()
         self.cache_item_aliases()
