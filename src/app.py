@@ -99,7 +99,9 @@ class SETS():
         self.init_config()
         self.prepare_tooltip_css()
         self.init_environment()
-        self.downloader = Downloader()
+        self.downloader = Downloader(
+            self.config['config_subfolders']['images'],
+            self.config['config_subfolders']['ship_images'])
         self.app, self.window = self.create_main_window()
         self.cache_icons()
         self.cache_item_aliases()
