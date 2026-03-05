@@ -323,7 +323,7 @@ def select_ship(self):
     self.widgets.ship['button'].setText(new_ship)
     ship_data = self.cache.ships[new_ship]
     exec_in_thread(
-            self, get_ship_image, self, ship_data['image'][5:],
+            self, self.images.get_ship_image, ship_data['image'][5:],
             result=lambda img: self.widgets.ship['image'].set_image(*img))
     tier = ship_data['tier']
     self.widgets.ship['tier'].clear()

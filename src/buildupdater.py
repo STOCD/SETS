@@ -25,7 +25,7 @@ def load_build(self):
         self.widgets.ship['button'].setText(ship)
         ship_data = self.cache.ships[ship]
         exec_in_thread(
-                self, get_ship_image, self, ship_data['image'][5:],
+                self, self.images.get_ship_image, ship_data['image'][5:],
                 result=lambda img: self.widgets.ship['image'].set_image(*img))
         tier = self.build['space']['tier']
         ship_tier = ship_data['tier']

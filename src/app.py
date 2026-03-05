@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt, QThread
 from PySide6.QtGui import QFontDatabase, QTextOption
@@ -106,8 +107,8 @@ class SETS():
             self.config['config_subfolders']['ship_images'])
         self.cargo: CargoManager = CargoManager(self.config['config_subfolders'])
         self.images: ImageManager = ImageManager(
-            self.config['config_subfolders']['images'],
-            self.config['config_subfolders']['ship_images'],
+            Path(self.config['config_subfolders']['images']),
+            Path(self.config['config_subfolders']['ship_images']),
             self.cargo, self.downloader)
         self.app, self.window = self.create_main_window()
         self.cache_icons()

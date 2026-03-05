@@ -2,7 +2,7 @@ from os import listdir as os__listdir
 from pathlib import Path
 from PySide6.QtGui import QImage
 from time import time
-from urllib.parse import unquote_plus
+from urllib.parse import quote_plus, unquote_plus
 
 from .cargomanager import CargoManager
 from .constants import SEVEN_DAYS_IN_SECONDS
@@ -88,3 +88,20 @@ class ImageManager():
             for skill_node in skill_group['nodes']:
                 icons.add(skill_node['image'])
         return icons
+
+    def get_ship_image(self, image_name: str, threaded_worker):
+        """
+        Tries to load ship image from local filesystem. If it is not avilable, downloads and
+        stores it. Passes the image back using the provided signal. TODO improve result handling
+
+        Parameters:
+        - :image_name: filename of the image
+        - :param threaded_worker: thread object supplying signals
+        """
+        image_path = self._ship_images_dir / quote_plus(image_name)
+        image = QImage(image_path)
+        if image.isNull():
+            # TODO integrate with failed images
+            self._downloader.download_ship_image(image_name, {})
+            image = QImage(image_path)
+        threaded_worker.result.emit((image,))
