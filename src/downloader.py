@@ -107,7 +107,7 @@ class Downloader():
             with open(filepath, 'wb') as image_file:
                 image_file.write(image_response.content)
         else:
-            url = f'{GITHUB_CACHE_URL}/images/{quote_plus(name)}.png'
+            url = f'{GITHUB_CACHE_URL}images/{quote_plus(name).replace('%', '%25')}.png'
             image_response = session.get(url)
             if image_response.ok:
                 with open(filepath, 'wb') as image_file:
