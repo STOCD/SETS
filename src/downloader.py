@@ -30,7 +30,8 @@ class Downloader():
     def __init__(self, images_dir: Path, ship_images_dir: Path):
         """
         Parameters:
-        - :param target_paths: collection of paths for saving downloaded data to
+        - :param images_dir: path to directory storing icons
+        - :param ship_images_dir: path to directory storing ship images
         """
         self._images_dir: str = str(images_dir)
         self._ship_images_dir: str = str(ship_images_dir)

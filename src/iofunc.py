@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+from json import load as json__load, JSONDecodeError
 import os
 from pathlib import Path
 from shutil import copyfile as shutil__copyfile, rmtree as shutil__rmtree
@@ -268,7 +269,7 @@ def auto_backup_cargo_file(self, filename: str):
 # --------------------------------------------------------------------------------------------------
 
 
-def get_downloaded_images(images_dir: Path) -> set:
+def get_downloaded_icons(images_dir: Path) -> set:
     """
     Returns set containing all images currently in the images folder.
     """
@@ -334,6 +335,20 @@ def load_icon(filename: str, app_directory: str) -> QIcon:
     - :param app_directory: absolute path to the app directory
     """
     return QIcon(get_asset_path(filename, app_directory))
+
+
+def load_json__new(file_path: Path) -> dict | list | None:
+    """
+    Loads json from path and returns dictionary or list. Returns `None` if no data could be found.
+
+    Parameters:
+    - :param path: path to json file
+    """
+    try:
+        with file_path.open() as json_file:
+            return json__load(json_file)
+    except (OSError, JSONDecodeError):
+        return None
 
 
 def load_json(path: str) -> dict | list:

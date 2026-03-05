@@ -21,7 +21,7 @@ from .constants import (
 from .iofunc import (
         auto_backup_cargo_file, browse_path, cache_cargo_data, copy_file, download_image,
         download_images_fast, fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data,
-        get_downloaded_images, image, load_image, load_json, read_env_file, retrieve_image,
+        get_downloaded_icons, image, load_image, load_json, read_env_file, retrieve_image,
         store_json, store_to_cache)
 from .splash import enter_splash, exit_splash, splash_text
 from .textedit import (
@@ -349,7 +349,7 @@ def download_images(self, threaded_worker: ThreadObject):
             no_retry_images.add(img)
         else:
             self.cache.images_failed.pop(img)
-    images = self.cache.images_set - no_retry_images - get_downloaded_images(
+    images = self.cache.images_set - no_retry_images - get_downloaded_icons(
         Path(self.config['config_subfolders']['images']))
     img_folder = self.config['config_subfolders']['images']
 
@@ -1158,7 +1158,7 @@ def build_cache(app_dir: Path) -> int:
     success.append(cache_cargo_data(cargo_dir / 'doffs.json', DOFF_QUERY_URL, requests_session))
 
     image_dir = config_path / 'images'
-    downloaded_images = get_downloaded_images(image_dir)
+    downloaded_images = get_downloaded_icons(image_dir)
     ultimate_icons = {'Focused Frenzy', 'Probability Manipulation', 'EPS Corruption'}
     images_set = (get_icon_set(cargo_dir) | ultimate_icons) - downloaded_images
     if len(images_set) > 0:
