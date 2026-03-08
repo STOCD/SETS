@@ -221,6 +221,7 @@ def picker(
         image_suffix = f'__{environment}__{build_key}'
     elif build_key == 'starship_traits':
         items = self.cache.starship_traits.keys()
+        image_suffix = '__space__starship_traits'
     elif build_key == 'rep_traits':
         items = self.cache.traits[environment]['rep_traits'].keys()
         image_suffix = f'__{environment}__{build_key}'

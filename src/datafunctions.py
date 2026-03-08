@@ -226,21 +226,29 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
             except (KeyError, AttributeError):
                 pass
     store_to_cache(self, self.cache.traits, 'traits.json')
-    store_to_cache(self, self.cache.alt_images, 'alt_images.json')
 
     threaded_worker.update_splash.emit('Loading: Starship Traits')
     shiptrait_cargo = get_cargo_data(self, 'starship_traits.json', STARSHIP_TRAIT_QUERY_URL)
-    self.cache.starship_traits = {ship_trait['name']: {
-        'Page': ship_trait['Page'],
-        'name': ship_trait['name'],
-        'obtained': ship_trait['obtained'],
-        'tooltip': (
-                f"<p style='{head_s}'>{ship_trait['name']}</p><p style='{subhead_s}'>"
-                f"Starship Trait</p><p style='margin:0'>"
-                f"{ship_trait['short']}</p>{parse_wikitext(ship_trait['detailed'], tags)}")
-    } for ship_trait in shiptrait_cargo}
+    for ship_trait in shiptrait_cargo:
+        name = ship_trait['name']
+        if ship_trait['icon_name'] is None:
+            self.cache.images_set.add(name)
+        else:
+            self.cache.images_set.add(ship_trait['icon_name'])
+            self.cache.alt_images[f"{name}__space__starship_traits"] = (
+                    ship_trait['icon_name'])
+        self.cache.starship_traits[name] = {
+            'Page': ship_trait['Page'],
+            'name': name,
+            'obtained': ship_trait['obtained'],
+            'tooltip': (
+                    f"<p style='{head_s}'>{name}</p><p style='{subhead_s}'>"
+                    f"Starship Trait</p><p style='margin:0'>"
+                    f"{ship_trait['short']}</p>{parse_wikitext(ship_trait['detailed'], tags)}")
+        }
     self.cache.images_set |= self.cache.starship_traits.keys()
     store_to_cache(self, self.cache.starship_traits, 'starship_traits.json')
+    store_to_cache(self, self.cache.alt_images, 'alt_images.json')
 
     threaded_worker.update_splash.emit('Loading: Bridge Officers')
     get_boff_data(self)
@@ -1105,7 +1113,11 @@ def get_icon_set(cargo_dir: Path) -> set[str]:
             else:
                 images_set.add(trait['icon_name'])
     shiptrait_cargo_data = load_json(str(cargo_dir / 'starship_traits.json'))
-    images_set |= set(ship_trait['name'] for ship_trait in shiptrait_cargo_data)
+    for ship_trait in shiptrait_cargo_data:
+        if ship_trait['icon_name'] is None:
+            images_set.add(ship_trait['name'])
+        else:
+            images_set.add(ship_trait['icon_name'])
     return images_set
 
 

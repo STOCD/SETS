@@ -43,7 +43,8 @@ TRAIT_QUERY_URL = (
 )
 STARSHIP_TRAIT_QUERY_URL = (
     WIKI_URL + 'Special:CargoExport?tables=StarshipTraits&fields=_pageName%3DPage,name,short,type,'
-    'detailed,obtained,basic&limit=2500&format=json&where=name%20IS%20NOT%20NULL'
+    'detailed,obtained,basic,icon_name=icon_name&limit=2500&format=json'
+    '&where=name%20IS%20NOT%20NULL'
 )
 DOFF_QUERY_URL = (
     WIKI_URL + 'Special:CargoExport?tables=Specializations&fields=name=spec,_pageName,shipdutytype,'
