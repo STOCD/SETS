@@ -45,6 +45,7 @@ def init_backend(self):
 
     enter_splash(self)
     load_build_file(self, self.config['autosave_filename'], update_ui=False)
+    self.downloader.default_session_from_env()
     exec_in_thread(
             self, populate_cache, self, finished=finish_backend_init,
             update_splash=lambda new_text: splash_text(self, new_text))

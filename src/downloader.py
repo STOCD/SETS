@@ -1,4 +1,5 @@
 from json import loads as json__loads, JSONDecodeError
+from os import getenv as os__getenv
 from pathlib import Path
 from requests import Session
 from requests.exceptions import Timeout
@@ -49,6 +50,21 @@ class Downloader():
         """
         self._cookies.update(cookies)
         self._headers.update(headers)
+        self._session.cookies.clear()
+        self._session.cookies.update(self._cookies)
+        self._session.headers.clear()
+        self._session.headers.update(self._headers)
+
+    def default_session_from_env(self):
+        """
+        Configures default session from env variables.
+        """
+        cf_clearance = os__getenv('SETS_CF_CLEARANCE')
+        if cf_clearance is not None:
+            self._cookies['cf_clearance'] = cf_clearance
+        user_agent = os__getenv('SETS_USER_AGENT')
+        if user_agent is not None:
+            self._headers['User-Agent'] = user_agent
         self._session.cookies.clear()
         self._session.cookies.update(self._cookies)
         self._session.headers.clear()
