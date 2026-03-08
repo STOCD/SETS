@@ -9,7 +9,7 @@ from src.datafunctions import build_cache
 
 class Launcher():
 
-    version = '2026.03b060'
+    version = '2026.03b080'
     __version__ = '2.3'
 
     # holds the style of the app
