@@ -559,14 +559,14 @@ def set_skill_unlock_ground(self, id: int, state: int | None):
     unlock_button = self.widgets.build['skill_unlocks']['ground'][id]
     if state == 0:
         unlock_button.set_item(
-                self.cache.images['arrow-down'])
+                self.cache.images['arrow-up'])
         unlock_button.tooltip = get_skill_unlock_tooltip_ground(self, id, 0)
         self.build['skill_unlocks']['ground'][id] = 0
         if not self.building:
             unlock_button.force_tooltip_update()
     elif state == 1:
         unlock_button.set_item(
-                self.cache.images['arrow-up'])
+                self.cache.images['arrow-down'])
         unlock_button.tooltip = get_skill_unlock_tooltip_ground(self, id, 1)
         self.build['skill_unlocks']['ground'][id] = 1
         if not self.building:
@@ -613,14 +613,14 @@ def set_skill_unlock_space(
     else:
         if state == 0:
             unlock_button.set_item(
-                    self.cache.images['arrow-down'])
+                    self.cache.images['arrow-up'])
             unlock_button.tooltip = get_skill_unlock_tooltip_space(self, career, id, 0)
             self.build['skill_unlocks'][career][id] = 0
             if not self.building:
                 unlock_button.force_tooltip_update()
         elif state == 1:
             unlock_button.set_item(
-                    self.cache.images['arrow-up'])
+                    self.cache.images['arrow-down'])
             unlock_button.tooltip = get_skill_unlock_tooltip_space(self, career, id, 1)
             self.build['skill_unlocks'][career][id] = 1
             if not self.building:
