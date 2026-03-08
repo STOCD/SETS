@@ -541,7 +541,7 @@ def create_bonus_bar_segment(
     seg.setEnabled(False)
     seg.setCheckable(True)
     seg.setStyleSheet(get_style_class(self, 'QPushButton', style, style_override))
-    seg.setFixedSize(7 * self.config['ui_scale'], 21 * self.config['ui_scale'])
+    seg.setFixedSize(7 * self.config['ui_scale'], 17 * self.config['ui_scale'])
     self.widgets.skill_bonus_bars[bar][index] = seg
     return seg
 
