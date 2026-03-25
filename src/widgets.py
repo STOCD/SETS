@@ -64,6 +64,7 @@ class WidgetStorage():
                 'aft_weapons_label': None,
                 'boffs': [[None] * 4, [None] * 4, [None] * 4, [None] * 4, [None] * 4, [None] * 4],
                 'boff_labels': [None] * 6,
+                'boff_label_icons': [None] * 6,
                 # 'boff_specs': [None] * 6,
                 'core': [''],
                 'deflector': [''],

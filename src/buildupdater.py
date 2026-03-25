@@ -224,8 +224,16 @@ def align_space_frame(self, ship_data: dict, clear: bool = False):
 
     # Boffs
     boff_specs = map(lambda s: get_boff_spec(self, s), ship_data['boffs'])
-    for boff_num, boff_details in enumerate(sorted(boff_specs, reverse=True)):
-        update_boff_seat(self, boff_num, *boff_details, clear)
+    if 'Science Destroyer' in ship_data['type']:
+        for boff_num, boff_details in enumerate(sorted(boff_specs, reverse=True)):
+            if (boff_details[0] == 3 and boff_details[1] == 'Tactical'
+                    or boff_details[0] == 4 and boff_details[1] == 'Science'):
+                update_boff_seat(self, boff_num, *boff_details, clear, sci_destroyer_seat=True)
+            else:
+                update_boff_seat(self, boff_num, *boff_details, clear)
+    else:
+        for boff_num, boff_details in enumerate(sorted(boff_specs, reverse=True)):
+            update_boff_seat(self, boff_num, *boff_details, clear)
     for boff_to_hide in range(boff_num + 1, 6):
         update_boff_seat(self, boff_to_hide, rank=0, profession='', clear=clear, hide_seat=True)
 
@@ -341,7 +349,7 @@ def update_starship_traits(self, target_quantity: int, clear: bool = False):
 
 def update_boff_seat(
         self, boff_id: str, rank: int, profession: str, specialization: str = '',
-        clear: bool = False, hide_seat: bool = False):
+        clear: bool = False, hide_seat: bool = False, sci_destroyer_seat: bool = False):
     """
     Shows/hides appropriate amount of buttons of the boff seat; updates build; space build only
 
@@ -352,9 +360,12 @@ def update_boff_seat(
     - :param specialization: seat specialization
     - :param clear: set to True to clear build
     - :param hide_seat: hides/shows seat label
+    - :param sci_destroyer_seat: set to `True` to upgrade seat to commander and show info label
     """
     buttons = self.widgets.build['space']['boffs'][boff_id]
     max_quantity = 4
+    if sci_destroyer_seat:
+        rank = 4
     for show_index in range(rank):
         buttons[show_index].show()
         if clear:
@@ -385,6 +396,17 @@ def update_boff_seat(
             label_options = (profession + spec_label,)
             label.setDisabled(True)
         label.addItems(label_options)
+    icon_label = self.widgets.build['space']['boff_label_icons'][boff_id]
+    if sci_destroyer_seat:
+        if profession == 'Science':
+            icon_label.setPixmap(self.cache.icons['sci-small'])
+            icon_label._tooltip.setText('Commander slot only available in science mode.')
+        elif profession == 'Tactical':
+            icon_label.setPixmap(self.cache.icons['tac-small'])
+            icon_label._tooltip.setText('Commander slot only available in tactical mode.')
+        icon_label.show()
+    else:
+        icon_label.hide()
     if clear:
         default_profession = 'Tactical' if profession == 'Universal' else profession
         self.build['space']['boff_specs'][boff_id] = [default_profession, specialization]

@@ -178,6 +178,7 @@ BOFF_RANKS_MD = ('Commander', 'Lieutenant Commander', 'Lieutenant', 'Ensign')
 
 SHIP_TEMPLATE = {
     'name': '<Pick Ship>',
+    'type': [],
     'boffs': [
         'Commander Universal-Miracle Worker',
         'Commander Universal-Command',

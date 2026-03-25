@@ -189,8 +189,10 @@ class SETS():
                 self.box_width * 1.2, self.box_width * 1.2)
         self.cache.icons['tac'] = load_icon('tac_icon.png', self.app_dir).pixmap(
                 self.box_width, self.box_width)
+        self.cache.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir).pixmap(25, 25)
         self.cache.icons['sci'] = load_icon('sci_icon.png', self.app_dir).pixmap(
                 self.box_width, self.box_width)
+        self.cache.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir).pixmap(25, 25)
         self.cache.icons['eng'] = load_icon('eng_icon.png', self.app_dir).pixmap(
                 self.box_width, self.box_width)
         self.cache.icons['STOCD'] = load_icon('stocd.png', self.app_dir).pixmap(

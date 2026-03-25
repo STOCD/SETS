@@ -14,7 +14,7 @@ from .constants import (
         SMAXMIN, SMINMAX)
 from .style import get_style, get_style_class, merge_style, theme_font
 from .textedit import format_skill_tooltip
-from .widgets import DoffCombobox, GridLayout, HBoxLayout, ItemButton, VBoxLayout
+from .widgets import DoffCombobox, GridLayout, HBoxLayout, ItemButton, TooltipLabel, VBoxLayout
 
 
 def create_frame(self, style='frame', style_override={}, size_policy=None) -> QFrame:
@@ -313,6 +313,11 @@ def create_boff_station_space(
     else:
         label_options = (profession + specialization,)
     widget_storage = self.widgets.build['space']
+    label_layout = HBoxLayout(spacing=self.config['ui_scale'] * 3)
+    icon_label = TooltipLabel('', create_label(self, '', 'label_tooltip'))
+    widget_storage['boff_label_icons'][boff_id] = icon_label
+    label_layout.addWidget(icon_label, alignment=ALEFT)
+    icon_label.hide()
     label = create_combo_box(self, size_policy=SMAXMAX, style_override=self.theme['boff_combo'])
     label.currentTextChanged.connect(lambda new: boff_profession_callback_space(self, boff_id, new))
     label.addItems(label_options)
@@ -320,7 +325,8 @@ def create_boff_station_space(
     label_size_policy.setRetainSizeWhenHidden(True)
     label.setSizePolicy(label_size_policy)
     widget_storage['boff_labels'][boff_id] = label
-    layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
+    label_layout.addWidget(label, alignment=ALEFT)
+    layout.addLayout(label_layout, 0, 0, 1, 4, alignment=ALEFT)
     for i in range(4):
         button = create_item_button(self)
         button.sizePolicy().setRetainSizeWhenHidden(True)

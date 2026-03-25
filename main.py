@@ -9,8 +9,8 @@ from src.datafunctions import build_cache
 
 class Launcher():
 
-    version = '2026.03b080'
-    __version__ = '2.3'
+    version = '2026.03b250'
+    __version__ = '2.4'
 
     # holds the style of the app
     theme = {
