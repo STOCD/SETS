@@ -81,11 +81,14 @@ FACTIONS = {'Federation', 'Klingon', 'Romulan', 'Dominion', 'TOS Federation', 'D
 
 SPECIES = {
     'Federation': {
-        'Human', 'Andorian', 'Bajoran', 'Benzite', 'Betazoid', 'Bolian', 'Ferengi', 'Pakled',
-        'Rigelian', 'Saurian', 'Tellarite', 'Trill', 'Joined Trill', 'Vulcan', 'Alien',
-        'Liberated Borg'
+        'Human', 'Andorian', 'Bajoran', 'Benzite', 'Betazoid', 'Bolian', 'Caitian', 'Ferengi',
+        'Pakled', 'Rigelian', 'Saurian', 'Talaxian', 'Tellarite', 'Trill', 'Joined Trill',
+        'Vulcan', 'Alien', 'Liberated Borg', 'Klingon'
     },
-    'Klingon': {'Klingon', 'Gorn', 'Lethean', 'Nausicaan', 'Orion', 'Alien', 'Liberated Borg'},
+    'Klingon': {
+        'Klingon', 'Gorn', 'Lethean', 'Nausicaan', 'Orion', 'Alien', 'Liberated Borg',
+        'Ferasan', 'Talaxian'
+    },
     'Romulan': {'Romulan', 'Reman', 'Alien', 'Liberated Borg'},
     'Dominion': {"Jem'Hadar", "Jem'Hadar Vanguard"},
     'TOS Federation': {'Human', 'Andorian', 'Tellarite', 'Vulcan'},
