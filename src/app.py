@@ -281,8 +281,8 @@ class SETS():
         left_button_group = {
             'Save': {'callback': self.save_build_callback},
             'Open': {'callback': self.load_build_callback},
-            'Clear': {'callback': self.clear_build_callback},
-            'Clear all': {'callback': self.clear_all}
+            'Clear Current Tab': {'callback': self.clear_build_callback},
+            'Clear All Tabs': {'callback': self.clear_all}
         }
         menu_layout.addLayout(self.create_button_series(left_button_group), 0, 0, ALEFT | ATOP)
         center_button_group = {
