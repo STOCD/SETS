@@ -438,6 +438,9 @@ def load_equipment_cat(self, build_key: str, environment: str):
     """
     for subkey, item in enumerate(self.build[environment][build_key]):
         if item is not None and item != '':
+            if isinstance(item, dict):
+                item.setdefault('mark', '')
+                item.setdefault('modifiers', [None, None, None, None])
             slot_equipment_item(self, item, environment, build_key, subkey)
         else:
             self.widgets.build[environment][build_key][subkey].clear()
