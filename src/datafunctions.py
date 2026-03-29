@@ -83,6 +83,9 @@ def populate_cache(self, threaded_worker: ThreadObject):
     Parameters:
     - :param threaded_worker: worker object supplying signals
     """
+    threaded_worker.update_splash.emit('Syncing assets…')
+    self.sync.run(on_progress=lambda t, c, n: threaded_worker.update_splash.emit(t))
+
     success = load_cargo_cache(self, threaded_worker)
     if not success:
         self.cache.reset_cache(keep_static_data=True)
