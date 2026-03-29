@@ -951,19 +951,45 @@ class SETS():
 
     def setup_splash(self, frame: QFrame):
         """
-        Creates Splash screen.
+        Creates Splash screen with progress bar and file counter.
+
+        Layout:
+          row 1 — loading image (centred)
+          row 2 — status label (phase text + ETA)
+          row 3 — progress bar (hidden until splash_progress() is called)
+          row 4 — file counter label (hidden until progress is reported)
+          rows 0 and 5 — vertical stretch spacers
         """
-        layout = GridLayout(margins=0, spacing=0)
+        from PySide6.QtWidgets import QProgressBar
+        layout = GridLayout(margins=0, spacing=4)
         layout.setRowStretch(0, 1)
-        layout.setRowStretch(3, 1)
+        layout.setRowStretch(5, 1)
         layout.setColumnStretch(0, 3)
         layout.setColumnStretch(1, 2)
         layout.setColumnStretch(2, 3)
+
         loading_image = ImageLabel(get_asset_path('sets_loading.png', self.app_dir), (1, 1))
         layout.addWidget(loading_image, 1, 1)
+
         loading_label = self.create_label('Loading: ...', 'label_subhead')
         self.widgets.loading_label = loading_label
         layout.addWidget(loading_label, 2, 0, 1, 3, alignment=AHCENTER)
+
+        progress_bar = QProgressBar()
+        progress_bar.setRange(0, 100)
+        progress_bar.setValue(0)
+        progress_bar.setTextVisible(True)
+        progress_bar.setFormat('%p%')
+        progress_bar.setFixedHeight(16)
+        progress_bar.hide()
+        self.widgets.progress_bar = progress_bar
+        layout.addWidget(progress_bar, 3, 0, 1, 3)
+
+        progress_detail = self.create_label('', 'label_subhead')
+        progress_detail.hide()
+        self.widgets.progress_detail = progress_detail
+        layout.addWidget(progress_detail, 4, 0, 1, 3, alignment=AHCENTER)
+
         frame.setLayout(layout)
 
     def create_context_menu(self) -> ContextMenu:
