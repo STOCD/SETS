@@ -23,7 +23,7 @@ from .iofunc import (
         download_images_fast, fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data,
         get_downloaded_icons, image, load_image, load_json, read_env_file, retrieve_image,
         store_json, store_to_cache)
-from .splash import enter_splash, exit_splash, splash_text
+from .splash import enter_splash, exit_splash, splash_progress, splash_text
 from .textedit import (
         create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
         sanitize_equipment_name)
