@@ -13,6 +13,7 @@ from .constants import (
 from .datafunctions import cache_skills
 from .downloader import Downloader
 from .imagemanager import ImageManager
+from .syncmanager import SyncManager
 from .iofunc import (
         create_folder, delete_folder_contents, get_asset_path, load_icon, load_json, open_url,
         store_json)
@@ -110,6 +111,12 @@ class SETS():
             Path(self.config['config_subfolders']['images']),
             Path(self.config['config_subfolders']['ship_images']),
             self.cargo, self.downloader)
+        self.sync: SyncManager = SyncManager(
+            self.config['config_subfolders']['images'],
+            self.config['config_subfolders']['ship_images'],
+            self.config['config_subfolders']['cargo'],
+            self.config['config_subfolders']['cache'],
+            self.downloader)
         self.app, self.window = self.create_main_window()
         self.cache_icons()
         self.cache_item_aliases()
