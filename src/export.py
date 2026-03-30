@@ -205,7 +205,7 @@ def get_build_markdown(self, environment: str, type_: str) -> str:
         boff_table = [['**Profession**', '**Power**', '**Notes**']]
         for specs, station in zip(self.build['space']['boff_specs'], self.build['space']['boffs']):
             if any(specs):
-                station_name = BOFF_RANKS_MD[station.count(None)] + ' ' + specs[0]
+                station_name = BOFF_RANKS_MD[min(station.count(None), len(BOFF_RANKS_MD) - 1)] + ' ' + specs[0]
                 if specs[1] != '':
                     station_name += ' / ' + specs[1]
                 boff_table += md_boff_table(self, station, station_name)
