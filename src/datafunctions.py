@@ -1144,7 +1144,13 @@ def get_boff_icons(boff_cache: dict[str, dict]) -> set[str]:
 def get_ship_icons(ship_list: list[dict[str]]) -> set[str]:
     """
     """
-    return set(ship['image'][5:] for ship in ship_list)
+    icon_set = set()
+    for ship in ship_list:
+        try:
+            icon_set.add(ship['image'][5:])
+        except TypeError:
+            pass
+    return icon_set
 
 
 def build_cache(app_dir: Path) -> int:
