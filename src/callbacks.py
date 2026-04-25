@@ -188,9 +188,9 @@ def get_boff_abilities(
     else:
         profession = self.build['ground']['boff_profs'][boff_id]
         specialization = self.build['ground']['boff_specs'][boff_id]
-    abilities = self.cache.boff_abilities[environment][profession][rank].keys()
+    abilities = self.cache.boff_abilities[environment][profession][rank]
     if specialization != '':
-        abilities |= self.cache.boff_abilities[environment][specialization][rank].keys()
+        abilities = abilities + self.cache.boff_abilities[environment][specialization][rank]
     return abilities
 
 
@@ -249,13 +249,14 @@ def picker(
                 slot_trait_item(
                         self, {'item': new_item['item']}, environment, build_key, build_subkey)
             elif build_key == 'boffs':
+                ability_name, _, ability_rank = new_item['item'].rpartition(' ')
                 self.build[environment]['boffs'][boff_id][build_subkey] = {
-                    'item': new_item['item']
+                    'item': ability_name,
+                    'rank': ability_rank
                 }
-                item_image = image(self, new_item['item'])
-                widget_storage['boffs'][boff_id][build_subkey].set_item(item_image)
+                widget_storage['boffs'][boff_id][build_subkey].set_item(image(self, ability_name))
                 widget_storage['boffs'][boff_id][build_subkey].tooltip = (
-                        self.cache.boff_abilities['all'][new_item['item']])
+                        self.cache.boff_abilities['all'][ability_name][ability_rank])
         self.autosave()
 
 

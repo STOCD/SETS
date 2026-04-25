@@ -196,14 +196,14 @@ class Cache():
 
     def boff_dict(self):
         return {
-            'Tactical': [dict(), dict(), dict(), dict()],
-            'Engineering': [dict(), dict(), dict(), dict()],
-            'Science': [dict(), dict(), dict(), dict()],
-            'Intelligence': [dict(), dict(), dict(), dict()],
-            'Command': [dict(), dict(), dict(), dict()],
-            'Pilot': [dict(), dict(), dict(), dict()],
-            'Temporal': [dict(), dict(), dict(), dict()],
-            'Miracle Worker': [dict(), dict(), dict(), dict()],
+            'Tactical': [list(), list(), list(), list()],
+            'Engineering': [list(), list(), list(), list()],
+            'Science': [list(), list(), list(), list()],
+            'Intelligence': [list(), list(), list(), list()],
+            'Command': [list(), list(), list(), list()],
+            'Pilot': [list(), list(), list(), list()],
+            'Temporal': [list(), list(), list(), list()],
+            'Miracle Worker': [list(), list(), list(), list()],
         }
 
     def __getitem__(self, key: str):

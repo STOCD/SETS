@@ -51,9 +51,9 @@ DOFF_QUERY_URL = (
     'department,description,white,green,blue,purple,violet,gold&limit=1000&offset=0&format=json'
 )
 TRAYSKILL_QUERY = (
-    WIKI_URL + 'Special:CargoExport?tables=TraySkill&fields=_pageName,name,activation,affects,'
-    'description,description_long,rank1rank,rank2rank,rank3rank,recharge_base,recharge_global,'
-    'region,system,targets,type&limit=1000&offset=0&format=json'
+    WIKI_URL + 'Special:CargoExport?tables=TraySkill&fields=_pageName,name,description,'
+    'description_long,rank1rank,rank2rank,rank3rank,region,type,rank1info,rank2info,rank3info'
+    '&limit=1000&offset=0&format=json'
 )
 MODIFIER_QUERY = (
     WIKI_URL + 'Special:CargoExport?tables=Modifiers&fields=_pageName,modifier,type,stats,'
@@ -170,6 +170,7 @@ MARKS = (
 BOFF_RANKS = {
     'Commander': 4,
     'Lieutenant Commander': 3,
+    'Lt. Commander': 3,
     'Lieutenant': 2,
     'Ensign': 1
 }

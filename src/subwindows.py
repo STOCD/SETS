@@ -225,8 +225,10 @@ class Picker(BasePicker):
         """
         new_item = str(new_index.data(Qt.ItemDataRole.DisplayRole))
         self._item['item'] = new_item
-        self._item_button.set_item(alt_image(self._sets, new_item, self._image_suffix))
         self._item_label.setText(new_item)
+        if new_item.endswith('I'):
+            new_item, _, _ = new_item.rpartition(' ')
+        self._item_button.set_item(alt_image(self._sets, new_item, self._image_suffix))
         for i in range(5):
             self._mod_combos[i].setCurrentText('')
 

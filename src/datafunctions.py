@@ -15,9 +15,9 @@ from urllib.parse import unquote_plus
 
 from .buildupdater import get_boff_spec, load_build, load_skill_pages
 from .constants import (
-        BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES,
+        BOFF_RANKS, BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES,
         GITHUB_CACHE_URL, ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL,
-        STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, WIKI_IMAGE_URL)
+        STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, TRAYSKILL_QUERY, WIKI_IMAGE_URL)
 from .iofunc import (
         auto_backup_cargo_file, browse_path, cache_cargo_data, copy_file, download_image,
         download_images_fast, fetch_html, get_asset_path, get_cached_cargo_data, get_cargo_data,
@@ -251,7 +251,37 @@ def load_cargo_data(self, threaded_worker: ThreadObject):
     store_to_cache(self, self.cache.alt_images, 'alt_images.json')
 
     threaded_worker.update_splash.emit('Loading: Bridge Officers')
-    get_boff_data(self)
+    boff_head = self.theme['tooltip']['boff_header']
+    boff_subhead = self.theme['tooltip']['boff_subheader']
+    boff_cargo = get_cargo_data(self, 'boff_abilities.json', TRAYSKILL_QUERY)
+    boff_types = CAREERS | PRIMARY_SPECS
+    rank_numbers = ((1, 'I'), (2, 'II'), (3, 'III'))
+    for boff_ability in boff_cargo:
+        boff_region = boff_ability['region'].lower()
+        boff_type = boff_ability['type']
+        if boff_type not in boff_types or boff_region != 'space' and boff_region != 'ground':
+            continue
+        boff_name = boff_ability['name']
+        ability_item = {
+            'Page': boff_ability['_pageName'],
+            'name': boff_name,
+            'I': '',
+            'II': '',
+            'III': ''
+        }
+        desc = boff_ability['description']
+        desc_long = boff_ability['description long']
+        for decimal, roman in rank_numbers:
+            rank_id = BOFF_RANKS.get(boff_ability[f'rank{decimal}rank'], 0) - 1
+            if rank_id >= 0:
+                self.cache.boff_abilities[boff_region][boff_type][rank_id].append(
+                    boff_name + ' ' + roman)
+                ability_item[roman] = (
+                    f"<p style='{boff_head}'>{boff_name} {roman}</p><p style={boff_subhead}>"
+                    f"{desc}</p><p>{desc_long}</p>"
+                    f"{parse_wikitext(dewikify(boff_ability[f'rank{decimal}info']), tags)}")
+        self.cache.boff_abilities['all'][boff_name] = ability_item
+    self.cache.images_set |= self.cache.boff_abilities['all'].keys()
     store_to_cache(self, self.cache.boff_abilities, 'boff_abilities.json')
 
     threaded_worker.update_splash.emit('Loading: Modifiers')
@@ -965,123 +995,6 @@ def backup_cargo_data(self):
         cargo_path = os.path.join(cargo_folder, file_name)
         backups_path = os.path.join(backups_folder, file_name)
         copy_file(cargo_path, backups_path)
-
-
-def get_boff_data(self, force_offline_data: bool = False):
-    """
-    Populates self.cache.boff_abilities until boff abilties are available from cargo
-
-    Parameters:
-    - :param force_offline_data: Set to True to force the use of cargo backup in case the online
-    source is unavailable
-    """
-    class ThisIsTerribleError(RuntimeError):
-        pass
-
-    filename = 'boff_abilities.json'
-    filepath = os.path.join(self.config['config_subfolders']['cargo'], filename)
-    bad_cache = False
-
-    # try loading from cache
-    if os.path.exists(filepath) and os.path.isfile(filepath):
-        last_modified = os.path.getmtime(filepath)
-        if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
-            try:
-                self.cache.boff_abilities = load_json(filepath)
-                if len(self.cache.boff_abilities.get('all', {})) > 0:
-                    self.cache.images_set |= self.cache.boff_abilities['all'].keys()
-                    return
-                else:
-                    bad_cache = True
-            except JSONDecodeError:
-                pass
-
-    # download if not exists or outdated
-    try:
-        if not bad_cache:
-            auto_backup_cargo_file(self, filename)
-        if force_offline_data:
-            raise ThisIsTerribleError
-        boff_html = fetch_html(BOFF_URL)
-    except (requests__Timeout, requests__ConnectionError, ThisIsTerribleError):
-        if not force_offline_data:
-            boff_data = self.downloader.fetch_json(f'{GITHUB_CACHE_URL}/cargo/boff_abilities.json')
-            if boff_data is not None and len(boff_data.get('all', {})) > 0:
-                self.cache.boff_abilities = boff_data
-                self.cache.images_set |= boff_data['all'].keys()
-                return
-        backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)
-        if os.path.exists(backup_path) and os.path.isfile(backup_path):
-            try:
-                cargo_data = load_json(backup_path)
-                store_json(cargo_data, filepath)
-                self.cache.boff_abilities = cargo_data
-                if len(self.cache.boff_abilities.get('all', {})) > 0:
-                    self.cache.images_set |= self.cache.boff_abilities['all'].keys()
-                    return
-            except JSONDecodeError:
-                pass
-        backup_path = os.path.join(self.config['config_subfolders']['auto_backups'], filename)
-        if os.path.exists(backup_path) and os.path.isfile(backup_path):
-            try:
-                cargo_data = load_json(backup_path)
-                store_json(cargo_data, filepath)
-                self.cache.boff_abilities = cargo_data
-                if len(self.cache.boff_abilities.get('all', {})) > 0:
-                    self.cache.images_set |= self.cache.boff_abilities['all'].keys()
-                    return
-            except JSONDecodeError:
-                pass
-        sys.stderr.write(f'[Error] Html could not be retrieved ({filename})\n')
-        sys.exit(1)
-
-    boffCategories = CAREERS | PRIMARY_SPECS
-    header_tag = f"<p style='{self.theme['tooltip']['boff_header']}'>"
-    for environment in ('space', 'ground'):
-        l0 = [h2 for h2 in boff_html.find('h2') if ' Abilities' in h2.html]
-        if environment == 'ground':
-            l0 = [line for line in l0 if "Pilot" not in line.text]
-            l1 = boff_html.find('h2+h3+table+h3+table')
-        else:
-            l1 = boff_html.find('h2+h3+table')
-
-        for category in boffCategories:
-            table = [header[1] for header in zip(l0, l1) if isinstance(header[0].find('#'
-                     + category.replace(' ', '_') + '_Abilities', first=True), Element)]
-            if not len(table):
-                continue
-            trs = table[0].find('tr')
-            for tr in trs:
-                tds = tr.find('td')
-                if len(tds) > 0:
-                    a_name = tds[0].text.strip()
-                    a_desc = tds[5].text.strip()
-                    if a_desc == 'III':
-                        a_desc = tds[6].text.strip()
-                    self.cache.boff_abilities['all'][a_name] = (
-                        f"{header_tag}{a_name}</p><p>{a_desc}</p>")
-                    self.cache.images_set.add(a_name)
-                rank1 = 1
-                for i in [0, 1, 2, 3]:
-                    if len(tds) > 0 and tds[rank1 + i].text.strip() != '':
-                        cname = tds[0].text.strip()
-                        desc = tds[5].text.strip()
-                        if desc == 'III':
-                            desc = tds[6].text.strip()
-                        self.cache.boff_abilities[environment][category][i][cname] = desc
-                        if i == 2 and tds[rank1 + i].text.strip() in ['I', 'II']:
-                            self.cache.boff_abilities[environment][category][i + 1][cname] \
-                                = desc
-    if len(self.cache.boff_abilities.get('all', {})) == 0:
-        if not force_offline_data:
-            boff_data = self.downloader.fetch_json(f'{GITHUB_CACHE_URL}/cargo/boff_abilities.json')
-            if boff_data is not None and len(boff_data.get('all', {})) > 0:
-                self.cache.boff_abilities = boff_data
-                self.cache.images_set |= boff_data['all'].keys()
-                return
-        get_boff_data(self, force_offline_data=True)
-    else:
-        store_json(self.cache.boff_abilities, filepath)
 
 
 def get_icon_set(cargo_dir: Path) -> set[str]:

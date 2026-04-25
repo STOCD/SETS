@@ -359,6 +359,11 @@ class Launcher():
                 'color': '#42afca',
                 'font-size': 'large',
                 'font-weight': 'bold',
+                'margin': 0
+            },
+            'boff_subheader': {
+                'font-size': 10,
+                'margin': (0, 0, 20, 0)
             },
             'trait_header': {
                 'color': '#42afca',
