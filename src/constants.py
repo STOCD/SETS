@@ -108,7 +108,7 @@ SPECIES_TRAITS = {
         'Joined Trill': 'Joined Symbiote',
         'Nausicaan': 'Pirate',
         # 'Romulan': 'Subterfuge',
-        "Jem'Hadar Vanguard": 'Engineered Soldier (Space)'
+        "Jem'Hadar Vanguard": 'Engineered Soldier'
     },
     'ground': {
         'Human': 'Teamwork',
