@@ -22,6 +22,8 @@ SCROLLOFF = Qt.ScrollBarPolicy.ScrollBarAlwaysOff
 
 SEVEN_DAYS_IN_SECONDS = 60 * 60 * 24 * 7
 
+BUILD_VERSION = 1
+
 WIKI_URL = 'https://stowiki.net/wiki/'
 WIKI_IMAGE_URL = WIKI_URL + 'Special:FilePath/'
 SHIP_QUERY_URL = (

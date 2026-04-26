@@ -15,8 +15,8 @@ from urllib.parse import unquote_plus
 
 from .buildupdater import get_boff_spec, load_build, load_skill_pages
 from .constants import (
-        BOFF_RANKS, BOFF_URL, BUILD_CONVERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES,
-        GITHUB_CACHE_URL, ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL,
+        BOFF_RANKS, BUILD_CONVERSION, BUILD_VERSION, CAREERS, DOFF_QUERY_URL, EQUIPMENT_TYPES,
+        ITEM_QUERY_URL, MODIFIER_QUERY, PRIMARY_SPECS, SHIP_QUERY_URL,
         STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL, TRAYSKILL_QUERY, WIKI_IMAGE_URL)
 from .iofunc import (
         auto_backup_cargo_file, browse_path, cache_cargo_data, copy_file, download_image,
@@ -602,6 +602,40 @@ def remove_invalid_build_items(self, build: dict):
                         category_items[index] = ''
 
 
+def update_build_version(self, build: dict[str]):
+    """
+    Updates contents of `build` to match the newest version.
+
+    Parameters:
+    - :param build: contains build data of outdated version
+    """
+    def _fix_station(environment):
+        for rank_id in range(4):
+            if isinstance(boff_station[rank_id], dict) and 'rank' not in boff_station[rank_id]:
+                ability_name = boff_station[rank_id]['item']
+                prof_abilities = self.cache.boff_abilities[environment][prof]
+                spec_abilities = self.cache.boff_abilities[environment].get(spec, None)
+                for rank in ('III', 'II', 'I'):
+                    if f'{ability_name} {rank}' in prof_abilities[rank_id]:
+                        boff_station[rank_id]['rank'] = rank
+                        break
+                    elif (spec_abilities is not None
+                            and f'{ability_name} {rank}' in spec_abilities[rank_id]):
+                        boff_station[rank_id]['rank'] = rank
+                        break
+                else:
+                    boff_station[rank_id] = ''
+
+    for boff_station, (prof, spec) in zip(build['space']['boffs'], build['space']['boff_specs']):
+        _fix_station('space')
+    for station_id, boff_station in enumerate(build['ground']['boffs']):
+        prof = build['ground']['boff_profs'][station_id]
+        spec = build['ground']['boff_specs'][station_id]
+        _fix_station('ground')
+
+    build['_version'] = BUILD_VERSION
+
+
 def encode_in_image(self, image: QImage, data: str):
     """
     Embeds data into image
@@ -771,13 +805,14 @@ def load_build_file(self, filepath: str, update_ui: bool = True):
     else:
         return
     new_build = empty_build(self)
-    if len(build_data.keys() | new_build.keys()) == 7:
+    if build_data.get('_version', -1) == BUILD_VERSION:
         merge_build(self, new_build, build_data)
     elif 'versionJSON' in build_data:
         build_data = json__loads(compensate_old_build(self, json__dumps(build_data)))
         new_build.update(convert_old_build(self, build_data))
     else:
-        return
+        merge_build(self, new_build, build_data)
+        update_build_version(self, new_build)
     self.build = new_build
     if update_ui:
         try:
@@ -861,6 +896,7 @@ def empty_build(self, build_type: str = 'full') -> dict:
     """
     # None means not available on the build; empty string means empty slot
     new_build = {
+        '_version': BUILD_VERSION,
         'space': {
             'active_rep_traits': [None] * 5,
             'aft_weapons': [None] * 5,
@@ -889,7 +925,6 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'traits': ['', '', '', '', '', '', '', '', '', None, None, ''],
             'uni_consoles': [None] * 3,
         },
-
         'ground': {
             'active_rep_traits': [None] * 5,
             'armor': [''],
@@ -908,7 +943,6 @@ def empty_build(self, build_type: str = 'full') -> dict:
             'traits': ['', '', '', '', '', '', '', '', '', None, None, ''],
             'weapons': [''] * 2,
         },
-
         'captain': {
             'career': '',
             'elite': False,
@@ -921,6 +955,7 @@ def empty_build(self, build_type: str = 'full') -> dict:
     }
 
     new_skills = {
+        '_version': BUILD_VERSION,
         'space_skills': {
             'eng': [False] * 30,
             'sci': [False] * 30,
