@@ -69,7 +69,7 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
     - :param url: url to cargo table
     - :param ignore_cache_age: True if cache of any age should be accepted
     """
-    filepath = os.path.join(self.config['config_subfolders']['cargo'], filename)
+    filepath = str(self.config.config_subfolders['cargo'] / filename)
     cargo_data = None
 
     # try loading from cache
@@ -90,10 +90,9 @@ def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dic
             return cargo_data
     except (requests.exceptions.RequestException, json.JSONDecodeError):
         if ignore_cache_age:
-            backup_path = os.path.join(self.config['config_subfolders']['backups'], filename)
-            auto_backup_path = os.path.join(
-                    self.config['config_subfolders']['auto_backups'], filename)
-            if self.settings.value('pref_backup', type=int) == 0:
+            backup_path = str(self.config.config_subfolders['backups'] / filename)
+            auto_backup_path = str(self.config.config_subfolders['auto_backups'] / filename)
+            if self.settings.pref_backup == 0:
                 backup_paths = (auto_backup_path, backup_path)
             else:
                 backup_paths = (backup_path, auto_backup_path)
@@ -119,7 +118,7 @@ def get_cached_cargo_data(self, filename: str) -> dict | list:
     Parameters:
     - :param filename: name of the cache file
     """
-    filepath = os.path.join(self.config['config_subfolders']['cache'], filename)
+    filepath = str(self.config.config_subfolders['cache'] / filename)
     if os.path.exists(filepath) and os.path.isfile(filepath):
         last_modified = os.path.getmtime(filepath)
         if (datetime.now() - datetime.fromtimestamp(last_modified)).days < 7:
@@ -138,7 +137,7 @@ def store_to_cache(self, data, filename: str):
     - :param data: data that will be stored
     - :param filename: filename of the cache file
     """
-    filepath = os.path.join(self.config['config_subfolders']['cache'], filename)
+    filepath = str(self.config.config_subfolders['cache'] / filename)
     store_json(data, filepath)
 
 
@@ -196,8 +195,8 @@ def get_ship_image(self, image_name: str, threaded_worker):
     - :param threaded_worker: thread object supplying signals
     """
     image_url = WIKI_IMAGE_URL + image_name.replace(' ', '_')
-    image_path = os.path.join(
-            self.config['config_subfolders']['ship_images'], quote_plus(image_name))
+    image_path = str(
+            self.config.config_subfolders['ship_images'] / quote_plus(image_name))
     _, _, fmt = image_name.rpartition('.')
     image = QImage(image_path)
     if image.isNull():
@@ -231,7 +230,7 @@ def image(self, image_name: str) -> QImage:
     """
     img = self.cache.images[image_name]
     if img.isNull():
-        img_folder = self.config['config_subfolders']['images']
+        img_folder = self.config.config_subfolders['images']
         load_image(image_name, img, img_folder)
     return img
 
@@ -258,9 +257,9 @@ def auto_backup_cargo_file(self, filename: str):
     Parameters:
     - :param filename: name of the file to back up
     """
-    source_path = os.path.join(self.config['config_subfolders']['cargo'], filename)
+    source_path = str(self.config.config_subfolders['cargo'] / filename)
     if os.path.exists(source_path):
-        target_path = os.path.join(self.config['config_subfolders']['auto_backups'], filename)
+        target_path = str(self.config.config_subfolders['auto_backups'] / filename)
         shutil__copyfile(source_path, target_path)
 
 

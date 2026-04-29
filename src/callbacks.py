@@ -230,7 +230,7 @@ def picker(
         image_suffix = f'__{environment}__{build_key}'
     else:
         items = []
-    if self.settings.value('picker_relative', type=int) == 1:
+    if self.settings.picker_relative == 1:
         pos = button.parent().mapToGlobal(button.pos())
     else:
         pos = None
@@ -467,24 +467,12 @@ def clear_all(self):
     self.autosave()
 
 
-def set_ui_scale_setting(self, new_value: int):
-    """
-    Calculates new_value / 50 and stores it to settings.
-
-    Parameters:
-    - :param new_value: 50 times the ui scale percentage
-    """
-    setting_value = f'{new_value / 50:.2f}'
-    self.settings.setValue('ui_scale', setting_value)
-    return setting_value
-
-
 def load_build_callback(self):
     """
     Loads build from file
     """
     load_path = browse_path(
-            self, self.config['config_subfolders']['library'],
+            self, str(self.config.config_subfolders['library']),
             'SETS Files (*.json *.png);;JSON file (*.json);;PNG image (*.png);;Any File (*.*)')
     if load_path != '':
         load_build_file(self, load_path)
@@ -495,7 +483,7 @@ def load_skills_callback(self):
     Loads skills from file
     """
     load_path = browse_path(
-            self, self.config['config_subfolders']['library'],
+            self, str(self.config.config_subfolders['library']),
             'SETS Files (*.json *.png);;JSON file (*.json);;PNG image (*.png);;Any File (*.*)')
     if load_path != '':
         load_skill_tree_file(self, load_path)
@@ -511,8 +499,8 @@ def save_build_callback(self):
         proposed_filename = f"({self.widgets.ship['button'].text()})"
     if self.widgets.ship['name'].text() != '':
         proposed_filename = f"{self.widgets.ship['name'].text()} {proposed_filename}"
-    default_path = os.path.join(self.config['config_subfolders']['library'], proposed_filename)
-    if self.settings.value('default_save_format') == 'PNG':
+    default_path = str(self.config.config_subfolders['library'] / proposed_filename)
+    if self.settings.default_save_format == 'PNG':
         file_types = 'PNG image (*.png);;JSON file (*.json);;Any File (*.*)'
     else:
         file_types = 'JSON file (*.json);;PNG image (*.png);;Any File (*.*)'
@@ -525,8 +513,8 @@ def save_skills_callback(self):
     """
     Save skills to file
     """
-    default_path = os.path.join(self.config['config_subfolders']['library'], 'Skill Tree')
-    if self.settings.value('default_save_format') == 'PNG':
+    default_path = str(self.config.config_subfolders['library'] / 'Skill Tree')
+    if self.settings.default_save_format == 'PNG':
         file_types = 'PNG image (*.png);;JSON file (*.json);;Any File (*.*)'
     else:
         file_types = 'JSON file (*.json);;PNG image (*.png);;Any File (*.*)'

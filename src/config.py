@@ -6,12 +6,13 @@ from PySide6.QtCore import QByteArray, QSettings
 
 class SETSConfig():
 
-    __slots__ = ('autosave_filename', 'box_height', 'box_width', 'config_dir', 'config_subfolders',
-                 'home_dir', 'link_discord', 'link_downloads', 'link_github', 'link_website',
-                 'settings_file', 'ui_scale')
+    __slots__ = ('autosave_filename', 'autosave_path', 'box_height', 'box_width', 'config_dir',
+                 'config_subfolders', 'home_dir', 'link_discord', 'link_downloads', 'link_github',
+                 'link_website', 'settings_file', 'ui_scale')
 
     def __init__(self):
         self.autosave_filename: str = 'autosave.json'
+        self.autosave_path: Path = Path()
         self.box_height: int = 64
         self.box_width: int = 49
         self.config_dir: Path = Path()
@@ -39,14 +40,15 @@ class SETSConfig():
 class SETSSettings():
 
     __slots__ = ('_settings', 'default_mark', 'default_save_format', 'default_rarity',
-                 'picker_relative', 'pref_backup', 'state__geometry', 'ui_scale')
+                 'picker_relative', 'pref_backup', 'ui_scale', 'state__geometry')
 
     def __init__(self, settings_file_path: Path):
         self.default_mark: str = ''
-        self.default_save_format: str = 'JSON',
-        self.default_rarity: str = 'Common',
+        self.default_save_format: str = 'JSON'
+        self.default_rarity: str = 'Common'
         self.picker_relative: int = 0
         self.pref_backup: int = 0
+        self.ui_scale: float = 1
 
         self.state__geometry: QByteArray = QByteArray()
 

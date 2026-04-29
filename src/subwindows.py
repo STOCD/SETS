@@ -128,7 +128,7 @@ class Picker(BasePicker):
         self._result = None
         self._modifiers = {}
         self._image_suffix = ''
-        ui_scale = sets.config['ui_scale']
+        ui_scale = sets.config.ui_scale
         spacing = sets.theme['defaults']['isp'] * ui_scale
         layout = VBoxLayout(margins=(spacing, 0, spacing, spacing), spacing=0)
         top_layout = HBoxLayout(spacing=spacing)
@@ -325,7 +325,7 @@ class ShipSelector(QDialog):
         self.setMinimumSize(10, 10)
         self.setSizePolicy(SMAXMAX)
 
-        ui_scale = sets.config['ui_scale']
+        ui_scale = sets.config.ui_scale
         spacing = sets.theme['defaults']['isp'] * ui_scale
         layout = VBoxLayout(margins=spacing, spacing=spacing)
         self._ship_data_model = QStringListModel()
@@ -417,7 +417,7 @@ class ItemEditor(BasePicker):
         self._item = self.empty_item
         self._result = None
         self._modifiers = {}
-        ui_scale = sets.config['ui_scale']
+        ui_scale = sets.config.ui_scale
         csp = sets.theme['defaults']['csp'] * ui_scale
         layout = VBoxLayout(spacing=csp)
         rarity_layout = HBoxLayout(spacing=csp)
@@ -498,7 +498,7 @@ class ExportWindow(QDialog):
     """
     def __init__(self, sets, parent_window, data_getter: Callable):
         super().__init__(parent=parent_window)
-        thick = sets.theme['app']['frame_thickness'] * sets.config['ui_scale']
+        thick = sets.theme['app']['frame_thickness'] * sets.config.ui_scale
         dialog_layout = VBoxLayout(margins=thick)
         main_frame = create_frame(sets, size_policy=SMINMIN)
         dialog_layout.addWidget(main_frame)
