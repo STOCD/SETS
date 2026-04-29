@@ -44,7 +44,7 @@ def init_backend(self):
         exit_splash(self)
 
     enter_splash(self)
-    load_build_file(self, self.config['autosave_filename'], update_ui=False)
+    load_build_file(self, str(self.config.autosave_path), update_ui=False)
     self.downloader.default_session_from_env()
     exec_in_thread(
             self, populate_cache, self, finished=finish_backend_init,
@@ -349,7 +349,7 @@ def load_base_images(self, threaded_worker: ThreadObject):
     self.cache.overlays.check = QImage(get_asset_path('check_overlay.png', self.app_dir))
 
     threaded_worker.update_splash.emit('Loading: Images (Skills)')
-    img_folder = self.config['config_subfolders']['images']
+    img_folder = self.config.config_subfolders['images']
     for rank_group in self.cache.skills['space']:
         for skill_group in rank_group:
             for skill_node in skill_group['nodes']:
@@ -377,7 +377,7 @@ def load_images(self, threaded_worker=None):
     Parameters:
     - :param threaded_worker: (unused; required for compatability with employed threading method)
     """
-    img_folder = self.config['config_subfolders']['images']
+    img_folder = self.config.config_subfolders['images']
     for img_name, img in self.cache.images.items():
         if img.isNull():
             load_image(img_name, img, img_folder)
@@ -396,8 +396,8 @@ def download_images(self, threaded_worker: ThreadObject):
         else:
             self.cache.images_failed.pop(img)
     images = self.cache.images_set - no_retry_images - get_downloaded_icons(
-        Path(self.config['config_subfolders']['images']))
-    img_folder = self.config['config_subfolders']['images']
+        Path(self.config.config_subfolders['images']))
+    img_folder = self.config.config_subfolders['images']
 
     images_to_download = images - self.cache.boff_abilities['all'].keys()
     for image_name in images_to_download:
@@ -444,7 +444,7 @@ def autosave(self):
     Saves build to autosave file.
     """
     if not self.building:
-        store_json(self.build, self.config['autosave_filename'])
+        store_json(self.build, str(self.config.autosave_path))
 
 
 def map_build_items(self, old_build: dict, new_build: dict, mapping):
@@ -764,7 +764,7 @@ def load_legacy_build_image(self):
     Loads legacy build from image file
     """
     load_path = browse_path(
-            self, self.config['config_subfolders']['library'],
+            self, self.config.config_subfolders['library'],
             'PNG image (*.png);;Any File (*.*)')
     if load_path != '':
         _, _, extension = load_path.rpartition('.')
@@ -1024,11 +1024,11 @@ def backup_cargo_data(self):
     cargo_files = (
             'boff_abilities.json', 'doffs.json', 'equipment.json', 'modifiers.json',
             'ship_list.json', 'starship_traits.json', 'traits.json')
-    cargo_folder = self.config['config_subfolders']['cargo']
-    backups_folder = self.config['config_subfolders']['backups']
+    cargo_folder = self.config.config_subfolders['cargo']
+    backups_folder = self.config.config_subfolders['backups']
     for file_name in cargo_files:
-        cargo_path = os.path.join(cargo_folder, file_name)
-        backups_path = os.path.join(backups_folder, file_name)
+        cargo_path = str(cargo_folder / file_name)
+        backups_path = str(backups_folder / file_name)
         copy_file(cargo_path, backups_path)
 
 

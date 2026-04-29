@@ -6,6 +6,7 @@ from PySide6.QtGui import QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea, QTabWidget, QWidget
 
 from .cargomanager import CargoManager
+from .config import SETSConfig, SETSSettings
 from .constants import (
     ABOTTOM, ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS,
     PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
@@ -32,7 +33,7 @@ class SETS():
             clear_all, clear_slot, clear_build_callback, copy_equipment_item, edit_equipment_item,
             elite_callback, faction_combo_callback, load_build_callback, load_skills_callback,
             open_wiki_context, paste_equipment_item, save_build_callback, save_skills_callback,
-            select_ship, set_build_item, set_ui_scale_setting, ship_info_callback,
+            select_ship, set_build_item, ship_info_callback,
             skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
             tier_callback)
     from .datafunctions import (
@@ -54,11 +55,7 @@ class SETS():
     # (release version, dev version)
     versions = ('', '')
     # see main.py for contents
-    config = {}
-    # see main.py for contents
     theme = {}
-    # see main.py for defaults
-    settings: QSettings
     # stores widgets that need to be accessed from outside their creating function
     widgets: WidgetStorage
     # stores refined cargo data
@@ -98,17 +95,19 @@ class SETS():
         self.config = config
         self.widgets = WidgetStorage()
         self.cache = Cache()
-        self.init_settings()
+        self.config: SETSConfig = SETSConfig()
+        self.config.config_dir = self.get_config_dir_path()
+        self.settings = SETSSettings(self.config.config_dir / self.config.settings_file)
         self.init_config()
         self.prepare_tooltip_css()
         self.init_environment()
         self.downloader = Downloader(
-            self.config['config_subfolders']['images'],
-            self.config['config_subfolders']['ship_images'])
-        self.cargo: CargoManager = CargoManager(self.config['config_subfolders'])
+            self.config.config_subfolders['images'],
+            self.config.config_subfolders['ship_images'])
+        self.cargo: CargoManager = CargoManager(self.config.config_subfolders)
         self.images: ImageManager = ImageManager(
-            Path(self.config['config_subfolders']['images']),
-            Path(self.config['config_subfolders']['ship_images']),
+            Path(self.config.config_subfolders['images']),
+            Path(self.config.config_subfolders['ship_images']),
             self.cargo, self.downloader)
         self.app, self.window = self.create_main_window()
         self.cache_icons()
@@ -119,8 +118,8 @@ class SETS():
         self.setup_main_layout()
         self.picker_window = Picker(
                 self, self.window,
-                default_rarity_getter=lambda: self.settings.value('default_rarity'),
-                default_mark_getter=lambda: self.settings.value('default_mark'))
+                default_rarity_getter=lambda: self.settings.default_rarity,
+                default_mark_getter=lambda: self.settings.default_mark)
         self.edit_window = ItemEditor(self, self.window)
         self.ship_selector_window = ShipSelector(self, self.window)
         self.context_menu = self.create_context_menu()
@@ -135,45 +134,70 @@ class SETS():
         """
         return self.app.exec()
 
-    def init_settings(self):
+    def setup_config_dir(self, dir_path: Path) -> None | OSError:
         """
-        Prepares settings. Loads stored settings. Saves current settings for next startup.
+        Sets up config directory.
         """
-        settings_path = os.path.abspath(os.path.join(self.app_dir, self.config['settings_path']))
-        self.settings = QSettings(settings_path, QSettings.Format.IniFormat)
-        for setting, value in self.config['default_settings'].items():
-            if self.settings.value(setting, None) is None:
-                self.settings.setValue(setting, value)
+        try:
+            dir_path.mkdir(exist_ok=True)
+            for folder in self.config.config_subfolders:
+                folder_path = dir_path / folder
+                folder_path.mkdir(exist_ok=True)
+                self.config.config_subfolders[folder] = folder_path
+        except OSError as e:
+            return e
+
+    def get_config_dir_path(self, override: str | None = None) -> Path | None:
+        """
+        Identifies appropriate config directory and returns path to that directory. Returns `None`
+        if no usable config dir could be identified.
+        """
+        if override is not None:
+            config_dir = Path(override)
+            if self.setup_config_dir(config_dir) is None:
+                return config_dir
+            else:
+                return
+
+        if os.name == 'nt':
+            for env_name in ('APPDATA', 'USERPROFILE'):
+                config_basedir = os.getenv(env_name)
+                if config_basedir is not None:
+                    config_dir = Path(config_basedir, 'SETS')
+                    if self.setup_config_dir(config_dir) is None:
+                        return config_dir
+        else:
+            config_basedir = os.getenv('XDG_CONFIG_HOME')
+            if config_basedir is not None:
+                config_dir = Path(config_basedir, 'SETS')
+                if self.setup_config_dir(config_dir) is None:
+                    return config_dir
+            home_dir = os.getenv('HOME')
+            if home_dir is None:
+                return
+            config_dir = Path(home_dir, '.config', 'SETS')
+            if self.setup_config_dir(config_dir) is None:
+                return config_dir
+            config_dir = Path(home_dir, '.sets')
+            if self.setup_config_dir(config_dir) is None:
+                return config_dir
 
     def init_config(self):
         """
         Prepares config.
         """
-        config_folder = os.path.abspath(os.path.join(
-                self.app_dir, self.config['config_folder_path']))
-        self.config['config_folder_path'] = config_folder
-        for folder, path in self.config['config_subfolders'].items():
-            self.config['config_subfolders'][folder] = os.path.join(config_folder, path)
-        self.config['autosave_filename'] = os.path.join(
-                config_folder, self.config['autosave_filename'])
-        self.config['ui_scale'] = self.settings.value('ui_scale', type=float)
-        self.box_width = self.config['box_width'] * self.config['ui_scale'] * 0.8
-        self.box_height = self.config['box_height'] * self.config['ui_scale'] * 0.8
+        self.config.autosave_path = self.config.config_dir / self.config.autosave_filename
+        self.config.ui_scale = self.settings.ui_scale
+        # TODO move these to new theme
+        self.box_width = self.config.box_width * self.config.ui_scale * 0.8
+        self.box_height = self.config.box_height * self.config.ui_scale * 0.8
 
     def init_environment(self):
         """
-        Creates required folders if necessary.
+        Creates external files before starting the app.
         """
-        create_folder(self.config['config_folder_path'])
-        create_folder(self.config['config_subfolders']['library'])
-        create_folder(self.config['config_subfolders']['cache'])
-        create_folder(self.config['config_subfolders']['cargo'])
-        create_folder(self.config['config_subfolders']['images'])
-        create_folder(self.config['config_subfolders']['ship_images'])
-        create_folder(self.config['config_subfolders']['backups'])
-        create_folder(self.config['config_subfolders']['auto_backups'])
-        if not os.path.exists(self.config['autosave_filename']):
-            store_json(self.empty_build(), self.config['autosave_filename'])
+        if not self.config.autosave_path.exists():
+            store_json(self.empty_build(), str(self.config.autosave_path))
 
     def cache_icons(self):
         """
@@ -209,7 +233,7 @@ class SETS():
         Executed when application is closed.
         """
         window_geometry = self.window.saveGeometry()
-        self.settings.setValue('geometry', window_geometry)
+        self.settings.state__geometry = window_geometry
         self.autosave()
         event.accept()
 
@@ -233,8 +257,8 @@ class SETS():
         window = QWidget()
         window.setWindowIcon(load_icon('SETS_icon_small.png', self.app_dir))
         window.setWindowTitle('STO Equipment and Trait Selector')
-        if self.settings.value('geometry'):
-            window.restoreGeometry(self.settings.value('geometry'))
+        if self.settings.state__geometry:
+            window.restoreGeometry(self.settings.state__geometry)
         window.closeEvent = self.main_window_close_callback
         app.focusWindowChanged.connect(self.hide_tooltips)
         QThread.currentThread().setPriority(QThread.Priority.TimeCriticalPriority)
@@ -253,7 +277,7 @@ class SETS():
         main_layout = VBoxLayout(margins=0, spacing=0)
         banner = ImageLabel(get_asset_path('sets_banner.png', self.app_dir), (2880, 126))
         main_layout.addWidget(banner)
-        frame_width = 8 * self.config['ui_scale']
+        frame_width = 8 * self.config.ui_scale
         tabber_layout = VBoxLayout(margins=frame_width, spacing=0)
         splash_tabber = QTabWidget()
         splash_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
@@ -273,7 +297,7 @@ class SETS():
         content_layout.setColumnStretch(0, 1)
         content_layout.setColumnStretch(1, 4)
 
-        margin = 3 * self.config['ui_scale']
+        margin = 3 * self.config.ui_scale
         menu_layout = GridLayout(margins=(margin, margin, margin, 0), spacing=0)
         menu_layout.setColumnStretch(0, 2)
         menu_layout.setColumnStretch(1, 5)
@@ -345,7 +369,7 @@ class SETS():
 
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
                 'background-color': '@sets', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         sidebar_layout.addWidget(seperator, 0, 1, 2, 1)
         sidebar.setLayout(sidebar_layout)
         content_layout.addWidget(sidebar, 1, 0)
@@ -374,7 +398,7 @@ class SETS():
         Creates ship info frame
         """
         frame = self.widgets.sidebar_frames[0]
-        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        csp = self.theme['defaults']['csp'] * self.config.ui_scale
         layout = VBoxLayout(margins=csp, spacing=csp)
 
         image_frame = self.create_frame(size_policy=SMINMIN)
@@ -454,7 +478,7 @@ class SETS():
         Creates space build layout
         """
         frame = self.widgets.build_frames[0]
-        isp = self.theme['defaults']['isp'] * 2 * self.config['ui_scale']
+        isp = self.theme['defaults']['isp'] * 2 * self.config.ui_scale
         layout = GridLayout(margins=isp, spacing=isp)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(10, 1)
@@ -476,7 +500,7 @@ class SETS():
         layout.addLayout(hangar_layout, 4, 1, alignment=ALEFT)
         sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         layout.addWidget(sep1, 0, 2, 5, 1)
 
         deflector_layout = self.create_build_section('Deflector', 1, 'space', 'deflector', True)
@@ -492,7 +516,7 @@ class SETS():
         layout.addLayout(shield_layout, 4, 3, alignment=ALEFT)
         sep2 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         layout.addWidget(sep2, 0, 4, 5, 1)
 
         uni_layout = self.create_build_section(
@@ -509,7 +533,7 @@ class SETS():
         layout.addLayout(tac_layout, 3, 5, alignment=ALEFT)
         sep3 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         layout.addWidget(sep3, 0, 6, 5, 1)
 
         # Boffs
@@ -549,7 +573,7 @@ class SETS():
         layout.addLayout(trait_layout, 0, 9, 6, 1, alignment=ATOP)
 
         # Doffs
-        spacing = self.theme['defaults']['bw'] * self.config['ui_scale']
+        spacing = self.theme['defaults']['bw'] * self.config.ui_scale
         doff_container = self.create_frame(size_policy=SMINMAX)
         doff_container_layout = VBoxLayout(spacing=spacing * 2)
         doff_label = self.create_label('Space Duty Officers')
@@ -572,7 +596,7 @@ class SETS():
         Creates Ground build frame
         """
         frame = self.widgets.build_frames[1]
-        isp = self.theme['defaults']['isp'] * 2 * self.config['ui_scale']
+        isp = self.theme['defaults']['isp'] * 2 * self.config.ui_scale
         layout = GridLayout(margins=isp, spacing=isp)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(8, 1)
@@ -587,7 +611,7 @@ class SETS():
         layout.addLayout(devices_layout, 2, 1, alignment=ALEFT)
         sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         layout.addWidget(sep1, 0, 2)
         kit_layout = self.create_build_section('Kit Frame:', 1, 'ground', 'kit', True)
         layout.addLayout(kit_layout, 0, 3, alignment=ALEFT)
@@ -599,7 +623,7 @@ class SETS():
         layout.addLayout(shield_layout, 3, 3, alignment=ALEFT)
         sep2 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         layout.addWidget(sep2, 0, 4)
 
         # Boffs
@@ -613,7 +637,7 @@ class SETS():
         layout.addLayout(boff_4_layout, 3, 5, alignment=ALEFT)
         sep3 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         layout.addWidget(sep3, 0, 6)
 
         # Traits
@@ -628,7 +652,7 @@ class SETS():
         layout.addLayout(trait_layout, 0, 7, 4, 1, alignment=ATOP)
 
         # Doffs
-        spacing = self.theme['defaults']['bw'] * self.config['ui_scale']
+        spacing = self.theme['defaults']['bw'] * self.config.ui_scale
         doff_container = self.create_frame(size_policy=SMINMAX)
         doff_container_layout = VBoxLayout(spacing=spacing * 2)
         doff_label = self.create_label('Ground Duty Officers')
@@ -648,7 +672,7 @@ class SETS():
 
         # sidebar
         sidebar_frame = self.widgets.sidebar_frames[1]
-        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        csp = self.theme['defaults']['csp'] * self.config.ui_scale
         sidebar_layout = GridLayout(margins=(csp, isp, csp, csp), spacing=csp)
         sidebar_layout.setColumnStretch(0, 1)
         desc_label = self.create_label('Build Description:')
@@ -667,12 +691,12 @@ class SETS():
         """
         Creates character customization area.
         """
-        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        csp = self.theme['defaults']['csp'] * self.config.ui_scale
         layout = GridLayout(margins=csp, spacing=csp)
         layout.setColumnStretch(1, 1)
         seperator = self.create_frame(size_policy=SMINMAX, style_override={
                 'background-color': '@sets', 'margin': '@isp'})
-        sep = self.theme['defaults']['sep'] * self.config['ui_scale']
+        sep = self.theme['defaults']['sep'] * self.config.ui_scale
         seperator.setFixedHeight(sep)
         layout.addWidget(seperator, 0, 0, 1, 2, alignment=ATOP)  # ATOP makes it respect the margin?
         char_name = self.create_entry(placeholder='NAME')
@@ -733,8 +757,8 @@ class SETS():
         Creates Space skill GUI
         """
         frame = self.widgets.build_frames[2]
-        isp = self.theme['defaults']['isp'] * self.config['ui_scale']
-        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        isp = self.theme['defaults']['isp'] * self.config.ui_scale
+        csp = self.theme['defaults']['csp'] * self.config.ui_scale
         col_layout = GridLayout(margins=isp, spacing=csp)
         col_layout.setRowStretch(0, 1)
         col_layout.setColumnStretch(0, 3)
@@ -762,7 +786,7 @@ class SETS():
             'Captain<br><small>(25 points required)</small>',
             'Admiral<br><small>(35 points required)</small>'
         )
-        sep_height = self.theme['hr']['height'] * self.config['ui_scale']
+        sep_height = self.theme['hr']['height'] * self.config.ui_scale
         for rank, skill_groups in enumerate(self.cache.skills['space']):
             header_layout = GridLayout(spacing=isp)
             left_sep = self.create_frame('hr', size_policy=SMINMAX)
@@ -788,7 +812,7 @@ class SETS():
         scroll_area.setWidget(scroll_frame)
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
                 'background-color': '@sets'})
-        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         col_layout.addWidget(seperator, 0, 1)
         bonus_bar_container = self.create_frame(size_policy=SMINMIN)
         # bonus bars
@@ -846,8 +870,8 @@ class SETS():
         Creates Ground skill GUI
         """
         frame = self.widgets.build_frames[3]
-        isp = self.theme['defaults']['isp'] * self.config['ui_scale']
-        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        isp = self.theme['defaults']['isp'] * self.config.ui_scale
+        csp = self.theme['defaults']['csp'] * self.config.ui_scale
         col_layout = GridLayout(margins=isp, spacing=csp)
         col_layout.setRowStretch(0, 1)
         col_layout.setColumnStretch(0, 3)
@@ -901,7 +925,7 @@ class SETS():
         tree_frame.setLayout(tree_layout)
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
                 'background-color': '@sets'})
-        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config['ui_scale'])
+        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
         col_layout.addWidget(seperator, 0, 1)
         bonus_bar_container = self.create_frame(size_policy=SMINMIN)
         # bonus bars
@@ -994,7 +1018,7 @@ class SETS():
         Populates the settings frame.
         """
         settings_frame = self.widgets.build_frames[5]
-        isp = self.theme['defaults']['isp'] * self.config['ui_scale']
+        isp = self.theme['defaults']['isp'] * self.config.ui_scale
         settings_layout = HBoxLayout(margins=(2 * isp, isp, isp, isp), spacing=isp)
         scroll_layout = VBoxLayout(margins=(0, isp, 0, 0), spacing=isp)
         scroll_layout.setSpacing(isp)
@@ -1018,8 +1042,8 @@ class SETS():
         ui_scale_label = self.create_label('UI Scale')
         sec_1.addWidget(ui_scale_label, 0, 0, alignment=ALEFT)
         ui_scale_slider = self.create_annotated_slider(
-                default_value=round(self.settings.value('ui_scale', type=float) * 50, 0),
-                min=25, max=75, callback=self.set_ui_scale_setting)
+                default_value=round(self.settings.ui_scale * 50, 0),
+                min=25, max=75, callback=self.settings.set_ui_scale)
         sec_1.addLayout(ui_scale_slider, 0, 2, alignment=ALEFT)
         ui_scale_desc = self.create_label('Requires restart.', 'hint_label')
         sec_1.addWidget(ui_scale_desc, 0, 4, alignment=ALEFT)
@@ -1027,41 +1051,41 @@ class SETS():
         sec_1.addWidget(mark_label, 1, 0, alignment=ALEFT)
         mark_combo = self.create_combo_box(style_override={'font': '@small_text'})
         mark_combo.addItems(('',) + MARKS)
-        mark_combo.setCurrentText(self.settings.value('default_mark'))
+        mark_combo.setCurrentText(self.settings.default_mark)
         mark_combo.currentTextChanged.connect(
-                lambda new_mark: self.settings.setValue('default_mark', new_mark))
+                lambda new_mark: self.settings.set('default_mark', new_mark))
         sec_1.addWidget(mark_combo, 1, 2, alignment=ALEFT)
         rarity_label = self.create_label('Default Rarity')
         sec_1.addWidget(rarity_label, 2, 0, alignment=ALEFT)
         rarity_combo = self.create_combo_box(style_override={'font': '@small_text'})
         rarity_combo.addItems(RARITIES.keys())
-        rarity_combo.setCurrentText(self.settings.value('default_rarity'))
+        rarity_combo.setCurrentText(self.settings.default_rarity)
         rarity_combo.currentTextChanged.connect(
-                lambda new_rarity: self.settings.setValue('default_rarity', new_rarity))
+                lambda new_rarity: self.settings.set('default_rarity', new_rarity))
         sec_1.addWidget(rarity_combo, 2, 2, alignment=ALEFT | AVCENTER)
         picker_rel_label = self.create_label('Picker Position')
         sec_1.addWidget(picker_rel_label, 3, 0, alignment=ALEFT)
         picker_rel_combo = self.create_combo_box(style_override={'font': '@small_text'})
         picker_rel_combo.addItems(('Absolute', 'Relative'))
-        picker_rel_combo.setCurrentIndex(self.settings.value('picker_relative', type=int))
+        picker_rel_combo.setCurrentIndex(self.settings.picker_relative)
         picker_rel_combo.currentIndexChanged.connect(
-                lambda new_i: self.settings.setValue('picker_relative', new_i))
+                lambda new_i: self.settings.set('picker_relative', new_i))
         sec_1.addWidget(picker_rel_combo, 3, 2, alignment=ALEFT | AVCENTER)
         picker_rel_label = self.create_label('Default Save Format')
         sec_1.addWidget(picker_rel_label, 4, 0, alignment=ALEFT)
         picker_rel_combo = self.create_combo_box(style_override={'font': '@small_text'})
         picker_rel_combo.addItems(('JSON', 'PNG'))
-        picker_rel_combo.setCurrentText(self.settings.value('default_save_format'))
+        picker_rel_combo.setCurrentText(self.settings.default_save_format)
         picker_rel_combo.currentTextChanged.connect(
-                lambda new_t: self.settings.setValue('default_save_format', new_t))
+                lambda new_t: self.settings.set('default_save_format', new_t))
         sec_1.addWidget(picker_rel_combo, 4, 2, alignment=ALEFT | AVCENTER)
         backup_label = self.create_label('Preferred Backup')
         sec_1.addWidget(backup_label, 5, 0, alignment=ALEFT)
         backup_combo = self.create_combo_box(style_override={'font': '@small_text'})
         backup_combo.addItems(('Auto', 'Manual'))
-        backup_combo.setCurrentIndex(self.settings.value('pref_backup', type=int))
+        backup_combo.setCurrentIndex(self.settings.pref_backup)
         backup_combo.currentIndexChanged.connect(
-                lambda new_i: self.settings.setValue('pref_backup', new_i))
+                lambda new_i: self.settings.set('pref_backup', new_i))
         sec_1.addWidget(backup_combo, 5, 2, alignment=ALEFT | AVCENTER)
         scroll_layout.addLayout(sec_1)
 
@@ -1076,14 +1100,14 @@ class SETS():
         sec_2.setColumnStretch(3, 1)
         cargo_clear_button = self.create_button('Clear Cargo Data')
         cargo_clear_button.clicked.connect(
-                lambda: delete_folder_contents(self.config['config_subfolders']['cargo']))
+                lambda: delete_folder_contents(self.config.config_subfolders['cargo']))
         sec_2.addWidget(cargo_clear_button, 0, 0, alignment=ALEFT)
         cargo_clear_label = self.create_label(
                 'Clears cargo data. Restart to refresh data.', 'hint_label')
         sec_2.addWidget(cargo_clear_label, 0, 2, alignment=ALEFT)
         cache_clear_button = self.create_button('Clear Cache')
         cache_clear_button.clicked.connect(
-                lambda: delete_folder_contents(self.config['config_subfolders']['cache']))
+                lambda: delete_folder_contents(self.config.config_subfolders['cache']))
         sec_2.addWidget(cache_clear_button, 1, 0, alignment=ALEFT)
         cache_clear_label = self.create_label(
                 'Clears cache. Restart to rebuild cache.', 'hint_label')
@@ -1119,7 +1143,7 @@ class SETS():
 
         # sidebar
         sidebar_frame = self.widgets.sidebar_frames[5]
-        csp = self.theme['defaults']['csp'] * self.config['ui_scale']
+        csp = self.theme['defaults']['csp'] * self.config.ui_scale
         sidebar_layout = VBoxLayout(margins=csp, spacing=isp)
         sidebar_layout.setAlignment(ATOP)
         sidebar_layout.addWidget(self.create_label('About SETS:', 'label_heading'), alignment=ALEFT)
@@ -1133,20 +1157,20 @@ class SETS():
         sidebar_layout.addWidget(about_label)
         link_button_style = {
             'Website': {
-                'callback': lambda: open_url(self.config['link_website']), 'align': AHCENTER},
+                'callback': lambda: open_url(self.config.link_website), 'align': AHCENTER},
             'Github': {
-                'callback': lambda: open_url(self.config['link_github']), 'align': AHCENTER},
+                'callback': lambda: open_url(self.config.link_github), 'align': AHCENTER},
             'STOBuilds Discord': {
-                'callback': lambda: open_url(self.config['link_discord']), 'align': AHCENTER},
+                'callback': lambda: open_url(self.config.link_discord), 'align': AHCENTER},
             'Downloads': {
-                'callback': lambda: open_url(self.config['link_downloads']), 'align': AHCENTER}
+                'callback': lambda: open_url(self.config.link_downloads), 'align': AHCENTER}
         }
         button_layout, buttons = self.create_button_series(
                 link_button_style, 'button', shape='column', ret=True)
-        buttons[0].setToolTip(self.config['link_website'])
-        buttons[1].setToolTip(self.config['link_github'])
-        buttons[2].setToolTip(self.config['link_discord'])
-        buttons[3].setToolTip(self.config['link_downloads'])
+        buttons[0].setToolTip(self.config.link_website)
+        buttons[1].setToolTip(self.config.link_github)
+        buttons[2].setToolTip(self.config.link_discord)
+        buttons[3].setToolTip(self.config.link_downloads)
         link_button_frame = self.create_frame()
         link_button_frame.setLayout(button_layout)
         sidebar_layout.addWidget(link_button_frame, alignment=AHCENTER)

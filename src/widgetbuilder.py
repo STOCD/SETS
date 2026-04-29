@@ -242,13 +242,13 @@ def create_item_button(self, style_override: dict = {}) -> ItemButton:
     """
     label = create_label(self, '', 'infobox')
     frame = create_frame(self, 'infobox_frame')
-    margin = self.theme['defaults']['csp'] * self.config['ui_scale']
+    margin = self.theme['defaults']['csp'] * self.config.ui_scale
     layout = VBoxLayout(margin)
     layout.addWidget(label, alignment=ATOP)
     frame.setLayout(layout)
     button = ItemButton(
             self.box_width, self.box_height, self.theme['item'], label, frame,
-            margin + self.theme['defaults']['bw'] * self.config['ui_scale'])
+            margin + self.theme['defaults']['bw'] * self.config.ui_scale)
     return button
 
 
@@ -268,7 +268,7 @@ def create_build_section(
     """
     layout = QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
-    layout.setSpacing(self.theme['defaults']['margin'] * self.config['ui_scale'])
+    layout.setSpacing(self.theme['defaults']['margin'] * self.config.ui_scale)
     label = create_label(self, label_text, style_override={'margin': (0, 0, 6, 0)})
     label_size_policy = label.sizePolicy()
     label_size_policy.setRetainSizeWhenHidden(True)
@@ -300,7 +300,7 @@ def create_boff_station_space(
     """
     layout = QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
-    layout.setSpacing(self.theme['defaults']['margin'] * self.config['ui_scale'])
+    layout.setSpacing(self.theme['defaults']['margin'] * self.config.ui_scale)
     layout.setColumnStretch(3, 1)
     if specialization != '':
         specialization = f' / {specialization}'
@@ -313,7 +313,7 @@ def create_boff_station_space(
     else:
         label_options = (profession + specialization,)
     widget_storage = self.widgets.build['space']
-    label_layout = HBoxLayout(spacing=self.config['ui_scale'] * 3)
+    label_layout = HBoxLayout(spacing=self.config.ui_scale * 3)
     icon_label = TooltipLabel('', create_label(self, '', 'label_tooltip'))
     widget_storage['boff_label_icons'][boff_id] = icon_label
     label_layout.addWidget(icon_label, alignment=ALEFT)
@@ -347,7 +347,7 @@ def create_boff_station_ground(self, boff_id: int) -> VBoxLayout:
     - :param boff_id: identifies the boff station
     """
     widget_storage = self.widgets.build['ground']
-    m = self.theme['defaults']['margin'] * self.config['ui_scale']
+    m = self.theme['defaults']['margin'] * self.config.ui_scale
     layout = VBoxLayout(spacing=m)
     label_layout = HBoxLayout(spacing=m)
     label_layout.setAlignment(ALEFT)
@@ -384,7 +384,7 @@ def create_personal_trait_section(self, environment: str) -> QGridLayout:
     """
     layout = QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
-    layout.setSpacing(self.theme['defaults']['margin'] * self.config['ui_scale'])
+    layout.setSpacing(self.theme['defaults']['margin'] * self.config.ui_scale)
     label = create_label(self, 'Personal Traits', style_override={'margin': (0, 0, 6, 0)})
     layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
     widget_storage = self.widgets.build[environment]
@@ -410,7 +410,7 @@ def create_starship_trait_section(self) -> QGridLayout:
     """
     layout = QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
-    layout.setSpacing(self.theme['defaults']['margin'] * self.config['ui_scale'])
+    layout.setSpacing(self.theme['defaults']['margin'] * self.config.ui_scale)
     label = create_label(self, 'Starship Traits', style_override={'margin': (0, 0, 6, 0)})
     label.sizePolicy().setRetainSizeWhenHidden(True)
     layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
@@ -440,7 +440,7 @@ def create_doff_section(self, environment: str) -> GridLayout:
     """
     Creates duty officer section
     """
-    spacing = self.theme['defaults']['bw'] * self.config['ui_scale']
+    spacing = self.theme['defaults']['bw'] * self.config.ui_scale
     doff_layout = GridLayout(spacing=spacing)
     doff_layout.setColumnStretch(1, 1)
     for i in range(6):
@@ -466,7 +466,7 @@ def create_skill_group_space(self, group_data: dict, id_offset: int) -> GridLayo
     - :param group_data: skill group data
     - :param id_offset: index of the first skill node in self.widgets and self.build
     """
-    layout = GridLayout(spacing=self.theme['defaults']['csp'] * self.config['ui_scale'])
+    layout = GridLayout(spacing=self.theme['defaults']['csp'] * self.config.ui_scale)
     # one skill with 3 ranks
     if group_data['grouping'] == 'column':
         for index, node in enumerate(group_data['nodes']):
@@ -547,7 +547,7 @@ def create_bonus_bar_segment(
     seg.setEnabled(False)
     seg.setCheckable(True)
     seg.setStyleSheet(get_style_class(self, 'QPushButton', style, style_override))
-    seg.setFixedSize(7 * self.config['ui_scale'], 17 * self.config['ui_scale'])
+    seg.setFixedSize(7 * self.config.ui_scale, 17 * self.config.ui_scale)
     self.widgets.skill_bonus_bars[bar][index] = seg
     return seg
 

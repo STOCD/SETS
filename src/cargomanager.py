@@ -8,12 +8,12 @@ from .iofunc import load_json__new
 class CargoManager():
     """Manages Cargo data and cache"""
 
-    def __init__(self, folders: dict[str, str]):
+    def __init__(self, folders: dict[str, Path]):
         """
         Parameters:
         - :param folders: folder names and paths of config folder
         """
-        self._folders: dict[str, Path] = {name: Path(path) for name, path in folders.items()}
+        self._folders: dict[str, Path] = folders
         self.boff_abilities: dict[str, dict[str, dict]] = {
             'space': self.boff_dict(),
             'ground': self.boff_dict(),
