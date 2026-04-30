@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt, QThread
+from PySide6.QtCore import QDir, Qt, QThread
 from PySide6.QtGui import QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea, QTabWidget, QWidget
 
@@ -18,6 +18,7 @@ from .iofunc import (
         create_folder, delete_folder_contents, get_asset_path, load_icon, load_json, open_url,
         store_json)
 from .subwindows import ExportWindow, ItemEditor, Picker, ShipSelector
+from .theme import AppTheme
 from .widgets import (
     Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, TooltipLabel,
     VBoxLayout, WidgetStorage)
@@ -54,18 +55,12 @@ class SETS():
     app_dir = None
     # (release version, dev version)
     versions = ('', '')
-    # see main.py for contents
-    theme = {}
     # stores widgets that need to be accessed from outside their creating function
     widgets: WidgetStorage
     # stores refined cargo data
     cache: Cache
     # stores current build
     build: dict
-    # height of items
-    box_height: int
-    # width of items
-    box_width: int
     # for picking items
     picker_window: Picker
     # for selecting ships
@@ -99,6 +94,8 @@ class SETS():
         self.config.config_dir = self.get_config_dir_path()
         self.settings = SETSSettings(self.config.config_dir / self.config.settings_file)
         self.init_config()
+        QDir.addSearchPath('local_folder', os.path.join(path, 'local'))
+        self.theme2: AppTheme = AppTheme(self.config.ui_scale)
         self.prepare_tooltip_css()
         self.init_environment()
         self.downloader = Downloader(
@@ -210,17 +207,18 @@ class SETS():
         self.cache.icons['link'] = load_icon('external_link.png', self.app_dir)
         self.cache.icons['dual_cannons'] = load_icon('DC_icon.svg', self.app_dir).pixmap(16, 24.5)
         self.cache.icons['ground'] = load_icon('ground_icon.png', self.app_dir).pixmap(
-                self.box_width * 1.2, self.box_width * 1.2)
+                self.theme2.opt.box_width * 1.2, self.theme2.opt.box_width * 1.2)
         self.cache.icons['tac'] = load_icon('tac_icon.png', self.app_dir).pixmap(
-                self.box_width, self.box_width)
+                self.theme2.opt.box_width, self.theme2.opt.box_width)
         self.cache.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir).pixmap(25, 25)
         self.cache.icons['sci'] = load_icon('sci_icon.png', self.app_dir).pixmap(
-                self.box_width, self.box_width)
+                self.theme2.opt.box_width, self.theme2.opt.box_width)
         self.cache.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir).pixmap(25, 25)
         self.cache.icons['eng'] = load_icon('eng_icon.png', self.app_dir).pixmap(
-                self.box_width, self.box_width)
+                self.theme2.opt.box_width, self.theme2.opt.box_width)
         self.cache.icons['STOCD'] = load_icon('stocd.png', self.app_dir).pixmap(
                 self.box_height, self.box_height * 182 / 106)
+        self.theme2.icons = self.cache.icons
 
     def cache_item_aliases(self):
         """
@@ -235,6 +233,7 @@ class SETS():
         window_geometry = self.window.saveGeometry()
         self.settings.state__geometry = window_geometry
         self.autosave()
+        self.settings.store_settings()
         event.accept()
 
     # ----------------------------------------------------------------------------------------------
@@ -253,7 +252,7 @@ class SETS():
                 get_asset_path('Overpass-VariableFont_wght.ttf', self.app_dir))
         font_database.addApplicationFont(
                 get_asset_path('RobotoMono-Regular.ttf', self.app_dir))
-        app.setStyleSheet(self.create_style_sheet(self.theme['app']['style']))
+        app.setStyleSheet(self.theme2.create_style_sheet(self.theme2['app']['style']))
         window = QWidget()
         window.setWindowIcon(load_icon('SETS_icon_small.png', self.app_dir))
         window.setWindowTitle('STO Equipment and Trait Selector')
@@ -277,7 +276,7 @@ class SETS():
         main_layout = VBoxLayout(margins=0, spacing=0)
         banner = ImageLabel(get_asset_path('sets_banner.png', self.app_dir), (2880, 126))
         main_layout.addWidget(banner)
-        frame_width = 8 * self.config.ui_scale
+        frame_width = 8 * self.theme2.scale
         tabber_layout = VBoxLayout(margins=frame_width, spacing=0)
         splash_tabber = QTabWidget()
         splash_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
@@ -297,7 +296,7 @@ class SETS():
         content_layout.setColumnStretch(0, 1)
         content_layout.setColumnStretch(1, 4)
 
-        margin = 3 * self.config.ui_scale
+        margin = 3 * self.theme2.scale
         menu_layout = GridLayout(margins=(margin, margin, margin, 0), spacing=0)
         menu_layout.setColumnStretch(0, 2)
         menu_layout.setColumnStretch(1, 5)
@@ -369,7 +368,7 @@ class SETS():
 
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
                 'background-color': '@sets', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        seperator.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         sidebar_layout.addWidget(seperator, 0, 1, 2, 1)
         sidebar.setLayout(sidebar_layout)
         content_layout.addWidget(sidebar, 1, 0)
@@ -398,7 +397,7 @@ class SETS():
         Creates ship info frame
         """
         frame = self.widgets.sidebar_frames[0]
-        csp = self.theme['defaults']['csp'] * self.config.ui_scale
+        csp = self.theme2['defaults']['csp'] * self.theme2.scale
         layout = VBoxLayout(margins=csp, spacing=csp)
 
         image_frame = self.create_frame(size_policy=SMINMIN)
@@ -418,7 +417,7 @@ class SETS():
         ship_selector.setSizePolicy(SMINMAX)
         ship_selector.setStyleSheet(
                 self.get_style_class('ShipButton', 'button', override={'margin': 0}))
-        ship_selector.setFont(self.theme_font(font_spec='@subhead'))
+        ship_selector.setFont(self.theme2.get_font(font_spec='@subhead'))
         ship_selector.clicked.connect(self.select_ship)
         self.widgets.ship['button'] = ship_selector
         ship_layout.addWidget(ship_selector, 0, 0, 1, 4, alignment=ATOP)
@@ -453,7 +452,7 @@ class SETS():
         desc_edit = QPlainTextEdit()
         desc_edit.setSizePolicy(SMINMIN)
         desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
-        desc_edit.setFont(self.theme_font('textedit'))
+        desc_edit.setFont(self.theme2.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.set_build_item(
                 self.build['space'], 'ship_desc', desc_edit.toPlainText(), autosave=False))
@@ -478,7 +477,7 @@ class SETS():
         Creates space build layout
         """
         frame = self.widgets.build_frames[0]
-        isp = self.theme['defaults']['isp'] * 2 * self.config.ui_scale
+        isp = self.theme2['defaults']['isp'] * 2 * self.theme2.scale
         layout = GridLayout(margins=isp, spacing=isp)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(10, 1)
@@ -500,7 +499,7 @@ class SETS():
         layout.addLayout(hangar_layout, 4, 1, alignment=ALEFT)
         sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        sep1.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         layout.addWidget(sep1, 0, 2, 5, 1)
 
         deflector_layout = self.create_build_section('Deflector', 1, 'space', 'deflector', True)
@@ -516,7 +515,7 @@ class SETS():
         layout.addLayout(shield_layout, 4, 3, alignment=ALEFT)
         sep2 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        sep2.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         layout.addWidget(sep2, 0, 4, 5, 1)
 
         uni_layout = self.create_build_section(
@@ -533,7 +532,7 @@ class SETS():
         layout.addLayout(tac_layout, 3, 5, alignment=ALEFT)
         sep3 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        sep3.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         layout.addWidget(sep3, 0, 6, 5, 1)
 
         # Boffs
@@ -573,7 +572,7 @@ class SETS():
         layout.addLayout(trait_layout, 0, 9, 6, 1, alignment=ATOP)
 
         # Doffs
-        spacing = self.theme['defaults']['bw'] * self.config.ui_scale
+        spacing = self.theme2['defaults']['bw'] * self.theme2.scale
         doff_container = self.create_frame(size_policy=SMINMAX)
         doff_container_layout = VBoxLayout(spacing=spacing * 2)
         doff_label = self.create_label('Space Duty Officers')
@@ -596,7 +595,7 @@ class SETS():
         Creates Ground build frame
         """
         frame = self.widgets.build_frames[1]
-        isp = self.theme['defaults']['isp'] * 2 * self.config.ui_scale
+        isp = self.theme2['defaults']['isp'] * 2 * self.theme2.scale
         layout = GridLayout(margins=isp, spacing=isp)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(8, 1)
@@ -611,7 +610,7 @@ class SETS():
         layout.addLayout(devices_layout, 2, 1, alignment=ALEFT)
         sep1 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        sep1.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         layout.addWidget(sep1, 0, 2)
         kit_layout = self.create_build_section('Kit Frame:', 1, 'ground', 'kit', True)
         layout.addLayout(kit_layout, 0, 3, alignment=ALEFT)
@@ -623,7 +622,7 @@ class SETS():
         layout.addLayout(shield_layout, 3, 3, alignment=ALEFT)
         sep2 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        sep2.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         layout.addWidget(sep2, 0, 4)
 
         # Boffs
@@ -637,7 +636,7 @@ class SETS():
         layout.addLayout(boff_4_layout, 3, 5, alignment=ALEFT)
         sep3 = self.create_frame(size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        sep3.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         layout.addWidget(sep3, 0, 6)
 
         # Traits
@@ -652,7 +651,7 @@ class SETS():
         layout.addLayout(trait_layout, 0, 7, 4, 1, alignment=ATOP)
 
         # Doffs
-        spacing = self.theme['defaults']['bw'] * self.config.ui_scale
+        spacing = self.theme2['defaults']['bw'] * self.theme2.scale
         doff_container = self.create_frame(size_policy=SMINMAX)
         doff_container_layout = VBoxLayout(spacing=spacing * 2)
         doff_label = self.create_label('Ground Duty Officers')
@@ -672,14 +671,14 @@ class SETS():
 
         # sidebar
         sidebar_frame = self.widgets.sidebar_frames[1]
-        csp = self.theme['defaults']['csp'] * self.config.ui_scale
+        csp = self.theme2['defaults']['csp'] * self.theme2.scale
         sidebar_layout = GridLayout(margins=(csp, isp, csp, csp), spacing=csp)
         sidebar_layout.setColumnStretch(0, 1)
         desc_label = self.create_label('Build Description:')
         sidebar_layout.addWidget(desc_label, 0, 0)
         desc_edit = QPlainTextEdit()
         desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
-        desc_edit.setFont(self.theme_font('textedit'))
+        desc_edit.setFont(self.theme2.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.set_build_item(
                 self.build['ground'], 'ground_desc', desc_edit.toPlainText(), autosave=False))
@@ -691,12 +690,12 @@ class SETS():
         """
         Creates character customization area.
         """
-        csp = self.theme['defaults']['csp'] * self.config.ui_scale
+        csp = self.theme2['defaults']['csp'] * self.theme2.scale
         layout = GridLayout(margins=csp, spacing=csp)
         layout.setColumnStretch(1, 1)
         seperator = self.create_frame(size_policy=SMINMAX, style_override={
                 'background-color': '@sets', 'margin': '@isp'})
-        sep = self.theme['defaults']['sep'] * self.config.ui_scale
+        sep = self.theme2['defaults']['sep'] * self.theme2.scale
         seperator.setFixedHeight(sep)
         layout.addWidget(seperator, 0, 0, 1, 2, alignment=ATOP)  # ATOP makes it respect the margin?
         char_name = self.create_entry(placeholder='NAME')
@@ -757,8 +756,8 @@ class SETS():
         Creates Space skill GUI
         """
         frame = self.widgets.build_frames[2]
-        isp = self.theme['defaults']['isp'] * self.config.ui_scale
-        csp = self.theme['defaults']['csp'] * self.config.ui_scale
+        isp = self.theme2['defaults']['isp'] * self.theme2.scale
+        csp = self.theme2['defaults']['csp'] * self.theme2.scale
         col_layout = GridLayout(margins=isp, spacing=csp)
         col_layout.setRowStretch(0, 1)
         col_layout.setColumnStretch(0, 3)
@@ -786,7 +785,7 @@ class SETS():
             'Captain<br><small>(25 points required)</small>',
             'Admiral<br><small>(35 points required)</small>'
         )
-        sep_height = self.theme['hr']['height'] * self.config.ui_scale
+        sep_height = self.theme2['hr']['height'] * self.theme2.scale
         for rank, skill_groups in enumerate(self.cache.skills['space']):
             header_layout = GridLayout(spacing=isp)
             left_sep = self.create_frame('hr', size_policy=SMINMAX)
@@ -812,7 +811,7 @@ class SETS():
         scroll_area.setWidget(scroll_frame)
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
                 'background-color': '@sets'})
-        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        seperator.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         col_layout.addWidget(seperator, 0, 1)
         bonus_bar_container = self.create_frame(size_policy=SMINMIN)
         # bonus bars
@@ -851,7 +850,7 @@ class SETS():
         sidebar_layout.addWidget(desc_label, 0, 0, 1, 2)
         desc_edit = QPlainTextEdit()
         desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
-        desc_edit.setFont(self.theme_font('textedit'))
+        desc_edit.setFont(self.theme2.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.set_build_item(
                 self.build['skill_desc'], 'space', desc_edit.toPlainText(), autosave=False))
@@ -870,8 +869,8 @@ class SETS():
         Creates Ground skill GUI
         """
         frame = self.widgets.build_frames[3]
-        isp = self.theme['defaults']['isp'] * self.config.ui_scale
-        csp = self.theme['defaults']['csp'] * self.config.ui_scale
+        isp = self.theme2['defaults']['isp'] * self.theme2.scale
+        csp = self.theme2['defaults']['csp'] * self.theme2.scale
         col_layout = GridLayout(margins=isp, spacing=csp)
         col_layout.setRowStretch(0, 1)
         col_layout.setColumnStretch(0, 3)
@@ -925,7 +924,7 @@ class SETS():
         tree_frame.setLayout(tree_layout)
         seperator = self.create_frame(size_policy=SMAXMIN, style_override={
                 'background-color': '@sets'})
-        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.config.ui_scale)
+        seperator.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
         col_layout.addWidget(seperator, 0, 1)
         bonus_bar_container = self.create_frame(size_policy=SMINMIN)
         # bonus bars
@@ -959,7 +958,7 @@ class SETS():
         sidebar_layout.addWidget(desc_label, 0, 0, 1, 2)
         desc_edit = QPlainTextEdit()
         desc_edit.setStyleSheet(self.get_style_class('QPlainTextEdit', 'textedit'))
-        desc_edit.setFont(self.theme_font('textedit'))
+        desc_edit.setFont(self.theme2.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.set_build_item(
                 self.build['skill_desc'], 'ground', desc_edit.toPlainText(), autosave=False))
@@ -996,7 +995,7 @@ class SETS():
         """
         menu = ContextMenu()
         menu.setStyleSheet(self.get_style_class('ContextMenu', 'context_menu'))
-        menu.setFont(self.theme_font('context_menu'))
+        menu.setFont(self.theme2.get_font('context_menu'))
         menu.addAction(self.cache.icons['copy'], 'Copy Item', self.copy_equipment_item)
         menu.addAction(self.cache.icons['paste'], 'Paste Item', self.paste_equipment_item)
         menu.addAction(self.cache.icons['clear'], 'Clear Slot', self.clear_slot)
@@ -1018,7 +1017,7 @@ class SETS():
         Populates the settings frame.
         """
         settings_frame = self.widgets.build_frames[5]
-        isp = self.theme['defaults']['isp'] * self.config.ui_scale
+        isp = self.theme2['defaults']['isp'] * self.theme2.scale
         settings_layout = HBoxLayout(margins=(2 * isp, isp, isp, isp), spacing=isp)
         scroll_layout = VBoxLayout(margins=(0, isp, 0, 0), spacing=isp)
         scroll_layout.setSpacing(isp)
@@ -1143,7 +1142,7 @@ class SETS():
 
         # sidebar
         sidebar_frame = self.widgets.sidebar_frames[5]
-        csp = self.theme['defaults']['csp'] * self.config.ui_scale
+        csp = self.theme2['defaults']['csp'] * self.theme2.scale
         sidebar_layout = VBoxLayout(margins=csp, spacing=isp)
         sidebar_layout.setAlignment(ATOP)
         sidebar_layout.addWidget(self.create_label('About SETS:', 'label_heading'), alignment=ALEFT)
