@@ -1,6 +1,6 @@
 import copy
 
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QFont, QIcon, QPixmap
 
 WEIGHT_CONVERSION = {
     'normal': QFont.Weight.Normal,
@@ -41,14 +41,15 @@ class AppTheme:
         - :param theme_tree: options that affect the UI, but are not directly related to the style
         """
         self.scale: float = scale
-        self.icons: dict[str, QIcon] = dict()
+        self.icons: dict[str, QIcon | QPixmap] = dict()
         self.opt: ThemeOptions = ThemeOptions(theme_options)
-        self.opt.box_height = self.opt.default_box_height * self.scale
-        self.opt.box_width = self.opt.default_box_width * self.scale
+        self.opt.box_height = self.opt.default_box_height * self.scale * 0.8
+        self.opt.box_width = self.opt.default_box_width * self.scale * 0.8
         if len(theme_tree) > 0:
             self._theme_data: dict[str, dict] = theme_tree
         else:
             self._theme_data: dict[str, dict] = self.get_default_theme() 
+        self.prepare_tooltip_css()
 
     def __getitem__(self, key: str):
         return self._theme_data[key]
@@ -156,7 +157,7 @@ class AppTheme:
                 style_sheet += f'{prop}:{prop_value};'
         return style_sheet
 
-    def get_font(self, widget: str, font_spec: tuple[str, int, str] | str = ()) -> QFont:
+    def get_font(self, widget: str = '', font_spec: tuple[str, int, str] | str = ()) -> QFont:
         """
         Returns QFont object with font specified in current theme or font_spec. Adds default
         fallback font families.
@@ -168,15 +169,12 @@ class AppTheme:
 
         :return: configured QFont object
         """
-        try:
-            if len(font_spec) != 3 and isinstance(font_spec, tuple):
-                font_spec = self._theme_data[widget]['font']
-            if isinstance(font_spec, str) and font_spec.startswith('@'):
-                font = self._theme_data['defaults'][font_spec[1:]]
-            else:
-                font = font_spec
-        except KeyError:
-            font = self._theme_data['app']['font']
+        if len(font_spec) != 3 and isinstance(font_spec, tuple):
+            font_spec = self._theme_data[widget]['font']
+        if isinstance(font_spec, str) and font_spec.startswith('@'):
+            font = self._theme_data['defaults'][font_spec[1:]]
+        else:
+            font = font_spec
         font_family = (font[0], *self._theme_data['app']['font-fallback'])
         font_size = int(font[1] * self.scale)
         font_weight = WEIGHT_CONVERSION[font[2]]
@@ -200,6 +198,24 @@ class AppTheme:
         for prop, prop_value in d.items():
             style_sheet += f'{prop} {{{self.get_css(prop_value)}}}'
         return style_sheet
+    
+    def prepare_tooltip_css(self):
+        """
+        Converts dictionaries containing tooltip style to css
+        """
+        ui_scale = self.scale
+        tooltips = self._theme_data['tooltip']
+        for tag, style in self._theme_data['tooltip_def'].items():
+            css = ''
+            for prop, val in style.items():
+                if isinstance(val, int):
+                    unit = 'pt' if prop == 'font-size' else 'px'
+                    css += f'{prop}:{val * ui_scale}{unit};'
+                elif isinstance(val, tuple):
+                    css += f'''{prop}:{'px '.join(map(lambda s: str(s * ui_scale), val))}px;'''
+                else:
+                    css += f'{prop}:{val};'
+            tooltips[tag] = css
 
     def get_default_theme(self) -> dict[str, dict]:
         """
@@ -656,6 +672,7 @@ class AppTheme:
                 'border-width': '@bw',
                 'border-style': 'solid',
                 'border-radius': '@br',
+                'font': '@font',
                 'padding': '@sep',
                 '::item': {
                     'color': '@fg',
