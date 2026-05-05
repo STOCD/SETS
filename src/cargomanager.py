@@ -18,13 +18,14 @@ class CargoManager():
     """Manages Cargo data and cache"""
 
     def __init__(
-            self, folders: dict[str, Path], downloader: Downloader, settings: SETSSettings,
-            theme: AppTheme):
+            self, folders: dict[str, Path], app_dir: Path, downloader: Downloader,
+            settings: SETSSettings, theme: AppTheme):
         """
         Parameters:
         - :param folders: folder names and paths of config folder
         """
         self._folders: dict[str, Path] = folders
+        self._app_dir: Path = app_dir
         self._downloader: Downloader = downloader
         self._settings: SETSSettings = settings
         self._theme: AppTheme = theme
@@ -51,8 +52,28 @@ class CargoManager():
             'ground': self.boff_dict(),
             'all': dict()
         }
+        self.item_aliases: dict = dict()
+        self.skills = {
+            'space': dict(),
+            'space_unlocks': dict(),
+            'ground': dict(),
+            'ground_unlocks': dict()
+        }
         self.images_set: set[str] = set()
         self.alt_images: dict[str, str] = dict()
+
+    def load_static_data(self):
+        """
+        Loads skill data and item aliases.
+        """
+        local_folder = self._app_dir / 'local'
+        self.item_aliases = load_json__new(local_folder / 'aliases.json')
+        space_skill_data = load_json__new(local_folder / 'space_skills.json')
+        self.skills['space'] = space_skill_data['space']
+        self.skills['space_unlocks'] = space_skill_data['space_unlocks']
+        ground_skill_data = load_json__new(local_folder / 'ground_skills.json')
+        self.skills['ground'] = ground_skill_data['ground']
+        self.skills['ground_unlocks'] = ground_skill_data['ground_unlocks']
 
     def provision_cargo_data(self):
         """
