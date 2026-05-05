@@ -30,6 +30,47 @@ class ThemeOptions:
                     setattr(self, option_name, option_value)
 
 
+class TooltipCSS:
+    """
+    Contains css used for styling tooltips.
+    """
+
+    __slots__ = ('boff_header', 'boff_subheader', 'equipment_head', 'equipment_name',
+                 'equipment_subhead', 'equipment_type_subheader', 'equipment_who', 'indent', 'li',
+                 'skill_ultimate_name', 'trait_header', 'trait_subheader', 'ul')
+
+    def __init__(self, tooltips: dict[str, dict[str]], scale: float):
+        self.boff_header: str = self.get_tooltip_css(tooltips['boff_header'], scale)
+        self.boff_subheader: str = self.get_tooltip_css(tooltips['boff_subheader'], scale)
+        self.equipment_head: str = self.get_tooltip_css(tooltips['equipment_head'], scale)
+        self.equipment_name: str = self.get_tooltip_css(tooltips['equipment_name'], scale)
+        self.equipment_subhead: str = self.get_tooltip_css(tooltips['equipment_subhead'], scale)
+        self.equipment_type_subheader: str = self.get_tooltip_css(
+            tooltips['equipment_type_subheader'], scale)
+        self.equipment_who: str = self.get_tooltip_css(tooltips['equipment_who'], scale)
+        self.indent: str = self.get_tooltip_css(tooltips['indent'], scale)
+        self.li: str = self.get_tooltip_css(tooltips['li'], scale)
+        self.skill_ultimate_name: str = self.get_tooltip_css(tooltips['skill_ultimate_name'], scale)
+        self.trait_header: str = self.get_tooltip_css(tooltips['trait_header'], scale)
+        self.trait_subheader: str = self.get_tooltip_css(tooltips['trait_subheader'], scale)
+        self.ul: str = self.get_tooltip_css(tooltips['ul'], scale)
+    
+    def get_tooltip_css(self, style_data: dict[str], scale: float):
+        """
+        Converts dictionary containing tooltip style to css
+        """
+        css = str()
+        for prop, val in style_data.items():
+            if isinstance(val, int):
+                unit = 'pt' if prop == 'font-size' else 'px'
+                css += f'{prop}:{val * scale}{unit};'
+            elif isinstance(val, tuple):
+                css += f'''{prop}:{'px '.join(map(lambda s: str(s * scale), val))}px;'''
+            else:
+                css += f'{prop}:{val};'
+        return css
+
+
 class AppTheme:
     """Encapsulates theme functions and data."""
 
@@ -49,7 +90,7 @@ class AppTheme:
             self._theme_data: dict[str, dict] = theme_tree
         else:
             self._theme_data: dict[str, dict] = self.get_default_theme() 
-        self.prepare_tooltip_css()
+        self.tooltips: TooltipCSS = TooltipCSS(self._theme_data['tooltip_def'], scale)
 
     def __getitem__(self, key: str):
         return self._theme_data[key]
@@ -198,24 +239,6 @@ class AppTheme:
         for prop, prop_value in d.items():
             style_sheet += f'{prop} {{{self.get_css(prop_value)}}}'
         return style_sheet
-    
-    def prepare_tooltip_css(self):
-        """
-        Converts dictionaries containing tooltip style to css
-        """
-        ui_scale = self.scale
-        tooltips = self._theme_data['tooltip']
-        for tag, style in self._theme_data['tooltip_def'].items():
-            css = ''
-            for prop, val in style.items():
-                if isinstance(val, int):
-                    unit = 'pt' if prop == 'font-size' else 'px'
-                    css += f'{prop}:{val * ui_scale}{unit};'
-                elif isinstance(val, tuple):
-                    css += f'''{prop}:{'px '.join(map(lambda s: str(s * ui_scale), val))}px;'''
-                else:
-                    css += f'{prop}:{val};'
-            tooltips[tag] = css
 
     def get_default_theme(self) -> dict[str, dict]:
         """
