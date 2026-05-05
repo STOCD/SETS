@@ -47,7 +47,7 @@ class SETSSettings():
         self.default_save_format: str = 'JSON'
         self.default_rarity: str = 'Common'
         self.picker_relative: int = 0
-        self.pref_backup: int = 0
+        self.pref_backup: int = 0  # 0: auto backup preferred, 1: manual backup preferred
         self.ui_scale: float = 1
 
         self.state__geometry: QByteArray = QByteArray()

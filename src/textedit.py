@@ -1,6 +1,7 @@
 from re import sub as re_sub
 
 from .constants import CAREER_ABBR, RARITY_COLORS, SKILL_PREFIXES, WIKI_URL
+from .theme import TooltipCSS
 
 
 def get_tooltip(self, name: str, type_: str, environment: str = 'space') -> str:
@@ -182,6 +183,32 @@ def create_equipment_tooltip(
                     f"{parse_wikitext(dewikify(item[f'text{i}']), tags)}</p>")
     return tooltip
 
+def create_equipment_tooltip__new(item: dict, tooltip_style: TooltipCSS) -> str:
+    """
+    Creates tooltip for equipment from raw item data.
+
+    Parameters:
+    - :param item: item data (from cargo table)
+    - :param tooltip_style: object containing style data
+    """
+    tooltip = ''
+    if item['who'] is not None:
+        tooltip += f"<p style='{tooltip_style.equipment_who}'>{item['who']}</p>"
+    for i in range(1, 10, 1):
+        if item[f'head{i}'] is not None:
+            tooltip += (
+                f"<p style='{tooltip_style.equipment_head}'>"
+                f"{format_wikitext(dewikify(item[f'head{i}']))}</p>")
+        if item[f'subhead{i}'] is not None:
+            tooltip += (
+                f"<p style='{tooltip_style.equipment_subhead}'>"
+                f"{format_wikitext(dewikify(item[f'subhead{i}']))}</p>")
+        if item[f'text{i}'] is not None:
+            tooltip += (
+                f"<p style='margin:0'>"
+                f"{parse_wikitext(dewikify(item[f'text{i}']), tooltip_style)}</p>")
+    return tooltip
+
 
 def create_trait_tooltip(
         name: str, description: str, type_: str, environment: str, head_style: str,
@@ -213,6 +240,38 @@ def create_trait_tooltip(
                 f"<p style='{head_style}'>{name}</p><p style='{subhead_style}'>"
                 f"Active {environment.capitalize()} Reputation Trait</p><p style='margin:0'>"
                 f"{parse_wikitext(dewikify(description), tags)}</p>")
+    else:
+        tooltip = ''
+    return tooltip
+
+def create_trait_tooltip__new(
+        name: str, description: str, type_: str, environment: str,
+        styles: TooltipCSS) -> str:
+    """
+    Creates tooltip for trait from trait description.
+
+    Parameters:
+    - :param name: name of the trait
+    - :param description: description of the trait
+    - :param type_: type of the trait; one of "traits", "rep_traits", "active_rep_traits"
+    - :param environment: "space" / "ground"
+    - :param styles: object containing style data
+    """
+    if type_ == 'traits':
+        tooltip = (
+            f"<p style='{styles.trait_header}'>{name}</p><p style='{styles.trait_subheader}'>"
+            f"Personal {environment.capitalize()} Trait</p><p>"
+            f"{parse_wikitext(dewikify(description), styles)}</p>")
+    elif type_ == 'rep_traits':
+        tooltip = (
+            f"<p style='{styles.trait_header}'>{name}</p><p style='{styles.trait_subheader}'>"
+            f"{environment.capitalize()} Reputation Trait</p><p>"
+            f"{parse_wikitext(dewikify(description), styles)}</p>")
+    elif type_ == 'active_rep_traits':
+        tooltip = (
+            f"<p style='{styles.trait_header}'>{name}</p><p style='{styles.trait_subheader}'>"
+            f"Active {environment.capitalize()} Reputation Trait</p><p style='margin:0'>"
+            f"{parse_wikitext(dewikify(description), styles)}</p>")
     else:
         tooltip = ''
     return tooltip

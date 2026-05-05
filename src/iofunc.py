@@ -1,6 +1,6 @@
 from datetime import datetime
 import json
-from json import load as json__load, JSONDecodeError
+from json import dump as json__dump, load as json__load, JSONDecodeError
 import os
 from pathlib import Path
 from shutil import copyfile as shutil__copyfile, rmtree as shutil__rmtree
@@ -362,6 +362,23 @@ def load_json(path: str) -> dict | list:
     with open(path, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return data
+
+
+def store_json__new(data: dict | list, path: Path) -> bool:
+    """
+    Stores data to json file at path. Overwrites file at target location. Raises ValueError if path
+    is not absolute. Returns `False` if file could not be saved, `True` otherwise.
+
+    Paramters:
+    - :param data: dictionary or list that should be stored
+    - :param path: file path to store the data to
+    """
+    try:
+        with path.open('w') as file:
+            json__dump(data, file)
+        return True
+    except OSError:
+        return False
 
 
 def store_json(data: dict | list, path: str):
