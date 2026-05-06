@@ -44,6 +44,32 @@ def add_equipment_tooltip_header(self, item: dict, tooltip_body: str, item_type:
     return tooltip + tooltip_body
 
 
+def add_equipment_tooltip_header__new(
+        item: dict[str, str], item_data: dict[str], tooltip_styles: TooltipCSS) -> str:
+    """
+    Adds equipment header including name, mark, modifiers, rarity and item type to the tooltip body
+    and returns the complete tooltip.
+
+    Parameters:
+    - :param item: item to create the tooltip for
+    - :param item_data: cargo data for the item
+    - :param tooltip_styles: used to style the tooltip
+    """
+    rarity_color = f'color:{RARITY_COLORS[item['rarity']]};'
+    head_style = tooltip_styles.equipment_name + rarity_color
+    subhead_style = tooltip_styles.equipment_type_subheader + rarity_color
+    item_title = item['item']
+    if item['mark'] != '' and item['mark'] is not None:
+        item_title += ' ' + item['mark']
+    mods = ' '.join(mod for mod in item['modifiers'] if mod != '' and mod is not None)
+    if mods != '':
+        item_title += ' ' + mods
+    tooltip = (
+        f"<p style='{head_style}'>{item_title}</p><p style='{subhead_style}'>"
+        f"{item['rarity']} {item_data['type']}</p>")
+    return tooltip + item_data['tooltip']
+
+
 def format_skill_tooltip(
             self, skill_name: str, skill_data: dict, node_index: int, environment: str) -> str:
     """
@@ -114,6 +140,42 @@ def get_skill_unlock_tooltip_space(self, career: str, unlock_id: int, unlock_cho
     return (
             f"<p style='{head_style}'>{unlock['name']}</p><p style='{subhead_style}'>"
             f"Space Skill</p><p>{unlock['desc']}</p>")
+
+
+def get_ultimate_skill_unlock_tooltip__new(
+        unlock: dict[str], unlock_choice: int, enhancements: int, tooltip_styles: TooltipCSS):
+    """
+    Formats tooltip for ultimate skill unlock.
+
+    Parameters:
+    - :param unlock: contains unlock metadata and tooltips
+    - :param unlock_choice: selected enhancement (`-1` for no unlock)
+    - :param enhancements: number of enhancements
+    - :param tooltips_styles: used to style the tooltip
+    """
+    enhancement_style = tooltip_styles.skill_ultimate_name
+    tooltip = (
+        f"<p style='{tooltip_styles.equipment_name}color:#ffd700;'>{unlock['name']}</p>"
+        f"<p style='{tooltip_styles.equipment_type_subheader}color:#ffd700;'>Space Skill</p>"
+        f"<p>{unlock['desc']}</p>")
+    if enhancements == 1:
+        tooltip += (
+            f"<p style='{enhancement_style}'>{unlock['options'][unlock_choice]['name']}</p>"
+            f"<p>{unlock['options'][unlock_choice]['desc']}</p>")
+    elif enhancements == 2:
+        e1 = (unlock_choice - 1) % 3
+        e2 = (unlock_choice + 1) % 3
+        tooltip += (
+            f"<p style='{enhancement_style}'>{unlock['options'][e1]['name']}</p>"
+            f"<p>{unlock['options'][e1]['desc']}</p>"
+            f"<p style='{enhancement_style}'>{unlock['options'][e2]['name']}</p>"
+            f"<p>{unlock['options'][e2]['desc']}</p>")
+    elif enhancements != 0:
+        for i in range(3):
+            tooltip += (
+                f"<p style='{enhancement_style}'>{unlock['options'][i]['name']}</p>"
+                f"<p>{unlock['options'][i]['desc']}</p>")
+    return tooltip
 
 
 def get_ultimate_skill_unlock_tooltip(self, career: str, unlock_choice: int, enhancements: int):

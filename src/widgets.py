@@ -1,4 +1,5 @@
 from collections import namedtuple
+from typing import Callable
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QBrush, QColor, QCursor, QEnterEvent, QImage, QMouseEvent, QPainter, QPen
@@ -464,6 +465,38 @@ class VBoxLayout(QVBoxLayout):
         else:
             self.setContentsMargins(*margins)
         self.setSpacing(spacing)
+
+
+class Thread(QThread):
+    """
+    Thread based on QThread with convenience functionality.
+    """
+    result: Signal = Signal(object)
+    done: Signal = Signal()
+
+    def __init__(self, target: Callable, args: tuple = (), kwargs: dict[str] = {}):
+        self._target: Callable = target
+        self._args: tuple = args
+        self._kwargs: dict[str] = kwargs
+    
+    def set_args(self, new_args: tuple) -> bool:
+        """
+        Sets new arguments that should be passed to the target. Only works while thread is not
+        running. Returns `True` on success, `False` on failure.
+        """
+        if self.isRunning():
+            return False
+        else:
+            self._args = new_args
+            return True
+
+    @Slot()
+    def run(self):
+        """
+        This function will be executed in a separate thread.
+        """
+        self.result.emit(self._target(*self._args, **self._kwargs))
+        self.done.emit()
 
 
 class PySideThread(QThread):
