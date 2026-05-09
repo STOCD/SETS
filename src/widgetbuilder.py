@@ -10,11 +10,125 @@ from .callbacks import (
         doff_variant_callback, picker, skill_callback_ground, skill_callback_space,
         skill_unlock_callback)
 from .constants import (
-        ABOTTOM, AHCENTER, ALEFT, ATOP, AVCENTER, CALLABLE, CAREERS, GROUND_BOFF_SPECS, SMAXMAX,
-        SMAXMIN, SMINMAX)
+    ABOTTOM, ACENTER, AHCENTER, ALEFT, ATOP, AVCENTER, CALLABLE, CAREERS, GROUND_BOFF_SPECS,
+    SMAXMAX, SMAXMIN, SMINMAX)
 from .style import get_style, get_style_class, merge_style, theme_font
 from .textedit import format_skill_tooltip
+from .theme import AppTheme
 from .widgets import DoffCombobox, GridLayout, HBoxLayout, ItemButton, TooltipLabel, VBoxLayout
+
+
+def create_frame2(
+        theme: AppTheme, style: str = 'frame', style_override: dict = {},
+        size_policy: QSizePolicy | None = None) -> QFrame:
+    """
+    Creates a frame with default styling
+
+    Parameters:
+    - :param theme: reference to AppTheme
+    - :param style: style dict to override default style (optional)
+    - :param size_policy: size policy of the frame (optional)
+
+    :return: configured QFrame
+    """
+    frame = QFrame()
+    frame.setStyleSheet(theme.get_style(style, style_override))
+    frame.setSizePolicy(size_policy if size_policy is not None else SMAXMAX)
+    return frame
+
+
+def create_label2(theme: AppTheme, text: str, style: str = 'label', style_override={}) -> QLabel:
+    """
+    Creates a label according to style with parent.
+
+    Parameters:
+    - :param theme: reference to AppTheme
+    - :param text: text to be shown on the label
+    - :param style: name of the style as in self.theme
+    - :param style_override: style dict to override default style (optional)
+
+    :return: configured QLabel
+    """
+    label = QLabel()
+    label.setText(text)
+    label.setStyleSheet(theme.get_style_class('QLabel', style, style_override))
+    label.setSizePolicy(SMAXMAX)
+    if 'font' in style_override:
+        label.setFont(theme.get_font(style, style_override['font']))
+    else:
+        label.setFont(theme.get_font(style))
+    return label
+
+
+def create_button_series2(
+        theme: AppTheme, buttons: dict[str, dict], style: str = 'button', shape: str = 'row',
+        separator: str = '', ret: bool = False) -> (
+            VBoxLayout | HBoxLayout | tuple[VBoxLayout | HBoxLayout, list[QPushButton]]):
+    """
+    Creates a row / column of buttons.
+
+    Parameters:
+    - :param theme: reference to AppTheme
+    - :param buttons: dictionary containing button details
+        - key "default" contains style override for all buttons (optional)
+        - all other keys represent one button, key will be the text on the button; value for the
+        key contains dict with details for the specific button (all optional)
+            - "callback": callable that will be called on button click
+            - "style": individual style override dict
+            - "toggle": True or False when button should be a toggle button, None when it should
+                be a normal button; the bool value indicates the default state of the button
+            - "stretch": stretch value for the button
+            - "align": alignment flag for button
+    - :param style: key for AppTheme -> default style
+    - :param shape: row / column
+    - :param separator: string seperator displayed between buttons (optional)
+    - :param ret: set to true to return list of created buttons along with layout
+
+    :return: populated QVBoxlayout / QHBoxlayout
+    """
+    if 'default' in buttons:
+        defaults = theme.merge_style(theme[style], buttons.pop('default'))
+    else:
+        defaults = theme[style]
+
+    if shape == 'column':
+        layout = VBoxLayout()
+    else:
+        shape = 'row'
+        layout = HBoxLayout()
+
+    if separator != '':
+        sep_style = {
+            'color': defaults['color'], 'margin': 0, 'padding': 0, 'background': '#00000000'}
+
+    button_list = []
+    for i, (name, detail) in enumerate(buttons.items()):
+        if 'style' in detail:
+            button_style = theme.merge_style(defaults, detail['style'])
+        else:
+            button_style = defaults
+        toggle_button = detail['toggle'] if 'toggle' in detail else None
+        bt = create_button(theme, name, style, button_style, toggle_button)
+        if 'callback' in detail and isinstance(detail['callback'], CALLABLE):
+            if toggle_button:
+                bt.clicked[bool].connect(detail['callback'])
+            else:
+                bt.clicked.connect(detail['callback'])
+        stretch = detail['stretch'] if 'stretch' in detail else 0
+        if 'align' in detail:
+            layout.addWidget(bt, stretch, detail['align'])
+        else:
+            layout.addWidget(bt, stretch)
+        button_list.append(bt)
+        if separator != '' and i < (len(buttons) - 1):
+            sep_label = create_label(theme, separator, 'label', sep_style)
+            sep_label.setSizePolicy(SMAXMIN)
+            layout.addWidget(sep_label, alignment=ACENTER)
+
+    if ret:
+        return layout, button_list
+    else:
+        return layout
 
 
 def create_frame(self, style='frame', style_override={}, size_policy=None) -> QFrame:

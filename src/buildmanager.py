@@ -13,7 +13,6 @@ from .theme import TooltipCSS
 from .widgets import ItemButton, ShipButton, ShipImage, Thread, TooltipLabel
 
 
-
 class SpaceBuild():
     """Stores widgets for space build"""
     def __init__(self):
@@ -158,14 +157,17 @@ class BuildManager():
             'space_points_rank': [0] * 5,
             'ground_points_total': 0
         }
-    
+
     def autosave(self):
         """
         Saves build to autosave file.
         """
         if not self._building:
             store_json__new(self._build_data, self._autosave_path)
-    
+
+    def __getitem__(self, key: str):
+        return self._build_data[key]
+
     def load_build(self):
         """
         Updates UI to show the build currently in self._build_data
