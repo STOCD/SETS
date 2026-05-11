@@ -9,7 +9,7 @@ from threading import Thread
 from urllib.parse import quote_plus, unquote_plus
 from webbrowser import open as webbrowser_open
 
-from PySide6.QtGui import QIcon, QImage
+from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import QFileDialog
 import requests
 from requests.cookies import create_cookie as requests__create_cookie
@@ -325,7 +325,7 @@ def get_asset_path(asset_name: str, app_directory: str) -> str:
         return ''
 
 
-def load_icon(filename: str, app_directory: str) -> QIcon:
+def load_icon(filename: str, app_directory: Path, size: tuple = tuple()) -> QIcon | QPixmap:
     """
     Loads icon from path and returns it.
 
@@ -333,7 +333,10 @@ def load_icon(filename: str, app_directory: str) -> QIcon:
     - :param path: path to icon
     - :param app_directory: absolute path to the app directory
     """
-    return QIcon(get_asset_path(filename, app_directory))
+    icon = QIcon(app_directory / 'local' / filename)
+    if len(size) == 2:
+        return icon.pixmap(*size)
+    return icon
 
 
 def load_json__new(file_path: Path) -> dict | list | None:

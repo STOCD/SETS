@@ -2,25 +2,27 @@ import os
 from pathlib import Path
 
 from PySide6.QtCore import QDir, Qt, QThread
-from PySide6.QtGui import QFontDatabase, QTextOption
+from PySide6.QtGui import QCloseEvent, QFontDatabase, QTextOption
 from PySide6.QtWidgets import QApplication, QFrame, QPlainTextEdit, QScrollArea, QTabWidget, QWidget
 
+from .buildmanager import BuildManager
 from .cargomanager import CargoManager
 from .config import SETSConfig, SETSSettings
 from .constants import (
-    ABOTTOM, ACENTER, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS,
+    ABOTTOM, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, MARKS,
     PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
     SMINMIN)
+from .contextmenu import ContextMenu
 from .datafunctions import cache_skills
 from .downloader import Downloader
+from .exportwindow import ExportWindow
 from .imagemanager import ImageManager
 from .iofunc import (
-        create_folder, delete_folder_contents, get_asset_path, load_icon, load_json, open_url,
-        store_json)
-from .subwindows import ExportWindow, ItemEditor, Picker, ShipSelector
+    delete_folder_contents, get_asset_path, load_icon, open_url, store_json)
+from .picker import ItemEditor, Picker, ShipSelector
 from .theme import AppTheme
 from .widgets import (
-    Cache, ContextMenu, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, TooltipLabel,
+    Cache, GridLayout, HBoxLayout, ImageLabel, ShipButton, ShipImage, TooltipLabel,
     VBoxLayout, WidgetStorage)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
@@ -31,16 +33,14 @@ signal(SIGINT, SIG_DFL)
 class SETS():
 
     from .callbacks import (
-            clear_all, clear_slot, clear_build_callback, copy_equipment_item, edit_equipment_item,
-            elite_callback, faction_combo_callback, load_build_callback, load_skills_callback,
-            open_wiki_context, paste_equipment_item, save_build_callback, save_skills_callback,
+            clear_all, clear_build_callback, elite_callback, faction_combo_callback,
+            load_build_callback, load_skills_callback, save_build_callback, save_skills_callback,
             select_ship, set_build_item, ship_info_callback,
             skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
             tier_callback)
     from .datafunctions import (
             autosave, backup_cargo_data, empty_build,
             init_backend, load_legacy_build_image)
-    from .export import get_build_markdown
     from .splash import enter_splash, exit_splash, splash_text
     from .style import (
             create_style_sheet, get_style, get_style_class, prepare_tooltip_css, theme_font)
@@ -87,7 +87,7 @@ class SETS():
         self.theme = theme
         self.args = args
         self.app_dir = path
-        self.config = config
+        self.app_dir2: Path = Path(path)
         self.widgets = WidgetStorage()
         self.cache = Cache()
         self.config: SETSConfig = SETSConfig()
@@ -101,25 +101,27 @@ class SETS():
         self.downloader = Downloader(
             self.config.config_subfolders['images'],
             self.config.config_subfolders['ship_images'])
-        self.cargo: CargoManager = CargoManager(self.config.config_subfolders)
+        self.cargo: CargoManager = CargoManager(
+            self.config.config_subfolders, self.app_dir2, self.downloader, self.settings,
+            self.theme2)
         self.images: ImageManager = ImageManager(
             Path(self.config.config_subfolders['images']),
             Path(self.config.config_subfolders['ship_images']),
-            self.cargo, self.downloader)
+            self.app_dir2, self.cargo, self.downloader)
+        self.build2: BuildManager = BuildManager(
+            self.cargo, self.images, self.config.autosave_path, self.theme2.tooltips)
         self.app, self.window = self.create_main_window()
         self.cache_icons()
-        self.cache_item_aliases()
         self.building = True
         self.build = self.empty_build()
-        self.export_window = ExportWindow(self, self.window, self.get_build_markdown)
+        self.export_window = ExportWindow(self.theme2, self.window, self.build2, self.cargo)
         self.setup_main_layout()
-        self.picker_window = Picker(
-                self, self.window,
-                default_rarity_getter=lambda: self.settings.default_rarity,
-                default_mark_getter=lambda: self.settings.default_mark)
-        self.edit_window = ItemEditor(self, self.window)
-        self.ship_selector_window = ShipSelector(self, self.window)
-        self.context_menu = self.create_context_menu()
+        self.picker_window: Picker = Picker(self.theme2, self.window, self.settings, self.images)
+        self.edit_window: ItemEditor = ItemEditor(self.theme2, self.window)
+        self.edit_window.dialog_result.connect(self.build2.finish_item_edit)
+        self.ship_selector_window: ShipSelector = ShipSelector(self.theme2, self.window)
+        self.context_menu: ContextMenu = ContextMenu(self.theme2, self.build2, self.cargo)
+        self.context_menu.edit_slot.connect(self.edit_window.edit_item)
         self.window.show()
         self.init_backend()
 
@@ -200,33 +202,25 @@ class SETS():
         """
         Loads static icons.
         """
-        self.cache.icons['copy'] = load_icon('copy.png', self.app_dir)
-        self.cache.icons['paste'] = load_icon('paste.png', self.app_dir)
-        self.cache.icons['clear'] = load_icon('clear.png', self.app_dir)
-        self.cache.icons['edit'] = load_icon('edit.png', self.app_dir)
-        self.cache.icons['link'] = load_icon('external_link.png', self.app_dir)
-        self.cache.icons['dual_cannons'] = load_icon('DC_icon.svg', self.app_dir).pixmap(16, 24.5)
-        self.cache.icons['ground'] = load_icon('ground_icon.png', self.app_dir).pixmap(
-                self.theme2.opt.box_width * 1.2, self.theme2.opt.box_width * 1.2)
-        self.cache.icons['tac'] = load_icon('tac_icon.png', self.app_dir).pixmap(
-                self.theme2.opt.box_width, self.theme2.opt.box_width)
-        self.cache.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir).pixmap(25, 25)
-        self.cache.icons['sci'] = load_icon('sci_icon.png', self.app_dir).pixmap(
-                self.theme2.opt.box_width, self.theme2.opt.box_width)
-        self.cache.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir).pixmap(25, 25)
-        self.cache.icons['eng'] = load_icon('eng_icon.png', self.app_dir).pixmap(
-                self.theme2.opt.box_width, self.theme2.opt.box_width)
-        self.cache.icons['STOCD'] = load_icon('stocd.png', self.app_dir).pixmap(
-                self.box_height, self.box_height * 182 / 106)
+        self.cache.icons['copy'] = load_icon('copy.png', self.app_dir2)
+        self.cache.icons['paste'] = load_icon('paste.png', self.app_dir2)
+        self.cache.icons['clear'] = load_icon('clear.png', self.app_dir2)
+        self.cache.icons['edit'] = load_icon('edit.png', self.app_dir2)
+        self.cache.icons['link'] = load_icon('external_link.png', self.app_dir2)
+        self.cache.icons['dual_cannons'] = load_icon('DC_icon.svg', self.app_dir2, size=(16, 24.5))
+        icon_size = (self.theme2.opt.box_width * 1.2, self.theme2.opt.box_width * 1.2)
+        self.cache.icons['ground'] = load_icon('ground_icon.png', self.app_dir2, icon_size)
+        icon_size = (self.theme2.opt.box_width, self.theme2.opt.box_width)
+        self.cache.icons['tac'] = load_icon('tac_icon.png', self.app_dir2, icon_size)
+        self.cache.icons['sci'] = load_icon('sci_icon.png', icon_size)
+        self.cache.icons['eng'] = load_icon('eng_icon.png', icon_size)
+        self.cache.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir2, size=(25, 25))
+        self.cache.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
+        icon_size = (self.theme2.opt.box_height, self.theme2.opt.box_width * 182 / 106)
+        self.cache.icons['STOCD'] = load_icon('stocd.png', self.app_dir2, icon_size)
         self.theme2.icons = self.cache.icons
 
-    def cache_item_aliases(self):
-        """
-        Loads item aliases into cache (used for fixing renamed items).
-        """
-        self.cache.item_aliases = load_json(get_asset_path('aliases.json', self.app_dir))
-
-    def main_window_close_callback(self, event):
+    def main_window_close_callback(self, event: QCloseEvent):
         """
         Executed when application is closed.
         """
@@ -248,13 +242,11 @@ class SETS():
         """
         app = QApplication(argv)
         font_database = QFontDatabase()
-        font_database.addApplicationFont(
-                get_asset_path('Overpass-VariableFont_wght.ttf', self.app_dir))
-        font_database.addApplicationFont(
-                get_asset_path('RobotoMono-Regular.ttf', self.app_dir))
+        font_database.addApplicationFont(self.app_dir2 / 'local' / 'Overpass-VariableFont_wght.ttf')
+        font_database.addApplicationFont(self.app_dir2 / 'local' / 'RobotoMono-Regular.ttf')
         app.setStyleSheet(self.theme2.create_style_sheet(self.theme2['app']['style']))
         window = QWidget()
-        window.setWindowIcon(load_icon('SETS_icon_small.png', self.app_dir))
+        window.setWindowIcon(load_icon('SETS_icon_small.png', self.app_dir2))
         window.setWindowTitle('STO Equipment and Trait Selector')
         if self.settings.state__geometry:
             window.restoreGeometry(self.settings.state__geometry)
@@ -988,20 +980,6 @@ class SETS():
         self.widgets.loading_label = loading_label
         layout.addWidget(loading_label, 2, 0, 1, 3, alignment=AHCENTER)
         frame.setLayout(layout)
-
-    def create_context_menu(self) -> ContextMenu:
-        """
-        Creates context menu for rightclick operations on equipment items
-        """
-        menu = ContextMenu()
-        menu.setStyleSheet(self.get_style_class('ContextMenu', 'context_menu'))
-        menu.setFont(self.theme2.get_font('context_menu'))
-        menu.addAction(self.cache.icons['copy'], 'Copy Item', self.copy_equipment_item)
-        menu.addAction(self.cache.icons['paste'], 'Paste Item', self.paste_equipment_item)
-        menu.addAction(self.cache.icons['clear'], 'Clear Slot', self.clear_slot)
-        menu.addAction(self.cache.icons['link'], 'Open Wiki', self.open_wiki_context)
-        menu.addAction(self.cache.icons['edit'], 'Edit Slot', self.edit_equipment_item)
-        return menu
 
     def hide_tooltips(self):
         """
