@@ -40,7 +40,7 @@ class SpaceBuild():
         self.sci_consoles: list[ItemButton] = [None] * 5
         self.sci_consoles_label: QLabel = None
         self.sec_def: list[ItemButton] = [None]
-        self.sec_def_label: list[ItemButton] = [None]
+        self.sec_def_label: QLabel = [None]
         self.shield: list[ItemButton] = [None]
         self.starship_traits: list[ItemButton] = [None]
         self.tac_consoles: list[ItemButton] = [None] * 5
@@ -167,6 +167,26 @@ class BuildManager():
 
     def __getitem__(self, key: str):
         return self._build_data[key]
+
+    def set(
+            self, category: str, key: str, subkey: int = -1, value: str | dict = '',
+            autosave: bool = True):
+        """
+        Sets build data for situations in which assignment is not possible.
+
+        Parameters:
+        - :param category: build category, e.g. `space`, `ground`, ...
+        - :param key: build key, e.g. `aft_weapons`, `armor`, ...
+        - :param subkey: build subkey, i.e. index of item under build key
+        - :param value: data to be set
+        - :param autosave: set to `False` to prevent autosaving
+        """
+        if subkey == -1:
+            self._build_data[category][key] = value
+        else:
+            self._build_data[category][key][subkey] = value
+        if autosave:
+            self.autosave()
 
     def load_build(self):
         """

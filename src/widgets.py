@@ -1,13 +1,27 @@
 from collections import namedtuple
+from pathlib import Path
 from typing import Callable
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QBrush, QColor, QCursor, QEnterEvent, QImage, QMouseEvent, QPainter, QPen
+from PySide6.QtGui import (
+    QBrush, QColor, QCursor, QEnterEvent, QImage, QMouseEvent, QPainter, QPaintEvent, QPen)
 from PySide6.QtWidgets import (
-        QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
-        QPlainTextEdit, QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
+    QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
+    QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
 
 from .constants import AHCENTER, ATOP, EQUIPMENT_TYPES, SMINMIN
+
+
+class Tabbers():
+    """Manages tabbers"""
+
+    def __init__(self):
+        self.build_tabber: QTabWidget
+        self.build_frames: list[QFrame] = list()
+        self.sidebar_tabber: QTabWidget
+        self.sidebar_frames: list[QFrame] = list()
+        self.character_tabber: QTabWidget
+        self.character_frames: list[QFrame] = list()
 
 
 class WidgetStorage():
@@ -227,10 +241,10 @@ class ImageLabel(QWidget):
     Label displaying image that resizes according to its parents width while preserving aspect
     ratio.
     """
-    def __init__(self, path: str = '', aspect_ratio: tuple[int, int] = (0, 0), *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, path: Path | None = None, aspect_ratio: tuple[int, int] = (0, 0)):
+        super().__init__()
         self._w, self._h = aspect_ratio
-        if path == '':
+        if path is None:
             self.p = QImage()
         else:
             self.p = QImage(path)
@@ -244,7 +258,7 @@ class ImageLabel(QWidget):
         self._h = p.height()
         self.update()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QPaintEvent):
         if not self.p.isNull():
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
