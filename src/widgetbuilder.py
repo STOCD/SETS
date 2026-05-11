@@ -1,6 +1,7 @@
 from typing import Callable
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QValidator
 from PySide6.QtWidgets import (
         QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
         QPushButton, QSizePolicy, QSlider, QVBoxLayout)
@@ -129,6 +130,124 @@ def create_button_series2(
         return layout, button_list
     else:
         return layout
+
+
+def create_button2(
+        theme: AppTheme, text: str, style: str = 'button', style_override: dict = {},
+        toggle: bool = None):
+    """
+    Creates a button according to style with parent.
+
+    Parameters:
+    - :param theme: reference to AppTheme
+    - :param text: text to be shown on the button
+    - :param style: name of the style as in self.theme or style dict
+    - :param style_override: style dict to override default style (optional)
+    - :param toggle: True or False when button should be a toggle button, None when it should be a \
+    normal button; the bool value indicates the default state of the button
+
+    :return: configured QPushButton
+    """
+    button = QPushButton(text)
+    button.setStyleSheet(theme.get_style_class('QPushButton', style, style_override))
+    if 'font' in style_override:
+        button.setFont(theme.get_font(style, style_override['font']))
+    else:
+        button.setFont(theme.get_font(style))
+    button.setCursor(Qt.CursorShape.PointingHandCursor)
+    button.setSizePolicy(SMAXMAX)
+    if isinstance(toggle, bool):
+        button.setCheckable(True)
+        button.setChecked(toggle)
+    return button
+
+
+def create_item_button2(theme: AppTheme) -> ItemButton:
+    """
+    Creates Item Button.
+
+    Parameters:
+    - :param theme: reference to AppTheme
+    """
+    label = create_label2(theme, '', 'infobox')
+    frame = create_frame2(theme, 'infobox_frame')
+    margin = theme['defaults']['csp'] * theme.scale
+    layout = VBoxLayout(margin)
+    layout.addWidget(label, alignment=ATOP)
+    frame.setLayout(layout)
+    button = ItemButton(
+        theme.opt.box_width, theme.opt.box_height, theme['item'], label, frame,
+        margin + theme['defaults']['bw'] * theme.scale)
+    return button
+
+
+def create_combo_box2(
+        theme: AppTheme, style: str = 'combobox', editable: bool = False,
+        size_policy: QSizePolicy = None, style_override: dict[str] = {},
+        class_: type[QComboBox] = QComboBox) -> QComboBox:
+    """
+    Creates a combobox with given style and returns it.
+
+    Parameters:
+    - :param theme: reference to AppTheme
+    - :param style: key for self.theme -> default style
+    - :param editable: set to True to make combobox editable
+    - :param size_policy: size policy for combobox
+    - :param style_override: style dict to override default style
+    - :param class_: custom constructor for combobox; must be QCombobox or subclass
+
+    :return: styled QCombobox
+    """
+    combo_box = class_()
+    combo_box.setStyleSheet(theme.get_style_class('QComboBox', style, style_override))
+    if 'font' in style_override:
+        font = theme.get_font(style, style_override['font'])
+    else:
+        font = theme.get_font(style)
+    combo_box.setFont(font)
+    combo_box.setSizePolicy(SMINMAX if size_policy is None else size_policy)
+    combo_box.setCursor(Qt.CursorShape.PointingHandCursor)
+    combo_box.view().setCursor(Qt.CursorShape.PointingHandCursor)
+    combo_box.setMinimumContentsLength(1)
+    combo_box.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+    if editable:
+        combo_box.setEditable(True)
+        combo_box.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        combo_box.completer().setFilterMode(Qt.MatchFlag.MatchContains)
+        combo_box.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        combo_box.completer().popup().setStyleSheet(theme.get_style_class('QListView', 'popup'))
+        combo_box.completer().popup().setFont(font)
+        combo_box.lineEdit().setFont(font)
+    return combo_box
+
+
+def create_entry2(
+        theme: AppTheme, default_value='', validator: QValidator | None = None,
+        style: str = 'entry', style_override: dict = {}, placeholder: str = '') -> QLineEdit:
+    """
+    Creates an entry widget and styles it.
+
+    Parameters:
+    - :param theme: reference to AppTheme
+    - :param default_value: default value for the entry
+    - :param validator: validator to validate entered characters against
+    - :param style: key for self.theme -> default style
+    - :param style_override: style dict to override default style
+    - :param placeholder: placeholder shown when entry is empty
+
+    :return: styled QLineEdit
+    """
+    entry = QLineEdit(default_value)
+    entry.setValidator(validator)
+    entry.setPlaceholderText(placeholder)
+    entry.setStyleSheet(theme.get_style_class('QLineEdit', style, style_override))
+    if 'font' in style_override:
+        entry.setFont(theme.get_font(style, style_override['font']))
+    else:
+        entry.setFont(theme.get_font(style))
+    entry.setCursor(Qt.CursorShape.IBeamCursor)
+    entry.setSizePolicy(SMAXMAX)
+    return entry
 
 
 def create_frame(self, style='frame', style_override={}, size_policy=None) -> QFrame:

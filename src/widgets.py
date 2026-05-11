@@ -478,7 +478,7 @@ class Thread(QThread):
         self._target: Callable = target
         self._args: tuple = args
         self._kwargs: dict[str] = kwargs
-    
+
     def set_args(self, new_args: tuple) -> bool:
         """
         Sets new arguments that should be passed to the target. Only works while thread is not
@@ -595,7 +595,7 @@ class ShipButton(QLabel):
 
 TagStyles = namedtuple('TagStyles', ('ul', 'li', 'indent'))
 
-ItemSlot = namedtuple('ItemSlot', ('type', 'index', 'environment'))
+ItemSlot = namedtuple('ItemSlot', ('environment', 'type', 'index', 'boff_id', 'is_equipment'))
 
 
 class ContextMenu(QMenu):

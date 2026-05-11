@@ -50,7 +50,7 @@ class ImageManager():
         self._images: dict[str, QImage] = dict()
         self.image_set: set[str] = set()
         self.failed_images: dict[str, int] = dict()
-    
+
     def get(self, image_name: str) -> QImage:
         """
         Returns image from cache if cached, loads and returns image if not cached.
@@ -62,6 +62,20 @@ class ImageManager():
         if image.isNull():
             image.load(self._images_dir / get_image_file_name(image_name))
         return image
+
+    def get_alt(self, image_name: str, image_suffix: str = '') -> QImage:
+        """
+        Returns image from cache if cached, loads and returns image if not cached. Tries to get
+        alternate image first.
+
+        Parameters:
+        - :param image_name: name of the image
+        - :param image_suffix: suffix to check in self.cache.alt_images
+        """
+        if image_name + image_suffix in self._cargo_cache.alt_images:
+            return self.get(self._cargo_cache.alt_images[image_name + image_suffix])
+        else:
+            return self.get(image_name)
 
     def get_downloaded_icons(self) -> set[str]:
         """
@@ -137,7 +151,7 @@ class ImageManager():
             self._downloader.download_ship_image(image_name, {})
             image = QImage(image_path)
         return image
-    
+
     def load_base_images(self):
         """
         Loads all images that are required for the app to start (skills, overlays)
@@ -169,7 +183,7 @@ class ImageManager():
             self._images_dir / get_image_file_name('Probability Manipulation'))
         self._images['EPS Corruption'] = QImage(
             self._images_dir / get_image_file_name('EPS Corruption'))
-    
+
     def load_images(self):
         """
         Loads images from drive.
