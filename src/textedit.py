@@ -71,7 +71,8 @@ def add_equipment_tooltip_header__new(
 
 
 def format_skill_tooltip(
-            self, skill_name: str, skill_data: dict, node_index: int, environment: str) -> str:
+        skill_name: str, skill_data: dict, node_index: int, environment: str,
+        tooltip_styles: TooltipCSS) -> str:
     """
     Formats skill tooltip
 
@@ -80,7 +81,10 @@ def format_skill_tooltip(
     - :param skill_data: contains skill details
     - :param node_index: index of the node within the skill group
     - :param environment: "space" / "ground"
+    - :param tooltip_styles: used to style the tooltip
     """
+    head_style = f"{tooltip_styles.equipment_name}color:#ffd700;"
+    subhead_style = f"{tooltip_styles.equipment_type_subheader}color:#ffd700;"
     if environment == 'space':
         if skill_data['grouping'] == 'column':
             prefix = SKILL_PREFIXES[node_index]
@@ -94,19 +98,15 @@ def format_skill_tooltip(
         else:
             prefix = ''
             global_description = skill_data['gdesc'][node_index]
-        head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
-        subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
         return (
-                f"<p style='{head_style}'>{prefix}{skill_name}</p><p style='{subhead_style}'>"
-                f"{CAREER_ABBR[skill_data['career']]} {environment.capitalize()} Skill</p>"
-                f"<p>{global_description}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
+            f"<p style='{head_style}'>{prefix}{skill_name}</p><p style='{subhead_style}'>"
+            f"{CAREER_ABBR[skill_data['career']]} {environment.capitalize()} Skill</p>"
+            f"<p>{global_description}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
     elif environment == 'ground':
-        head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
-        subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
         return (
-                f"<p style='{head_style}'>{skill_name}</p><p style='{subhead_style}'>"
-                f"Ground Skill</p>"
-                f"<p>{skill_data['gdesc']}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
+            f"<p style='{head_style}'>{skill_name}</p><p style='{subhead_style}'>"
+            f"Ground Skill</p>"
+            f"<p>{skill_data['gdesc']}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
 
 
 def get_skill_unlock_tooltip_ground(self, unlock_id: int, unlock_choice: int):
@@ -245,6 +245,7 @@ def create_equipment_tooltip(
                     f"{parse_wikitext(dewikify(item[f'text{i}']), tags)}</p>")
     return tooltip
 
+
 def create_equipment_tooltip__new(item: dict, tooltip_style: TooltipCSS) -> str:
     """
     Creates tooltip for equipment from raw item data.
@@ -305,6 +306,7 @@ def create_trait_tooltip(
     else:
         tooltip = ''
     return tooltip
+
 
 def create_trait_tooltip__new(
         name: str, description: str, type_: str, environment: str,
