@@ -54,7 +54,7 @@ class TooltipCSS:
         self.trait_header: str = self.get_tooltip_css(tooltips['trait_header'], scale)
         self.trait_subheader: str = self.get_tooltip_css(tooltips['trait_subheader'], scale)
         self.ul: str = self.get_tooltip_css(tooltips['ul'], scale)
-    
+
     def get_tooltip_css(self, style_data: dict[str], scale: float):
         """
         Converts dictionary containing tooltip style to css
@@ -89,7 +89,7 @@ class AppTheme:
         if len(theme_tree) > 0:
             self._theme_data: dict[str, dict] = theme_tree
         else:
-            self._theme_data: dict[str, dict] = self.get_default_theme() 
+            self._theme_data: dict[str, dict] = self.get_default_theme()
         self.tooltips: TooltipCSS = TooltipCSS(self._theme_data['tooltip_def'], scale)
 
     def __getitem__(self, key: str):
@@ -430,10 +430,10 @@ class AppTheme:
                     'border-color': '@sets'
                 },
                 '::indicator:checked': {
-                    'image': 'url(local/check.svg)'
+                    'image': 'url(local_folder:check.svg)'
                 },
                 '::indicator:unchecked': {
-                    'image': 'url(local/uncheck.svg)',
+                    'image': 'url(local_folder:uncheck.svg)',
                 }
             },
             # holds sub-pages
@@ -463,7 +463,7 @@ class AppTheme:
                 'color': '@fg',
                 'font': '@subhead',
                 '::down-arrow': {
-                    'image': 'url(local/thick-chevron-down.svg)',
+                    'image': 'url(local_folder:thick-chevron-down.svg)',
                     'width': '@margin',
                 },
                 '::drop-down': {
