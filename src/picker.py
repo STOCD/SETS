@@ -486,6 +486,7 @@ class ItemEditor(BasePicker):
         main_layout.addWidget(content_frame)
         self.setLayout(main_layout)
 
+    @Slot(dict, dict, ItemSlot)
     def edit_item(self, item: dict[str], modifiers: dict[str, dict[str]], slot: ItemSlot):
         """
         Shows editor window. Returns immediately.

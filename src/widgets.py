@@ -598,43 +598,6 @@ TagStyles = namedtuple('TagStyles', ('ul', 'li', 'indent'))
 ItemSlot = namedtuple('ItemSlot', ('environment', 'type', 'index', 'boff_id', 'is_equipment'))
 
 
-class ContextMenu(QMenu):
-    """
-    Custom context menu with data storage
-    """
-    def __init__(self):
-        super().__init__()
-        self.clicked_slot: ItemSlot = None
-        self.clicked_boff_station: int = -1
-        self.clicked_modifiers: dict = {}
-        self.copied_item: dict = None
-        self.copied_item_type: str = None
-
-    def invoke(self, event: QMouseEvent, key: str, subkey: int, environment: str, boff: int = -1):
-        """
-        Opens context menu for equipment
-
-        Parameters:
-        - :param event: event containing the clicked point
-        - :param key: slot type in self.build[environment]
-        - :param subkey: slot index
-        - :param environment: "space" / "ground"
-        - :param boff: id of the boff station
-        """
-        self.clicked_slot = ItemSlot(key, subkey, environment)
-        self.clicked_boff_station = boff
-        actions = self.actions()
-        if key in {'boffs', 'rep_traits', 'starship_traits', 'traits', 'active_rep_traits'}:
-            actions[0].setEnabled(False)
-            actions[1].setEnabled(False)
-            actions[4].setEnabled(False)
-        else:
-            actions[0].setEnabled(True)
-            actions[1].setEnabled(True)
-            actions[4].setEnabled(True)
-        self.exec(event.globalPos())
-
-
 class DoffCombobox(QComboBox):
     def minimumSizeHint(self) -> QSize:
         return QSize(100, super().minimumSizeHint().height())

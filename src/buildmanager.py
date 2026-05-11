@@ -10,7 +10,7 @@ from .imagemanager import ImageManager
 from .iofunc import store_json__new
 from .textedit import add_equipment_tooltip_header__new, get_ultimate_skill_unlock_tooltip__new
 from .theme import TooltipCSS
-from .widgets import ItemButton, ShipButton, ShipImage, Thread, TooltipLabel
+from .widgets import ItemButton, ItemSlot, ShipButton, ShipImage, Thread, TooltipLabel
 
 
 class SpaceBuild():
@@ -518,6 +518,39 @@ class BuildManager():
         else:
             tooltip = self._cache.ground_traits[build_key][item_name]['tooltip']
         item_button.set_item_full(item_image, None, tooltip)
+
+    def unslot_item(self, environment: str, build_key: str, build_subkey: int, boff_id: int = -1):
+        """
+        Updates build and UI with item
+
+        Parameters:
+        - :param item: item to be slotted
+        - :param environment: space/ground
+        - :param build_key: key to self.build[environment]
+        - :param build_subkey: index of the item within its build_key (category)
+        - :param boff_id: id of the boff seat; assumes non-boff item when `-1` or not supplied
+        """
+        if boff_id == -1:
+            self._build_data[environment][build_key][build_subkey] = ''
+            item_button: ItemButton = getattr(getattr(self, environment), build_key)[build_subkey]
+            item_button.clear()
+        else:
+            self._build_data[environment][build_key][boff_id][build_subkey] = ''
+            item_button: ItemButton = getattr(
+                getattr(self, environment), build_key)[boff_id][build_subkey]
+            item_button.clear()
+
+    def finish_item_edit(self, new_item: dict[str], slot: ItemSlot):
+        """
+        Updates item after editing if editing was not cancelled. Autosaves.
+
+        Parameters:
+        - :param new_item: contains the new item
+        - :param slot: information about the slot
+        """
+        if new_item['item'] != '':
+            self.slot_equipment_item(new_item, slot.environment, slot.type, slot.index)
+            self.autosave()
 
     def load_boff_stations(self, environment: str):
         """
