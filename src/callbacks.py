@@ -1,5 +1,3 @@
-import os
-
 from .buildupdater import (
         align_space_frame, clear_captain, clear_doffs, clear_ground_build, clear_ship, clear_traits,
         get_variable_slot_counts, set_skill_unlock_ground, set_skill_unlock_space,
@@ -9,35 +7,10 @@ from .constants import (
         SPECIES, SPECIES_TRAITS)
 from .datafunctions import (
         load_build_file, load_skill_tree_file, save_build_file, save_skill_tree_file)
-from .iofunc import browse_path, get_ship_image, image, open_wiki_page
+from .iofunc import browse_path, image, open_wiki_page
 from .widgets import exec_in_thread
 
 from PySide6.QtCore import Qt
-
-
-def switch_main_tab(self, index):
-    """
-    Callback to switch between tabs. Switches build and both sidebar tabs.
-
-    Parameters:
-    - :param index: index to switch to (0: space build, 1: ground build, 2: space skills,
-    3: ground skills, 4: library, 5: settings)
-    """
-    CHAR_TAB_MAP = {
-        0: 0,
-        1: 0,
-        2: 0,
-        3: 0,
-        4: 1,
-        5: 2
-    }
-    self.widgets.build_tabber.setCurrentIndex(index)
-    self.widgets.sidebar_tabber.setCurrentIndex(index)
-    self.widgets.character_tabber.setCurrentIndex(CHAR_TAB_MAP[index])
-    if index == 4:
-        self.widgets.sidebar.setVisible(False)
-    else:
-        self.widgets.sidebar.setVisible(True)
 
 
 def faction_combo_callback(self, new_faction: str):

@@ -40,7 +40,7 @@ class SETS():
             clear_all, clear_build_callback, elite_callback, faction_combo_callback,
             load_build_callback, load_skills_callback, save_build_callback, save_skills_callback,
             select_ship, set_build_item, ship_info_callback,
-            skill_unlock_callback, spec_combo_callback, species_combo_callback, switch_main_tab,
+            skill_unlock_callback, spec_combo_callback, species_combo_callback,
             tier_callback)
     from .datafunctions import (
             autosave, backup_cargo_data, empty_build,
@@ -318,15 +318,15 @@ class SETS():
             create_button_series2(self.theme2, left_button_group), 0, 0, alignment=ALEFT | ATOP)
         center_button_group = {
             'default': {'font': ('Overpass', 16, 'medium')},
-            'SPACE': {'callback': lambda: self.switch_main_tab(0), 'stretch': 1, 'size': SMINMAX},
-            'GROUND': {'callback': lambda: self.switch_main_tab(1), 'stretch': 1, 'size': SMINMAX},
+            'SPACE': {'callback': lambda: self.tabbers.switch(0), 'stretch': 1, 'size': SMINMAX},
+            'GROUND': {'callback': lambda: self.tabbers.switch(1), 'stretch': 1, 'size': SMINMAX},
             'SPACE SKILLS': {
-                'callback': lambda: self.switch_main_tab(2),
+                'callback': lambda: self.tabbers.switch(2),
                 'stretch': 1,
                 'size': SMINMAX
             },
             'GROUND SKILLS': {
-                'callback': lambda: self.switch_main_tab(3),
+                'callback': lambda: self.tabbers.switch(3),
                 'stretch': 1,
                 'size': SMINMAX
             }
@@ -335,7 +335,7 @@ class SETS():
         menu_layout.addLayout(center_buttons, 0, 1)
         right_button_group = {
             'Export': {'callback': self.export_window.invoke},
-            'Settings': {'callback': lambda: self.switch_main_tab(5)},
+            'Settings': {'callback': lambda: self.tabbers.switch(5)},
         }
         menu_layout.addLayout(
             create_button_series2(self.theme2, right_button_group), 0, 2, alignment=ARIGHT | ATOP)
