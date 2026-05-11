@@ -11,6 +11,15 @@ from PySide6.QtWidgets import (
 
 from .constants import AHCENTER, ATOP, EQUIPMENT_TYPES, SMINMIN
 
+CHAR_TAB_MAP = {
+    0: 0,
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 1,
+    5: 2
+}
+
 
 class Tabbers():
     """Manages tabbers"""
@@ -22,6 +31,18 @@ class Tabbers():
         self.sidebar_frames: list[QFrame] = list()
         self.character_tabber: QTabWidget
         self.character_frames: list[QFrame] = list()
+
+    def switch(self, index):
+        """
+        Callback to switch between tabs. Switches build and both sidebar tabs.
+
+        Parameters:
+        - :param index: index to switch to (0: space build, 1: ground build, 2: space skills,
+        3: ground skills, 4: library, 5: settings)
+        """
+        self.build_tabber.setCurrentIndex(index)
+        self.sidebar_tabber.setCurrentIndex(index)
+        self.character_tabber.setCurrentIndex(CHAR_TAB_MAP[index])
 
 
 class WidgetStorage():
