@@ -5,9 +5,10 @@ from PySide6.QtWidgets import QCheckBox, QComboBox, QLabel, QLineEdit, QPlainTex
 
 from .buildhelpers import get_boff_spec, get_variable_slot_counts, empty_build
 from .cargomanager import CargoManager
-from .constants import SHIP_TEMPLATE
+from .constants import (
+    PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK, SPECIES, SPECIES_TRAITS)
 from .imagemanager import ImageManager
-from .iofunc import store_json__new
+from .iofunc import open_wiki_page, store_json__new
 from .textedit import add_equipment_tooltip_header__new, get_ultimate_skill_unlock_tooltip__new
 from .theme import TooltipCSS
 from .widgets import ItemButton, ItemSlot, ShipButton, ShipImage, Thread, TooltipLabel
@@ -759,3 +760,413 @@ class BuildManager():
             self._build_data['skill_unlocks']['ground'][id] = state
             if not self._building:
                 unlock_button.force_tooltip_update()
+
+    def faction_combo_callback(self, new_faction: str):
+        """
+        Saves new faction and changes species selector choices.
+
+        Parameters:
+        - :param new_faction: name of the new faction
+        """
+        self._build_data['captain']['faction'] = new_faction
+        self.character.species.clear()
+        if new_faction != '':
+            self.character.species.addItems(('', *SPECIES[new_faction]))
+        self._build_data['captain']['species'] = ''
+        self.autosave()
+
+    def species_combo_callback(self, new_species: str):
+        """
+        Saves new species to build and changes species trait
+
+        Parameters:
+        - :param new_species: name of the new species
+        """
+        self._build_data['captain']['species'] = new_species
+        if new_species == 'Alien':
+            if not self._building:
+                self._build_data['space']['traits'][10] = ''
+                self._build_data['ground']['traits'][10] = ''
+                self._build_data['space']['traits'][11] = ''
+                self._build_data['ground']['traits'][11] = ''
+            self.space.traits[10].show()
+            self.ground.traits[10].show()
+            self.space.traits[11].clear()
+            self.ground.traits[11].clear()
+        else:
+            self.space.traits[10].hide()
+            self.ground.traits[10].hide()
+            self.space.traits[10].clear()
+            self.ground.traits[10].clear()
+            self._build_data['space']['traits'][10] = None
+            self._build_data['ground']['traits'][10] = None
+            new_space_trait = SPECIES_TRAITS['space'].get(new_species, '')
+            new_ground_trait = SPECIES_TRAITS['ground'].get(new_species, '')
+            if new_space_trait == '':
+                self.space.traits[11].clear()
+                self._build_data['space']['traits'][11] = ''
+            else:
+                self.slot_trait_item({'item': new_space_trait}, 'space', 'traits', 11)
+            if new_ground_trait == '':
+                self.ground.traits[11].clear()
+                self._build_data['ground']['traits'][11] = ''
+            else:
+                self.slot_trait_item({'item': new_ground_trait}, 'ground', 'traits', 11)
+        self.autosave()
+
+    def spec_combo_callback(self, primary: bool, new_spec: str):
+        """
+        Saves new spec to build and adjusts choices in other spec combo box.
+
+        Parameters:
+        - :param primary: `True` when editing primary spec, `False` when editing secondary spec
+        - :param new_spec: name of the new specialization
+        """
+        if primary:
+            self._build_data['captain']['primary_spec'] = new_spec
+            secondary_combo = self.character.secondary
+            secondary_specs = set()
+            remove_index = None
+            for i in range(secondary_combo.count()):
+                secondary_specs.add(secondary_combo.itemText(i))
+                if secondary_combo.itemText(i) == new_spec and new_spec != '':
+                    remove_index = i
+            if remove_index is not None:
+                secondary_combo.removeItem(remove_index)
+            secondary_combo.addItems((PRIMARY_SPECS | SECONDARY_SPECS) - secondary_specs)
+        else:
+            self._build_data['captain']['secondary_spec'] = new_spec
+            primary_combo = self.character.primary
+            primary_specs = set()
+            remove_index = None
+            for i in range(primary_combo.count()):
+                primary_specs.add(primary_combo.itemText(i))
+                if primary_combo.itemText(i) == new_spec and new_spec != '':
+                    remove_index = i
+            if remove_index is not None:
+                primary_combo.removeItem(remove_index)
+            primary_combo.addItems(PRIMARY_SPECS - primary_specs)
+        self.autosave()
+
+    def elite_callback(self, state: Qt.CheckState):
+        """
+        Saves new state and updates build.
+
+        Parameters:
+        - :param state: new state of the checkbox
+        """
+        if state == Qt.CheckState.Checked:
+            if not self._building:
+                self._build_data['captain']['elite'] = True
+                self._build_data['space']['traits'][9] = ''
+                self._build_data['ground']['traits'][9] = ''
+                self._build_data['ground']['kit_modules'][5] = ''
+                self._build_data['ground']['ground_devices'][4] = ''
+            self.space.traits[9].show()
+            self.ground.traits[9].show()
+            self.ground.kit_modules[5].show()
+            self.ground.ground_devices[4].show()
+        else:
+            if not self.building:
+                self._build_data['captain']['elite'] = False
+                self._build_data['space']['traits'][9] = None
+                self._build_data['ground']['traits'][9] = None
+                self._build_data['ground']['kit_modules'][5] = None
+                self._build_data['ground']['ground_devices'][4] = None
+            self.space.traits[9].hide()
+            self.space.traits[9].clear()
+            self.ground.traits[9].hide()
+            self.ground.traits[9].clear()
+            self.ground.kit_modules[5].hide()
+            self.ground.kit_modules[5].clear()
+            self.ground.ground_devices[4].hide()
+            self.ground.ground_devices[4].clear()
+        self.autosave()
+
+    def boff_profession_callback_space(self, boff_id: int, new_spec: str):
+        """
+        updates build with newly assigned profession; clears abilities of the old profession
+
+        Parameters:
+        - :param boff_id: identifies the boff station
+        - :param new_spec: new profession and specialization
+        """
+        if self._building:
+            return
+        if ' / ' in new_spec:
+            profession, specialization = new_spec.split(' / ')
+            if specialization == 'Temporal Operative':
+                specialization = 'Temporal'
+            # Lt. Commander rank contains all abilities
+            all_abilities = self._cache.boff_abilities['space'][specialization][2]
+            for ability_num, ability in enumerate(self._build_data['space']['boffs'][boff_id]):
+                if ability is not None and ability != '' and ability['item'] not in all_abilities:
+                    self._build_data['space']['boffs'][boff_id][ability_num] = ''
+                    self.space.boffs[boff_id][ability_num].clear()
+        else:
+            profession = new_spec
+            specialization = ''
+            for ability_num, ability in enumerate(self._build_data['space']['boffs'][boff_id]):
+                if ability is not None and ability != '':
+                    self._build_data['space']['boffs'][boff_id][ability_num] = ''
+                    self.space.boffs[boff_id][ability_num].clear()
+        self._build_data['space']['boff_specs'][boff_id] = [profession, specialization]
+        self.autosave()
+
+    def boff_label_callback_ground(self, boff_id: int, type_: str, new_text: str):
+        """
+        updates build with newly assigned profession or specialization; clears invalid abilities
+
+        Parameters:
+        - :param boff_id: number of the boff station
+        - :param type_: "boff_profs" / "boff_specs"
+        - :param new_text: new profession / specialization
+        """
+        if self._building:
+            return
+        self._build_data['ground'][type_][boff_id] = new_text
+        other_type = 'boff_profs' if type_ == 'boff_specs' else 'boff_specs'
+        other_text = self._build_data['ground'][other_type][boff_id]
+        ground_abilities = self._cache.boff_abilities['ground']
+        for ability_num, ability in enumerate(self._build_data['ground']['boffs'][boff_id]):
+            if ability is not None and ability != '':
+                # Lt. Commander and Commander rank combined contain all abilities
+                if (ability['item'] not in ground_abilities[new_text][2]
+                        and ability['item'] not in ground_abilities[new_text][3]
+                        and ability['item'] not in ground_abilities[other_text][2]
+                        and ability['item'] not in ground_abilities[other_text][3]):
+                    self._build_data['ground']['boffs'][boff_id][ability_num] = ''
+                    self.ground.boffs[boff_id][ability_num].clear()
+        self.autosave()
+
+    def tier_callback(self, new_tier: str):
+        """
+        Updates build according to new tier
+        """
+        if self._building:
+            return
+        self._build_data['space']['tier'] = new_tier
+        ship_name = self._build_data['space']['ship']
+        if ship_name == '<Pick Ship>':
+            ship_data = SHIP_TEMPLATE
+        else:
+            ship_data = self._cache.ships[ship_name]
+        uni, eng, sci, tac, devices, starship_traits = get_variable_slot_counts(ship_data, new_tier)
+        self.update_equipment_cat('uni_consoles', uni, can_hide=True)
+        self.update_equipment_cat('eng_consoles', eng)
+        self.update_equipment_cat('sci_consoles', sci)
+        self.update_equipment_cat('tac_consoles', tac)
+        self.update_equipment_cat('devices', devices)
+        self.update_starship_traits(starship_traits)
+        self.autosave()
+
+    def ship_info_callback(self):
+        """
+        Opens wiki page of ship if ship is slotted
+        """
+        if self._build_data['space']['ship'] != '<Pick Ship>':
+            open_wiki_page(self._cache.ships[self._build_data['space']['ship']]['Page'])
+
+    def doff_spec_callback(self, new_spec: str, environment: str, doff_id: int):
+        """
+        Callback for duty officer specialization combobox.
+
+        Parameters:
+        - :param new_spec: selected specialization
+        - :param environment: "space" / "ground"
+        - :param doff_id: index of the doff
+        """
+        if self._building:
+            return
+        self._build_data[environment]['doffs_spec'][doff_id] = new_spec
+        self._build_data[environment]['doffs_variant'][doff_id] = ''
+        widget_storage = self.space if environment == 'space' else self.ground
+        widget_storage.doffs_variant[doff_id].clear()
+        if new_spec != '':
+            variants = getattr(self._cache, f'{environment}_doffs')[new_spec].keys()
+            widget_storage.doffs_variant[doff_id].addItems({''} | variants)
+        self.autosave()
+
+    def doff_variant_callback(self, new_variant: str, environment: str, doff_id: int):
+        """
+        Callback for duty officer variant combobox.
+
+        Parameters:
+        - :param new_variant: selected variant
+        - :param environment: "space" / "ground"
+        - :param doff_id: index of the doff
+        """
+        if self._building:
+            return
+        self._build_data[environment]['doffs_variant'][doff_id] = new_variant
+        self.autosave()
+
+    def toggle_space_skill(self, current_state: bool, career: str, skill_id: int):
+        """
+        Activates space skill if it's deactivated, deactivates skill if it's activated.
+
+        Parameters:
+        - :param current_state: state of the button before toggling
+        - :param career: "eng" / "tac" / "sci"
+        - :param skill_id: id of the skill node
+        """
+        if current_state:
+            self.skills.space[career][skill_id].clear_overlay()
+            self.skills.space[career][skill_id].highlight = False
+            self._build_data['space_skills'][career][skill_id] = False
+            self._cache.skills['space_points_total'] -= 1
+            self._cache.skills[f'space_points_{career}'] -= 1
+            self._cache.skills['space_points_rank'][int(skill_id / 6)] -= 1
+            segment_index: int = self._skill_state[f'space_points_{career}']
+            if segment_index < 24:
+                self.skills.bonus_bars[career][segment_index].setChecked(False)
+                if segment_index % 5 == 4:
+                    button_index = (segment_index - 4) // 5
+                    self.set_skill_unlock_space(career, button_index, None)
+                elif segment_index == 23:
+                    self.set_skill_unlock_space(career, 4, None)
+            elif 24 <= segment_index <= 26:
+                self.set_skill_unlock_space(career, 4, 0, segment_index)
+        else:
+            self.skills.space[career][skill_id].set_overlay(self._images.overlays.check)
+            self.skills.space[career][skill_id].highlight = True
+            self._build_data['space_skills'][career][skill_id] = True
+            self._skill_state['space_points_total'] += 1
+            self._skill_state[f'space_points_{career}'] += 1
+            self._skill_state['space_points_rank'][int(skill_id / 6)] += 1
+            segment_index: int = self._skill_state[f'space_points_{career}'] - 1
+            if segment_index < 24:
+                self.skills.bonus_bars[career][segment_index].setChecked(True)
+                if segment_index % 5 == 4:
+                    button_index = (segment_index - 4) // 5
+                    self.set_skill_unlock_space(career, button_index, 0)
+                elif segment_index == 23:
+                    self.set_skill_unlock_space(career, 4, -1, 24)
+            elif 24 <= segment_index <= 25:
+                self.set_skill_unlock_space(career, 4, 0, segment_index + 1)
+            elif segment_index == 26:
+                self.set_skill_unlock_space(career, 4, 3, 27)
+        self.skills.count_labels[career].setText(str(self._skill_state[f'space_points_{career}']))
+        self.autosave()
+
+    def skill_unlock_callback(self, bar: str, unlock_id: int):
+        """
+        Callback for skill unlock buttons
+
+        Parameters:
+        - :param bar: "eng" / "sci" / "tac" / "ground"
+        - :param unlock_id: index of the unlock button
+        """
+        current_state = self._build_data['skill_unlocks'][bar][unlock_id]
+        if current_state is None:
+            return
+        if bar == 'ground':
+            if current_state == 0:
+                self.set_skill_unlock_ground(unlock_id, 1)
+            elif current_state == 1:
+                self.set_skill_unlock_ground(unlock_id, 0)
+            self.autosave()
+        else:
+            if unlock_id < 4:
+                if current_state == 0:
+                    self.set_skill_unlock_space(bar, unlock_id, 1)
+                elif current_state == 1:
+                    self.set_skill_unlock_space(bar, unlock_id, 0)
+                self.autosave()
+            else:
+                points_spent = self._skill_state[f'space_points_{bar}']
+                if 25 <= points_spent <= 26:
+                    self.set_skill_unlock_space(bar, 4, (current_state + 1) % 3, points_spent)
+                    self.autosave()
+
+    def toggle_ground_skill(self, current_state: bool, skill_group: int, skill_id: int):
+        """
+        Activates ground skill if it's deactivated, deactivates skill if it's activated.
+
+        Parameters:
+        - :param current_state: state of the button before toggling
+        - :param skill_group: number [0, 3] identifying the skill group
+        - :param skill_id: index of the skill within the group
+        """
+        if current_state:
+            self.skills.ground[skill_group][skill_id].clear_overlay()
+            self.skills.ground[skill_group][skill_id].highlight = False
+            self._build_data['ground_skills'][skill_group][skill_id] = False
+            self._skill_state['ground_points_total'] -= 1
+            segment_index = self._skill_state['ground_points_total']
+            self.skills.bonus_bars['ground'][segment_index].setChecked(False)
+            if segment_index % 2 == 1:
+                button_index = (segment_index - 1) // 2
+                self.set_skill_unlock_ground(self, button_index, None)
+        else:
+            self.skills.ground[skill_group][skill_id].set_overlay(self._images.overlays.check)
+            self.skills.ground[skill_group][skill_id].highlight = True
+            self._build_data['ground_skills'][skill_group][skill_id] = True
+            self._skill_state['ground_points_total'] += 1
+            segment_index = self._skill_state['ground_points_total'] - 1
+            self.skills.bonus_bars['ground'][segment_index].setChecked(True)
+            if segment_index % 2 == 1:
+                button_index = (segment_index - 1) // 2
+                self.set_skill_unlock_ground(button_index, 0)
+        self.skills.count_labels['ground'].setText(str(self._skill_state['ground_points_total']))
+        self.autosave()
+
+    def skill_callback_space(self, career: str, skill_id: int, grouping: str):
+        """
+        Callback for space skill node
+
+        Parameters:
+        - :param career: "eng" / "tac" / "sci"
+        - :param skill_id: id of the skill node (index in self.build and self.widgets.build)
+        - :param grouping: type of skill grouping: "column" / "pair+1" / "separate"
+        """
+        space_skills = self._build_data['space_skills']
+        skill_active = space_skills[career][skill_id]
+        skill_lvl = skill_id % 3
+        skill_rank = int(skill_id / 6)
+        if skill_active:  # check for valid deselect
+            if (skill_lvl == 2
+                    or grouping != 'column' and skill_lvl == 1
+                    or not space_skills[career][skill_id + 1]):
+                skill_count = sum(self._skill_state['space_points_rank'][:skill_rank + 1])
+                for offset, points_required in enumerate(SKILL_POINTS_FOR_RANK[skill_rank + 1:]):
+                    if (skill_count - 1 < points_required
+                            and self._skill_state['space_points_total'] - skill_count > 0):
+                        return
+                    skill_count += self._skill_state['space_points_rank'][skill_rank + offset + 1]
+                self.toggle_space_skill(skill_active, career, skill_id)
+        else:  # check for valid select
+            if 46 > self._skill_state['space_points_total'] >= SKILL_POINTS_FOR_RANK[skill_rank]:
+                if skill_lvl == 0:
+                    self.toggle_space_skill(skill_active, career, skill_id)
+                elif (grouping == 'column' and space_skills[career][skill_id - 1]):
+                    self.toggle_space_skill(skill_active, career, skill_id)
+                elif (grouping != 'column' and space_skills[career][skill_id - skill_lvl]):
+                    self.toggle_space_skill(skill_active, career, skill_id)
+
+    def skill_callback_ground(self, skill_group: int, skill_id: int):
+        """
+        Callback for ground skill node
+
+        Parameters:
+        - :param skill_group: number [0, 3] identifying the skill group
+        - :param skill_id: index of the skill within the group
+        """
+        ground_skills = self._build_data['ground_skills']
+        skill_active = ground_skills[skill_group][skill_id]
+        if skill_active:  # check for valid deselect
+            if skill_id == 0 and (
+                    ground_skills[skill_group][1] or ground_skills[skill_group][2]
+                    or skill_group <= 1 and ground_skills[skill_group][4]):
+                return
+            elif skill_id % 2 == 0 and ground_skills[skill_group][skill_id + 1]:
+                return
+            self.toggle_ground_skill(skill_active, skill_group, skill_id)
+        else:  # check for valid select
+            if self._skill_state['ground_points_total'] < 10:
+                if skill_id % 2 == 1 and ground_skills[skill_group][skill_id - 1]:
+                    self.toggle_ground_skill(skill_active, skill_group, skill_id)
+                elif skill_id == 0:
+                    self.toggle_ground_skill(skill_active, skill_group, skill_id)
+                elif (skill_id == 2 or skill_id == 4) and ground_skills[skill_group][0]:
+                    self.toggle_ground_skill(skill_active, skill_group, skill_id)

@@ -37,11 +37,9 @@ from .widgets import (
 class SETS():
 
     from .callbacks import (
-            clear_all, clear_build_callback, elite_callback, faction_combo_callback,
+            clear_all, clear_build_callback,
             load_build_callback, load_skills_callback, save_build_callback, save_skills_callback,
-            select_ship, set_build_item, ship_info_callback,
-            skill_unlock_callback, spec_combo_callback, species_combo_callback,
-            tier_callback)
+            select_ship)
     from .datafunctions import (
             autosave, backup_cargo_data, empty_build,
             init_backend, load_legacy_build_image)
@@ -433,7 +431,7 @@ class SETS():
         tier_label = create_label2(self.theme2, 'Ship Tier:')
         ship_layout.addWidget(tier_label, 1, 0)
         tier_combo = create_combo_box2(self.theme2)
-        tier_combo.currentTextChanged.connect(self.tier_callback)
+        tier_combo.currentTextChanged.connect(self.build2.tier_callback)
         tier_combo.setSizePolicy(SMAXMAX)
         self.build2.ship.tier = tier_combo
         ship_layout.addWidget(tier_combo, 1, 1, alignment=ALEFT)
@@ -445,14 +443,14 @@ class SETS():
         dc_label.setSizePolicy(dc_label_size_policy)
         self.build2.ship.dc = dc_label
         ship_layout.addWidget(dc_label, 1, 2, alignment=ARIGHT)
-        info_button = self.create_button('Ship Info', style_override={'margin': 0})
-        info_button.clicked.connect(self.ship_info_callback)
+        info_button = create_button2(self.theme, 'Ship Info', style_override={'margin': 0})
+        info_button.clicked.connect(self.build2.ship_info_callback)
         ship_layout.addWidget(info_button, 1, 3, alignment=ARIGHT)
         name_label = create_label2(self.theme2, 'Ship Name:')
         ship_layout.addWidget(name_label, 2, 0)
         name_entry = create_entry2(self.theme2)
         name_entry.editingFinished.connect(
-            lambda: self.set_build_item(self.build['space'], 'ship_name', name_entry.text()))
+            lambda: self.build2.set('space', 'ship_name', value=name_entry.text()))
         self.build2.ship.name = name_entry
         name_entry.setSizePolicy(SMINMAX)
         ship_layout.addWidget(name_entry, 2, 1, 1, 3)
@@ -463,8 +461,8 @@ class SETS():
         desc_edit.setStyleSheet(self.theme2.get_style_class('QPlainTextEdit', 'textedit'))
         desc_edit.setFont(self.theme2.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
-        desc_edit.textChanged.connect(lambda: self.set_build_item(
-            self.build['space'], 'ship_desc', desc_edit.toPlainText(), autosave=False))
+        desc_edit.textChanged.connect(lambda: self.build2.set(
+            'space', 'ship_desc', value=desc_edit.toPlainText(), autosave=False))
         self.build2.ship.desc = desc_edit
         ship_layout.addWidget(desc_edit, 4, 0, 1, 4)
         ship_frame.setLayout(ship_layout)
@@ -534,8 +532,8 @@ class SETS():
         icon_label.hide()
         label = create_combo_box2(
             self.theme2, size_policy=SMAXMAX, style_override=self.theme['boff_combo'])
-        # label.currentTextChanged.connect(
-        #     lambda new: boff_profession_callback_space(self, boff_id, new))
+        label.currentTextChanged.connect(
+            lambda new: self.build2.boff_profession_callback_space(boff_id, new))
         label.addItems(label_options)
         label_size_policy = label.sizePolicy()
         label_size_policy.setRetainSizeWhenHidden(True)
@@ -567,14 +565,14 @@ class SETS():
         label_layout = HBoxLayout(spacing=m)
         label_layout.setAlignment(ALEFT)
         prof_label = create_combo_box2(self.theme2, style_override=self.theme['boff_combo'])
-        # prof_label.currentTextChanged.connect(
-        #     lambda new: boff_label_callback_ground(self, boff_id, 'boff_profs', new))
+        prof_label.currentTextChanged.connect(
+            lambda new: self.build2.boff_label_callback_ground(boff_id, 'boff_profs', new))
         prof_label.addItems(CAREERS)
         widget_storage.boff_profs[boff_id] = prof_label
         label_layout.addWidget(prof_label)
         spec_label = create_combo_box2(self.theme2, style_override=self.theme['boff_combo'])
-        # spec_label.currentTextChanged.connect(
-        #     lambda new: boff_label_callback_ground(self, boff_id, 'boff_specs', new))
+        spec_label.currentTextChanged.connect(
+            lambda new: self.build2.boff_label_callback_ground(boff_id, 'boff_specs', new))
         spec_label.addItems(GROUND_BOFF_SPECS)
         widget_storage['boff_specs'][boff_id] = spec_label
         label_layout.addWidget(spec_label)
@@ -661,14 +659,14 @@ class SETS():
         widget_storage = self.build2.space if environment == 'space' else self.build2.ground
         for i in range(6):
             spec_combo = create_combo_box2(self.theme2, style_override=self.theme['doff_combo'])
-            # spec_combo.currentTextChanged.connect(
-            #     lambda spec, i=i: doff_spec_callback(self, spec, environment, i))
+            spec_combo.currentTextChanged.connect(
+                lambda spec, id=i: self.build2.doff_spec_callback(spec, environment, id))
             doff_layout.addWidget(spec_combo, i, 0)
             widget_storage.doffs_spec[i] = spec_combo
             variant_combo = create_combo_box2(
                 self.theme2, style_override=self.theme['doff_combo'], class_=DoffCombobox)
-            # variant_combo.currentTextChanged.connect(
-            #     lambda variant, i=i: doff_variant_callback(self, variant, environment, i))
+            variant_combo.currentTextChanged.connect(
+                lambda variant, id=i: self.build2.doff_variant_callback(variant, environment, id))
             doff_layout.addWidget(variant_combo, i, 1)
             widget_storage.doffs_variant[i] = variant_combo
         return doff_layout
@@ -686,8 +684,9 @@ class SETS():
         if group_data['grouping'] == 'column':
             for index, node in enumerate(group_data['nodes']):
                 button = create_item_button2(self.theme2)
-                # button.clicked.connect(lambda id=id_offset + index: skill_callback_space(
-                #     self, group_data['career'], id, 'column'))
+                skill_id = id_offset + index
+                button.clicked.connect(lambda id=skill_id: self.build2.skill_callback_space(
+                    group_data['career'], id, 'column'))
                 button.skill_image_name = node['image']
                 button.tooltip = format_skill_tooltip(
                     group_data['skill'], group_data, index, 'space', self.theme2.tooltips)
@@ -697,24 +696,24 @@ class SETS():
         # == 'separate': 3 separate skills
         else:
             button = create_item_button2(self.theme2)
-            # button.clicked.connect(lambda id=id_offset: skill_callback_space(
-            #     self, group_data['career'], id, group_data['grouping']))
+            button.clicked.connect(lambda id=id_offset: self.build2.skill_callback_space(
+                group_data['career'], id, group_data['grouping']))
             button.skill_image_name = group_data['nodes'][0]['image']
             button.tooltip = format_skill_tooltip(
                 group_data['skill'][0], group_data, 0, 'space', self.theme2.tooltips)
             layout.addWidget(button, 0, 0, 1, 2, alignment=AHCENTER | ABOTTOM)
             self.build2.skills.space[group_data['career']][id_offset] = button
             button = create_item_button2(self.theme2)
-            # button.clicked.connect(lambda id=id_offset + 1: skill_callback_space(
-            #     self, group_data['career'], id, group_data['grouping']))
+            button.clicked.connect(lambda id=id_offset + 1: self.build2.skill_callback_space(
+                group_data['career'], id, group_data['grouping']))
             button.skill_image_name = group_data['nodes'][1]['image']
             button.tooltip = format_skill_tooltip(
                 group_data['skill'][1], group_data, 1, 'space', self.theme2.tooltips)
             layout.addWidget(button, 1, 0, alignment=ATOP)
             self.build2.skills.space[group_data['career']][id_offset + 1] = button
             button = create_item_button2(self.theme2)
-            # button.clicked.connect(lambda id=id_offset + 2: skill_callback_space(
-            #     self, group_data['career'], id, group_data['grouping']))
+            button.clicked.connect(lambda id=id_offset + 2: self.build2.skill_callback_space(
+                group_data['career'], id, group_data['grouping']))
             button.skill_image_name = group_data['nodes'][2]['image']
             button.tooltip = format_skill_tooltip(
                 group_data['skill'][2], group_data, 2, 'space', self.theme2.tooltips)
@@ -756,8 +755,8 @@ class SETS():
         for row in range(29, 5, -1):
             if row % 6 == 0:
                 button = create_item_button2(self.theme2)
-                # button.clicked.connect(
-                #     lambda i=button_index: skill_unlock_callback(self, career, i))
+                button.clicked.connect(
+                    lambda i=button_index: self.build2.skill_unlock_callback(career, i))
                 layout.addWidget(button, row, column, alignment=AHCENTER)
                 self.build2.skills.unlocks[career][button_index] = button
                 button_index += 1
@@ -770,7 +769,7 @@ class SETS():
             layout.addWidget(segment, row, column, alignment=AHCENTER)
             segment_index += 1
         button = create_item_button2(self.theme2)
-        # button.clicked.connect(lambda: skill_unlock_callback(self, career, 4))
+        button.clicked.connect(lambda: self.build2.skill_unlock_callback(self, career, 4))
         layout.addWidget(button, 1, column, alignment=AHCENTER)
         self.build2.skills.unlocks[career][4] = button
 
@@ -784,7 +783,7 @@ class SETS():
         - :param node_id: 0 or 1 for first or second node
         """
         button = create_item_button2(self.theme2)
-        # button.clicked.connect(lambda: skill_callback_ground(self, group_data['tree'], id))
+        button.clicked.connect(lambda: self.build2.skill_callback_ground(group_data['tree'], id))
         button.skill_image_name = group_data['nodes'][node_id]['image']
         button.tooltip = format_skill_tooltip(
             group_data['nodes'][node_id]['name'], group_data, node_id, 'ground',
@@ -1017,17 +1016,17 @@ class SETS():
             'background-color': '@sets', 'margin': '@isp'})
         seperator.setFixedHeight(self.theme2['defaults']['sep'] * self.theme2.scale)
         layout.addWidget(seperator, 0, 0, 1, 2, alignment=ATOP)  # ATOP makes it respect the margin?
-        char_name = self.create_entry(placeholder='NAME')
+        char_name = create_entry2(self.theme2, placeholder='NAME')
         char_name.setAlignment(AHCENTER)
         char_name.setSizePolicy(SMINMAX)
         char_name.editingFinished.connect(
-            lambda: self.set_build_item(self.build['captain'], 'name', char_name.text()))
+            lambda: self.build2.set('captain', 'name', value=char_name.text()))
         layout.addWidget(char_name, 1, 0, 1, 2)
         self.build2.character.name = char_name
         elite_label = create_label2(self.theme2, 'Elite Captain')
         layout.addWidget(elite_label, 2, 0, alignment=ARIGHT)
         elite_checkbox = create_checkbox2(self.theme2)
-        elite_checkbox.checkStateChanged.connect(self.elite_callback)
+        elite_checkbox.checkStateChanged.connect(self.build2.elite_callback)
         layout.addWidget(elite_checkbox, 2, 1, alignment=ALEFT)
         self.build2.character.elite = elite_checkbox
         career_label = create_label2(self.theme2, 'Captain Career')
@@ -1035,28 +1034,29 @@ class SETS():
         career_combo = create_combo_box2(self.theme2)
         career_combo.addItems({''} | CAREERS)
         career_combo.currentTextChanged.connect(
-            lambda t: self.set_build_item(self.build['captain'], 'career', t))
+            lambda new_career: self.build2.set('captain', 'career', value=new_career))
         layout.addWidget(career_combo, 3, 1)
         self.build2.character.career = career_combo
         faction_label = create_label2(self.theme2, 'Faction')
         layout.addWidget(faction_label, 4, 0, alignment=ARIGHT)
         faction_combo = create_combo_box2(self.theme2)
         faction_combo.addItems({''} | FACTIONS)
-        faction_combo.currentTextChanged.connect(self.faction_combo_callback)
+        faction_combo.currentTextChanged.connect(self.build2.faction_combo_callback)
         layout.addWidget(faction_combo, 4, 1)
         self.build2.character.faction = faction_combo
         species_label = create_label2(self.theme2, 'Species')
         layout.addWidget(species_label, 5, 0, alignment=ARIGHT)
         species_combo = create_combo_box2(self.theme2)
         species_combo.addItems({''})
-        species_combo.currentTextChanged.connect(lambda t: self.species_combo_callback(t))
+        species_combo.currentTextChanged.connect(self.build2.species_combo_callback)
         layout.addWidget(species_combo, 5, 1)
         self.build2.character.species = species_combo
         primary_label = create_label2(self.theme2, 'Primary Spec')
         layout.addWidget(primary_label, 6, 0, alignment=ARIGHT)
         primary_combo = create_combo_box2(self.theme2)
         primary_combo.addItems({''} | PRIMARY_SPECS)
-        primary_combo.currentTextChanged.connect(lambda t: self.spec_combo_callback(True, t))
+        primary_combo.currentTextChanged.connect(
+            lambda new_spec: self.build2.spec_combo_callback(True, new_spec))
         layout.addWidget(primary_combo, 6, 1)
         self.build2.character.primary = primary_combo
         secondary_label = create_label2(
@@ -1064,7 +1064,8 @@ class SETS():
         layout.addWidget(secondary_label, 7, 0, alignment=ARIGHT)
         secondary_combo = create_combo_box2(self.theme2)
         secondary_combo.addItems({''} | PRIMARY_SPECS | SECONDARY_SPECS)
-        secondary_combo.currentTextChanged.connect(lambda t: self.spec_combo_callback(False, t))
+        secondary_combo.currentTextChanged.connect(
+            lambda new_spec: self.build2.spec_combo_callback(False, new_spec))
         layout.addWidget(secondary_combo, 7, 1)
         self.build2.character.secondary = secondary_combo
         frame.setLayout(layout)
@@ -1258,7 +1259,7 @@ class SETS():
             seg2 = self.create_bonus_bar_segment('ground', i * 2 + 1)
             bonus_bar_layout.addWidget(seg2, row - 1, 1, alignment=AHCENTER)
             button = create_item_button2(self.theme2)
-            # button.clicked.connect(lambda i=i: self.skill_unlock_callback('ground', i))
+            button.clicked.connect(lambda i=i: self.build2.skill_unlock_callback('ground', i))
             bonus_bar_layout.addWidget(button, row - 2, 1, alignment=AHCENTER)
             self.build2.skills.unlocks['ground'][i] = button
             row -= 3
