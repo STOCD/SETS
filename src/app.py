@@ -196,20 +196,31 @@ class SETS():
         """
         Sets up downloader and provides cargo data and images.
         """
+        self.splash.show_splash(True)
+        self.splash.set_loading_text('Loading Cargo Data...')
+        self.splash.init_progress('Steps completed:', 3)
         self.downloader.default_session_from_env()
         self.cargo.provision_cargo_data()
         self.images.image_set = self.cargo.image_set
         self.images.failed_images = self.cargo.failed_images
+        self.splash.increment_progress()
+        self.splash.set_loading_text('Downloading Images...')
         self.images.download_images(self.cargo.skills)
         self.cargo.store_failed_images()
+        self.splash.increment_progress()
+        self.splash.set_loading_text('Loading Base Images...')
         self.images.load_base_images()
+        self.splash.increment_progress()
 
     def complete_app_init(self):
         """
         Updates ui and starts thread to load images.
         """
+        self.splash.set_loading_text('Populating UI...')
         self.init_ui()
+        self.splash.set_loading_text('Loading Build...')
         self.build_loader.load_build_file(self.config.autosave_path)
+        self.splash.set_loading_text('Loading Images...')
         self._backend_thread = Thread(self.images.load_images)
         self._backend_thread.start()
 
@@ -1368,7 +1379,7 @@ class SETS():
         """
         layout = GridLayout()
         layout.setRowStretch(0, 1)
-        layout.setRowStretch(3, 1)
+        layout.setRowStretch(4, 1)
         layout.setColumnStretch(0, 3)
         layout.setColumnStretch(1, 2)
         layout.setColumnStretch(2, 3)
@@ -1377,6 +1388,9 @@ class SETS():
         loading_label = create_label2(self.theme2, 'Loading: ...', 'label_subhead')
         self.splash.loading_label = loading_label
         layout.addWidget(loading_label, 2, 0, 1, 3, alignment=AHCENTER)
+        progress_label = create_label2(self.theme2, '', 'label_subhead')
+        self.splash.progress_label = progress_label
+        layout.addWidget(progress_label, 3, 0, 1, 3, alignment=AHCENTER)
         frame.setLayout(layout)
 
     def hide_tooltips(self):
