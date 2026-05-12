@@ -652,6 +652,27 @@ class notempty():
         return self._gen
 
 
+class pixel_range():
+    """
+    Returns appropriate indices to access the RGB (not A) channels of the pixel row of `num` pixels,
+    as well as an 1-step increasing range index -> (range_index, pixel_index)
+    """
+    def __init__(self, num: int = 0, range_start: int = 0, /):
+        def generator():
+            counter = range_start
+            for index in range(0, num * 4, 4):
+                yield counter, index
+                counter += 1
+                yield counter, index + 1
+                counter += 1
+                yield counter, index + 2
+                counter += 1
+        self.__gen = generator()
+
+    def __iter__(self):
+        return self.__gen
+
+
 class TooltipLabel(QLabel):
     """Label with tooltip"""
     def __init__(self, text: str, tooltip: QLabel):

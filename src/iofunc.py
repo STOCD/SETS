@@ -10,7 +10,7 @@ from urllib.parse import quote_plus, unquote_plus
 from webbrowser import open as webbrowser_open
 
 from PySide6.QtGui import QIcon, QImage, QPixmap
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QFileDialog, QWidget
 import requests
 from requests.cookies import create_cookie as requests__create_cookie
 from requests_html import HTMLSession
@@ -33,30 +33,36 @@ class ReturnValueThread(Thread):
         return self._return
 
 
-def browse_path(self, default_path: str = None, types: str = 'Any File (*.*)', save=False) -> str:
+def browse_path(
+        preset_path: Path, types: str = 'Any File (*.*)', save: bool = False,
+        parent_window: QWidget | None = None) -> Path | None:
     """
     Opens file dialog prompting the user to select a file.
 
     Parameters:
-    - :param default_path: path that the file dialog opens at
-    - :param types: string containing all file extensions and their respective names that are
-    allowed.
-    Format: "<name of file type> (*.<extension>);;<name of file type> (*.<extension>);; [...]"
-    Example: "Logfile (*.log);;Any File (*.*)"
+    - :param preset_path: path that the file dialog opens at; includes default file name
+    - :param types: string containing all file extensions and their respective names that are \
+    allowed. Format: `<name of file type> (*.<extension>);;<name of file type> (*.<extension>);; \
+    [...]` Example: `Logfile (*.log);;Any File (*.*)`
+    - :param save: False => open file with dialog; True => save file with dialog
+    - :param parent_window: window to use as parent; uses window icon and name of parent window
+
+    :return: returns selected path; None if user aborts or tries to open not-existing file
     """
-    if default_path is None or default_path == '':
-        default_path = self.app_dir
-    default_path = os.path.abspath(default_path)
-    if not os.path.exists(os.path.dirname(default_path)):
-        default_path = self.app_dir
     if save:
-        file, filter = QFileDialog.getSaveFileName(self.window, 'Save...', default_path, types)
-        selected_extension = filter.rpartition('.')[2][:-1]
-        if file.rpartition('.')[2].lower() != selected_extension:
-            file += f".{selected_extension}"
+        f = QFileDialog.getSaveFileName(parent_window, 'Save Log', str(preset_path), types)[0]
+        if f == '':
+            return None
+        return Path(f)
     else:
-        file, _ = QFileDialog.getOpenFileName(self.window, 'Open...', default_path, types)
-    return file
+        f = QFileDialog.getOpenFileName(parent_window, 'Open Log', str(preset_path), types)[0]
+        if f == '':
+            return None
+        selected_path = Path(f)
+        if selected_path.exists():
+            return selected_path
+        else:
+            return None
 
 
 def get_cargo_data(self, filename: str, url: str, ignore_cache_age=False) -> dict | list:

@@ -208,6 +208,10 @@ SKILL_PREFIXES = ['', 'Improved ', 'Advanced ']
 
 SKILL_POINTS_FOR_RANK = (0, 5, 15, 25, 35)
 
+SETS_FILE_FILTER = (
+    'SETS Files (*.json *.png);;JSON file (*.json);;PNG image (*.png);;Any File (*.*)'
+)
+
 # commented maps must be transferred manually
 BUILD_CONVERSION = {
     'space': (
