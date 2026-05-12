@@ -37,13 +37,7 @@ from .widgets import (
 
 class SETS():
 
-    from .callbacks import (
-            clear_all, clear_build_callback,
-            load_build_callback, load_skills_callback, save_build_callback, save_skills_callback,
-            select_ship)
-    from .datafunctions import (
-            autosave, backup_cargo_data, empty_build,
-            init_backend, load_legacy_build_image)
+    from .datafunctions import backup_cargo_data, empty_build, init_backend
     from .splash import enter_splash, exit_splash, splash_text
     from .style import prepare_tooltip_css
 
@@ -344,10 +338,11 @@ class SETS():
         menu_layout.setColumnStretch(1, 5)
         menu_layout.setColumnStretch(2, 2)
         left_button_group = {
-            'Save': {'callback': self.save_build_callback},
-            'Open': {'callback': self.load_build_callback},
-            'Clear Current Tab': {'callback': self.clear_build_callback},
-            'Clear All Tabs': {'callback': self.clear_all}
+            'Save': {'callback': self.build_loader.save_build_callback},
+            'Open': {'callback': self.build_loader.load_build_callback},
+            'Clear Current Tab': {'callback': lambda: self.build2.clear_build_callback(
+                self.tabbers.build_tabber.currentIndex())},
+            'Clear All Tabs': {'callback': self.build2.clear_all}
         }
         menu_layout.addLayout(
             create_button_series2(self.theme2, left_button_group), 0, 0, alignment=ALEFT | ATOP)
@@ -1472,7 +1467,7 @@ class SETS():
         sec_3.setColumnMinimumWidth(1, 3 * isp)
         sec_3.setColumnStretch(3, 1)
         build_image_button = create_button2(self.theme2, 'Convert Legacy Build Image')
-        build_image_button.clicked.connect(self.load_legacy_build_image)
+        build_image_button.clicked.connect(self.build_loader.load_legacy_build_image)
         sec_3.addWidget(build_image_button, 0, 0, alignment=ALEFT)
         build_image_label = create_label2(
             self.theme2, 'Loads build from legacy build image. Use the "Load" button to load '
