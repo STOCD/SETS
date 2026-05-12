@@ -140,6 +140,7 @@ class Picker(BasePicker):
         self._item_model: QStringListModel
         self._sort_model: QSortFilterProxyModel
         self._items_list: QListView
+        self.finished.connect(self.finish_pick)
 
         self.setWindowFlags(
             self.windowFlags() | Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
@@ -352,9 +353,10 @@ class Picker(BasePicker):
 
 
 class ShipSelector(QDialog):
-    """
-    Selection Window for ships
-    """
+    """Selection Window for ships"""
+
+    dialog_result: Signal = Signal(str)
+
     def __init__(self, theme: AppTheme, parent_window: QWidget, style: str = 'picker'):
         super().__init__(parent=parent_window)
         self.setWindowFlags(
@@ -363,6 +365,7 @@ class ShipSelector(QDialog):
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setMinimumSize(10, 10)
         self.setSizePolicy(SMAXMAX)
+        self.finished.connect(self.finish_pick)
 
         ui_scale = theme.scale
         spacing = theme['defaults']['isp'] * ui_scale
@@ -403,9 +406,10 @@ class ShipSelector(QDialog):
     def set_ships(self, ships: Iterable):
         self._ship_data_model.setStringList(ships)
 
+    @Slot()
     def pick_ship(self):
         """
-        Executes Picker, returns selected ship, returns None when cancelled.
+        Shows picker window.
         """
         window = self.parentWidget()
         size = (window.width() * 0.2, window.height() * 0.9)
@@ -413,13 +417,22 @@ class ShipSelector(QDialog):
         self.setFixedSize(*size)
         self.move(*pos)
         self._ship_list.scrollToTop()
-        action = self.exec()
+        self.open()
+
+    @Slot(int)
+    def finish_pick(self, action: int):
+        """
+        Completes the ship pick action, resets the dialog and emits the data using the
+        `dialog_result` signal.
+
+        Parameters:
+        - :param action: indicates whether the result should be saved (`1`) or not (`0`)
+        """
         self._search_bar.clear()
+        ship_name = ''
         if action == 1:
             ship_name = self._ship_list.currentIndex().data(Qt.ItemDataRole.DisplayRole)
-            if ship_name != '':
-                return ship_name
-        return None
+        self.dialog_result.emit(ship_name)
 
     def mousePressEvent(self, event: QMouseEvent):
         self.start_pos = event.globalPosition().toPoint()
@@ -438,6 +451,7 @@ class ItemEditor(BasePicker):
     """
     def __init__(self, theme: AppTheme, parent_window: QWidget, style: str = 'picker'):
         super().__init__(parent=parent_window)
+        self.finished.connect(self.finish_edit)
         self.setWindowFlags(
             self.windowFlags() | Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setStyleSheet(theme.get_style(style))
