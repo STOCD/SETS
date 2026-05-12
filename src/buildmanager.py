@@ -160,6 +160,15 @@ class BuildManager():
             'ground_points_total': 0
         }
 
+    @property
+    def data(self) -> dict[str, int | dict[str]]:
+        """Raw build data"""
+        return self._build_data
+
+    @data.setter
+    def data(self, build_data: dict[str, int | dict[str]]):
+        self._build_data = build_data
+
     def autosave(self):
         """
         Saves build to autosave file.
@@ -192,7 +201,7 @@ class BuildManager():
 
     def load_build(self):
         """
-        Updates UI to show the build currently in self._build_data
+        Updates UI to show the build currently in self._build_data.
         """
         self._building = True
         # ship section

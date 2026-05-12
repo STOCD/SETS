@@ -6,6 +6,7 @@ from PySide6.QtGui import QCloseEvent, QFontDatabase, QTextOption
 from PySide6.QtWidgets import (
     QApplication, QFrame, QPlainTextEdit, QPushButton, QScrollArea, QTabWidget, QWidget)
 
+from .buildloader import BuildLoader
 from .buildmanager import BuildManager
 from .cargomanager import CargoManager
 from .config import SETSConfig, SETSSettings
@@ -112,6 +113,8 @@ class SETS():
         self.build = self.empty_build()
         self.cargo.load_static_data()
         self.setup_main_layout()
+        self.build_loader: BuildLoader = BuildLoader(
+            self.build2, self.cargo, self.config, self.settings, self.window)
         self.export_window = ExportWindow(self.theme2, self.window, self.build2, self.cargo)
         self.picker_window: Picker = Picker(self.theme2, self.window, self.settings, self.images)
         self.picker_window.dialog_result.connect(self.build2.handle_picker_result)
