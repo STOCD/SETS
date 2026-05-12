@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from PySide6.QtCore import QDir, Qt, QThread
+from PySide6.QtCore import QDir, QPoint, Qt, QThread
 from PySide6.QtGui import QCloseEvent, QFontDatabase, QTextOption
 from PySide6.QtWidgets import (
     QApplication, QFrame, QPlainTextEdit, QPushButton, QScrollArea, QTabWidget, QWidget)
@@ -114,9 +114,11 @@ class SETS():
         self.setup_main_layout()
         self.export_window = ExportWindow(self.theme2, self.window, self.build2, self.cargo)
         self.picker_window: Picker = Picker(self.theme2, self.window, self.settings, self.images)
+        self.picker_window.dialog_result.connect(self.build2.handle_picker_result)
         self.edit_window: ItemEditor = ItemEditor(self.theme2, self.window)
         self.edit_window.dialog_result.connect(self.build2.finish_item_edit)
         self.ship_selector_window: ShipSelector = ShipSelector(self.theme2, self.window)
+        self.ship_selector_window.dialog_result.connect(self.build2.finish_ship_pick)
         self.context_menu: ContextMenu = ContextMenu(self.theme2, self.build2, self.cargo)
         self.context_menu.edit_slot.connect(self.edit_window.edit_item)
         self.window.show()
@@ -253,7 +255,7 @@ class SETS():
         return app, window
 
     def picker(
-            self, environment: str, build_key: str, build_subkey: int, button,
+            self, environment: str, build_key: str, build_subkey: int, button: ItemButton,
             equipment: bool = False, boff_id: int | None = None):
         """
         opens dialog to select item, stores it to build and updates item button
@@ -267,6 +269,38 @@ class SETS():
         - :param equipment: set to True to show rarity, mark, and modifier selector (optional)
         - :param boff_id: id of the boff; only set when picking boff abilities! (optional)
         """
+        modifiers = {}
+        image_suffix = ''
+        if equipment:
+            items = self.cargo.equipment[build_key].keys()
+            modifiers = self.cargo.modifiers[build_key]
+        elif build_key == 'boffs':
+            if environment == 'space':
+                profession, specialization = self.build2['space']['boff_specs'][boff_id]
+                if specialization == 'Temporal Operative':
+                    specialization = 'Temporal'
+            else:
+                profession = self.build['ground']['boff_profs'][boff_id]
+                specialization = self.build['ground']['boff_specs'][boff_id]
+            items = self.cargo.boff_abilities[environment][profession][build_subkey]
+            if specialization != '':
+                items = items + self.cache.boff_abilities[environment][specialization][build_subkey]
+        elif build_key == 'starship_traits':
+            items = self.cargo.starship_traits.keys()
+            image_suffix = '__space__starship_traits'
+        elif 'traits' in build_key:
+            if environment == 'space':
+                items = self.cargo.space_traits[build_key].keys()
+            else:
+                items = self.cargo.ground_traits[build_key].keys()
+            image_suffix = f'__{environment}__{build_key}'
+        else:
+            items = []
+        if self.settings.picker_relative == 1:
+            pos = button.mapToGlobal(QPoint(0, 0))
+        else:
+            pos = None
+        self.picker_window.pick_item(items, pos, equipment, modifiers, image_suffix)
 
     def setup_main_layout(self):
         """
@@ -425,7 +459,7 @@ class SETS():
         ship_selector.setStyleSheet(
             self.theme2.get_style_class('ShipButton', 'button', override={'margin': 0}))
         ship_selector.setFont(self.theme2.get_font(font_spec='@subhead'))
-        ship_selector.clicked.connect(self.select_ship)
+        ship_selector.clicked.connect(self.ship_selector_window.pick_ship)
         self.build2.ship.button = ship_selector
         ship_layout.addWidget(ship_selector, 0, 0, 1, 4, alignment=ATOP)
         tier_label = create_label2(self.theme2, 'Ship Tier:')

@@ -1,12 +1,13 @@
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QCheckBox, QComboBox, QLabel, QLineEdit, QPlainTextEdit, QPushButton
 
 from .buildhelpers import get_boff_spec, get_variable_slot_counts, empty_build
 from .cargomanager import CargoManager
 from .constants import (
-    PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK, SPECIES, SPECIES_TRAITS)
+    EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK, SPECIES,
+    SPECIES_TRAITS)
 from .imagemanager import ImageManager
 from .iofunc import open_wiki_page, store_json__new
 from .textedit import add_equipment_tooltip_header__new, get_ultimate_skill_unlock_tooltip__new
@@ -561,6 +562,73 @@ class BuildManager():
                 getattr(self, environment), build_key)[boff_id][build_subkey]
             item_button.clear()
 
+    @Slot(dict, ItemSlot)
+    def handle_picker_result(self, new_item: dict[str, str | list[str]], slot: ItemSlot):
+        """
+        Inserts picked item into given slot if picking was not cancelled.
+
+        Parameters:
+        - :param new_item: contains picked item, or empty item if picking was cancelled
+        - :param slot: information about the slot
+        """
+        if new_item['item'] != '':
+            widget_storage = self.space if slot.environment == 'space' else self.ground
+            if slot.is_equipment:
+                if 'consoles' in slot.type:
+                    item_data = self._cache.equipment[slot.type][new_item['item']]
+                    type_ = EQUIPMENT_TYPES[item_data['type']]
+                    for i, mod in enumerate(new_item['modifiers']):
+                        if mod not in self._cache.modifiers[type_]:
+                            new_item['modifiers'][i] = ''
+                self.slot_equipment_item(self, new_item, slot.environment, slot.type, slot.index)
+            else:
+                if slot.boff_id is None:
+                    self.slot_trait_item(
+                        self, {'item': new_item['item']}, slot.environment, slot.type, slot.index)
+                elif slot.type == 'boffs':
+                    ability_name, _, ability_rank = new_item['item'].rpartition(' ')
+                    self._build_data[slot.environment]['boffs'][slot.boff_id][slot.index] = {
+                        'item': ability_name,
+                        'rank': ability_rank
+                    }
+                    button: ItemButton = widget_storage.boffs[slot.boff_id][slot.index]
+                    button.set_item(self._images.get(ability_name))
+                    button.tooltip = (self._cache.boff_abilities['all'][ability_name][ability_rank])
+            self.autosave()
+
+    @Slot(str)
+    def finish_ship_pick(self, ship_name: str):
+        """
+        Switches to selected ship.
+
+        Parameters:
+        - :param ship_name: name of the selected ship, or empty
+        """
+        if ship_name == '':
+            return
+        self._building = True
+        self.ship.button.setText(ship_name)
+        ship_data = self._cache.ships[ship_name]
+        self.set_ship_image(ship_data['image'][5:])
+        tier = ship_data['tier']
+        self.ship.tier.clear()
+        if tier == 6:
+            self.ship.tier.addItems(('T6', 'T6-X', 'T6-X2'))
+        elif tier == 5:
+            self.ship.tier.addItems(('T5', 'T5-U', 'T5-X', 'T5-X2'))
+        else:
+            self.ship.tier.addItem(f'T{tier}')
+        self._build_data['space']['ship'] = ship_name
+        self._build_data['space']['tier'] = f'T{tier}'
+        if ship_data['equipcannons'] == 'yes':
+            self.ship.dc.show()
+        else:
+            self.ship.dc.hide()
+        self.align_space_frame(ship_data, clear=True)
+        self._building = False
+        self.autosave()
+
+    @Slot(dict, ItemSlot)
     def finish_item_edit(self, new_item: dict[str], slot: ItemSlot):
         """
         Updates item after editing if editing was not cancelled. Autosaves.
