@@ -235,7 +235,7 @@ class BuildLoader():
                     for station in category_items:
                         for index, ability in enumerate(station):
                             if (isinstance(ability, dict)
-                                    and ability['item'] not in self._cargo.images_set):
+                                    and ability['item'] not in self._cargo.image_set):
                                 station[index] = ''
                 elif (category.startswith('doff')
                         or category == 'boff_specs'
@@ -243,7 +243,7 @@ class BuildLoader():
                     continue
                 elif isinstance(category_items, list):
                     for index, item in enumerate(category_items):
-                        if isinstance(item, dict) and item['item'] not in self._cargo.images_set:
+                        if isinstance(item, dict) and item['item'] not in self._cargo.image_set:
                             category_items[index] = ''
 
     def encode_in_image(self, image: QImage, data: str):

@@ -102,7 +102,6 @@ class ImageManager():
             del self.failed_images[image_name]
         available_images = self.get_downloaded_icons() | no_retry_images
 
-        # TODO have all icons (including skills) in image_set from the start
         ultimate_skill_icons = {'Focused Frenzy', 'Probability Manipulation', 'EPS Corruption'}
         image_set = self.image_set | ultimate_skill_icons
         images = image_set - available_images - self._cargo_cache.boff_abilities['all'].keys()

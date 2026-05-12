@@ -59,8 +59,9 @@ class CargoManager():
             'ground': dict(),
             'ground_unlocks': dict()
         }
-        self.images_set: set[str] = set()
+        self.image_set: set[str] = set()
         self.alt_images: dict[str, str] = dict()
+        self.failed_images: dict[str, int] = dict()
 
     def load_static_data(self):
         """
@@ -113,16 +114,19 @@ class CargoManager():
             alt_images = dict()
         all_images = self.get_cached_data('images_list.json')
         if all_images is None:
-            images_set = set()
+            image_set = set()
         else:
-            images_set = set(all_images)
+            image_set = set(all_images)
         if images_updated:
             alt_images.update(self.alt_images)
             store_json__new(alt_images, self._folders['cache'] / 'alt_images.json')
-            images_set |= self.images_set
-            store_json__new(list(images_set), self._folders['cache'] / 'images_list.json')
+            image_set |= self.image_set
+            store_json__new(list(image_set), self._folders['cache'] / 'images_list.json')
         self.alt_images = alt_images
-        self.images_set = images_set
+        self.image_set = image_set
+        self.failed_images = self.get_cached_data('images_failed.json')
+        if self.failed_images is None:
+            self.failed_images = dict()
 
     def get_cached_data(self, file_name: str) -> dict | list | None:
         """
@@ -136,7 +140,13 @@ class CargoManager():
         if time() - last_modified < SEVEN_DAYS_IN_SECONDS:
             return load_json__new(file_path)
         return None
-    
+
+    def store_failed_images(self):
+        """
+        Stores failed images to cache folder
+        """
+        store_json__new(self.failed_images, self._folders['cache'] / 'images_failed.json')
+
     def cache_ship_data(self):
         """
         Retrieves ship data and caches it.
@@ -171,7 +181,7 @@ class CargoManager():
                     'type': item['type'],
                     'tooltip': create_equipment_tooltip__new(item, tooltip_styles)
                 }
-                self.images_set.add(name)
+                self.image_set.add(name)
         self.equipment['fore_weapons'].update(self.equipment['ship_weapon'])
         self.equipment['aft_weapons'].update(self.equipment['ship_weapon'])
         del self.equipment['ship_weapon']
@@ -182,7 +192,7 @@ class CargoManager():
         self.equipment['uni_consoles'].update(self.equipment['sci_consoles'])
         self.equipment['uni_consoles'].update(self.equipment['eng_consoles'])
         store_json__new(self.equipment, self._folders['cache'] / 'equipment.json')
-    
+
     def cache_trait_data(self):
         """
         Retrieves personal and reputation trait data and caches it.
@@ -211,9 +221,9 @@ class CargoManager():
                     else:
                         self.ground_traits[trait_type][name] = trait_data
                     if trait['icon_name'] is None:
-                        self.images_set.add(name)
+                        self.image_set.add(name)
                     else:
-                        self.images_set.add(trait['icon_name'])
+                        self.image_set.add(trait['icon_name'])
                         self.alt_images[f'{name}__{trait["environment"]}__{trait_type}'] = (
                             trait['icon_name'])
                 # catch wrong values in trait['environment'] (cargo issue)
@@ -221,7 +231,7 @@ class CargoManager():
                     pass
         store_json__new(self.space_traits, 'space_traits.json')
         store_json__new(self.ground_traits, 'ground_traits.json')
-    
+
     def cache_starship_trait_data(self):
         """
         Retrieves starship trait data and caches it.
@@ -231,9 +241,9 @@ class CargoManager():
         for ship_trait in shiptrait_cargo:
             name = ship_trait['name']
             if ship_trait['icon_name'] is None:
-                self.images_set.add(name)
+                self.image_set.add(name)
             else:
-                self.images_set.add(ship_trait['icon_name'])
+                self.image_set.add(ship_trait['icon_name'])
                 self.alt_images[f"{name}__space__starship_traits"] = ship_trait['icon_name']
             self.starship_traits[name] = {
                 'Page': ship_trait['Page'],
@@ -245,7 +255,7 @@ class CargoManager():
                     f"{ship_trait['short']}</p>{parse_wikitext(ship_trait['detailed'], styles)}")
             }
         store_json__new(self.starship_traits, 'starship_traits.json')
-    
+
     def cache_boff_data(self):
         """
         Retrieves bridge officer data and caches it.
@@ -280,14 +290,15 @@ class CargoManager():
                         f"<p style={styles.boff_subheader}>{desc}</p><p>{desc_long}</p>"
                         f"{parse_wikitext(dewikify(boff_ability[f'rank{decimal}info']), styles)}")
             self.boff_abilities['all'][boff_name] = ability_item
-        self.images_set |= self.boff_abilities['all'].keys()
+        self.image_set |= self.boff_abilities['all'].keys()
         store_json__new(self.boff_abilities, 'boff_abilities.json')
-    
+
     def cache_modifier_data(self):
         """
         Retrieves modifier data and caches it.
         """
-        mod_cargo_data: list[dict[str, str | list[str] | int | None]] = self.get_cargo_data('modifiers.json', MODIFIER_QUERY)
+        mod_cargo_data: list[dict[str, str | list[str] | int | None]] = self.get_cargo_data(
+            'modifiers.json', MODIFIER_QUERY)
         for modifier in mod_cargo_data:
             try:
                 if modifier['available'][0] == '':
@@ -333,7 +344,7 @@ class CargoManager():
                 self.cache_doff_single(self.ground_doffs, doff)
         store_json__new(self.space_doffs, 'space_doffs.json')
         store_json__new(self.ground_doffs, 'ground_doffs.json')
-    
+
     def cache_doff_single(self, cache: dict, doff: dict):
         """
         Puts a single doff into cache.
@@ -393,6 +404,18 @@ class CargoManager():
                 cargo_file.copy_into(self._folders['auto_backups'])
             store_json__new(cargo_data, cargo_file)
             return cargo_data
+
+    def backup_cargo_data(self):
+        """
+        Saves current cargo data to backup folder.
+        """
+        cargo_files = (
+            'boff_abilities.json', 'doffs.json', 'equipment.json', 'modifiers.json',
+            'ship_list.json', 'starship_traits.json', 'traits.json')
+        cargo_folder = self._folders['cargo']
+        backups_folder = self._folders['backups']
+        for file_name in cargo_files:
+            (cargo_folder / file_name).copy_into(backups_folder)
 
     def boff_dict(self):
         return {
