@@ -364,6 +364,201 @@ class BuildManager():
         for boff_to_hide in range(boff_num + 1, 6):
             self.update_boff_seat(boff_to_hide, rank=0, profession='', clear=clear, hide_seat=True)
 
+    def clear_all(self):
+        """
+        Clears space and ground build, skills and captain info
+        """
+        self._building = True
+        self.clear_space_build()
+        self.clear_ground_build()
+        self.clear_captain()
+        self.clear_space_skills()
+        self.clear_ground_skills()
+        self._building = False
+        self.autosave()
+
+    def clear_build_callback(self, current_tab: int):
+        """
+        Clears current build section
+        """
+        self._building = True
+        if current_tab == 0:
+            self.clear_space_build()
+        elif current_tab == 1:
+            self.clear_ground_build()
+        elif current_tab == 2:
+            self.clear_space_skills()
+        elif current_tab == 3:
+            self.clear_ground_skills()
+        self._building = False
+        self.autosave()
+
+    def clear_space_build(self):
+        """
+        clears space build
+        """
+        self.clear_ship()
+        self.align_space_frame(SHIP_TEMPLATE, clear=True)
+        self.clear_traits('space')
+        self.clear_doffs('space')
+
+    def clear_ship(self):
+        """
+        Clears ship section of sidebar
+        """
+        self.ship.image.set_image(self._images.empty)
+        self.ship.button.setText('<Pick Ship>')
+        self._build_data['space']['ship'] = '<Pick Ship>'
+        self.ship.tier.clear()
+        self.ship.dc.hide()
+        self.ship.name.setText('')
+        self._build_data['space']['ship_name'] = ''
+        self.ship.desc.setPlainText('')
+        self._build_data['space']['ship_desc'] = ''
+
+    def clear_ground_build(self):
+        """
+        Clears ground build
+        """
+        self.ground.desc.clear()
+        self._build_data['ground']['ground_desc'] = ''
+        self.clear_equipment_cat_ground('kit_modules')
+        self.clear_equipment_cat_ground('weapons')
+        self.clear_equipment_cat_ground('ground_devices')
+        self.clear_equipment_cat_ground('kit')
+        self.clear_equipment_cat_ground('armor')
+        self.clear_equipment_cat_ground('ev_suit')
+        self.clear_equipment_cat_ground('personal_shield')
+        self.clear_boff_seat_ground(0)
+        self.clear_boff_seat_ground(1)
+        self.clear_boff_seat_ground(2)
+        self.clear_boff_seat_ground(3)
+        self.clear_traits('ground')
+        self.clear_doffs('ground')
+
+    def clear_traits(self, environment: str = 'both'):
+        """
+        Clears traits from build and UI
+
+        Parameters:
+        - :param environment: environment to clear the traits from (space/ground/both)
+        """
+        if environment == 'space' or environment == 'both':
+            for i, trait_button in enumerate(self.space.traits):
+                trait_button.clear()
+                self._build_data['space']['traits'][i] = ''
+            for i, trait_button in enumerate(self.space.starship_traits):
+                trait_button.clear()
+                self._build_data['space']['starship_traits'][i] = ''
+            for i, trait_button in enumerate(self.space.rep_traits):
+                trait_button.clear()
+                self._build_data['space']['rep_traits'][i] = ''
+            for i, trait_button in enumerate(self.space.active_rep_traits):
+                trait_button.clear()
+                self._build_data['space']['active_rep_traits'][i] = ''
+        if environment == 'ground' or environment == 'both':
+            for i, trait_button in enumerate(self.ground.traits):
+                trait_button.clear()
+                self._build_data['ground']['traits'][i] = ''
+            for i, trait_button in enumerate(self.ground.rep_traits):
+                trait_button.clear()
+                self._build_data['ground']['rep_traits'][i] = ''
+            for i, trait_button in enumerate(self.ground.active_rep_traits):
+                trait_button.clear()
+                self._build_data['ground']['active_rep_traits'][i] = ''
+
+    def clear_doffs(self, environment: str = 'both'):
+        """
+        Clears doff frame(s)
+
+        Parameters:
+        - :param environment: "space" / "ground" / "both"
+        """
+        if environment == 'space' or environment == 'both':
+            for i in range(6):
+                self.space.doffs_spec[i].setCurrentText('')
+                self.space.doffs_variant[i].clear()
+                self._build_data['space']['doffs_spec'][i] = ''
+                self._build_data['space']['doffs_variant'][i] = ''
+        if environment == 'ground' or environment == 'both':
+            for i in range(6):
+                self.ground.doffs_spec[i].setCurrentText('')
+                self.ground.doffs_variant[i].clear()
+                self._build_data['ground']['doffs_spec'][i] = ''
+                self._build_data['ground']['doffs_variant'][i] = ''
+
+    def clear_space_skills(self):
+        """
+        resets space skill tree
+        """
+        self.skills.space_desc.clear()
+        self._build_data['skill_desc']['space'] = ''
+        self._build_data['space_skills'] = {
+            'eng': [False] * 30,
+            'sci': [False] * 30,
+            'tac': [False] * 30
+        }
+        self._skill_state['space_points_total'] = 0
+        self._skill_state['space_points_eng'] = 0
+        self.skills.count_labels['eng'].setText('0')
+        self._skill_state['space_points_sci'] = 0
+        self.skills.count_labels['sci'].setText('0')
+        self._skill_state['space_points_tac'] = 0
+        self.skills.count_labels['tac'].setText('0')
+        self._skill_state['space_points_rank'] = [0] * 5
+        for career in ('eng', 'sci', 'tac'):
+            for skill_button in self.skills.space[career]:
+                skill_button.clear_overlay()
+                skill_button.highlight = False
+            self._build_data['skill_unlocks'][career] = [None] * 5
+            for bar_segment in self.skills.bonus_bars[career]:
+                bar_segment.setChecked(False)
+            for unlock_button in self.skills.unlocks[career]:
+                unlock_button.clear()
+
+    def clear_ground_skills(self):
+        """
+        resets ground skill tree
+        """
+        self.skills.ground_desc.clear()
+        self._build_data['skill_desc']['ground'] = ''
+        self._build_data['ground_skills'] = [
+            [False] * 6,
+            [False] * 6,
+            [False] * 4,
+            [False] * 4
+        ]
+        self._build_data['skill_unlocks']['ground'] = [None] * 5
+        self._skill_state['ground_points_total'] = 0
+        self.skills.count_labels['ground'].setText('0')
+        for skill_subtree in self.skills.ground:
+            for skill_button in skill_subtree:
+                skill_button.clear_overlay()
+                skill_button.highlight = False
+        for unlock_button in self.skills.unlocks['ground']:
+            unlock_button.clear()
+        for bar_segment in self.skills.bonus_bars['ground']:
+            bar_segment.setChecked(False)
+
+    def clear_captain(self):
+        """
+        Clears Captain information from build and UI
+        """
+        self.character.name.clear()
+        self._build_data['captain']['name'] = ''
+        self.character.elite.setCheckState(Qt.CheckState.Unchecked)
+        self._build_data['captain']['elite'] = False
+        self.character.career.setCurrentText('')
+        self._build_data['captain']['career'] = ''
+        self.character.faction.setCurrentText('')
+        self._build_data['captain']['faction'] = ''
+        self.character.species.setCurrentText('')
+        self._build_data['captain']['species'] = ''
+        self.character.primary.setCurrentText('')
+        self._build_data['captain']['primary_spec'] = ''
+        self.character.secondary.setCurrentText('')
+        self._build_data['captain']['secondary_spec'] = ''
+
     def update_equipment_cat(
             self, build_key: str, target_quantity: int | None, clear: bool = False,
             can_hide: bool = False):
@@ -490,6 +685,18 @@ class BuildManager():
                 self.slot_equipment_item(item, environment, build_key, subkey)
             else:
                 getattr(getattr(self, environment), build_key)[subkey].clear()
+
+    def clear_equipment_cat_ground(self, build_key: str):
+        """
+        Clears buttons and build; ground build only
+
+        Parameters:
+        - :param build_key: key to self.build and self.widgets
+        """
+        category: list[ItemButton] = getattr(self.ground, build_key)
+        for subkey, button in enumerate(category):
+            button.clear()
+            self._build_data['ground'][build_key][subkey] = ''
 
     def load_trait_cat(self, build_key: str, environment: str):
         """
@@ -685,6 +892,22 @@ class BuildManager():
                             self._cache.boff_abilities['all'][ability['item']][ability['rank']])
                     else:
                         slot.clear()
+
+    def clear_boff_seat_ground(self, boff_id: int):
+        """
+        Resets boff seat.
+
+        Parameters:
+        - :param boff_id: boff number counted from the top/beginning
+        """
+        boff_station: list[ItemButton] = self.ground.boffs[boff_id]
+        for subkey, button in enumerate(boff_station):
+            button.clear()
+            self._build_data['ground']['boffs'][boff_id][subkey] = ''
+        self.ground.boff_profs[boff_id].setCurrentText('Tactical')
+        self._build_data['ground']['boff_profs'][boff_id] = 'Tactical'
+        self.ground.boff_specs[boff_id].setCurrentText('Command')
+        self._build_data['ground']['boff_specs'][boff_id] = 'Command'
 
     def load_doffs(self, environment: str):
         """
@@ -944,7 +1167,7 @@ class BuildManager():
             self.ground.kit_modules[5].show()
             self.ground.ground_devices[4].show()
         else:
-            if not self.building:
+            if not self._building:
                 self._build_data['captain']['elite'] = False
                 self._build_data['space']['traits'][9] = None
                 self._build_data['ground']['traits'][9] = None

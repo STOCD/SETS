@@ -315,18 +315,6 @@ def update_equipment_cat(
         self.build['space'][build_key][hide_index] = None
 
 
-def clear_equipment_cat(self, build_key: str):
-    """
-    Clears buttons and build; ground build only
-
-    Parameters:
-    - :param build_key: key to self.build and self.widgets
-    """
-    for subkey, button in enumerate(self.widgets.build['ground'][build_key]):
-        button.clear()
-        self.build['ground'][build_key][subkey] = ''
-
-
 def update_starship_traits(self, target_quantity: int, clear: bool = False):
     """
     Shows/hides appropriate amount of starship trait buttons; updates `self.build`
@@ -410,22 +398,6 @@ def update_boff_seat(
     if clear:
         default_profession = 'Tactical' if profession == 'Universal' else profession
         self.build['space']['boff_specs'][boff_id] = [default_profession, specialization]
-
-
-def clear_boff_seat_ground(self, boff_id: int):
-    """
-    Resets boff seat.
-
-    Parameters:
-    - :param boff_id: boff number counted from the top/beginning
-    """
-    for subkey, button in enumerate(self.widgets.build['ground']['boffs'][boff_id]):
-        button.clear()
-        self.build['ground']['boffs'][boff_id][subkey] = ''
-    self.widgets.build['ground']['boff_profs'][boff_id].setCurrentText('Tactical')
-    self.build['ground']['boff_profs'][boff_id] = 'Tactical'
-    self.widgets.build['ground']['boff_specs'][boff_id].setCurrentText('Command')
-    self.build['ground']['boff_specs'][boff_id] = 'Command'
 
 
 def load_equipment_cat(self, build_key: str, environment: str):
@@ -615,94 +587,6 @@ def set_skill_unlock_space(
             self.build['skill_unlocks'][career][id] = None
 
 
-def clear_traits(self, environment: str = 'both'):
-    """
-    Clears traits from build and UI
-
-    Parameters:
-    - :param environment: environment to clear the traits from (space/ground/both)
-    """
-    if environment == 'space' or environment == 'both':
-        for i, trait_button in enumerate(self.widgets.build['space']['traits']):
-            trait_button.clear()
-            self.build['space']['traits'][i] = ''
-        for i, trait_button in enumerate(self.widgets.build['space']['starship_traits']):
-            trait_button.clear()
-            self.build['space']['starship_traits'][i] = ''
-        for i, trait_button in enumerate(self.widgets.build['space']['rep_traits']):
-            trait_button.clear()
-            self.build['space']['rep_traits'][i] = ''
-        for i, trait_button in enumerate(self.widgets.build['space']['active_rep_traits']):
-            trait_button.clear()
-            self.build['space']['active_rep_traits'][i] = ''
-    if environment == 'ground' or environment == 'both':
-        for i, trait_button in enumerate(self.widgets.build['ground']['traits']):
-            trait_button.clear()
-            self.build['ground']['traits'][i] = ''
-        for i, trait_button in enumerate(self.widgets.build['ground']['rep_traits']):
-            trait_button.clear()
-            self.build['ground']['rep_traits'][i] = ''
-        for i, trait_button in enumerate(self.widgets.build['ground']['active_rep_traits']):
-            trait_button.clear()
-            self.build['ground']['active_rep_traits'][i] = ''
-
-
-def clear_captain(self):
-    """
-    Clears Captain information from build and UI
-    """
-    self.widgets.character['name'].clear()
-    self.build['captain']['name'] = ''
-    self.widgets.character['elite'].setCheckState(Qt.CheckState.Unchecked)
-    self.build['captain']['elite'] = False
-    self.widgets.character['career'].setCurrentText('')
-    self.build['captain']['career'] = ''
-    self.widgets.character['faction'].setCurrentText('')
-    self.build['captain']['faction'] = ''
-    self.widgets.character['species'].setCurrentText('')
-    self.build['captain']['species'] = ''
-    self.widgets.character['primary'].setCurrentText('')
-    self.build['captain']['primary_spec'] = ''
-    self.widgets.character['secondary'].setCurrentText('')
-    self.build['captain']['secondary_spec'] = ''
-
-
-def clear_ship(self):
-    """
-    Clears ship section of sidebar
-    """
-    self.widgets.ship['image'].set_image(self.cache.empty_image)
-    self.widgets.ship['button'].setText('<Pick Ship>')
-    self.build['space']['ship'] = '<Pick Ship>'
-    self.widgets.ship['tier'].clear()
-    self.widgets.ship['dc'].hide()
-    self.widgets.ship['name'].setText('')
-    self.build['space']['ship_name'] = ''
-    self.widgets.ship['desc'].setPlainText('')
-    self.build['space']['ship_desc'] = ''
-
-
-def clear_ground_build(self):
-    """
-    Clears ground build
-    """
-    self.widgets.ground_desc.clear()
-    self.build['ground']['ground_desc'] = ''
-    clear_equipment_cat(self, 'kit_modules')
-    clear_equipment_cat(self, 'weapons')
-    clear_equipment_cat(self, 'ground_devices')
-    clear_equipment_cat(self, 'kit')
-    clear_equipment_cat(self, 'armor')
-    clear_equipment_cat(self, 'ev_suit')
-    clear_equipment_cat(self, 'personal_shield')
-    clear_boff_seat_ground(self, 0)
-    clear_boff_seat_ground(self, 1)
-    clear_boff_seat_ground(self, 2)
-    clear_boff_seat_ground(self, 3)
-    clear_traits(self, 'ground')
-    clear_doffs(self, 'ground')
-
-
 def load_doffs(self, environment: str):
     """
     Updates UI to show doffs in self.build
@@ -721,24 +605,3 @@ def load_doffs(self, environment: str):
             variants = getattr(self.cache, f'{environment}_doffs')[spec].keys()
             variant_combo.addItems({''} | variants)
             variant_combo.setCurrentText(variant)
-
-
-def clear_doffs(self, environment: str = 'both'):
-    """
-    Clears doff frame(s)
-
-    Parameters:
-    - :param environment: "space" / "ground" / "both"
-    """
-    if environment == 'space' or environment == 'both':
-        for i in range(6):
-            self.widgets.build['space']['doffs_spec'][i].setCurrentText('')
-            self.widgets.build['space']['doffs_variant'][i].clear()
-            self.build['space']['doffs_spec'][i] = ''
-            self.build['space']['doffs_variant'][i] = ''
-    if environment == 'ground' or environment == 'both':
-        for i in range(6):
-            self.widgets.build['ground']['doffs_spec'][i].setCurrentText('')
-            self.widgets.build['ground']['doffs_variant'][i].clear()
-            self.build['ground']['doffs_spec'][i] = ''
-            self.build['ground']['doffs_variant'][i] = ''
