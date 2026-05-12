@@ -6,6 +6,7 @@ from PySide6.QtGui import QCloseEvent, QFontDatabase, QTextOption
 from PySide6.QtWidgets import (
     QApplication, QFrame, QPlainTextEdit, QPushButton, QScrollArea, QTabWidget, QWidget)
 
+from .buildhelpers import empty_build
 from .buildloader import BuildLoader
 from .buildmanager import BuildManager
 from .cargomanager import CargoManager
@@ -28,7 +29,7 @@ from .widgetbuilder import (
     create_combo_box2, create_entry2, create_frame2, create_item_button2, create_label2)
 from .widgets import (
     Cache, DoffCombobox, GridLayout, HBoxLayout, ImageLabel, ItemButton, ShipButton, ShipImage,
-    Tabbers, TooltipLabel, VBoxLayout, WidgetStorage)
+    Tabbers, Thread, TooltipLabel, VBoxLayout, WidgetStorage)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 # from signal import signal, SIGINT, SIG_DFL
@@ -36,10 +37,6 @@ from .widgets import (
 
 
 class SETS():
-
-    from .datafunctions import backup_cargo_data, empty_build, init_backend
-    from .splash import enter_splash, exit_splash, splash_text
-    from .style import prepare_tooltip_css
 
     app_dir = None
     # (release version, dev version)
@@ -85,7 +82,6 @@ class SETS():
         self.init_config()
         QDir.addSearchPath('local_folder', os.path.join(path, 'local'))
         self.theme2: AppTheme = AppTheme(self.config.ui_scale)
-        self.prepare_tooltip_css()
         self.init_environment()
         self.downloader = Downloader(
             self.config.config_subfolders['images'],
@@ -119,7 +115,9 @@ class SETS():
         self.context_menu: ContextMenu = ContextMenu(self.theme2, self.build2, self.cargo)
         self.context_menu.edit_slot.connect(self.edit_window.edit_item)
         self.window.show()
-        self.init_backend()
+        self._backend_thread: Thread = Thread(self.init_backend)
+        self._backend_thread.done.connect(self.complete_app_init)
+        self._backend_thread.start()
 
     def run(self) -> int:
         """
@@ -192,7 +190,28 @@ class SETS():
         Creates external files before starting the app.
         """
         if not self.config.autosave_path.exists():
-            store_json(self.empty_build(), str(self.config.autosave_path))
+            store_json(empty_build(), str(self.config.autosave_path))
+
+    def init_backend(self):
+        """
+        Sets up downloader and provides cargo data and images.
+        """
+        self.downloader.default_session_from_env()
+        self.cargo.provision_cargo_data()
+        self.images.image_set = self.cargo.image_set
+        self.images.failed_images = self.cargo.failed_images
+        self.images.download_images(self.cargo.skills)
+        self.cargo.store_failed_images()
+        self.images.load_base_images()
+
+    def complete_app_init(self):
+        """
+        Updates ui and starts thread to load images.
+        """
+        self.init_ui()
+        self.build_loader.load_build_file(self.config.autosave_path)
+        self._backend_thread = Thread(self.images.load_images)
+        self._backend_thread.start()
 
     def cache_icons(self):
         """
@@ -222,7 +241,7 @@ class SETS():
         """
         window_geometry = self.window.saveGeometry()
         self.settings.state__geometry = window_geometry
-        self.autosave()
+        self.build2.autosave()
         self.settings.store_settings()
         event.accept()
 
@@ -250,6 +269,24 @@ class SETS():
         app.focusWindowChanged.connect(self.hide_tooltips)
         QThread.currentThread().setPriority(QThread.Priority.TimeCriticalPriority)
         return app, window
+
+    def init_ui(self):
+        """
+        Updates ui with cargo data and loads base images.
+        """
+        self.ship_selector_window.set_ships(self.cargo.ships.keys())
+        space_doff_specs = [''] + sorted(self.cargo.space_doffs.keys())
+        for combobox in self.build2.space.doffs_spec:
+            combobox.addItems(space_doff_specs)
+        ground_doff_specs = [''] + sorted(self.cache.ground_doffs.keys())
+        for combobox in self.build2.ground.doffs_spec:
+            combobox.addItems(ground_doff_specs)
+        for career_block in self.build2.skills.space.values():
+            for skill_button in career_block:
+                skill_button.set_item(self.images.get(skill_button.skill_image_name))
+        for skill_group in self.build2.skills.ground:
+            for skill_button in skill_group:
+                skill_button.set_item(self.images.get(skill_button.skill_image_name))
 
     def picker(
             self, environment: str, build_key: str, build_subkey: int, button: ItemButton,
@@ -1450,7 +1487,7 @@ class SETS():
             self.theme2, 'Clears cache. Restart to rebuild cache.', 'hint_label')
         sec_2.addWidget(cache_clear_label, 1, 2, alignment=ALEFT)
         backup_cargo_button = create_button2(self.theme2, 'Backup Cargo Data')
-        backup_cargo_button.clicked.connect(self.backup_cargo_data)
+        backup_cargo_button.clicked.connect(self.cargo.backup_cargo_data)
         sec_2.addWidget(backup_cargo_button, 2, 0, alignment=ALEFT)
         backup_cargo_label = create_label2(
             self.theme2, 'Creates cargo backup to protect against download failures.', 'hint_label')
