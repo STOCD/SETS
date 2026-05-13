@@ -175,9 +175,6 @@ begin
 end;
 
 procedure removeConfig();
-var
-  findRecord: TFindRec;
-  FileFound: Boolean;
 begin
   if DirExists(configPath) then
   begin
