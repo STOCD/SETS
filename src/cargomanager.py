@@ -90,7 +90,7 @@ class CargoManager():
             image_set = set(all_images)
         alt_images = self.get_cached_data('alt_images.json')
         if alt_images is None:
-            alt_images = set()
+            alt_images = dict()
             force_image_update = True
         self.ships = self.get_cached_data('ships.json')
         if self.ships is None:

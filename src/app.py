@@ -1371,7 +1371,7 @@ class SETS():
         self.splash.loading_label = loading_label
         layout.addWidget(loading_label, 2, 0, 1, 3, alignment=AHCENTER)
         progress_label = create_label2(
-            self.theme, '', 'label_subhead', style_override={'font': ('Roboto Mono', 12, 'normal')})
+            self.theme, '', 'label_subhead', style_override={'font': ('Roboto Mono', 11, 'normal')})
         self.splash.progress_label = progress_label
         layout.addWidget(progress_label, 3, 0, 1, 3, alignment=AHCENTER)
         frame.setLayout(layout)
