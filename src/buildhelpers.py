@@ -102,6 +102,7 @@ def empty_build(build_type: str = 'full') -> dict[str, int | dict[str]]:
     elif build_type == 'skills':
         return new_skills
 
+
 def get_variable_slot_counts(ship_data: dict[str], ship_tier: str) -> tuple[int]:
     """
     returns the number of universal consoles, devices and starship traits the given ship build
@@ -148,6 +149,7 @@ def get_variable_slot_counts(ship_data: dict[str], ship_tier: str) -> tuple[int]
             elif ship_data['t5uconsole'] == 'tac':
                 tac_consoles += 1
     return uni_consoles, eng_consoles, sci_consoles, tac_consoles, devices, starship_traits
+
 
 def get_boff_spec(seat_details: str) -> tuple[int, str, str]:
     """

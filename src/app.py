@@ -28,8 +28,8 @@ from .widgetbuilder import (
     create_annotated_slider2, create_button2, create_button_series2, create_checkbox2,
     create_combo_box2, create_entry2, create_frame2, create_item_button2, create_label2)
 from .widgets import (
-    Cache, DoffCombobox, GridLayout, HBoxLayout, ImageLabel, ItemButton, ShipButton, ShipImage,
-    Tabbers, Thread, TooltipLabel, VBoxLayout, WidgetStorage)
+    DoffCombobox, GridLayout, HBoxLayout, ImageLabel, ItemButton, ShipButton, ShipImage,
+    Tabbers, Thread, TooltipLabel, VBoxLayout)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
 # from signal import signal, SIGINT, SIG_DFL
@@ -38,49 +38,25 @@ from .widgets import (
 
 class SETS():
 
-    app_dir = None
-    # (release version, dev version)
-    versions = ('', '')
-    # stores widgets that need to be accessed from outside their creating function
-    widgets: WidgetStorage
-    # stores refined cargo data
-    cache: Cache
-    # stores current build
-    build: dict
-    # for picking items
-    picker_window: Picker
-    # for selecting ships
-    ship_selector_window: ShipSelector
-    # for editing equipment items
-    edit_window: ItemEditor
-    # context menu for equipment
-    context_menu: ContextMenu
-    # shows markdown export
-    export_window: ExportWindow
-
-    def __init__(self, theme, args, path, config, versions):
+    def __init__(self, args, app_dir_path: str, version: str):
         """
         Creates new Instance of SETS
 
         Parameters:
+        - :param args: command line arguments, following arguments must be accessible
+            - `args.config_dir`: contains override for config dir, `str` or `None`
+        - :param app_dir_path: absolute path to install directory
         - :param version: version of the app
-        - :param theme: dict -> default theme
-        - :param args: command line arguments
-        - :param path: absolute path to directory containing the main.py file
-        - :param config: app configuration (!= settings these are not changed by the user)
         """
-        self.versions = versions
-        self.theme = theme
+        self.version: str = version
         self.args = args
-        self.app_dir = path
-        self.app_dir2: Path = Path(path)
-        self.widgets = WidgetStorage()
-        self.cache = Cache()
+        self.app_dir: Path = Path(app_dir_path)
+        self.app_dir2: Path = Path(app_dir_path)
         self.config: SETSConfig = SETSConfig()
         self.config.config_dir = self.get_config_dir_path()
         self.settings = SETSSettings(self.config.config_dir / self.config.settings_file)
         self.init_config()
-        QDir.addSearchPath('local_folder', os.path.join(path, 'local'))
+        QDir.addSearchPath('local_folder', self.app_dir / 'local')
         self.theme2: AppTheme = AppTheme(self.config.ui_scale)
         self.init_environment()
         self.downloader = Downloader(
@@ -99,8 +75,6 @@ class SETS():
         self.tabbers: Tabbers = Tabbers()
         self.app, self.window = self.create_main_window()
         self.cache_icons()
-        self.building = True
-        self.build = self.empty_build()
         self.cargo.load_static_data()
         self.setup_main_layout()
         self.build_loader: BuildLoader = BuildLoader(
@@ -181,9 +155,6 @@ class SETS():
         """
         self.config.autosave_path = self.config.config_dir / self.config.autosave_filename
         self.config.ui_scale = self.settings.ui_scale
-        # TODO move these to new theme
-        self.box_width = self.config.box_width * self.config.ui_scale * 0.8
-        self.box_height = self.config.box_height * self.config.ui_scale * 0.8
 
     def init_environment(self):
         """
@@ -228,23 +199,22 @@ class SETS():
         """
         Loads static icons.
         """
-        self.cache.icons['copy'] = load_icon('copy.png', self.app_dir2)
-        self.cache.icons['paste'] = load_icon('paste.png', self.app_dir2)
-        self.cache.icons['clear'] = load_icon('clear.png', self.app_dir2)
-        self.cache.icons['edit'] = load_icon('edit.png', self.app_dir2)
-        self.cache.icons['link'] = load_icon('external_link.png', self.app_dir2)
-        self.cache.icons['dual_cannons'] = load_icon('DC_icon.svg', self.app_dir2, size=(16, 24.5))
+        self.theme2.icons['copy'] = load_icon('copy.png', self.app_dir2)
+        self.theme2.icons['paste'] = load_icon('paste.png', self.app_dir2)
+        self.theme2.icons['clear'] = load_icon('clear.png', self.app_dir2)
+        self.theme2.icons['edit'] = load_icon('edit.png', self.app_dir2)
+        self.theme2.icons['link'] = load_icon('external_link.png', self.app_dir2)
+        self.theme2.icons['dual_cannons'] = load_icon('DC_icon.svg', self.app_dir2, size=(16, 24.5))
         icon_size = (self.theme2.opt.box_width * 1.2, self.theme2.opt.box_width * 1.2)
-        self.cache.icons['ground'] = load_icon('ground_icon.png', self.app_dir2, icon_size)
+        self.theme2.icons['ground'] = load_icon('ground_icon.png', self.app_dir2, icon_size)
         icon_size = (self.theme2.opt.box_width, self.theme2.opt.box_width)
-        self.cache.icons['tac'] = load_icon('tac_icon.png', self.app_dir2, icon_size)
-        self.cache.icons['sci'] = load_icon('sci_icon.png', icon_size)
-        self.cache.icons['eng'] = load_icon('eng_icon.png', icon_size)
-        self.cache.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir2, size=(25, 25))
-        self.cache.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
+        self.theme2.icons['tac'] = load_icon('tac_icon.png', self.app_dir2, icon_size)
+        self.theme2.icons['sci'] = load_icon('sci_icon.png', icon_size)
+        self.theme2.icons['eng'] = load_icon('eng_icon.png', icon_size)
+        self.theme2.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir2, size=(25, 25))
+        self.theme2.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
         icon_size = (self.theme2.opt.box_height, self.theme2.opt.box_width * 182 / 106)
-        self.cache.icons['STOCD'] = load_icon('stocd.png', self.app_dir2, icon_size)
-        self.theme2.icons = self.cache.icons
+        self.theme2.icons['STOCD'] = load_icon('stocd.png', self.app_dir2, icon_size)
 
     def main_window_close_callback(self, event: QCloseEvent):
         """
@@ -289,7 +259,7 @@ class SETS():
         space_doff_specs = [''] + sorted(self.cargo.space_doffs.keys())
         for combobox in self.build2.space.doffs_spec:
             combobox.addItems(space_doff_specs)
-        ground_doff_specs = [''] + sorted(self.cache.ground_doffs.keys())
+        ground_doff_specs = [''] + sorted(self.cargo.ground_doffs.keys())
         for combobox in self.build2.ground.doffs_spec:
             combobox.addItems(ground_doff_specs)
         for career_block in self.build2.skills.space.values():
@@ -325,11 +295,11 @@ class SETS():
                 if specialization == 'Temporal Operative':
                     specialization = 'Temporal'
             else:
-                profession = self.build['ground']['boff_profs'][boff_id]
-                specialization = self.build['ground']['boff_specs'][boff_id]
+                profession = self.build2['ground']['boff_profs'][boff_id]
+                specialization = self.build2['ground']['boff_specs'][boff_id]
             items = self.cargo.boff_abilities[environment][profession][build_subkey]
             if specialization != '':
-                items = items + self.cache.boff_abilities[environment][specialization][build_subkey]
+                items = items + self.cargo.boff_abilities[environment][specialization][build_subkey]
         elif build_key == 'starship_traits':
             items = self.cargo.starship_traits.keys()
             image_suffix = '__space__starship_traits'
@@ -1568,9 +1538,9 @@ class SETS():
         footer_frame = self.tabbers.character_frames[2]
         footer_layout = GridLayout(margins=csp, spacing=isp)
         version_label = create_label2(
-            self.theme2, f"Version: {self.versions[0]}\n({self.versions[1]})", 'hint_label')
+            self.theme2, f"Version: {self.version}", 'hint_label')
         footer_layout.addWidget(version_label, 0, 0, alignment=ALEFT | ABOTTOM)
         stocd_label = create_label2(self.theme2, '')
-        stocd_label.setPixmap(self.cache.icons['STOCD'])
+        stocd_label.setPixmap(self.theme2.icons['STOCD'])
         footer_layout.addWidget(stocd_label, 0, 1, alignment=ARIGHT | ABOTTOM)
         footer_frame.setLayout(footer_layout)

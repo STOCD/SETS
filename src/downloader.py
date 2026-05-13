@@ -5,6 +5,7 @@ from requests import Session
 from requests.exceptions import Timeout
 from time import time
 from threading import Thread
+from typing import Callable
 from urllib.parse import quote_plus
 
 from .constants import GITHUB_CACHE_URL, WIKI_IMAGE_URL
@@ -14,6 +15,8 @@ from .textedit import compensate_json
 class ReturnValueThread(Thread):
     def __init__(self, target, args: tuple = tuple()):
         super().__init__(target=target, args=args)
+        self._target: Callable
+        self._args: tuple
         self._return = None
 
     def run(self):
