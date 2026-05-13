@@ -1,6 +1,6 @@
 from collections import namedtuple
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Generator, Iterable
 
 from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt, QThread, Signal, Slot
 from PySide6.QtGui import (
@@ -385,6 +385,18 @@ class pixel_range():
 
     def __iter__(self):
         return self.__gen
+
+
+def bundle[_T](*iterables: Iterable[_T]) -> Generator[_T, None, None]:
+    """
+    Generator yielding the items of the given iterables in the order they were provided.
+
+    Parameters:
+    - :param iterables: iterables to be bundled
+    """
+    for inner_iterable in iterables:
+        for element in inner_iterable:
+            yield element
 
 
 class TooltipLabel(QLabel):

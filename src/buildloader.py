@@ -14,7 +14,7 @@ from .cargomanager import CargoManager
 from .config import SETSConfig, SETSSettings
 from .constants import BUILD_CONVERSION, BUILD_VERSION, SETS_FILE_FILTER
 from .iofunc import browse_path, load_json__new, store_json__new
-from .widgets import pixel_range
+from .widgets import bundle, pixel_range
 
 
 class BuildLoader():
@@ -217,6 +217,13 @@ class BuildLoader():
             prof = build['ground']['boff_profs'][station_id]
             spec = build['ground']['boff_specs'][station_id]
             _fix_boff_seat('ground')
+
+        alt_images_inverted = {image: key for key, image in self._cargo.alt_images.items()}
+        alt_image_items = bundle(
+            build['space']['traits'], build['ground']['traits'], build['ground']['rep_traits'])
+        for trait in alt_image_items:
+            if isinstance(trait, dict) and trait['item'] in alt_images_inverted:
+                trait['item'] = alt_images_inverted[trait['item']].split('__', 1)[0]
 
         build['_version'] = BUILD_VERSION
 
