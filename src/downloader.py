@@ -8,6 +8,8 @@ from threading import Thread
 from typing import Callable
 from urllib.parse import quote_plus
 
+from PySide6.QtCore import QObject, Signal
+
 from .constants import GITHUB_CACHE_URL, WIKI_IMAGE_URL
 from .textedit import compensate_json
 
@@ -28,8 +30,11 @@ class ReturnValueThread(Thread):
         return self._return
 
 
-class Downloader():
+class Downloader(QObject):
     """Downloads images and cargo tables"""
+
+    progress_init: Signal = Signal(int)
+    progress_step: Signal = Signal()
 
     def __init__(self, images_dir: Path, ship_images_dir: Path):
         """
@@ -37,6 +42,7 @@ class Downloader():
         - :param images_dir: path to directory storing icons
         - :param ship_images_dir: path to directory storing ship images
         """
+        super().__init__()
         self._images_dir: str = str(images_dir)
         self._ship_images_dir: str = str(ship_images_dir)
         self._session: Session = Session()
@@ -133,6 +139,7 @@ class Downloader():
                     image_file.write(image_response.content)
             else:
                 failed_images[name] = int(time())
+        self.progress_step.emit()
 
     def download_ship_image(
             self, name: str, failed_images: dict[str, int], session: Session | None = None):
@@ -162,6 +169,7 @@ class Downloader():
                     image_file.write(image_response.content)
             else:
                 failed_images[name] = int(time())
+        self.progress_step.emit()
 
     def download_image_chunk(
             self, image_list: list[str], image_suffix: str = '_icon.png',
@@ -206,6 +214,7 @@ class Downloader():
         while image_chunk_size < 4 and total_threads > 1:
             total_threads -= 1
             image_chunk_size = len(image_list) // total_threads
+        self.progress_init.emit(len(image_list))
         threads: list[ReturnValueThread] = list()
         for thread_num in range(total_threads):
             image_chunk_start = image_chunk_size * thread_num
