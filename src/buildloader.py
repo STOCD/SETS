@@ -28,6 +28,7 @@ class BuildLoader():
         self._config: SETSConfig = config
         self._settings: SETSSettings = settings
         self._window: QWidget = window
+        self._current_build_path: Path | None = None
 
     def load_build_callback(self):
         """
@@ -37,8 +38,18 @@ class BuildLoader():
             self._config.config_subfolders['library'], SETS_FILE_FILTER, parent_window=self._window)
         if load_path is not None:
             self.load_build_file(load_path)
+            self._current_build_path = load_path
 
     def save_build_callback(self):
+        """
+        Saves build to file it was opened from, overwriting that file.
+        """
+        if self._current_build_path is None:
+            self.save_build_as_callback()
+        else:
+            self.save_build_file(self._current_build_path)
+
+    def save_build_as_callback(self):
         """
         Saves build to file
         """
@@ -56,6 +67,7 @@ class BuildLoader():
         save_path = browse_path(preset_path, file_types, save=True, parent_window=self._window)
         if save_path is not None:
             self.save_build_file(save_path)
+            self._current_build_path = save_path
 
     def load_skills_callback(self):
         """
@@ -122,7 +134,7 @@ class BuildLoader():
         """
         extension = filepath.suffix.lower()
         if extension == '.json':
-            store_json__new(self._build, filepath)
+            store_json__new(self._build.data, filepath)
         elif extension == '.png':
             image = self._window.grab().toImage()
             self.encode_in_image(image, json__dumps(self._build.data))
