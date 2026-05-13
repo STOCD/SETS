@@ -7,5 +7,5 @@ then
     echo "[Info]  (Run \"install.sh\ to install SETS if you haven't done that already.)"
     exit
 fi
-python3 main.py
+python3 main.py --config-dir ./sets-config
 deactivate

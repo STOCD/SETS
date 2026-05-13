@@ -29,7 +29,7 @@ class Launcher():
         #     '--build-cache', action='store_true', required=False,
         #     help='Provide this flag to build the cache instead of starting the app.')
         argparser.add_argument(
-            '--config_dir', type=str, required=False,
+            '--config-dir', type=str, required=False,
             help='Change configuration directory (must be readable and writable)')
         args, _ = argparser.parse_known_args()
         exit_code = SETS(

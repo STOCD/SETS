@@ -35,17 +35,17 @@ then
     exit
 fi
 deactivate
-if [ -d ".config" ]
+if [ -d "sets-config" ]
 then
-    if [ ! -d ".config/images" ]
+    if [ ! -d "sets-config/images" ]
     then
-        echo "[Info]  Creating folder \".config/images\"."
-        mkdir .config/images
+        echo "[Info]  Creating folder \"sets-config/images\"."
+        mkdir sets-config/images
     fi
 else
-    echo "[Info]  Creating folders \".config\" and \".config/images\"."
-    mkdir .config
-    mkdir .config/images
+    echo "[Info]  Creating folders \"sets-config\" and \"sets-config/images\"."
+    mkdir sets-config
+    mkdir sets-config/images
 fi
 if [ $? = 0 ]
 then
