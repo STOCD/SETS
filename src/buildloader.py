@@ -59,11 +59,13 @@ class BuildLoader():
             proposed_filename = f"({self._build['space']['ship']})"
         if self._build['space']['ship_name'] != '':
             proposed_filename = f"{self._build['space']['ship_name']} {proposed_filename}"
-        preset_path = self.get_library_path() / proposed_filename
         if self._settings.default_save_format == 'PNG':
             file_types = 'PNG image (*.png);;JSON file (*.json);;Any File (*.*)'
+            proposed_filename += '.png'
         else:
             file_types = 'JSON file (*.json);;PNG image (*.png);;Any File (*.*)'
+            proposed_filename += '.json'
+        preset_path = self.get_library_path() / proposed_filename
         save_path = browse_path(preset_path, file_types, save=True, parent_window=self._window)
         if save_path is not None:
             self.save_build_file(save_path)
@@ -82,11 +84,13 @@ class BuildLoader():
         """
         Save skills to file
         """
-        preset_path = self.get_library_path() / 'Skill Tree'
         if self._settings.default_save_format == 'PNG':
             file_types = 'PNG image (*.png);;JSON file (*.json);;Any File (*.*)'
+            extension = '.png'
         else:
             file_types = 'JSON file (*.json);;PNG image (*.png);;Any File (*.*)'
+            extension = '.json'
+        preset_path = self.get_library_path() / f'Skill Tree{extension}'
         save_path = browse_path(preset_path, file_types, save=True, parent_window=self._window)
         if save_path is not None:
             self.save_skill_tree_file(save_path)
