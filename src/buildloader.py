@@ -102,7 +102,7 @@ class BuildLoader():
         if extension == '.json':
             build_data = load_json(filepath)
         elif extension == '.png':
-            decoded_str = self.decode_from_image(self, QImage(filepath))
+            decoded_str = self.decode_from_image(QImage(filepath))
             if decoded_str == '':
                 return
             build_data = json__loads(decoded_str)
@@ -151,7 +151,7 @@ class BuildLoader():
         if extension == '.json':
             build_data = load_json(filepath)
         elif extension == '.png':
-            decoded_str = self.decode_from_image(self, QImage(filepath))
+            decoded_str = self.decode_from_image(QImage(filepath))
             if decoded_str == '':
                 return
             build_data = json__loads(decoded_str)
