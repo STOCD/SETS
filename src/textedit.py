@@ -4,7 +4,7 @@ from .constants import CAREER_ABBR, RARITY_COLORS, SKILL_PREFIXES, WIKI_URL
 from .theme import TooltipCSS
 
 
-def add_equipment_tooltip_header__new(
+def add_equipment_tooltip_header(
         item: dict[str, str], item_data: dict[str], tooltip_styles: TooltipCSS) -> str:
     """
     Adds equipment header including name, mark, modifiers, rarity and item type to the tooltip body
@@ -69,7 +69,7 @@ def format_skill_tooltip(
             f"<p>{skill_data['gdesc']}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
 
 
-def get_ultimate_skill_unlock_tooltip__new(
+def get_ultimate_skill_unlock_tooltip(
         unlock: dict[str], unlock_choice: int, enhancements: int, tooltip_styles: TooltipCSS):
     """
     Formats tooltip for ultimate skill unlock.
@@ -105,7 +105,7 @@ def get_ultimate_skill_unlock_tooltip__new(
     return tooltip
 
 
-def create_equipment_tooltip__new(item: dict, tooltip_style: TooltipCSS) -> str:
+def create_equipment_tooltip(item: dict, tooltip_style: TooltipCSS) -> str:
     """
     Creates tooltip for equipment from raw item data.
 
@@ -132,7 +132,7 @@ def create_equipment_tooltip__new(item: dict, tooltip_style: TooltipCSS) -> str:
     return tooltip
 
 
-def create_trait_tooltip__new(
+def create_trait_tooltip(
         name: str, description: str, type_: str, environment: str,
         styles: TooltipCSS) -> str:
     """

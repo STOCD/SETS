@@ -9,8 +9,8 @@ from .constants import (
     EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK, SPECIES,
     SPECIES_TRAITS)
 from .imagemanager import ImageManager
-from .iofunc import open_wiki_page, store_json__new
-from .textedit import add_equipment_tooltip_header__new, get_ultimate_skill_unlock_tooltip__new
+from .iofunc import open_wiki_page, store_json
+from .textedit import add_equipment_tooltip_header, get_ultimate_skill_unlock_tooltip
 from .theme import TooltipCSS
 from .widgets import ItemButton, ItemSlot, ShipButton, ShipImage, Thread, TooltipLabel
 
@@ -174,7 +174,7 @@ class BuildManager():
         Saves build to autosave file.
         """
         if not self._building:
-            store_json__new(self._build_data, self._autosave_path)
+            store_json(self._build_data, self._autosave_path)
 
     def __getitem__(self, key: str):
         return self._build_data[key]
@@ -722,7 +722,7 @@ class BuildManager():
         """
         self._build_data[environment][build_key][build_subkey] = item
         overlay = getattr(self._images.overlays, item['rarity'].lower().replace(' ', ''))
-        tooltip = add_equipment_tooltip_header__new(
+        tooltip = add_equipment_tooltip_header(
             item, self._cache.equipment[build_key][item['item']], self._tooltip_styles)
         item_button: ItemButton = getattr(getattr(self, environment), build_key)[build_subkey]
         item_button.set_item_full(self._images.get(item['item']), overlay, tooltip)
@@ -1003,11 +1003,11 @@ class BuildManager():
                 unlock_data = self._cache.skills['space_unlocks'][career][4]
                 unlock_button.set_item(self._images.get(unlock_data['name']))
                 if points_spent > 26:
-                    unlock_button.tooltip = get_ultimate_skill_unlock_tooltip__new(
+                    unlock_button.tooltip = get_ultimate_skill_unlock_tooltip(
                         unlock_data, state, 3, self._tooltip_styles)
                     self._build_data['skill_unlocks'][career][id] = 3
                 else:
-                    unlock_button.tooltip = get_ultimate_skill_unlock_tooltip__new(
+                    unlock_button.tooltip = get_ultimate_skill_unlock_tooltip(
                         unlock_data, state, points_spent - 24, self._tooltip_styles)
                     self._build_data['skill_unlocks'][career][id] = state
                 if not self._building:
