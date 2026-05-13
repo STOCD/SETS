@@ -7,64 +7,37 @@ Builds can be exported to a PNG or JSON file that can be opened by another perso
 
 ## Installation
 ### Executable for Windows
-Download the zipped app from the [release](https://github.com/STOCD/SETS/releases) page. Unzip it into a folder where you want your app to live. To speed up the image downloading process, obtain the images library as detailed below (Images library section). Double-clicking `SETS.exe` will start the app.
+Download the latest app installer from the [release](https://github.com/STOCD/SETS/releases) page. Execute the installer and follow its instructions to install the app.
 
-You can create a desktop shortcut by rightclicking on `SETS.exe` and clicking on "Create shortcut" in the context menu. Then move the created shortcut to your desktop. To create a start menu entry, open the start menu folder by rightclicking on an arbitrary app in your start menu and clicking on "Open file location". Then move the created shortcut to the folder that opened.
+### Executable for Arch
+Download the latest package from the [release](https://github.com/STOCD/SETS/releases) page. Run `sudo pacman -U /path/to/package-file` to install the app.
 
-### Script (UNIX-like systems)
+### Executable for Debian
+Download the latest package from the [release](https://github.com/STOCD/SETS/releases) page. Run `sudo apt install -f /path/to/package-file` to install the app.
+
+### Script version using PIP
+Install the app globally or in a python virtual environment by running `python -m pip install sets`. Start the app using the `sets` command. If the app is installed in a python virtual environment, make sure to activate it before trying to start the app.
+
+### Script (all systems; development version)
 *Before installation, make sure python 3 is installed on your system alongside the python package manager pip.*
 
-First, create a folder to house your app and open it in your file manager or shell.
+First, create a folder to house your app. Open a command prompt or shell and navigate *inside* the created folder.
 
 Download the source code. This can be done using `git` or manual download:
 - Manual Download: On the GitHub page of [this repository](https://github.com/STOCD/SETS), click on the green `CODE` button and select "Download ZIP". Save the archive and unpack it so that the files and folders seen on the repository page are *directly* inside your app folder.
 - Git: run `git clone https://github.com/STOCD/SETS.git .`
-
-Run the `install.sh` script by double-clicking it in your file manager or running `./install.sh` in your shell. If you cannot run the file, make sure it is executable using your file manager or the command `chmod +x install.sh`.
-
-To speed up the image download process on first start of the app, download the latest image archive from [releases](https://github.com/STOCD/SETS/releases). Create a `.config` folder and unpack the images archive into it. The images should be in `<app_root>/.config/images/`.
-
-Start the app by running the `run.sh` file by double-clicking it in your file manager or running `.run.sh` in your shell. If you cannot run the file, make sure it is executable using your file manager or the command `chmod +x run.sh`.
-
-
-### Script (Cross-Platform)
-*The commands below are for Windows and require a version of python 3 to be installed. If you want to install the app on Linux, use `python3` instead of `python`. A more comprehensive guide for installing the script version can be found on the [website](https://stobuilds.com/apps/sets/installation).*
-
-First, create a folder to house your app. Open a command prompt and navigate *inside* the created folder.
-
-Download the source code. This can be done using `git` or manual download:
-- Manual Download: On the GitHub page of [this repository](https://github.com/STOCD/SETS), click on the green `CODE` button and select "Download ZIP". Save the archive and unpack it so that the files and folders seen on the repository page are *directly* inside your app folder.
-- Git: run `git clone https://github.com/STOCD/SETS.git .`
-
-Install dependencies by running `python -m pip install .`.
-
-To speed up the image download process on first start of the app, download the latest image archive from [releases](https://github.com/STOCD/SETS/releases). Create a `.config` folder and unpack the images archive into it. The images should be in `<app_root>\.config\images\`.
 
 *Ubuntu* users might need to install the `libxcb-cursor0` package for this app to work: `sudo apt install libxcb-cursor0`
 
-To run the app, navigate to your apps folder. Then:
-- Windows: Use `python main.py` to start the app.
-- Linux: Use `python3 main.py` to start the app.
+On UNIX systems (or using a compatible shell), run the `install.sh` script by double-clicking it in your file manager or running `./install.sh` in your shell. If you cannot run the file, make sure it is executable using your file manager or the command `chmod +x install.sh`. After that, the app can be started by running `run.sh` either from your file explorer or shell. If you cannot run the file, make sure it is executable using your file manager or the command `chmod +x run.sh`.
 
-### Images library
-All installation methods require an images library containing the game icons. The app will download these automatically, but as this takes a very long time, it is recommended to download the newest compressed image library from the [release](https://github.com/STOCD/SETS/releases) page. Once downloaded this has to be decompressed and placed in into the `.config/images` folder. You might need to create a folder with the name `.config` manually. The folder structure should look like below:
-```
-SETS
- +- .config
- |  `- images
- |    `- <lots of images>
- +- SETS.exe / main.py
- +- ...
-```
+If you cannot use the installer script, continue by installing dependencies using `python -m pip install .`.
+
+To run the app, open a shell inside the app folder and run `python main.py --config-dir ./sets-config`.
+
 
 ## Updating the app
-### Executable for Windows
-Navigate to your SETS folder and delete all files and folders **except** the `.config` folder and the `.SETS_settings.ini` file. Download the newest version from the [release](https://github.com/STOCD/SETS/releases) page and unpack it into the SETS folder to replace the files and folders deleted before.
-
-### Script (Cross-Platform)
-When using Git, open a command line at the location of your SETS folder and type `git pull` to get the newest version of the app.
-
-Otherwise, navigate to your SETS folder and delete all files and folders **except** the `.config` folder and the `.SETS_settings.ini` file. Also keep your *virtual environment* folder in place if you used a virtual environment to install dependencies. Download the app into the same folder as detailed in the installation section above. Open a command line at the location of your SETS folder and update dependencies by running `python -m pip install .`.
+All versions of this app can be updated by following the installation steps detailed above. The existing installation will be replaced automatically, preserving settings and other configuration.
 
 ## Contributing
 If you find any information or images missing, please check or update the [official wiki](https://stowiki.net) -- where SETS gets this information. You can report wiki issues on the [Star Trek Online Community Discord Server](https://discord.gg/eApUvTRr5q) in the "#wiki-discussion" channel or on the [STOBuilds Discord Server](https://discord.gg/kxwHxbsqzF) in the "#wiki-update-talk" channel.
