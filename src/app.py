@@ -53,7 +53,7 @@ class SETS():
         self.app_dir: Path = Path(app_dir_path)
         self.app_dir2: Path = Path(app_dir_path)
         self.config: SETSConfig = SETSConfig()
-        self.config.config_dir = self.get_config_dir_path()
+        self.config.config_dir = self.get_config_dir_path(args.config_dir)
         self.settings = SETSSettings(self.config.config_dir / self.config.settings_file)
         self.init_config()
         QDir.addSearchPath('local_folder', self.app_dir / 'local')
