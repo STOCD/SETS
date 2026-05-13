@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SETS
+Comment=STO Equipment and Trait Selector
+Icon=/usr/share/icons/hicolor/256x256/apps/sets.png
+Exec=/opt/sets/SETS
+Terminal=False
+Categories=Utility;GameTool;
+StartupWMClass=STO Equipment and Trait Selector

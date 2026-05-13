@@ -1,0 +1,65 @@
+# Maintainer: Shinga <test@example.com>
+pkgname=sets
+pkgver=3.0.0
+pkgrel=1
+pkgdesc="SETS - STO Equipment and Trait Selector"
+arch=('x86_64')
+url="https://github.com/STOCD/SETS"
+license=('GPL-3.0')
+depends=('python')
+makedepends=('python' 'python-virtualenv' 'python-wheel' 'python-setuptools' 'git' 'unzip')
+source=("https://github.com/STOCD/SETS/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('')
+
+build() {
+  cd "$srcdir"
+
+  srcdir_name="${srcdir}/SETS-${pkgver#v}"
+  cd "$srcdir_name" || return 1
+
+  mkdir -p "$srcdir_name/build-venv"
+  python -m venv build-venv
+  source build-venv/bin/activate
+
+  # Upgrade pip then install exact packages used in CI
+  pip install --upgrade pip
+  pip install -e ".[pyinst]"
+
+  # Run pyinstaller from the venv
+  # ensure we run pyinstaller in project root and output to dist/
+  pyinstaller --name SETS --onedir main.py \
+              --add-data "local:local" \
+              --icon "local/SETS_icon_small.png" \
+              --windowed
+
+  deactivate
+}
+
+package() {
+  cd "$srcdir"
+
+  srcdir_name="SETS-${pkgver#v}"
+
+  install -d "${pkgdir}/opt/sets"
+  install -d "${pkgdir}/usr/bin"
+  install -d "${pkgdir}/usr/share/applications"
+  install -d "${pkgdir}/usr/share/icons/hicolor/256x256/apps"
+
+  cp -r "${srcdir}/${srcdir_name}/dist/SETS/_internal" "${pkgdir}/opt/sets/"
+  cp  "${srcdir}/${srcdir_name}/dist/SETS/SETS" "${pkgdir}/opt/sets/"
+
+  cat > "${pkgdir}/usr/bin/sets" <<'EOF'
+#!/bin/sh
+exec /opt/sets/SETS "$@"
+EOF
+
+  chmod 755 "${pkgdir}/usr/bin/sets"
+
+  # Install desktop file
+  cp "${srcdir}/${srcdir_name}/distribution/sets.desktop" "${pkgdir}/usr/share/applications/sets.desktop"
+
+  # Install an icon into the icon theme
+  if [ -f "${pkgdir}/opt/sets/_internal/local/SETS_icon_small.png" ]; then
+    install -Dm644 "${pkgdir}/opt/sets/_internal/assets/SETS_icon_small.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/sets.png"
+  fi
+}
