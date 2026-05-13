@@ -280,7 +280,7 @@ class ExportWindow(QDialog):
             equip_table += self.md_equipment_table('space', 'aft_weapons', 'Aft Weapons')
             equip_table += self.md_equipment_table(
                 'space', 'deflector', 'Deflector', single_line=True)
-            if self.build['space']['sec_def'][0]:
+            if self._build['space']['sec_def'][0]:
                 equip_table += self.md_equipment_table(
                     'space', 'sec_def', 'Secondary Deflector', single_line=True)
             equip_table += self.md_equipment_table(
@@ -288,7 +288,7 @@ class ExportWindow(QDialog):
             equip_table += self.md_equipment_table('space', 'core', 'Warp', single_line=True)
             equip_table += self.md_equipment_table('space', 'shield', 'Shield', single_line=True)
             equip_table += self.md_equipment_table('space', 'devices', 'Devices')
-            if self.build['space']['experimental'][0]:
+            if self._build['space']['experimental'][0]:
                 equip_table += self.md_equipment_table(
                         'space', 'experimental', 'Experimental Weapon', single_line=True)
             if self._build['space']['hangars'][0] or self._build['space']['hangars'][1]:
@@ -317,17 +317,17 @@ class ExportWindow(QDialog):
             md += self.create_md_table(trait_table)
             md += '\n\n&#x200B;\n\n'
             trait_table = [['**Personal Space Traits**', '**Notes**']]
-            for trait in notempty(self.build['space']['traits']):
+            for trait in notempty(self._build['space']['traits']):
                 trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
             md += self.create_md_table(trait_table)
             md += '\n\n&#x200B;\n\n'
             trait_table = [['**Space Reputation Traits**', '**Notes**']]
-            for trait in notempty(self.build['space']['rep_traits']):
+            for trait in notempty(self._build['space']['rep_traits']):
                 trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
             md += self.create_md_table(trait_table)
             md += '\n\n&#x200B;\n\n'
             trait_table = [['**Active Space Reputation Traits**', '**Notes**']]
-            for trait in notempty(self.build['space']['active_rep_traits']):
+            for trait in notempty(self._build['space']['active_rep_traits']):
                 trait_table.append([f"[{trait['item']}]({wiki_url(trait['item'], 'Trait: ')})", ''])
             md += self.create_md_table(trait_table)
 
@@ -426,7 +426,7 @@ class ExportWindow(QDialog):
                     else:
                         unlock_slot = self._cargo.skills['space_unlocks'][career][i]
                         if unlock_slot['points_required'] == 24:
-                            skill_count = self._cargo.skills[f"space_points_{career}"]
+                            skill_count = self._build._skill_state[f"space_points_{career}"]
                             link = wiki_url(unlock_slot['name'], 'Ability: ')
                             if unlock_state is None:
                                 row += ['', '', '', '&nbsp;']
@@ -467,11 +467,11 @@ class ExportWindow(QDialog):
             id_offset = 0
             for skill in self._cargo.skills['ground']:
                 row = [f"[{skill['nodes'][0]['name']}]({skill['link']})"]
-                if self.build['ground_skills'][skill['tree']][id_offset]:
+                if self._build['ground_skills'][skill['tree']][id_offset]:
                     row.append('[X]')
                 else:
                     row.append('[&nbsp;&nbsp;&nbsp;]')
-                if self.build['ground_skills'][skill['tree']][id_offset + 1]:
+                if self._build['ground_skills'][skill['tree']][id_offset + 1]:
                     row.append('[X]')
                 else:
                     row.append('[&nbsp;&nbsp;&nbsp;]')
