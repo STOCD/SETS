@@ -14,7 +14,7 @@ from .constants import WIKI_URL
 
 
 def browse_path(
-        preset_path: Path, types: str = 'Any File (*.*)', save: bool = False,
+        preset_path: Path, types: str = 'Any File (*.*)', save: bool = False, folder: bool = False,
         parent_window: QWidget | None = None) -> Path | None:
     """
     Opens file dialog prompting the user to select a file.
@@ -25,17 +25,23 @@ def browse_path(
     allowed. Format: `<name of file type> (*.<extension>);;<name of file type> (*.<extension>);; \
     [...]` Example: `Logfile (*.log);;Any File (*.*)`
     - :param save: False => open file with dialog; True => save file with dialog
+    - :param folder: True => tries to open folder instead of file
     - :param parent_window: window to use as parent; uses window icon and name of parent window
 
     :return: returns selected path; None if user aborts or tries to open not-existing file
     """
+    if folder:
+        f = QFileDialog.getExistingDirectory(parent_window, 'Open Folder', str(preset_path))
+        if f == '':
+            return None
+        return Path(f)
     if save:
-        f = QFileDialog.getSaveFileName(parent_window, 'Save Log', str(preset_path), types)[0]
+        f = QFileDialog.getSaveFileName(parent_window, 'Save File', str(preset_path), types)[0]
         if f == '':
             return None
         return Path(f)
     else:
-        f = QFileDialog.getOpenFileName(parent_window, 'Open Log', str(preset_path), types)[0]
+        f = QFileDialog.getOpenFileName(parent_window, 'Open File', str(preset_path), types)[0]
         if f == '':
             return None
         selected_path = Path(f)

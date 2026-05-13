@@ -4,7 +4,7 @@ from pathlib import Path
 from PySide6.QtCore import QDir, QPoint, Qt, QThread
 from PySide6.QtGui import QCloseEvent, QFontDatabase, QTextOption
 from PySide6.QtWidgets import (
-    QApplication, QFrame, QPlainTextEdit, QPushButton, QScrollArea, QTabWidget, QWidget)
+    QApplication, QFrame, QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QTabWidget, QWidget)
 
 from .buildhelpers import empty_build
 from .buildloader import BuildLoader
@@ -14,15 +14,15 @@ from .config import SETSConfig, SETSSettings
 from .constants import (
     ABOTTOM, AHCENTER, ALEFT, ARIGHT, ATOP, AVCENTER, CAREERS, FACTIONS, GROUND_BOFF_SPECS, MARKS,
     PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
-    SMINMIN)
+    SMINMIN, SMIXMAX)
 from .contextmenu import ContextMenu
 from .downloader import Downloader
 from .exportwindow import ExportWindow
 from .imagemanager import ImageManager
-from .iofunc import delete_folder_contents, load_icon, open_url, store_json
+from .iofunc import browse_path, delete_folder_contents, load_icon, open_url, store_json
 from .picker import ItemEditor, Picker, ShipSelector
 from .splash import SplashScreen
-from .textedit import format_skill_tooltip
+from .textedit import format_path, format_skill_tooltip
 from .theme import AppTheme
 from .widgetbuilder import (
     create_annotated_slider2, create_button2, create_button_series2, create_checkbox2,
@@ -158,6 +158,10 @@ class SETS():
         """
         self.config.autosave_path = self.config.config_dir / self.config.autosave_filename
         self.config.ui_scale = self.settings.ui_scale
+        if os.name == 'nt':
+            self.config.home_dir = Path(os.getenv('USERPROFILE'))
+        else:
+            self.config.home_dir = Path(os.getenv('HOME'))
 
     def init_environment(self):
         """
@@ -1381,6 +1385,30 @@ class SETS():
                 if window.type() == Qt.WindowType.ToolTip:
                     window.hide()
 
+    def set_library_path(self, entry_widget: QLineEdit):
+        """
+        Formats and stores new library path to `library_path`.
+
+        Parameters:
+        - :param entry_widget: the entry that holds the path
+        """
+        formatted_path = format_path(entry_widget.text())
+        self.settings.library_path = formatted_path
+        entry_widget.setText(formatted_path)
+
+    def browse_library_path(self, entry_widget: QLineEdit):
+        """
+        Browses for new library path, formats and stores new library path to `library_path`.
+
+        Parameters:
+        - :param entry_widget: the entry that holds the path
+        """
+        new_path = browse_path(self.config.home_dir, folder=True, parent_window=self.window)
+        if new_path is not None:
+            formatted_path = format_path(str(new_path))
+            self.settings.library_path = formatted_path
+            entry_widget.setText(formatted_path)
+
     def setup_settings_frame(self):
         """
         Populates the settings frame.
@@ -1454,6 +1482,17 @@ class SETS():
         backup_combo.currentIndexChanged.connect(
             lambda new_i: self.settings.set('pref_backup', new_i))
         sec_1.addWidget(backup_combo, 5, 2, alignment=ALEFT | AVCENTER)
+        library_path_label = create_label2(self.theme, 'Library Folder')
+        sec_1.addWidget(library_path_label, 6, 0, alignment=ALEFT)
+        library_path_entry = create_entry2(
+            self.theme, self.settings.library_path, style_override={'font': '@small_text'})
+        library_path_entry.setSizePolicy(SMIXMAX)
+        library_path_entry.editingFinished.connect(
+            lambda: self.set_library_path(library_path_entry))
+        sec_1.addWidget(library_path_entry, 6, 2)
+        library_path_button = create_button2(self.theme, 'Browse')
+        library_path_button.clicked.connect(lambda: self.browse_library_path(library_path_entry))
+        sec_1.addWidget(library_path_button, 6, 4)
         scroll_layout.addLayout(sec_1)
 
         # second section
