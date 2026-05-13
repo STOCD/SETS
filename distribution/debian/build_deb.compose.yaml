@@ -1,7 +1,16 @@
 name: sets_deb_build
 
 services:
+  deb_build_base:
+    image: deb_build_base
+    build:
+      context: ../..
+      dockerfile: distribution/debian/deb_build_base.Dockerfile
+
   sets_deb_build:
+    depends_on:
+      deb_build_base:
+        condition: service_completed_successfully
     image: setsdeb
     build:
       context: ../..
