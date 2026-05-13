@@ -22,6 +22,11 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+pyinst = [
+    "pyinstaller==6.19.0"
+]
+
 [project.urls]
 homepage = "https://stobuilds.com/apps/sets"
 repository = "https://github.com/STOCD/SETS"
@@ -34,14 +39,4 @@ sets = "main:Launcher.launch"
 
 [tool.hatch.version]
 path = "main.py"
-pattern = "\\s*version = '(?P<version>.*)'"
-
-[tool.cxfreeze]
-executables = [
-    { script = "main.py", base = "gui", icon = "local/icon", target_name = "SETS" }
-]
-
-[tool.cxfreeze.build_exe]
-include_files = ["local", "LICENSE", "README.md"]
-packages = ["PySide6", "requests", "numpy", "requests_html", "lxml_html_clean"]
-optimize = 2
+pattern = "\\s*__version__ = '(?P<version>.*)'"

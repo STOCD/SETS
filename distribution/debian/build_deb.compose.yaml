@@ -1,0 +1,22 @@
+name: sets_deb_build
+
+services:
+  sets_deb_build:
+    image: setsdeb
+    build:
+      context: ../..
+      dockerfile: distribution/debian/build_deb.Dockerfile
+    container_name: running_sets_deb_build
+    volumes:
+      - type: bind
+        source: ../../dist/
+        target: /mnt/
+        read_only: false
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd /build
+        distribution/build_pyinstaller.sh
+        distribution/debian/package_deb.sh
+        cp dist/sets.deb /mnt/sets.deb
