@@ -1,8 +1,10 @@
 from os import listdir as os__listdir
 from pathlib import Path
-from PySide6.QtGui import QIcon, QImage, QPixmap
 from time import time
 from urllib.parse import quote_plus, unquote_plus
+
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QIcon, QImage, QPixmap
 
 from .cargomanager import CargoManager
 from .constants import SEVEN_DAYS_IN_SECONDS
@@ -25,8 +27,10 @@ class Overlays():
         self.check: QImage
 
 
-class ImageManager():
+class ImageManager(QObject):
     """Manages icons and ship images"""
+
+    splash_text: Signal = Signal(str)
 
     def __init__(
             self, images_dir: Path, ship_images_dir: Path, app_dir: Path, cargo_cache: CargoManager,
@@ -39,6 +43,7 @@ class ImageManager():
         - :param cargo_cache: used to access cache
         - :param downloader: used to download icons and ship images
         """
+        super().__init__()
         self._images_dir: Path = images_dir
         self._ship_images_dir: Path = ship_images_dir
         self._app_dir: Path = app_dir
@@ -105,15 +110,18 @@ class ImageManager():
         ultimate_skill_icons = {'Focused Frenzy', 'Probability Manipulation', 'EPS Corruption'}
         image_set = self.image_set | ultimate_skill_icons
         images = image_set - available_images - self._cargo_cache.boff_abilities['all'].keys()
+        self.splash_text.emit('Downloading Equipment and Trait Images...')
         failed = self._downloader.download_image_list(list(images))
         self.failed_images.update(failed)
 
         boff_images = self._cargo_cache.boff_abilities['all'].keys() - available_images
+        self.splash_text.emit('Downloading Bridge Officer Images...')
         failed = self._downloader.download_image_list(
             list(boff_images), image_suffix='_icon_(Federation).png')
         self.failed_images.update(failed)
 
         skill_images = self.get_skill_icons(skill_cache) - available_images
+        self.splash_text.emit('Downloading Skill Images...')
         failed = self._downloader.download_image_list(list(skill_images), image_suffix='.png')
         self.failed_images.update(failed)
 
