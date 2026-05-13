@@ -2,14 +2,14 @@ from collections import namedtuple
 from pathlib import Path
 from typing import Callable
 
-from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt, QThread, Signal, Slot
+from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt, QThread, Signal, Slot
 from PySide6.QtGui import (
     QBrush, QColor, QCursor, QEnterEvent, QImage, QMouseEvent, QPainter, QPaintEvent, QPen)
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
-    QSizePolicy, QTabWidget, QVBoxLayout, QWidget)
+    QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QSizePolicy, QTabWidget, QVBoxLayout,
+    QWidget)
 
-from .constants import AHCENTER, ATOP, EQUIPMENT_TYPES, SMINMIN
+from .constants import AHCENTER, ATOP, SMINMIN
 
 CHAR_TAB_MAP = {
     0: 0,
@@ -43,218 +43,6 @@ class Tabbers():
         self.build_tabber.setCurrentIndex(index)
         self.sidebar_tabber.setCurrentIndex(index)
         self.character_tabber.setCurrentIndex(CHAR_TAB_MAP[index])
-
-
-class WidgetStorage():
-    """
-    Stores Widgets
-    """
-    def __init__(self):
-        self.splash_tabber: QTabWidget
-        self.loading_label: QLabel
-
-        self.build_tabber: QTabWidget
-        self.build_frames: list[QFrame] = list()
-        self.sidebar: QFrame
-        self.sidebar_tabber: QTabWidget
-        self.sidebar_frames: list[QFrame] = list()
-        self.ship: dict = {
-            'image': ShipImage,
-            'button': ShipButton,
-            'tier': QComboBox,
-            'dc': TooltipLabel,
-            'name': QLineEdit,
-            'desc': QPlainTextEdit
-        }
-        self.character_tabber: QTabWidget
-        self.character_frames: list[QFrame] = list()
-
-        self.character: dict = {
-            'name': QLineEdit,
-            'elite': QCheckBox,
-            'career': QComboBox,
-            'faction': QComboBox,
-            'species': QComboBox,
-            'primary': QComboBox,
-            'secondary': QComboBox,
-        }
-        self.ground_desc: QPlainTextEdit
-
-        self.skill_bonus_bars = {
-            'eng': [None] * 24,
-            'sci': [None] * 24,
-            'tac': [None] * 24,
-            'ground': [None] * 10,
-        }
-        self.skill_count_ground: QLabel
-        self.skill_counts_space: dict = {
-            'eng': None,
-            'sci': None,
-            'tac': None
-        }
-
-        self.build: dict = {
-            'space': {
-                'active_rep_traits': [None] * 5,
-                'aft_weapons': [None] * 5,
-                'aft_weapons_label': None,
-                'boffs': [[None] * 4, [None] * 4, [None] * 4, [None] * 4, [None] * 4, [None] * 4],
-                'boff_labels': [None] * 6,
-                'boff_label_icons': [None] * 6,
-                # 'boff_specs': [None] * 6,
-                'core': [''],
-                'deflector': [''],
-                'devices': [None] * 6,
-                'doffs_spec': [''] * 6,
-                'doffs_variant': [''] * 6,
-                'eng_consoles': [None] * 5,
-                'eng_consoles_label': None,
-                'engines': [''],
-                'experimental': [None],
-                'experimental_label': None,
-                'fore_weapons': [None] * 5,
-                'hangars': [None] * 2,
-                'hangars_label': None,
-                'rep_traits': [None] * 5,
-                'sci_consoles': [None] * 5,
-                'sci_consoles_label': None,
-                'sec_def': [None],
-                'sec_def_label': None,
-                'shield': [''],
-                # 'ship': '',
-                # 'ship_desc': '',
-                # 'ship_name': '',
-                'starship_traits': [None] * 7,
-                'tac_consoles': [None] * 5,
-                'tac_consoles_label': None,
-                # 'tier': '',
-                'traits': [None] * 12,
-                'uni_consoles': [None] * 3,
-                'uni_consoles_label': None
-            },
-            'ground': {
-                'active_rep_traits': [None] * 5,
-                'armor': [''],
-                'boffs': [[''] * 4, [''] * 4, [''] * 4, [''] * 4],
-                'boff_profs': [''] * 4,
-                'boff_specs': [''] * 4,
-                'ground_devices': [None] * 5,
-                'doffs_spec': [''] * 6,
-                'doffs_variant': [''] * 6,
-                'ev_suit': [''],
-                'kit': [''],
-                'kit_modules': [None] * 6,
-                'rep_traits': [None] * 5,
-                'personal_shield': [''],
-                'traits': [None] * 12,
-                'weapons': [''] * 2,
-            },
-            'space_skills': {
-                'eng': [None] * 30,
-                'sci': [None] * 30,
-                'tac': [None] * 30
-            },
-            'ground_skills': [
-                [False] * 6,
-                [False] * 6,
-                [False] * 4,
-                [False] * 4,
-            ],
-            'skill_unlocks': {
-                'eng': [None] * 5,
-                'sci': [None] * 5,
-                'tac': [None] * 5,
-                'ground': [None] * 5
-            },
-            'skill_desc': {
-                'space': None,
-                'ground': None
-            }
-        }
-
-
-class Cache():
-    """
-    Stores data
-    """
-    def __init__(self):
-        self.reset_cache()
-
-    def reset_cache(self, keep_static_data: bool = False):
-        self.ships: dict = dict()
-        self.equipment: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
-        self.starship_traits: dict = dict()
-        self.traits: dict = {
-            'space': {
-                'traits': dict(),
-                'rep_traits': dict(),
-                'active_rep_traits': dict()
-            },
-            'ground': {
-                'traits': dict(),
-                'rep_traits': dict(),
-                'active_rep_traits': dict()
-            }
-        }
-        self.ground_doffs: dict = dict()
-        self.space_doffs: dict = dict()
-        self.boff_abilities: dict = {
-            'space': self.boff_dict(),
-            'ground': self.boff_dict(),
-            'all': dict()
-        }
-
-        if not keep_static_data:
-            self.item_aliases: dict = dict()
-            self.skills = {
-                'space': dict(),
-                'space_unlocks': dict(),
-                'ground': dict(),
-                'ground_unlocks': dict(),
-                'space_points_total': 0,
-                'space_points_eng': 0,
-                'space_points_sci': 0,
-                'space_points_tac': 0,
-                'space_points_rank': [0] * 5,
-                'ground_points_total': 0,
-            }
-
-        self.modifiers: dict = {type_: dict() for type_ in set(EQUIPMENT_TYPES.values())}
-
-        self.empty_image: QImage
-        self.overlays: OverlayCache = OverlayCache()
-        self.icons: dict = dict()
-        self.images: dict = dict()
-        self.alt_images: dict = dict()
-        self.images_set: set = set()
-        self.images_populated: bool = False
-        self.images_failed: dict = dict()
-
-    def boff_dict(self):
-        return {
-            'Tactical': [list(), list(), list(), list()],
-            'Engineering': [list(), list(), list(), list()],
-            'Science': [list(), list(), list(), list()],
-            'Intelligence': [list(), list(), list(), list()],
-            'Command': [list(), list(), list(), list()],
-            'Pilot': [list(), list(), list(), list()],
-            'Temporal': [list(), list(), list(), list()],
-            'Miracle Worker': [list(), list(), list(), list()],
-        }
-
-    def __getitem__(self, key: str):
-        return getattr(self, key)
-
-
-class OverlayCache():
-    def __init__(self):
-        self.common: QImage
-        self.uncommon: QImage
-        self.rare: QImage
-        self.veryrare: QImage
-        self.ultrarare: QImage
-        self.epic: QImage
-        self.check: QImage
 
 
 class ImageLabel(QWidget):
@@ -534,79 +322,6 @@ class Thread(QThread):
         self.done.emit()
 
 
-class PySideThread(QThread):
-    def __init__(self, parent, finished_func, worker):
-        self.finished_func = finished_func
-        self.worker = worker
-        super().__init__(parent)
-
-    def worker_finished(self):
-        if self.finished_func is not None:
-            self.finished_func()
-        self.quit()
-
-
-class ThreadObject(QObject):
-
-    start = Signal(tuple)
-    result = Signal(object)
-    update_splash = Signal(str)
-    finished = Signal()
-
-    def __init__(self, func, *args, **kwargs) -> None:
-        self._func = func
-        self._args = args
-        self._kwargs = kwargs
-        super().__init__()
-
-    @Slot()
-    def run(self, start_args=tuple()):
-        self._func(*self._args, *start_args, threaded_worker=self, **self._kwargs)
-        self.finished.emit()
-
-
-def exec_in_thread(
-        self, func, *args, result=None, update_splash=None, finished=None, start_later=False,
-        **kwargs):
-    """
-    Executes function `func` in separate thread. All positional and keyword parameters not listed
-    are passed to the function. The function must take a parameter `threaded_worker` which will
-    contain the worker object holding the signals: `start` (tuple), `result` (object),
-    `update_splash` (str), `finished` (no data)
-
-    Parameters:
-    - :param func: function to execute
-    - :param *args: positional parameters passed to the function [optional]
-    - :param result: callable that is executed when signal result is emitted (takes object)
-    [optional]
-    - :param update_splash: callable that is executed when signal update_splash is emitted
-    (takes str) [optional]
-    - :param finished: callable that is executed after `func` returns (takes no parameters)
-    [optional]
-    - :param start_later: set to True to defer execution of the function; makes this function
-    return signal that can be emitted to start execution. That signal takes a tuple with additional
-    positional parameters passed to `func` [optional]
-    - :param **kwargs: keyword parameters passed to the function [optional]
-    """
-    worker = ThreadObject(func, *args, **kwargs)
-    thread = PySideThread(self.app, finished, worker)
-    if result is not None:
-        worker.result.connect(result)
-    if update_splash is not None:
-        worker.update_splash.connect(update_splash)
-    worker.moveToThread(thread)
-    if start_later:
-        worker.start.connect(worker.run)
-    else:
-        thread.started.connect(worker.run)
-    worker.finished.connect(thread.worker_finished)
-    thread.finished.connect(worker.deleteLater)
-    thread.finished.connect(thread.deleteLater)
-    thread.start(QThread.Priority.LowestPriority)
-    if start_later:
-        return worker.start
-
-
 class ShipButton(QLabel):
     """
     Button with word wrap
@@ -627,8 +342,6 @@ class ShipButton(QLabel):
         else:
             super().mousePressEvent(ev)
 
-
-TagStyles = namedtuple('TagStyles', ('ul', 'li', 'indent'))
 
 ItemSlot = namedtuple('ItemSlot', ('environment', 'type', 'index', 'boff_id', 'is_equipment'))
 

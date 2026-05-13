@@ -4,46 +4,6 @@ from .constants import CAREER_ABBR, RARITY_COLORS, SKILL_PREFIXES, WIKI_URL
 from .theme import TooltipCSS
 
 
-def get_tooltip(self, name: str, type_: str, environment: str = 'space') -> str:
-    """
-    Returns tooltip for trait.
-
-    Parameters:
-    - :param name: name of the trait
-    - :param type_: type of the trait ("rep_traits", "traits", "starship_traits", ...)
-    - :param environment: "space" / "ground"
-    """
-    if type_ == 'starship_traits':
-        return self.cache.starship_traits[name]['tooltip']
-    else:
-        return self.cache.traits[environment][type_][name]['tooltip']
-
-
-def add_equipment_tooltip_header(self, item: dict, tooltip_body: str, item_type: str) -> str:
-    """
-    Adds equipment header including name, mark, modifiers, rarity and item type to the tooltip body
-    and returns the complete tooltip.
-
-    Parameters:
-    - :param item: item to create the tooltip for
-    - :param tooltip_body: already created tooltip body
-    - :param item_type: type of the item to add to the subtitle
-    """
-    rarity_color = f'color:{RARITY_COLORS[item['rarity']]};'
-    head_style = self.theme['tooltip']['equipment_name'] + rarity_color
-    subhead_style = self.theme['tooltip']['equipment_type_subheader'] + rarity_color
-    item_title = item['item']
-    if item['mark'] != '' and item['mark'] is not None:
-        item_title += ' ' + item['mark']
-    mods = ' '.join(mod for mod in item['modifiers'] if mod != '' and mod is not None)
-    if mods != '':
-        item_title += ' ' + mods
-    tooltip = (
-            f"<p style='{head_style}'>{item_title}</p><p style='{subhead_style}'>"
-            f"{item['rarity']} {self.cache.equipment[item_type][item['item']]['type']}</p>")
-    return tooltip + tooltip_body
-
-
 def add_equipment_tooltip_header__new(
         item: dict[str, str], item_data: dict[str], tooltip_styles: TooltipCSS) -> str:
     """
@@ -109,39 +69,6 @@ def format_skill_tooltip(
             f"<p>{skill_data['gdesc']}</p><p>{skill_data['nodes'][node_index]['desc']}</p>")
 
 
-def get_skill_unlock_tooltip_ground(self, unlock_id: int, unlock_choice: int):
-    """
-    gets tooltip for ground unlock from cache and formats it
-
-    Parameters:
-    - :param unlock_id: id of the unlock, counted from the unlock with the lowest requirement
-    - :param unlock_choice: `0` (first choice; "down") or `1` (second choice; "up")
-    """
-    unlock = self.cache.skills['ground_unlocks'][unlock_id]['nodes'][unlock_choice]
-    head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
-    subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
-    return (
-            f"<p style='{head_style}'>{unlock['name']}</p><p style='{subhead_style}'>"
-            f"Ground Skill</p><p>{unlock['desc']}</p>")
-
-
-def get_skill_unlock_tooltip_space(self, career: str, unlock_id: int, unlock_choice: int):
-    """
-    gets tooltip for space unlock from cache and formats it
-
-    Parameters:
-    - :param career: "eng" / "sci" / "tac"
-    - :param unlock_id: id of the unlock, counted from the unlock with the lowest requirement
-    - :param unlock_choice: `0` (first choice; "down") or `1` (second choice; "up")
-    """
-    unlock = self.cache.skills['space_unlocks'][career][unlock_id]['nodes'][unlock_choice]
-    head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
-    subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
-    return (
-            f"<p style='{head_style}'>{unlock['name']}</p><p style='{subhead_style}'>"
-            f"Space Skill</p><p>{unlock['desc']}</p>")
-
-
 def get_ultimate_skill_unlock_tooltip__new(
         unlock: dict[str], unlock_choice: int, enhancements: int, tooltip_styles: TooltipCSS):
     """
@@ -178,74 +105,6 @@ def get_ultimate_skill_unlock_tooltip__new(
     return tooltip
 
 
-def get_ultimate_skill_unlock_tooltip(self, career: str, unlock_choice: int, enhancements: int):
-    """
-    gets tooltip for space unlock from cache and formats it
-
-    Parameters:
-    - :param unlock_id: id of the unlock, counted from the unlock with the lowest requirement
-    - :param unlock_choice: `0` (first choice; "down") or `1` (second choice; "up")
-    """
-    unlock = self.cache.skills['space_unlocks'][career][4]
-    head_style = f"{self.theme['tooltip']['equipment_name']}color:#ffd700;"
-    subhead_style = f"{self.theme['tooltip']['equipment_type_subheader']}color:#ffd700;"
-    enhancement_style = self.theme['tooltip']['skill_ultimate_name']
-    tooltip = (
-            f"<p style='{head_style}'>{unlock['name']}</p><p style='{subhead_style}'>"
-            f"Space Skill</p><p>{unlock['desc']}</p>")
-    if enhancements == 1:
-        tooltip += (
-                f"<p style='{enhancement_style}'>{unlock['options'][unlock_choice]['name']}</p>"
-                f"<p>{unlock['options'][unlock_choice]['desc']}</p>")
-    elif enhancements == 2:
-        e1 = (unlock_choice - 1) % 3
-        e2 = (unlock_choice + 1) % 3
-        tooltip += (
-                f"<p style='{enhancement_style}'>{unlock['options'][e1]['name']}</p>"
-                f"<p>{unlock['options'][e1]['desc']}</p>"
-                f"<p style='{enhancement_style}'>{unlock['options'][e2]['name']}</p>"
-                f"<p>{unlock['options'][e2]['desc']}</p>")
-    elif enhancements != 0:
-        for i in range(3):
-            tooltip += (
-                    f"<p style='{enhancement_style}'>{unlock['options'][i]['name']}</p>"
-                    f"<p>{unlock['options'][i]['desc']}</p>")
-    return tooltip
-
-# --------------------------------------------------------------------------------------------------
-# static functions
-# --------------------------------------------------------------------------------------------------
-
-
-def create_equipment_tooltip(
-        item: dict, head_style: str, subhead_style: str, who_style: str, tags) -> str:
-    """
-    Creates tooltip for equipment from raw item data.
-
-    Parameters:
-    - :param item: item data (from cargo table)
-    - :param head_style: css style for head
-    - :param subhead_style: css style for subhead
-    - :param who_style: css style for ship/career/... restriction information
-    - :param tags: css styles for the wikitext parser
-    """
-    tooltip = ''
-    if item['who'] is not None:
-        tooltip += f"<p style='{who_style}'>{item['who']}</p>"
-    for i in range(1, 10, 1):
-        if item[f'head{i}'] is not None:
-            tooltip += f"<p style='{head_style}'>{format_wikitext(dewikify(item[f'head{i}']))}</p>"
-        if item[f'subhead{i}'] is not None:
-            tooltip += (
-                    f"<p style='{subhead_style}'>"
-                    f"{format_wikitext(dewikify(item[f'subhead{i}']))}</p>")
-        if item[f'text{i}'] is not None:
-            tooltip += (
-                    f"<p style='margin:0'>"
-                    f"{parse_wikitext(dewikify(item[f'text{i}']), tags)}</p>")
-    return tooltip
-
-
 def create_equipment_tooltip__new(item: dict, tooltip_style: TooltipCSS) -> str:
     """
     Creates tooltip for equipment from raw item data.
@@ -270,41 +129,6 @@ def create_equipment_tooltip__new(item: dict, tooltip_style: TooltipCSS) -> str:
             tooltip += (
                 f"<p style='margin:0'>"
                 f"{parse_wikitext(dewikify(item[f'text{i}']), tooltip_style)}</p>")
-    return tooltip
-
-
-def create_trait_tooltip(
-        name: str, description: str, type_: str, environment: str, head_style: str,
-        subhead_style: str, tags) -> str:
-    """
-    Creates tooltip for trait from trait description.
-
-    Parameters:
-    - :param name: name of the trait
-    - :param description: description of the trait
-    - :param type_: type of the trait; one of "traits", "rep_traits", "active_rep_traits"
-    - :param environment: "space" / "ground"
-    - :param head_style: css style for head
-    - :param subhead_style: css style for subhead
-    - :param tags: css styles for the wikitext parser
-    """
-    if type_ == 'traits':
-        tooltip = (
-                f"<p style='{head_style}'>{name}</p><p style='{subhead_style}'>"
-                f"Personal {environment.capitalize()} Trait</p><p>"
-                f"{parse_wikitext(dewikify(description), tags)}</p>")
-    elif type_ == 'rep_traits':
-        tooltip = (
-                f"<p style='{head_style}'>{name}</p><p style='{subhead_style}'>"
-                f"{environment.capitalize()} Reputation Trait</p><p>"
-                f"{parse_wikitext(dewikify(description), tags)}</p>")
-    elif type_ == 'active_rep_traits':
-        tooltip = (
-                f"<p style='{head_style}'>{name}</p><p style='{subhead_style}'>"
-                f"Active {environment.capitalize()} Reputation Trait</p><p style='margin:0'>"
-                f"{parse_wikitext(dewikify(description), tags)}</p>")
-    else:
-        tooltip = ''
     return tooltip
 
 
