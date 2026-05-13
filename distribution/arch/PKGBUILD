@@ -60,6 +60,6 @@ EOF
 
   # Install an icon into the icon theme
   if [ -f "${pkgdir}/opt/sets/_internal/local/SETS_icon_small.png" ]; then
-    install -Dm644 "${pkgdir}/opt/sets/_internal/assets/SETS_icon_small.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/sets.png"
+    install -Dm644 "${pkgdir}/opt/sets/_internal/local/SETS_icon_small.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/sets.png"
   fi
 }
