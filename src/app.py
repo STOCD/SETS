@@ -57,20 +57,20 @@ class SETS():
         self.settings = SETSSettings(self.config.config_dir / self.config.settings_file)
         self.init_config()
         QDir.addSearchPath('local_folder', self.app_dir / 'local')
-        self.theme2: AppTheme = AppTheme(self.config.ui_scale)
+        self.theme: AppTheme = AppTheme(self.config.ui_scale)
         self.init_environment()
         self.downloader = Downloader(
             self.config.config_subfolders['images'],
             self.config.config_subfolders['ship_images'])
         self.cargo: CargoManager = CargoManager(
             self.config.config_subfolders, self.app_dir2, self.downloader, self.settings,
-            self.theme2)
+            self.theme)
         self.images: ImageManager = ImageManager(
             Path(self.config.config_subfolders['images']),
             Path(self.config.config_subfolders['ship_images']),
             self.app_dir2, self.cargo, self.downloader)
         self.build2: BuildManager = BuildManager(
-            self.cargo, self.images, self.config.autosave_path, self.theme2.tooltips)
+            self.cargo, self.images, self.config.autosave_path, self.theme.tooltips)
         self.splash: SplashScreen = SplashScreen()
         self.tabbers: Tabbers = Tabbers()
         self.app, self.window = self.create_main_window()
@@ -78,14 +78,14 @@ class SETS():
         self.cargo.load_static_data()
         self.build_loader: BuildLoader = BuildLoader(
             self.build2, self.cargo, self.config, self.settings, self.window)
-        self.export_window = ExportWindow(self.theme2, self.window, self.build2, self.cargo)
-        self.picker_window: Picker = Picker(self.theme2, self.window, self.settings, self.images)
+        self.export_window = ExportWindow(self.theme, self.window, self.build2, self.cargo)
+        self.picker_window: Picker = Picker(self.theme, self.window, self.settings, self.images)
         self.picker_window.dialog_result.connect(self.build2.handle_picker_result)
-        self.edit_window: ItemEditor = ItemEditor(self.theme2, self.window)
+        self.edit_window: ItemEditor = ItemEditor(self.theme, self.window)
         self.edit_window.dialog_result.connect(self.build2.finish_item_edit)
-        self.ship_selector_window: ShipSelector = ShipSelector(self.theme2, self.window)
+        self.ship_selector_window: ShipSelector = ShipSelector(self.theme, self.window)
         self.ship_selector_window.dialog_result.connect(self.build2.finish_ship_pick)
-        self.context_menu: ContextMenu = ContextMenu(self.theme2, self.build2, self.cargo)
+        self.context_menu: ContextMenu = ContextMenu(self.theme, self.build2, self.cargo)
         self.context_menu.edit_slot.connect(self.edit_window.edit_item)
         self.setup_main_layout()
         self.window.show()
@@ -200,22 +200,22 @@ class SETS():
         """
         Loads static icons.
         """
-        self.theme2.icons['copy'] = load_icon('copy.png', self.app_dir2)
-        self.theme2.icons['paste'] = load_icon('paste.png', self.app_dir2)
-        self.theme2.icons['clear'] = load_icon('clear.png', self.app_dir2)
-        self.theme2.icons['edit'] = load_icon('edit.png', self.app_dir2)
-        self.theme2.icons['link'] = load_icon('external_link.png', self.app_dir2)
-        self.theme2.icons['dual_cannons'] = load_icon('DC_icon.svg', self.app_dir2, size=(16, 24.5))
-        icon_size = (self.theme2.opt.box_width * 1.2, self.theme2.opt.box_width * 1.2)
-        self.theme2.icons['ground'] = load_icon('ground_icon.png', self.app_dir2, icon_size)
-        icon_size = (self.theme2.opt.box_width, self.theme2.opt.box_width)
-        self.theme2.icons['tac'] = load_icon('tac_icon.png', self.app_dir2, icon_size)
-        self.theme2.icons['sci'] = load_icon('sci_icon.png', self.app_dir2, icon_size)
-        self.theme2.icons['eng'] = load_icon('eng_icon.png', self.app_dir2, icon_size)
-        self.theme2.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir2, size=(25, 25))
-        self.theme2.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
-        icon_size = (self.theme2.opt.box_height, self.theme2.opt.box_width * 182 / 106)
-        self.theme2.icons['STOCD'] = load_icon('stocd.png', self.app_dir2, icon_size)
+        self.theme.icons['copy'] = load_icon('copy.png', self.app_dir2)
+        self.theme.icons['paste'] = load_icon('paste.png', self.app_dir2)
+        self.theme.icons['clear'] = load_icon('clear.png', self.app_dir2)
+        self.theme.icons['edit'] = load_icon('edit.png', self.app_dir2)
+        self.theme.icons['link'] = load_icon('external_link.png', self.app_dir2)
+        self.theme.icons['dual_cannons'] = load_icon('DC_icon.svg', self.app_dir2, size=(16, 24.5))
+        icon_size = (self.theme.opt.box_width * 1.2, self.theme.opt.box_width * 1.2)
+        self.theme.icons['ground'] = load_icon('ground_icon.png', self.app_dir2, icon_size)
+        icon_size = (self.theme.opt.box_width, self.theme.opt.box_width)
+        self.theme.icons['tac'] = load_icon('tac_icon.png', self.app_dir2, icon_size)
+        self.theme.icons['sci'] = load_icon('sci_icon.png', self.app_dir2, icon_size)
+        self.theme.icons['eng'] = load_icon('eng_icon.png', self.app_dir2, icon_size)
+        self.theme.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir2, size=(25, 25))
+        self.theme.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
+        icon_size = (self.theme.opt.box_height, self.theme.opt.box_width * 182 / 106)
+        self.theme.icons['STOCD'] = load_icon('stocd.png', self.app_dir2, icon_size)
 
     def main_window_close_callback(self, event: QCloseEvent):
         """
@@ -242,7 +242,7 @@ class SETS():
         font_database.addApplicationFont(
             str(self.app_dir2 / 'local' / 'Overpass-VariableFont_wght.ttf'))
         font_database.addApplicationFont(str(self.app_dir2 / 'local' / 'RobotoMono-Regular.ttf'))
-        app.setStyleSheet(self.theme2.create_style_sheet(self.theme2['app']['style']))
+        app.setStyleSheet(self.theme.create_style_sheet(self.theme['app']['style']))
         window = QWidget()
         window.setWindowIcon(load_icon('SETS_icon_small.png', self.app_dir2))
         window.setWindowTitle('STO Equipment and Trait Selector')
@@ -328,24 +328,24 @@ class SETS():
         # master layout: banner, borders and splash screen
         layout = VBoxLayout()
         background_frame = create_frame2(
-            self.theme2, style_override={'background-color': '@sets'}, size_policy=SMINMIN)
+            self.theme, style_override={'background-color': '@sets'}, size_policy=SMINMIN)
         layout.addWidget(background_frame)
         self.window.setLayout(layout)
         main_layout = VBoxLayout()
         banner = ImageLabel(self.app_dir / 'local' / 'sets_banner.png', (2880, 126))
         main_layout.addWidget(banner)
-        frame_width = 8 * self.theme2.scale
+        frame_width = 8 * self.theme.scale
         tabber_layout = VBoxLayout(margins=frame_width)
         splash_tabber = QTabWidget()
-        splash_tabber.setStyleSheet(self.theme2.get_style_class('QTabWidget', 'tabber'))
-        splash_tabber.tabBar().setStyleSheet(self.theme2.get_style_class('QTabBar', 'tabber_tab'))
+        splash_tabber.setStyleSheet(self.theme.get_style_class('QTabWidget', 'tabber'))
+        splash_tabber.tabBar().setStyleSheet(self.theme.get_style_class('QTabBar', 'tabber_tab'))
         splash_tabber.setSizePolicy(SMINMIN)
         self.splash.tabber = splash_tabber
         tabber_layout.addWidget(splash_tabber)
         main_layout.addLayout(tabber_layout)
         background_frame.setLayout(main_layout)
-        content_frame = create_frame2(self.theme2)
-        splash_frame = create_frame2(self.theme2)
+        content_frame = create_frame2(self.theme)
+        splash_frame = create_frame2(self.theme)
         splash_tabber.addTab(content_frame, 'Main')
         splash_tabber.addTab(splash_frame, 'Splash')
         self.setup_splash(splash_frame)
@@ -354,7 +354,7 @@ class SETS():
         content_layout.setColumnStretch(0, 1)
         content_layout.setColumnStretch(1, 4)
 
-        margin = 3 * self.theme2.scale
+        margin = 3 * self.theme.scale
         menu_layout = GridLayout(margins=(margin, margin, margin, 0))
         menu_layout.setColumnStretch(0, 2)
         menu_layout.setColumnStretch(1, 5)
@@ -367,7 +367,7 @@ class SETS():
             'Clear All Tabs': {'callback': self.build2.clear_all}
         }
         menu_layout.addLayout(
-            create_button_series2(self.theme2, left_button_group), 0, 0, alignment=ALEFT | ATOP)
+            create_button_series2(self.theme, left_button_group), 0, 0, alignment=ALEFT | ATOP)
         center_button_group = {
             'default': {'font': ('Overpass', 16, 'medium')},
             'SPACE': {'callback': lambda: self.tabbers.switch(0), 'stretch': 1, 'size': SMINMAX},
@@ -383,65 +383,65 @@ class SETS():
                 'size': SMINMAX
             }
         }
-        center_buttons = create_button_series2(self.theme2, center_button_group, 'heavy_button')
+        center_buttons = create_button_series2(self.theme, center_button_group, 'heavy_button')
         menu_layout.addLayout(center_buttons, 0, 1)
         right_button_group = {
             'Export': {'callback': self.export_window.invoke},
             'Settings': {'callback': lambda: self.tabbers.switch(5)},
         }
         menu_layout.addLayout(
-            create_button_series2(self.theme2, right_button_group), 0, 2, alignment=ARIGHT | ATOP)
+            create_button_series2(self.theme, right_button_group), 0, 2, alignment=ARIGHT | ATOP)
         content_layout.addLayout(menu_layout, 0, 0, 1, 2)
 
         # sidebar
-        sidebar = create_frame2(self.theme2, size_policy=SMINMIN)
+        sidebar = create_frame2(self.theme, size_policy=SMINMIN)
         sidebar_layout = GridLayout()
 
         sidebar_tabber = QTabWidget()
-        sidebar_tabber.setStyleSheet(self.theme2.get_style_class('QTabWidget', 'tabber'))
-        sidebar_tabber.tabBar().setStyleSheet(self.theme2.get_style_class('QTabBar', 'tabber_tab'))
+        sidebar_tabber.setStyleSheet(self.theme.get_style_class('QTabWidget', 'tabber'))
+        sidebar_tabber.tabBar().setStyleSheet(self.theme.get_style_class('QTabBar', 'tabber_tab'))
         sidebar_tabber.setSizePolicy(SMINMIN)
         self.tabbers.sidebar_tabber = sidebar_tabber
         for tab_name in ('space', 'ground', 'space_skills', 'ground_skills', 'empty', 'settings'):
-            tab_frame = create_frame2(self.theme2)
+            tab_frame = create_frame2(self.theme)
             sidebar_tabber.addTab(tab_frame, tab_name)
             self.tabbers.sidebar_frames.append(tab_frame)
         self.setup_ship_frame()
         sidebar_layout.addWidget(sidebar_tabber, 0, 0)
 
         character_tabber = QTabWidget()
-        character_tabber.setStyleSheet(self.theme2.get_style_class('QTabWidget', 'tabber'))
+        character_tabber.setStyleSheet(self.theme.get_style_class('QTabWidget', 'tabber'))
         character_tabber.tabBar().setStyleSheet(
-            self.theme2.get_style_class('QTabBar', 'tabber_tab'))
+            self.theme.get_style_class('QTabBar', 'tabber_tab'))
         character_tabber.setSizePolicy(SMINMAX)
         self.tabbers.character_tabber = character_tabber
-        char_frame = create_frame2(self.theme2)
+        char_frame = create_frame2(self.theme)
         self.setup_character_frame(char_frame)
         character_tabber.addTab(char_frame, 'char')
-        empty_frame = create_frame2(self.theme2)
+        empty_frame = create_frame2(self.theme)
         character_tabber.addTab(empty_frame, 'empty')
-        settings_frame = create_frame2(self.theme2)
+        settings_frame = create_frame2(self.theme)
         character_tabber.addTab(settings_frame, 'settings')
         self.tabbers.character_frames = [char_frame, empty_frame, settings_frame]
         sidebar_layout.addWidget(character_tabber, 1, 0)
 
-        seperator = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        seperator = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@sets', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        seperator.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         sidebar_layout.addWidget(seperator, 0, 1, 2, 1)
         sidebar.setLayout(sidebar_layout)
         content_layout.addWidget(sidebar, 1, 0)
 
         # build section
         build_tabber = QTabWidget()
-        build_tabber.setStyleSheet(self.theme2.get_style_class('QTabWidget', 'tabber'))
-        build_tabber.tabBar().setStyleSheet(self.theme2.get_style_class('QTabBar', 'tabber_tab'))
+        build_tabber.setStyleSheet(self.theme.get_style_class('QTabWidget', 'tabber'))
+        build_tabber.tabBar().setStyleSheet(self.theme.get_style_class('QTabBar', 'tabber_tab'))
         build_tabber.setSizePolicy(SMINMIN)
         self.tabbers.build_tabber = build_tabber
         build_tab_names = (
             'space_build', 'ground_build', 'space_skills', 'ground_skills', 'library', 'settings')
         for tab_name in build_tab_names:
-            tab_frame = create_frame2(self.theme2)
+            tab_frame = create_frame2(self.theme)
             build_tabber.addTab(tab_frame, tab_name)
             self.tabbers.build_frames.append(tab_frame)
         content_layout.addWidget(build_tabber, 1, 1)
@@ -459,10 +459,10 @@ class SETS():
         Creates ship info frame
         """
         frame = self.tabbers.sidebar_frames[0]
-        csp = self.theme2['defaults']['csp'] * self.theme2.scale
+        csp = self.theme['defaults']['csp'] * self.theme.scale
         layout = VBoxLayout(margins=csp, spacing=csp)
 
-        image_frame = create_frame2(self.theme2, size_policy=SMINMIN)
+        image_frame = create_frame2(self.theme, size_policy=SMINMIN)
         image_layout = GridLayout()
         ship_image = ShipImage()
         ship_image.setSizePolicy(SMINMIN)
@@ -471,50 +471,50 @@ class SETS():
         image_frame.setLayout(image_layout)
         layout.addWidget(image_frame, stretch=1)
 
-        ship_frame = create_frame2(self.theme2, size_policy=SMINMIN)
+        ship_frame = create_frame2(self.theme, size_policy=SMINMIN)
         ship_layout = GridLayout(spacing=csp)
         ship_layout.setRowStretch(4, 1)
         ship_layout.setColumnStretch(2, 1)
         ship_selector = ShipButton('<Pick Ship>')
         ship_selector.setSizePolicy(SMINMAX)
         ship_selector.setStyleSheet(
-            self.theme2.get_style_class('ShipButton', 'button', override={'margin': 0}))
-        ship_selector.setFont(self.theme2.get_font(font_spec='@subhead'))
+            self.theme.get_style_class('ShipButton', 'button', override={'margin': 0}))
+        ship_selector.setFont(self.theme.get_font(font_spec='@subhead'))
         ship_selector.clicked.connect(self.ship_selector_window.pick_ship)
         self.build2.ship.button = ship_selector
         ship_layout.addWidget(ship_selector, 0, 0, 1, 4, alignment=ATOP)
-        tier_label = create_label2(self.theme2, 'Ship Tier:')
+        tier_label = create_label2(self.theme, 'Ship Tier:')
         ship_layout.addWidget(tier_label, 1, 0)
-        tier_combo = create_combo_box2(self.theme2)
+        tier_combo = create_combo_box2(self.theme)
         tier_combo.currentTextChanged.connect(self.build2.tier_callback)
         tier_combo.setSizePolicy(SMAXMAX)
         self.build2.ship.tier = tier_combo
         ship_layout.addWidget(tier_combo, 1, 1, alignment=ALEFT)
-        dc_tooltip = create_label2(self.theme2, 'Can equip Dual Cannons', 'label_tooltip')
+        dc_tooltip = create_label2(self.theme, 'Can equip Dual Cannons', 'label_tooltip')
         dc_label = TooltipLabel('', dc_tooltip)
-        dc_label.setPixmap(self.theme2.icons['dual_cannons'])
+        dc_label.setPixmap(self.theme.icons['dual_cannons'])
         dc_label_size_policy = dc_label.sizePolicy()
         dc_label_size_policy.setRetainSizeWhenHidden(True)
         dc_label.setSizePolicy(dc_label_size_policy)
         self.build2.ship.dc = dc_label
         ship_layout.addWidget(dc_label, 1, 2, alignment=ARIGHT)
-        info_button = create_button2(self.theme2, 'Ship Info', style_override={'margin': 0})
+        info_button = create_button2(self.theme, 'Ship Info', style_override={'margin': 0})
         info_button.clicked.connect(self.build2.ship_info_callback)
         ship_layout.addWidget(info_button, 1, 3, alignment=ARIGHT)
-        name_label = create_label2(self.theme2, 'Ship Name:')
+        name_label = create_label2(self.theme, 'Ship Name:')
         ship_layout.addWidget(name_label, 2, 0)
-        name_entry = create_entry2(self.theme2)
+        name_entry = create_entry2(self.theme)
         name_entry.editingFinished.connect(
             lambda: self.build2.set('space', 'ship_name', value=name_entry.text()))
         self.build2.ship.name = name_entry
         name_entry.setSizePolicy(SMINMAX)
         ship_layout.addWidget(name_entry, 2, 1, 1, 3)
-        desc_label = create_label2(self.theme2, 'Build Description:')
+        desc_label = create_label2(self.theme, 'Build Description:')
         ship_layout.addWidget(desc_label, 3, 0, 1, 4)
         desc_edit = QPlainTextEdit()
         desc_edit.setSizePolicy(SMINMIN)
-        desc_edit.setStyleSheet(self.theme2.get_style_class('QPlainTextEdit', 'textedit'))
-        desc_edit.setFont(self.theme2.get_font('textedit'))
+        desc_edit.setStyleSheet(self.theme.get_style_class('QPlainTextEdit', 'textedit'))
+        desc_edit.setFont(self.theme.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.build2.set(
             'space', 'ship_desc', value=desc_edit.toPlainText(), autosave=False))
@@ -538,8 +538,8 @@ class SETS():
         - :param is_equipment: True when items are equipment, False if items are abilities or traits
         - :param label_store: stores category label in self.widgets.build[`label_store`] if set
         """
-        layout = GridLayout(spacing=self.theme2['defaults']['margin'] * self.theme2.scale)
-        label = create_label2(self.theme2, label_text, style_override={'margin': (0, 0, 6, 0)})
+        layout = GridLayout(spacing=self.theme['defaults']['margin'] * self.theme.scale)
+        label = create_label2(self.theme, label_text, style_override={'margin': (0, 0, 6, 0)})
         label_size_policy = label.sizePolicy()
         label_size_policy.setRetainSizeWhenHidden(True)
         label.setSizePolicy(label_size_policy)
@@ -548,7 +548,7 @@ class SETS():
         if label_store != '':
             setattr(widget_storage, label_store, label)
         for i in range(button_count):
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.clicked.connect(lambda subkey=i, bt=button: self.picker(
                 environment, build_key, subkey, bt, is_equipment))
             button.rightclicked.connect(lambda event, subkey=i: self.context_menu.invoke(
@@ -567,7 +567,7 @@ class SETS():
         - :param specialization: specialization of the seat; empty if it has no specialization
         - :param boff_id: identifies the boff station
         """
-        layout = GridLayout(spacing=self.theme2['defaults']['margin'] * self.theme2.scale)
+        layout = GridLayout(spacing=self.theme['defaults']['margin'] * self.theme.scale)
         layout.setColumnStretch(3, 1)
         if specialization != '':
             specialization = f' / {specialization}'
@@ -581,12 +581,12 @@ class SETS():
             label_options = (profession + specialization,)
         widget_storage = self.build2.space
         label_layout = HBoxLayout(spacing=self.config.ui_scale * 3)
-        icon_label = TooltipLabel('', create_label2(self.theme2, '', 'label_tooltip'))
+        icon_label = TooltipLabel('', create_label2(self.theme, '', 'label_tooltip'))
         widget_storage.boff_label_icons[boff_id] = icon_label
         label_layout.addWidget(icon_label, alignment=ALEFT)
         icon_label.hide()
         label = create_combo_box2(
-            self.theme2, size_policy=SMAXMAX, style_override=self.theme2['boff_combo'])
+            self.theme, size_policy=SMAXMAX, style_override=self.theme['boff_combo'])
         label.currentTextChanged.connect(
             lambda new: self.build2.boff_profession_callback_space(boff_id, new))
         label.addItems(label_options)
@@ -597,7 +597,7 @@ class SETS():
         label_layout.addWidget(label, alignment=ALEFT)
         layout.addLayout(label_layout, 0, 0, 1, 4, alignment=ALEFT)
         for i in range(4):
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.sizePolicy().setRetainSizeWhenHidden(True)
             button.clicked.connect(lambda subkey=i, bt=button: self.picker(
                 'space', 'boffs', subkey, bt, boff_id=boff_id))
@@ -615,17 +615,17 @@ class SETS():
         - :param boff_id: identifies the boff station
         """
         widget_storage = self.build2.ground
-        m = self.theme2['defaults']['margin'] * self.theme2.scale
+        m = self.theme['defaults']['margin'] * self.theme.scale
         layout = VBoxLayout(spacing=m)
         label_layout = HBoxLayout(spacing=m)
         label_layout.setAlignment(ALEFT)
-        prof_label = create_combo_box2(self.theme2, style_override=self.theme2['boff_combo'])
+        prof_label = create_combo_box2(self.theme, style_override=self.theme['boff_combo'])
         prof_label.currentTextChanged.connect(
             lambda new: self.build2.boff_label_callback_ground(boff_id, 'boff_profs', new))
         prof_label.addItems(CAREERS)
         widget_storage.boff_profs[boff_id] = prof_label
         label_layout.addWidget(prof_label)
-        spec_label = create_combo_box2(self.theme2, style_override=self.theme2['boff_combo'])
+        spec_label = create_combo_box2(self.theme, style_override=self.theme['boff_combo'])
         spec_label.currentTextChanged.connect(
             lambda new: self.build2.boff_label_callback_ground(boff_id, 'boff_specs', new))
         spec_label.addItems(GROUND_BOFF_SPECS)
@@ -635,7 +635,7 @@ class SETS():
         button_layout = HBoxLayout(spacing=m)
         button_layout.setAlignment(ALEFT)
         for i in range(4):
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.clicked.connect(lambda subkey=i, bt=button: self.picker(
                 'ground', 'boffs', subkey, bt, boff_id=boff_id))
             button.rightclicked.connect(lambda event, subkey=i: self.context_menu.invoke(
@@ -652,15 +652,15 @@ class SETS():
         Parameters:
         - :param environment: "space" / "ground"
         """
-        layout = GridLayout(spacing=self.theme2['defaults']['margin'] * self.theme2.scale)
+        layout = GridLayout(spacing=self.theme['defaults']['margin'] * self.theme.scale)
         label = create_label2(
-            self.theme2, 'Personal Traits', style_override={'margin': (0, 0, 6, 0)})
+            self.theme, 'Personal Traits', style_override={'margin': (0, 0, 6, 0)})
         layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
         widget_storage = self.build2.space if environment == 'space' else self.build2.ground
         for row in range(3):
             for col in range(4):
                 i = row * 4 + col
-                button = create_item_button2(self.theme2)
+                button = create_item_button2(self.theme)
                 button.clicked.connect(
                     lambda subkey=i, bt=button: self.picker(environment, 'traits', subkey, bt))
                 button.rightclicked.connect(lambda event, subkey=i: self.context_menu.invoke(
@@ -669,21 +669,21 @@ class SETS():
                 widget_storage.traits[i] = button
         # Last button is for innate trait and should not be clickable
         button.setEnabled(False)
-        button.set_style(self.theme2['item_dark'])
+        button.set_style(self.theme['item_dark'])
         return layout
 
     def create_starship_trait_section(self) -> GridLayout:
         """
         Creates build section for starship traits
         """
-        layout = GridLayout(spacing=self.theme2['defaults']['margin'] * self.theme2.scale)
+        layout = GridLayout(spacing=self.theme['defaults']['margin'] * self.theme.scale)
         label = create_label2(
-            self.theme2, 'Starship Traits', style_override={'margin': (0, 0, 6, 0)})
+            self.theme, 'Starship Traits', style_override={'margin': (0, 0, 6, 0)})
         label.sizePolicy().setRetainSizeWhenHidden(True)
         layout.addWidget(label, 0, 0, 1, 4, alignment=ALEFT)
         widget_storage = self.build2.space
         for col in range(5):
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.sizePolicy().setRetainSizeWhenHidden(True)
             button.clicked.connect(
                 lambda subkey=col, bt=button: self.picker('space', 'starship_traits', subkey, bt))
@@ -692,7 +692,7 @@ class SETS():
             layout.addWidget(button, 1, col, alignment=ALEFT)
             widget_storage.starship_traits[col] = button
         for col in range(2):
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.sizePolicy().setRetainSizeWhenHidden(True)
             button.clicked.connect(lambda subkey=col + 5, bt=button: self.picker(
                 'space', 'starship_traits', subkey, bt))
@@ -709,17 +709,17 @@ class SETS():
         Parameters:
         - :param environment: "space" / "ground"
         """
-        doff_layout = GridLayout(spacing=self.theme2['defaults']['bw'] * self.theme2.scale)
+        doff_layout = GridLayout(spacing=self.theme['defaults']['bw'] * self.theme.scale)
         doff_layout.setColumnStretch(1, 1)
         widget_storage = self.build2.space if environment == 'space' else self.build2.ground
         for i in range(6):
-            spec_combo = create_combo_box2(self.theme2, style_override=self.theme2['doff_combo'])
+            spec_combo = create_combo_box2(self.theme, style_override=self.theme['doff_combo'])
             spec_combo.currentTextChanged.connect(
                 lambda spec, id=i: self.build2.doff_spec_callback(spec, environment, id))
             doff_layout.addWidget(spec_combo, i, 0)
             widget_storage.doffs_spec[i] = spec_combo
             variant_combo = create_combo_box2(
-                self.theme2, style_override=self.theme2['doff_combo'], class_=DoffCombobox)
+                self.theme, style_override=self.theme['doff_combo'], class_=DoffCombobox)
             variant_combo.currentTextChanged.connect(
                 lambda variant, id=i: self.build2.doff_variant_callback(variant, environment, id))
             doff_layout.addWidget(variant_combo, i, 1)
@@ -734,44 +734,44 @@ class SETS():
         - :param group_data: skill group data
         - :param id_offset: index of the first skill node in self.build
         """
-        layout = GridLayout(spacing=self.theme2['defaults']['csp'] * self.config.ui_scale)
+        layout = GridLayout(spacing=self.theme['defaults']['csp'] * self.config.ui_scale)
         # one skill with 3 ranks
         if group_data['grouping'] == 'column':
             for index, node in enumerate(group_data['nodes']):
-                button = create_item_button2(self.theme2)
+                button = create_item_button2(self.theme)
                 skill_id = id_offset + index
                 button.clicked.connect(lambda id=skill_id: self.build2.skill_callback_space(
                     group_data['career'], id, 'column'))
                 button.skill_image_name = node['image']
                 button.tooltip = format_skill_tooltip(
-                    group_data['skill'], group_data, index, 'space', self.theme2.tooltips)
+                    group_data['skill'], group_data, index, 'space', self.theme.tooltips)
                 self.build2.skills.space[group_data['career']][id_offset + index] = button
                 layout.addWidget(button, index, 0)
         # == 'pair+1': one skill with 2 ranks and one sub-skill with 1 rank
         # == 'separate': 3 separate skills
         else:
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.clicked.connect(lambda id=id_offset: self.build2.skill_callback_space(
                 group_data['career'], id, group_data['grouping']))
             button.skill_image_name = group_data['nodes'][0]['image']
             button.tooltip = format_skill_tooltip(
-                group_data['skill'][0], group_data, 0, 'space', self.theme2.tooltips)
+                group_data['skill'][0], group_data, 0, 'space', self.theme.tooltips)
             layout.addWidget(button, 0, 0, 1, 2, alignment=AHCENTER | ABOTTOM)
             self.build2.skills.space[group_data['career']][id_offset] = button
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.clicked.connect(lambda id=id_offset + 1: self.build2.skill_callback_space(
                 group_data['career'], id, group_data['grouping']))
             button.skill_image_name = group_data['nodes'][1]['image']
             button.tooltip = format_skill_tooltip(
-                group_data['skill'][1], group_data, 1, 'space', self.theme2.tooltips)
+                group_data['skill'][1], group_data, 1, 'space', self.theme.tooltips)
             layout.addWidget(button, 1, 0, alignment=ATOP)
             self.build2.skills.space[group_data['career']][id_offset + 1] = button
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.clicked.connect(lambda id=id_offset + 2: self.build2.skill_callback_space(
                 group_data['career'], id, group_data['grouping']))
             button.skill_image_name = group_data['nodes'][2]['image']
             button.tooltip = format_skill_tooltip(
-                group_data['skill'][2], group_data, 2, 'space', self.theme2.tooltips)
+                group_data['skill'][2], group_data, 2, 'space', self.theme.tooltips)
             layout.addWidget(button, 1, 1, alignment=ATOP)
             self.build2.skills.space[group_data['career']][id_offset + 2] = button
         return layout
@@ -791,8 +791,8 @@ class SETS():
         seg = QPushButton()
         seg.setEnabled(False)
         seg.setCheckable(True)
-        seg.setStyleSheet(self.theme2.get_style_class('QPushButton', style, style_override))
-        seg.setFixedSize(7 * self.theme2.scale, 17 * self.theme2.scale)
+        seg.setStyleSheet(self.theme.get_style_class('QPushButton', style, style_override))
+        seg.setFixedSize(7 * self.theme.scale, 17 * self.theme.scale)
         self.build2.skills.bonus_bars[bar][index] = seg
         return seg
 
@@ -809,7 +809,7 @@ class SETS():
         button_index = 0
         for row in range(29, 5, -1):
             if row % 6 == 0:
-                button = create_item_button2(self.theme2)
+                button = create_item_button2(self.theme)
                 button.clicked.connect(
                     lambda i=button_index: self.build2.skill_unlock_callback(career, i))
                 layout.addWidget(button, row, column, alignment=AHCENTER)
@@ -823,7 +823,7 @@ class SETS():
             segment = self.create_bonus_bar_segment(career, segment_index)
             layout.addWidget(segment, row, column, alignment=AHCENTER)
             segment_index += 1
-        button = create_item_button2(self.theme2)
+        button = create_item_button2(self.theme)
         button.clicked.connect(lambda: self.build2.skill_unlock_callback(career, 4))
         layout.addWidget(button, 1, column, alignment=AHCENTER)
         self.build2.skills.unlocks[career][4] = button
@@ -837,12 +837,12 @@ class SETS():
         - :param id: index of the skill node in self.build
         - :param node_id: 0 or 1 for first or second node
         """
-        button = create_item_button2(self.theme2)
+        button = create_item_button2(self.theme)
         button.clicked.connect(lambda: self.build2.skill_callback_ground(group_data['tree'], id))
         button.skill_image_name = group_data['nodes'][node_id]['image']
         button.tooltip = format_skill_tooltip(
             group_data['nodes'][node_id]['name'], group_data, node_id, 'ground',
-            self.theme2.tooltips)
+            self.theme.tooltips)
         self.build2.skills.ground[group_data['tree']][id] = button
         return button
 
@@ -851,7 +851,7 @@ class SETS():
         Creates space build layout
         """
         frame = self.tabbers.build_frames[0]
-        isp = self.theme2['defaults']['isp'] * 2 * self.theme2.scale
+        isp = self.theme['defaults']['isp'] * 2 * self.theme.scale
         layout = GridLayout(margins=isp, spacing=isp)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(10, 1)
@@ -871,9 +871,9 @@ class SETS():
         hangar_layout = self.create_build_section(
             'Hangars', 2, 'space', 'hangars', True, 'hangars_label')
         layout.addLayout(hangar_layout, 4, 1, alignment=ALEFT)
-        sep1 = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        sep1 = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep1.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         layout.addWidget(sep1, 0, 2, 5, 1)
 
         deflector_layout = self.create_build_section('Deflector', 1, 'space', 'deflector', True)
@@ -887,9 +887,9 @@ class SETS():
         layout.addLayout(warp_layout, 3, 3, alignment=ALEFT)
         shield_layout = self.create_build_section('Shield', 1, 'space', 'shield', True)
         layout.addLayout(shield_layout, 4, 3, alignment=ALEFT)
-        sep2 = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        sep2 = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep2.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         layout.addWidget(sep2, 0, 4, 5, 1)
 
         uni_layout = self.create_build_section(
@@ -904,9 +904,9 @@ class SETS():
         tac_layout = self.create_build_section(
             'Tactical Consoles', 5, 'space', 'tac_consoles', True, 'tac_consoles_label')
         layout.addLayout(tac_layout, 3, 5, alignment=ALEFT)
-        sep3 = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        sep3 = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep3.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         layout.addWidget(sep3, 0, 6, 5, 1)
 
         # Boffs
@@ -921,7 +921,7 @@ class SETS():
         boff_5_layout = self.create_boff_station_space('Universal', 'Temporal', boff_id=4)
         layout.addLayout(boff_5_layout, 4, 7, alignment=ALEFT)
         boff_6_layout = self.create_boff_station_space('Universal', boff_id=5)
-        width_placeholder = create_combo_box2(self.theme2, size_policy=SMAXMAX)
+        width_placeholder = create_combo_box2(self.theme, size_policy=SMAXMAX)
         width_placeholder.addItem('Engineering / Miracle Worker')
         width_placeholder_sizepolicy = width_placeholder.sizePolicy()
         width_placeholder_sizepolicy.setRetainSizeWhenHidden(True)
@@ -946,14 +946,14 @@ class SETS():
         layout.addLayout(trait_layout, 0, 9, 6, 1, alignment=ATOP)
 
         # Doffs
-        spacing = self.theme2['defaults']['bw'] * self.theme2.scale
-        doff_container = create_frame2(self.theme2, size_policy=SMINMAX)
+        spacing = self.theme['defaults']['bw'] * self.theme.scale
+        doff_container = create_frame2(self.theme, size_policy=SMINMAX)
         doff_container_layout = VBoxLayout(spacing=spacing * 2)
-        doff_label = create_label2(self.theme2, 'Space Duty Officers')
+        doff_label = create_label2(self.theme, 'Space Duty Officers')
         doff_container_layout.addWidget(doff_label, alignment=ALEFT)
-        doff_frame = create_frame2(self.theme2, 'doff_frame', size_policy=SMINMAX)
+        doff_frame = create_frame2(self.theme, 'doff_frame', size_policy=SMINMAX)
         doff_frame_layout = VBoxLayout()
-        doff_style_nullifier = create_frame2(self.theme2, size_policy=SMINMAX)
+        doff_style_nullifier = create_frame2(self.theme, size_policy=SMINMAX)
         doff_frame_layout.addWidget(doff_style_nullifier)
         doff_layout = self.create_doff_section('space')
         doff_style_nullifier.setLayout(doff_layout)
@@ -969,7 +969,7 @@ class SETS():
         Creates Ground build frame
         """
         frame = self.tabbers.build_frames[1]
-        isp = self.theme2['defaults']['isp'] * 2 * self.theme2.scale
+        isp = self.theme['defaults']['isp'] * 2 * self.theme.scale
         layout = GridLayout(margins=isp, spacing=isp)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(8, 1)
@@ -982,9 +982,9 @@ class SETS():
         layout.addLayout(weapons_layout, 1, 1, alignment=ALEFT)
         devices_layout = self.create_build_section('Devices', 5, 'ground', 'ground_devices', True)
         layout.addLayout(devices_layout, 2, 1, alignment=ALEFT)
-        sep1 = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        sep1 = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep1.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        sep1.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         layout.addWidget(sep1, 0, 2)
         kit_layout = self.create_build_section('Kit Frame', 1, 'ground', 'kit', True)
         layout.addLayout(kit_layout, 0, 3, alignment=ALEFT)
@@ -994,9 +994,9 @@ class SETS():
         layout.addLayout(ev_layout, 2, 3, alignment=ALEFT)
         shield_layout = self.create_build_section('Shield', 1, 'ground', 'personal_shield', True)
         layout.addLayout(shield_layout, 3, 3, alignment=ALEFT)
-        sep2 = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        sep2 = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep2.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        sep2.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         layout.addWidget(sep2, 0, 4)
 
         # Boffs
@@ -1008,9 +1008,9 @@ class SETS():
         layout.addLayout(boff_3_layout, 2, 5, alignment=ALEFT)
         boff_4_layout = self.create_boff_station_ground(boff_id=3)
         layout.addLayout(boff_4_layout, 3, 5, alignment=ALEFT)
-        sep3 = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        sep3 = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@bg', 'margin-top': '@isp', 'margin-bottom': '@isp'})
-        sep3.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        sep3.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         layout.addWidget(sep3, 0, 6)
 
         # Traits
@@ -1025,14 +1025,14 @@ class SETS():
         layout.addLayout(trait_layout, 0, 7, 4, 1, alignment=ATOP)
 
         # Doffs
-        spacing = self.theme2['defaults']['bw'] * self.theme2.scale
-        doff_container = create_frame2(self.theme2, size_policy=SMINMAX)
+        spacing = self.theme['defaults']['bw'] * self.theme.scale
+        doff_container = create_frame2(self.theme, size_policy=SMINMAX)
         doff_container_layout = VBoxLayout(spacing=spacing * 2)
-        doff_label = create_label2(self.theme2, 'Ground Duty Officers')
+        doff_label = create_label2(self.theme, 'Ground Duty Officers')
         doff_container_layout.addWidget(doff_label, alignment=ALEFT)
-        doff_frame = create_frame2(self.theme2, 'doff_frame', size_policy=SMINMAX)
+        doff_frame = create_frame2(self.theme, 'doff_frame', size_policy=SMINMAX)
         doff_frame_layout = VBoxLayout()
-        doff_style_nullifier = create_frame2(self.theme2, size_policy=SMINMAX)
+        doff_style_nullifier = create_frame2(self.theme, size_policy=SMINMAX)
         doff_frame_layout.addWidget(doff_style_nullifier)
         doff_layout = self.create_doff_section('ground')
         doff_style_nullifier.setLayout(doff_layout)
@@ -1045,14 +1045,14 @@ class SETS():
 
         # sidebar
         sidebar_frame = self.tabbers.sidebar_frames[1]
-        csp = self.theme2['defaults']['csp'] * self.theme2.scale
+        csp = self.theme['defaults']['csp'] * self.theme.scale
         sidebar_layout = GridLayout(margins=(csp, isp, csp, csp), spacing=csp)
         sidebar_layout.setColumnStretch(0, 1)
-        desc_label = create_label2(self.theme2, 'Build Description:')
+        desc_label = create_label2(self.theme, 'Build Description:')
         sidebar_layout.addWidget(desc_label, 0, 0)
         desc_edit = QPlainTextEdit()
-        desc_edit.setStyleSheet(self.theme2.get_style_class('QPlainTextEdit', 'textedit'))
-        desc_edit.setFont(self.theme2.get_font('textedit'))
+        desc_edit.setStyleSheet(self.theme.get_style_class('QPlainTextEdit', 'textedit'))
+        desc_edit.setFont(self.theme.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.build2.set(
             'ground', 'ground_desc', value=desc_edit.toPlainText(), autosave=False))
@@ -1064,60 +1064,60 @@ class SETS():
         """
         Creates character customization area.
         """
-        csp = self.theme2['defaults']['csp'] * self.theme2.scale
+        csp = self.theme['defaults']['csp'] * self.theme.scale
         layout = GridLayout(margins=csp, spacing=csp)
         layout.setColumnStretch(1, 1)
-        seperator = create_frame2(self.theme2, size_policy=SMINMAX, style_override={
+        seperator = create_frame2(self.theme, size_policy=SMINMAX, style_override={
             'background-color': '@sets', 'margin': '@isp'})
-        seperator.setFixedHeight(self.theme2['defaults']['sep'] * self.theme2.scale)
+        seperator.setFixedHeight(self.theme['defaults']['sep'] * self.theme.scale)
         layout.addWidget(seperator, 0, 0, 1, 2, alignment=ATOP)  # ATOP makes it respect the margin?
-        char_name = create_entry2(self.theme2, placeholder='NAME')
+        char_name = create_entry2(self.theme, placeholder='NAME')
         char_name.setAlignment(AHCENTER)
         char_name.setSizePolicy(SMINMAX)
         char_name.editingFinished.connect(
             lambda: self.build2.set('captain', 'name', value=char_name.text()))
         layout.addWidget(char_name, 1, 0, 1, 2)
         self.build2.character.name = char_name
-        elite_label = create_label2(self.theme2, 'Elite Captain')
+        elite_label = create_label2(self.theme, 'Elite Captain')
         layout.addWidget(elite_label, 2, 0, alignment=ARIGHT)
-        elite_checkbox = create_checkbox2(self.theme2)
+        elite_checkbox = create_checkbox2(self.theme)
         elite_checkbox.checkStateChanged.connect(self.build2.elite_callback)
         layout.addWidget(elite_checkbox, 2, 1, alignment=ALEFT)
         self.build2.character.elite = elite_checkbox
-        career_label = create_label2(self.theme2, 'Captain Career')
+        career_label = create_label2(self.theme, 'Captain Career')
         layout.addWidget(career_label, 3, 0, alignment=ARIGHT)
-        career_combo = create_combo_box2(self.theme2)
+        career_combo = create_combo_box2(self.theme)
         career_combo.addItems({''} | CAREERS)
         career_combo.currentTextChanged.connect(
             lambda new_career: self.build2.set('captain', 'career', value=new_career))
         layout.addWidget(career_combo, 3, 1)
         self.build2.character.career = career_combo
-        faction_label = create_label2(self.theme2, 'Faction')
+        faction_label = create_label2(self.theme, 'Faction')
         layout.addWidget(faction_label, 4, 0, alignment=ARIGHT)
-        faction_combo = create_combo_box2(self.theme2)
+        faction_combo = create_combo_box2(self.theme)
         faction_combo.addItems({''} | FACTIONS)
         faction_combo.currentTextChanged.connect(self.build2.faction_combo_callback)
         layout.addWidget(faction_combo, 4, 1)
         self.build2.character.faction = faction_combo
-        species_label = create_label2(self.theme2, 'Species')
+        species_label = create_label2(self.theme, 'Species')
         layout.addWidget(species_label, 5, 0, alignment=ARIGHT)
-        species_combo = create_combo_box2(self.theme2)
+        species_combo = create_combo_box2(self.theme)
         species_combo.addItems({''})
         species_combo.currentTextChanged.connect(self.build2.species_combo_callback)
         layout.addWidget(species_combo, 5, 1)
         self.build2.character.species = species_combo
-        primary_label = create_label2(self.theme2, 'Primary Spec')
+        primary_label = create_label2(self.theme, 'Primary Spec')
         layout.addWidget(primary_label, 6, 0, alignment=ARIGHT)
-        primary_combo = create_combo_box2(self.theme2)
+        primary_combo = create_combo_box2(self.theme)
         primary_combo.addItems({''} | PRIMARY_SPECS)
         primary_combo.currentTextChanged.connect(
             lambda new_spec: self.build2.spec_combo_callback(True, new_spec))
         layout.addWidget(primary_combo, 6, 1)
         self.build2.character.primary = primary_combo
         secondary_label = create_label2(
-            self.theme2, 'Secondary Spec', style_override={'margin-bottom': 0})
+            self.theme, 'Secondary Spec', style_override={'margin-bottom': 0})
         layout.addWidget(secondary_label, 7, 0, alignment=ARIGHT)
-        secondary_combo = create_combo_box2(self.theme2)
+        secondary_combo = create_combo_box2(self.theme)
         secondary_combo.addItems({''} | PRIMARY_SPECS | SECONDARY_SPECS)
         secondary_combo.currentTextChanged.connect(
             lambda new_spec: self.build2.spec_combo_callback(False, new_spec))
@@ -1130,13 +1130,13 @@ class SETS():
         Creates Space skill GUI
         """
         frame = self.tabbers.build_frames[2]
-        isp = self.theme2['defaults']['isp'] * self.theme2.scale
-        csp = self.theme2['defaults']['csp'] * self.theme2.scale
+        isp = self.theme['defaults']['isp'] * self.theme.scale
+        csp = self.theme['defaults']['csp'] * self.theme.scale
         col_layout = GridLayout(margins=isp, spacing=csp)
         col_layout.setRowStretch(0, 1)
         col_layout.setColumnStretch(0, 3)
         col_layout.setColumnStretch(2, 1)
-        scroll_frame = create_frame2(self.theme2)
+        scroll_frame = create_frame2(self.theme)
         scroll_area = QScrollArea()
         scroll_area.setSizePolicy(SMINMIN)
         scroll_area.setHorizontalScrollBarPolicy(SCROLLOFF)
@@ -1160,16 +1160,16 @@ class SETS():
             'Captain<br><small>(25 points required)</small>',
             'Admiral<br><small>(35 points required)</small>'
         )
-        sep_height = self.theme2['hr']['height'] * self.theme2.scale
+        sep_height = self.theme['hr']['height'] * self.theme.scale
         for rank, skill_groups in enumerate(self.cargo.skills['space']):
             header_layout = GridLayout(spacing=isp)
-            left_sep = create_frame2(self.theme2, 'hr', size_policy=SMINMAX)
+            left_sep = create_frame2(self.theme, 'hr', size_policy=SMINMAX)
             left_sep.setFixedHeight(sep_height)
             header_layout.addWidget(left_sep, 0, 0, alignment=AVCENTER)
-            rank_label = create_label2(self.theme2, rank_texts[rank], 'label_subhead')
+            rank_label = create_label2(self.theme, rank_texts[rank], 'label_subhead')
             rank_label.setAlignment(AHCENTER)
             header_layout.addWidget(rank_label, 0, 1)
-            right_sep = create_frame2(self.theme2, 'hr', size_policy=SMINMAX)
+            right_sep = create_frame2(self.theme, 'hr', size_policy=SMINMAX)
             right_sep.setFixedHeight(sep_height)
             header_layout.addWidget(right_sep, 0, 2, alignment=AVCENTER)
             scroll_layout.addLayout(header_layout, rank * 3, 0, 1, 6)
@@ -1177,41 +1177,41 @@ class SETS():
                 id_offset = rank * 6 + (group_id % 2) * 3
                 group_layout = self.create_skill_group_space(group_data, id_offset)
                 scroll_layout.addLayout(group_layout, rank * 3 + 1, group_id)
-            spacer = create_frame2(self.theme2)
+            spacer = create_frame2(self.theme)
             spacer.setFixedHeight(isp)
             scroll_layout.addWidget(spacer, rank * 3 + 2, 0)
         VBoxLayout().addWidget(spacer)
         scroll_frame.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_frame)
-        seperator = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        seperator = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@sets'})
-        seperator.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         col_layout.addWidget(seperator, 0, 1)
-        bonus_bar_container = create_frame2(self.theme2, size_policy=SMINMIN)
+        bonus_bar_container = create_frame2(self.theme, size_policy=SMINMIN)
 
         # bonus bars
         bonus_bar_layout = GridLayout(margins=isp)
         bonus_bar_layout.setRowStretch(0, 1)
         bonus_bar_layout.setRowStretch(32, 1)
         self.create_bonus_bar_space('eng', bonus_bar_layout, 1)
-        eng_label = create_label2(self.theme2, '', style='unlock_label')
-        eng_label.setPixmap(self.theme2.icons['eng'])
+        eng_label = create_label2(self.theme, '', style='unlock_label')
+        eng_label.setPixmap(self.theme.icons['eng'])
         bonus_bar_layout.addWidget(eng_label, 30, 1, alignment=AHCENTER)
-        eng_count = create_label2(self.theme2, '0', 'label_subhead')
+        eng_count = create_label2(self.theme, '0', 'label_subhead')
         bonus_bar_layout.addWidget(eng_count, 31, 1, alignment=AHCENTER)
         self.build2.skills.count_labels['eng'] = eng_count
         self.create_bonus_bar_space('sci', bonus_bar_layout, 2)
-        sci_label = create_label2(self.theme2, '', style='unlock_label')
-        sci_label.setPixmap(self.theme2.icons['sci'])
+        sci_label = create_label2(self.theme, '', style='unlock_label')
+        sci_label.setPixmap(self.theme.icons['sci'])
         bonus_bar_layout.addWidget(sci_label, 30, 2, alignment=AHCENTER)
-        sci_count = create_label2(self.theme2, '0', 'label_subhead')
+        sci_count = create_label2(self.theme, '0', 'label_subhead')
         bonus_bar_layout.addWidget(sci_count, 31, 2, alignment=AHCENTER)
         self.build2.skills.count_labels['sci'] = sci_count
         self.create_bonus_bar_space('tac', bonus_bar_layout, 3)
-        tac_label = create_label2(self.theme2, '', style='unlock_label')
-        tac_label.setPixmap(self.theme2.icons['tac'])
+        tac_label = create_label2(self.theme, '', style='unlock_label')
+        tac_label.setPixmap(self.theme.icons['tac'])
         bonus_bar_layout.addWidget(tac_label, 30, 3, alignment=AHCENTER)
-        tac_count = create_label2(self.theme2, '0', 'label_subhead')
+        tac_count = create_label2(self.theme, '0', 'label_subhead')
         bonus_bar_layout.addWidget(tac_count, 31, 3, alignment=AHCENTER)
         self.build2.skills.count_labels['tac'] = tac_count
         bonus_bar_container.setLayout(bonus_bar_layout)
@@ -1221,20 +1221,20 @@ class SETS():
         # sidebar
         sidebar_frame = self.tabbers.sidebar_frames[2]
         sidebar_layout = GridLayout(margins=(csp, isp * 2, csp, csp), spacing=csp)
-        desc_label = create_label2(self.theme2, 'Space Skill Notes:')
+        desc_label = create_label2(self.theme, 'Space Skill Notes:')
         sidebar_layout.addWidget(desc_label, 0, 0, 1, 2)
         desc_edit = QPlainTextEdit()
-        desc_edit.setStyleSheet(self.theme2.get_style_class('QPlainTextEdit', 'textedit'))
-        desc_edit.setFont(self.theme2.get_font('textedit'))
+        desc_edit.setStyleSheet(self.theme.get_style_class('QPlainTextEdit', 'textedit'))
+        desc_edit.setFont(self.theme.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.build2.set(
             'space', 'skill_desc', value=desc_edit.toPlainText(), autosave=False))
         self.build2.skills.space_desc = desc_edit
         sidebar_layout.addWidget(desc_edit, 1, 0, 1, 2)
-        load_skills_button = create_button2(self.theme2, 'Load Skills')
+        load_skills_button = create_button2(self.theme, 'Load Skills')
         load_skills_button.clicked.connect(self.build_loader.load_skills_callback)
         sidebar_layout.addWidget(load_skills_button, 2, 0, alignment=AHCENTER)
-        save_skills_button = create_button2(self.theme2, 'Save Skills')
+        save_skills_button = create_button2(self.theme, 'Save Skills')
         save_skills_button.clicked.connect(self.build_loader.save_skills_callback)
         sidebar_layout.addWidget(save_skills_button, 2, 1, alignment=AHCENTER)
         sidebar_frame.setLayout(sidebar_layout)
@@ -1244,13 +1244,13 @@ class SETS():
         Creates Ground skill GUI
         """
         frame = self.tabbers.build_frames[3]
-        isp = self.theme2['defaults']['isp'] * self.theme2.scale
-        csp = self.theme2['defaults']['csp'] * self.theme2.scale
+        isp = self.theme['defaults']['isp'] * self.theme.scale
+        csp = self.theme['defaults']['csp'] * self.theme.scale
         col_layout = GridLayout(margins=isp, spacing=csp)
         col_layout.setRowStretch(0, 1)
         col_layout.setColumnStretch(0, 3)
         col_layout.setColumnStretch(2, 1)
-        tree_frame = create_frame2(self.theme2, size_policy=SMINMIN)
+        tree_frame = create_frame2(self.theme, size_policy=SMINMIN)
         col_layout.addWidget(tree_frame, 0, 0)
 
         # skill tree
@@ -1297,11 +1297,11 @@ class SETS():
             self.create_skill_button_ground(skills[9], 3, 1), 2, 0, alignment=ARIGHT)
         tree_layout.addLayout(group_layout, 2, 2)
         tree_frame.setLayout(tree_layout)
-        seperator = create_frame2(self.theme2, size_policy=SMAXMIN, style_override={
+        seperator = create_frame2(self.theme, size_policy=SMAXMIN, style_override={
             'background-color': '@sets'})
-        seperator.setFixedWidth(self.theme2['defaults']['sep'] * self.theme2.scale)
+        seperator.setFixedWidth(self.theme['defaults']['sep'] * self.theme.scale)
         col_layout.addWidget(seperator, 0, 1)
-        bonus_bar_container = create_frame2(self.theme2, size_policy=SMINMIN)
+        bonus_bar_container = create_frame2(self.theme, size_policy=SMINMIN)
 
         # bonus bars
         bonus_bar_layout = GridLayout(margins=isp)
@@ -1313,15 +1313,15 @@ class SETS():
             bonus_bar_layout.addWidget(seg1, row, 1, alignment=AHCENTER)
             seg2 = self.create_bonus_bar_segment('ground', i * 2 + 1)
             bonus_bar_layout.addWidget(seg2, row - 1, 1, alignment=AHCENTER)
-            button = create_item_button2(self.theme2)
+            button = create_item_button2(self.theme)
             button.clicked.connect(lambda i=i: self.build2.skill_unlock_callback('ground', i))
             bonus_bar_layout.addWidget(button, row - 2, 1, alignment=AHCENTER)
             self.build2.skills.unlocks['ground'][i] = button
             row -= 3
-        icon_label = create_label2(self.theme2, '', style='unlock_label')
-        icon_label.setPixmap(self.theme2.icons['ground'])
+        icon_label = create_label2(self.theme, '', style='unlock_label')
+        icon_label.setPixmap(self.theme.icons['ground'])
         bonus_bar_layout.addWidget(icon_label, 16, 1, alignment=AHCENTER)
-        count_label = create_label2(self.theme2, '0', 'label_subhead')
+        count_label = create_label2(self.theme, '0', 'label_subhead')
         bonus_bar_layout.addWidget(count_label, 17, 1, alignment=AHCENTER)
         self.build2.skills.count_labels['ground'] = count_label
         bonus_bar_container.setLayout(bonus_bar_layout)
@@ -1331,20 +1331,20 @@ class SETS():
         # sidebar
         sidebar_frame = self.tabbers.sidebar_frames[3]
         sidebar_layout = GridLayout(margins=(csp, isp * 2, csp, csp), spacing=csp)
-        desc_label = create_label2(self.theme2, 'Ground Skill Notes:')
+        desc_label = create_label2(self.theme, 'Ground Skill Notes:')
         sidebar_layout.addWidget(desc_label, 0, 0, 1, 2)
         desc_edit = QPlainTextEdit()
-        desc_edit.setStyleSheet(self.theme2.get_style_class('QPlainTextEdit', 'textedit'))
-        desc_edit.setFont(self.theme2.get_font('textedit'))
+        desc_edit.setStyleSheet(self.theme.get_style_class('QPlainTextEdit', 'textedit'))
+        desc_edit.setFont(self.theme.get_font('textedit'))
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.build2.set(
             'ground', 'skill_desc', value=desc_edit.toPlainText(), autosave=False))
         self.build2.skills.ground_desc = desc_edit
         sidebar_layout.addWidget(desc_edit, 1, 0, 1, 2)
-        load_skills_button = create_button2(self.theme2, 'Load Skills')
+        load_skills_button = create_button2(self.theme, 'Load Skills')
         load_skills_button.clicked.connect(self.build_loader.load_skills_callback)
         sidebar_layout.addWidget(load_skills_button, 2, 0, alignment=AHCENTER)
-        save_skills_button = create_button2(self.theme2, 'Save Skills')
+        save_skills_button = create_button2(self.theme, 'Save Skills')
         save_skills_button.clicked.connect(self.build_loader.save_skills_callback)
         sidebar_layout.addWidget(save_skills_button, 2, 1, alignment=AHCENTER)
         sidebar_frame.setLayout(sidebar_layout)
@@ -1361,10 +1361,10 @@ class SETS():
         layout.setColumnStretch(2, 3)
         loading_image = ImageLabel(self.app_dir2 / 'local' / 'sets_loading.png', (1, 1))
         layout.addWidget(loading_image, 1, 1)
-        loading_label = create_label2(self.theme2, 'Loading: ...', 'label_subhead')
+        loading_label = create_label2(self.theme, 'Loading: ...', 'label_subhead')
         self.splash.loading_label = loading_label
         layout.addWidget(loading_label, 2, 0, 1, 3, alignment=AHCENTER)
-        progress_label = create_label2(self.theme2, '', 'label_subhead')
+        progress_label = create_label2(self.theme, '', 'label_subhead')
         self.splash.progress_label = progress_label
         layout.addWidget(progress_label, 3, 0, 1, 3, alignment=AHCENTER)
         frame.setLayout(layout)
@@ -1383,11 +1383,11 @@ class SETS():
         Populates the settings frame.
         """
         settings_frame = self.tabbers.build_frames[5]
-        isp = self.theme2['defaults']['isp'] * self.theme2.scale
+        isp = self.theme['defaults']['isp'] * self.theme.scale
         settings_layout = HBoxLayout(margins=(2 * isp, isp, isp, isp), spacing=isp)
         scroll_layout = VBoxLayout(margins=(0, isp, 0, 0), spacing=isp)
         scroll_layout.setSpacing(isp)
-        scroll_frame = create_frame2(self.theme2)
+        scroll_frame = create_frame2(self.theme)
         scroll_area = QScrollArea()
         scroll_area.setSizePolicy(SMINMIN)
         scroll_area.setHorizontalScrollBarPolicy(SCROLLOFF)
@@ -1396,56 +1396,56 @@ class SETS():
         settings_frame.setLayout(settings_layout)
 
         # first section
-        settings_header = create_label2(self.theme2, 'Settings:', 'label_heading')
+        settings_header = create_label2(self.theme, 'Settings:', 'label_heading')
         scroll_layout.addWidget(settings_header, alignment=ALEFT)
         sec_1 = GridLayout(spacing=isp)
         sec_1.setColumnMinimumWidth(1, 3 * isp)
         sec_1.setColumnMinimumWidth(2, 12 * isp)
         sec_1.setColumnMinimumWidth(3, 3 * isp)
         sec_1.setColumnStretch(5, 1)
-        ui_scale_label = create_label2(self.theme2, 'UI Scale')
+        ui_scale_label = create_label2(self.theme, 'UI Scale')
         sec_1.addWidget(ui_scale_label, 0, 0, alignment=ALEFT)
         ui_scale_slider = create_annotated_slider2(
-            self.theme2, default_value=round(self.settings.ui_scale * 50, 0), min=25, max=75,
+            self.theme, default_value=round(self.settings.ui_scale * 50, 0), min=25, max=75,
             callback=self.settings.set_ui_scale)
         sec_1.addLayout(ui_scale_slider, 0, 2, alignment=ALEFT)
-        ui_scale_desc = create_label2(self.theme2, 'Requires restart.', 'hint_label')
+        ui_scale_desc = create_label2(self.theme, 'Requires restart.', 'hint_label')
         sec_1.addWidget(ui_scale_desc, 0, 4, alignment=ALEFT)
-        mark_label = create_label2(self.theme2, 'Default Mark')
+        mark_label = create_label2(self.theme, 'Default Mark')
         sec_1.addWidget(mark_label, 1, 0, alignment=ALEFT)
-        mark_combo = create_combo_box2(self.theme2, style_override={'font': '@small_text'})
+        mark_combo = create_combo_box2(self.theme, style_override={'font': '@small_text'})
         mark_combo.addItems(('',) + MARKS)
         mark_combo.setCurrentText(self.settings.default_mark)
         mark_combo.currentTextChanged.connect(
             lambda new_mark: self.settings.set('default_mark', new_mark))
         sec_1.addWidget(mark_combo, 1, 2, alignment=ALEFT)
-        rarity_label = create_label2(self.theme2, 'Default Rarity')
+        rarity_label = create_label2(self.theme, 'Default Rarity')
         sec_1.addWidget(rarity_label, 2, 0, alignment=ALEFT)
-        rarity_combo = create_combo_box2(self.theme2, style_override={'font': '@small_text'})
+        rarity_combo = create_combo_box2(self.theme, style_override={'font': '@small_text'})
         rarity_combo.addItems(RARITIES.keys())
         rarity_combo.setCurrentText(self.settings.default_rarity)
         rarity_combo.currentTextChanged.connect(
             lambda new_rarity: self.settings.set('default_rarity', new_rarity))
         sec_1.addWidget(rarity_combo, 2, 2, alignment=ALEFT | AVCENTER)
-        picker_rel_label = create_label2(self.theme2, 'Picker Position')
+        picker_rel_label = create_label2(self.theme, 'Picker Position')
         sec_1.addWidget(picker_rel_label, 3, 0, alignment=ALEFT)
-        picker_rel_combo = create_combo_box2(self.theme2, style_override={'font': '@small_text'})
+        picker_rel_combo = create_combo_box2(self.theme, style_override={'font': '@small_text'})
         picker_rel_combo.addItems(('Absolute', 'Relative'))
         picker_rel_combo.setCurrentIndex(self.settings.picker_relative)
         picker_rel_combo.currentIndexChanged.connect(
             lambda new_i: self.settings.set('picker_relative', new_i))
         sec_1.addWidget(picker_rel_combo, 3, 2, alignment=ALEFT | AVCENTER)
-        picker_rel_label = create_label2(self.theme2, 'Default Save Format')
+        picker_rel_label = create_label2(self.theme, 'Default Save Format')
         sec_1.addWidget(picker_rel_label, 4, 0, alignment=ALEFT)
-        picker_rel_combo = create_combo_box2(self.theme2, style_override={'font': '@small_text'})
+        picker_rel_combo = create_combo_box2(self.theme, style_override={'font': '@small_text'})
         picker_rel_combo.addItems(('JSON', 'PNG'))
         picker_rel_combo.setCurrentText(self.settings.default_save_format)
         picker_rel_combo.currentTextChanged.connect(
             lambda new_t: self.settings.set('default_save_format', new_t))
         sec_1.addWidget(picker_rel_combo, 4, 2, alignment=ALEFT | AVCENTER)
-        backup_label = create_label2(self.theme2, 'Preferred Backup')
+        backup_label = create_label2(self.theme, 'Preferred Backup')
         sec_1.addWidget(backup_label, 5, 0, alignment=ALEFT)
-        backup_combo = create_combo_box2(self.theme2, style_override={'font': '@small_text'})
+        backup_combo = create_combo_box2(self.theme, style_override={'font': '@small_text'})
         backup_combo.addItems(('Auto', 'Manual'))
         backup_combo.setCurrentIndex(self.settings.pref_backup)
         backup_combo.currentIndexChanged.connect(
@@ -1454,50 +1454,50 @@ class SETS():
         scroll_layout.addLayout(sec_1)
 
         # second section
-        sep = create_frame2(self.theme2)
+        sep = create_frame2(self.theme)
         sep.setFixedHeight(isp)
         scroll_layout.addWidget(sep)
-        maintenance_header = create_label2(self.theme2, 'Maintenance:', 'label_heading')
+        maintenance_header = create_label2(self.theme, 'Maintenance:', 'label_heading')
         scroll_layout.addWidget(maintenance_header, alignment=ALEFT)
         sec_2 = GridLayout(spacing=isp)
         sec_2.setColumnMinimumWidth(1, 3 * isp)
         sec_2.setColumnStretch(3, 1)
-        cargo_clear_button = create_button2(self.theme2, 'Clear Cargo Data')
+        cargo_clear_button = create_button2(self.theme, 'Clear Cargo Data')
         cargo_clear_button.clicked.connect(
             lambda: delete_folder_contents(self.config.config_subfolders['cargo']))
         sec_2.addWidget(cargo_clear_button, 0, 0, alignment=ALEFT)
         cargo_clear_label = create_label2(
-            self.theme2, 'Clears cargo data. Restart to refresh data.', 'hint_label')
+            self.theme, 'Clears cargo data. Restart to refresh data.', 'hint_label')
         sec_2.addWidget(cargo_clear_label, 0, 2, alignment=ALEFT)
-        cache_clear_button = create_button2(self.theme2, 'Clear Cache')
+        cache_clear_button = create_button2(self.theme, 'Clear Cache')
         cache_clear_button.clicked.connect(
             lambda: delete_folder_contents(self.config.config_subfolders['cache']))
         sec_2.addWidget(cache_clear_button, 1, 0, alignment=ALEFT)
         cache_clear_label = create_label2(
-            self.theme2, 'Clears cache. Restart to rebuild cache.', 'hint_label')
+            self.theme, 'Clears cache. Restart to rebuild cache.', 'hint_label')
         sec_2.addWidget(cache_clear_label, 1, 2, alignment=ALEFT)
-        backup_cargo_button = create_button2(self.theme2, 'Backup Cargo Data')
+        backup_cargo_button = create_button2(self.theme, 'Backup Cargo Data')
         backup_cargo_button.clicked.connect(self.cargo.backup_cargo_data)
         sec_2.addWidget(backup_cargo_button, 2, 0, alignment=ALEFT)
         backup_cargo_label = create_label2(
-            self.theme2, 'Creates cargo backup to protect against download failures.', 'hint_label')
+            self.theme, 'Creates cargo backup to protect against download failures.', 'hint_label')
         sec_2.addWidget(backup_cargo_label, 2, 2, alignment=ALEFT)
         scroll_layout.addLayout(sec_2)
 
         # third section
-        sep = create_frame2(self.theme2)
+        sep = create_frame2(self.theme)
         sep.setFixedHeight(isp)
         scroll_layout.addWidget(sep)
-        compatibility_header = create_label2(self.theme2, 'Compatibility:', 'label_heading')
+        compatibility_header = create_label2(self.theme, 'Compatibility:', 'label_heading')
         scroll_layout.addWidget(compatibility_header, alignment=ALEFT)
         sec_3 = GridLayout(spacing=isp)
         sec_3.setColumnMinimumWidth(1, 3 * isp)
         sec_3.setColumnStretch(3, 1)
-        build_image_button = create_button2(self.theme2, 'Convert Legacy Build Image')
+        build_image_button = create_button2(self.theme, 'Convert Legacy Build Image')
         build_image_button.clicked.connect(self.build_loader.load_legacy_build_image)
         sec_3.addWidget(build_image_button, 0, 0, alignment=ALEFT)
         build_image_label = create_label2(
-            self.theme2, 'Loads build from legacy build image. Use the "Load" button to load '
+            self.theme, 'Loads build from legacy build image. Use the "Load" button to load '
             'legacy JSON build files.', 'hint_label')
         sec_3.addWidget(build_image_label, 0, 2, alignment=ALEFT)
         scroll_layout.addLayout(sec_3)
@@ -1507,13 +1507,13 @@ class SETS():
 
         # sidebar
         sidebar_frame = self.tabbers.sidebar_frames[5]
-        csp = self.theme2['defaults']['csp'] * self.theme2.scale
+        csp = self.theme['defaults']['csp'] * self.theme.scale
         sidebar_layout = VBoxLayout(margins=csp, spacing=isp)
         sidebar_layout.setAlignment(ATOP)
         sidebar_layout.addWidget(
-            create_label2(self.theme2, 'About SETS:', 'label_heading'), alignment=ALEFT)
+            create_label2(self.theme, 'About SETS:', 'label_heading'), alignment=ALEFT)
         about_label = create_label2(
-            self.theme2, 'Thank you for using the STO Equipment and Trait Selector (SETS)! Make '
+            self.theme, 'Thank you for using the STO Equipment and Trait Selector (SETS)! Make '
             'sure to check out other projects of the STO Community Developers on our Github page '
             'and contact us on Discord for support.')
         about_label.setWordWrap(True)
@@ -1531,12 +1531,12 @@ class SETS():
                 'callback': lambda: open_url(self.config.link_downloads), 'align': AHCENTER}
         }
         button_layout, buttons = create_button_series2(
-            self.theme2, link_button_style, 'button', shape='column', ret=True)
+            self.theme, link_button_style, 'button', shape='column', ret=True)
         buttons[0].setToolTip(self.config.link_website)
         buttons[1].setToolTip(self.config.link_github)
         buttons[2].setToolTip(self.config.link_discord)
         buttons[3].setToolTip(self.config.link_downloads)
-        link_button_frame = create_frame2(self.theme2)
+        link_button_frame = create_frame2(self.theme)
         link_button_frame.setLayout(button_layout)
         sidebar_layout.addWidget(link_button_frame, alignment=AHCENTER)
         sidebar_frame.setLayout(sidebar_layout)
@@ -1544,9 +1544,9 @@ class SETS():
         footer_frame = self.tabbers.character_frames[2]
         footer_layout = GridLayout(margins=csp, spacing=isp)
         version_label = create_label2(
-            self.theme2, f"Version: {self.version}", 'hint_label')
+            self.theme, f"Version: {self.version}", 'hint_label')
         footer_layout.addWidget(version_label, 0, 0, alignment=ALEFT | ABOTTOM)
-        stocd_label = create_label2(self.theme2, '')
-        stocd_label.setPixmap(self.theme2.icons['STOCD'])
+        stocd_label = create_label2(self.theme, '')
+        stocd_label.setPixmap(self.theme.icons['STOCD'])
         footer_layout.addWidget(stocd_label, 0, 1, alignment=ARIGHT | ABOTTOM)
         footer_frame.setLayout(footer_layout)
