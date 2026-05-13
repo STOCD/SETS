@@ -13,7 +13,7 @@ from .buildmanager import BuildManager
 from .cargomanager import CargoManager
 from .config import SETSConfig, SETSSettings
 from .constants import BUILD_CONVERSION, BUILD_VERSION, SETS_FILE_FILTER
-from .iofunc import browse_path, load_json__new, store_json__new
+from .iofunc import browse_path, load_json, store_json
 from .widgets import bundle, pixel_range
 
 
@@ -100,7 +100,7 @@ class BuildLoader():
         """
         extension = filepath.suffix.lower()
         if extension == '.json':
-            build_data = load_json__new(filepath)
+            build_data = load_json(filepath)
         elif extension == '.png':
             decoded_str = self.decode_from_image(self, QImage(filepath))
             if decoded_str == '':
@@ -134,7 +134,7 @@ class BuildLoader():
         """
         extension = filepath.suffix.lower()
         if extension == '.json':
-            store_json__new(self._build.data, filepath)
+            store_json(self._build.data, filepath)
         elif extension == '.png':
             image = self._window.grab().toImage()
             self.encode_in_image(image, json__dumps(self._build.data))
@@ -149,7 +149,7 @@ class BuildLoader():
         """
         extension = filepath.suffix.lower()
         if extension == '.json':
-            build_data = load_json__new(filepath)
+            build_data = load_json(filepath)
         elif extension == '.png':
             decoded_str = self.decode_from_image(self, QImage(filepath))
             if decoded_str == '':
@@ -180,7 +180,7 @@ class BuildLoader():
             'skill_desc': self._build['skill_desc'],
         }
         if extension == '.json':
-            store_json__new(skill_tree, filepath)
+            store_json(skill_tree, filepath)
         elif extension == '.png':
             image = self._window.grab().toImage()
             self.encode_in_image(image, json__dumps(skill_tree))

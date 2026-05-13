@@ -7,9 +7,9 @@ from .constants import (
     PRIMARY_SPECS, SEVEN_DAYS_IN_SECONDS, SHIP_QUERY_URL, STARSHIP_TRAIT_QUERY_URL, TRAIT_QUERY_URL,
     TRAYSKILL_QUERY)
 from .downloader import Downloader
-from .iofunc import load_json__new, store_json__new
+from .iofunc import load_json, store_json
 from .textedit import (
-    create_equipment_tooltip__new, create_trait_tooltip__new, dewikify, parse_wikitext,
+    create_equipment_tooltip, create_trait_tooltip, dewikify, parse_wikitext,
     sanitize_equipment_name)
 from .theme import AppTheme
 
@@ -68,11 +68,11 @@ class CargoManager():
         Loads skill data and item aliases.
         """
         local_folder = self._app_dir / 'local'
-        self.item_aliases = load_json__new(local_folder / 'aliases.json')
-        space_skill_data = load_json__new(local_folder / 'space_skills.json')
+        self.item_aliases = load_json(local_folder / 'aliases.json')
+        space_skill_data = load_json(local_folder / 'space_skills.json')
         self.skills['space'] = space_skill_data['space']
         self.skills['space_unlocks'] = space_skill_data['space_unlocks']
-        ground_skill_data = load_json__new(local_folder / 'ground_skills.json')
+        ground_skill_data = load_json(local_folder / 'ground_skills.json')
         self.skills['ground'] = ground_skill_data['ground']
         self.skills['ground_unlocks'] = ground_skill_data['ground_unlocks']
 
@@ -135,9 +135,9 @@ class CargoManager():
             self.ground_doffs = ground_doff_data
         if images_updated:
             alt_images.update(self.alt_images)
-            store_json__new(alt_images, self._folders['cache'] / 'alt_images.json')
+            store_json(alt_images, self._folders['cache'] / 'alt_images.json')
             image_set |= self.image_set
-            store_json__new(list(image_set), self._folders['cache'] / 'images_list.json')
+            store_json(list(image_set), self._folders['cache'] / 'images_list.json')
         self.alt_images = alt_images
         self.image_set = image_set
         self.failed_images = self.get_cached_data('images_failed.json')
@@ -155,14 +155,14 @@ class CargoManager():
         if file_path.is_file():
             last_modified = file_path.stat().st_mtime
             if time() - last_modified < SEVEN_DAYS_IN_SECONDS:
-                return load_json__new(file_path)
+                return load_json(file_path)
         return None
 
     def store_failed_images(self):
         """
         Stores failed images to cache folder
         """
-        store_json__new(self.failed_images, self._folders['cache'] / 'images_failed.json')
+        store_json(self.failed_images, self._folders['cache'] / 'images_failed.json')
 
     def cache_ship_data(self):
         """
@@ -170,7 +170,7 @@ class CargoManager():
         """
         ship_cargo_data: list[dict[str]] = self.get_cargo_data('ship_list.json', SHIP_QUERY_URL)
         self.ships = {ship['Page']: ship for ship in ship_cargo_data}
-        store_json__new(self.ships, self._folders['cache'] / 'ships.json')
+        store_json(self.ships, self._folders['cache'] / 'ships.json')
 
     def cache_equipment_data(self):
         """
@@ -196,7 +196,7 @@ class CargoManager():
                     'name': name,
                     'rarity': item['rarity'],
                     'type': item['type'],
-                    'tooltip': create_equipment_tooltip__new(item, tooltip_styles)
+                    'tooltip': create_equipment_tooltip(item, tooltip_styles)
                 }
                 self.image_set.add(name)
         self.equipment['fore_weapons'].update(self.equipment['ship_weapon'])
@@ -208,7 +208,7 @@ class CargoManager():
         self.equipment['uni_consoles'].update(self.equipment['tac_consoles'])
         self.equipment['uni_consoles'].update(self.equipment['sci_consoles'])
         self.equipment['uni_consoles'].update(self.equipment['eng_consoles'])
-        store_json__new(self.equipment, self._folders['cache'] / 'equipment.json')
+        store_json(self.equipment, self._folders['cache'] / 'equipment.json')
 
     def cache_trait_data(self):
         """
@@ -229,7 +229,7 @@ class CargoManager():
                     trait_data = {
                         'Page': trait['Page'],
                         'name': name,
-                        'tooltip': create_trait_tooltip__new(
+                        'tooltip': create_trait_tooltip(
                             name, trait['description'], trait_type, trait['environment'],
                             tooltip_styles)
                     }
@@ -246,8 +246,8 @@ class CargoManager():
                 # catch wrong values in trait['environment'] (cargo issue)
                 except (KeyError, AttributeError):
                     pass
-        store_json__new(self.space_traits, self._folders['cache'] / 'space_traits.json')
-        store_json__new(self.ground_traits, self._folders['cache'] / 'ground_traits.json')
+        store_json(self.space_traits, self._folders['cache'] / 'space_traits.json')
+        store_json(self.ground_traits, self._folders['cache'] / 'ground_traits.json')
 
     def cache_starship_trait_data(self):
         """
@@ -271,7 +271,7 @@ class CargoManager():
                     f"<p style='{styles.trait_subheader}'>Starship Trait</p><p style='margin:0'>"
                     f"{ship_trait['short']}</p>{parse_wikitext(ship_trait['detailed'], styles)}")
             }
-        store_json__new(self.starship_traits, self._folders['cache'] / 'starship_traits.json')
+        store_json(self.starship_traits, self._folders['cache'] / 'starship_traits.json')
 
     def cache_boff_data(self):
         """
@@ -308,7 +308,7 @@ class CargoManager():
                         f"{parse_wikitext(dewikify(boff_ability[f'rank{decimal}info']), styles)}")
             self.boff_abilities['all'][boff_name] = ability_item
         self.image_set |= self.boff_abilities['all'].keys()
-        store_json__new(self.boff_abilities, self._folders['cache'] / 'boff_abilities.json')
+        store_json(self.boff_abilities, self._folders['cache'] / 'boff_abilities.json')
 
     def cache_modifier_data(self):
         """
@@ -340,7 +340,7 @@ class CargoManager():
         self.modifiers['uni_consoles'].update(self.modifiers['sci_consoles'])
         self.modifiers['uni_consoles'].update(self.modifiers['eng_consoles'])
         self.modifiers['uni_consoles'].update(self.modifiers['tac_consoles'])
-        store_json__new(self.modifiers, self._folders['cache'] / 'modifiers.json')
+        store_json(self.modifiers, self._folders['cache'] / 'modifiers.json')
 
     def cache_duty_officer_data(self):
         """
@@ -359,8 +359,8 @@ class CargoManager():
             elif doff['shipdutytype'] is not None:
                 self.cache_doff_single(self.space_doffs, doff)
                 self.cache_doff_single(self.ground_doffs, doff)
-        store_json__new(self.space_doffs, self._folders['cache'] / 'space_doffs.json')
-        store_json__new(self.ground_doffs, self._folders['cache'] / 'ground_doffs.json')
+        store_json(self.space_doffs, self._folders['cache'] / 'space_doffs.json')
+        store_json(self.ground_doffs, self._folders['cache'] / 'ground_doffs.json')
 
     def cache_doff_single(self, cache: dict, doff: dict):
         """
@@ -393,7 +393,7 @@ class CargoManager():
         if cargo_file.is_file():
             last_modified = cargo_file.stat().st_mtime
             if time() - last_modified < SEVEN_DAYS_IN_SECONDS or ignore_cache_age:
-                cargo_data = load_json__new(cargo_file)
+                cargo_data = load_json(cargo_file)
                 if cargo_data is not None:
                     return cargo_data
 
@@ -409,9 +409,9 @@ class CargoManager():
                     backup_paths = (backup_path, auto_backup_path)
                 for path in backup_paths:
                     if path.is_file():
-                        cargo_data = load_json__new(path)
+                        cargo_data = load_json(path)
                         if cargo_data is not None:
-                            store_json__new(cargo_data, cargo_file)
+                            store_json(cargo_data, cargo_file)
                             return cargo_data
                 # TODO what happens when both backups fail?
             else:
@@ -419,7 +419,7 @@ class CargoManager():
         else:
             if cargo_file.is_file():
                 cargo_file.copy_into(self._folders['auto_backups'])
-            store_json__new(cargo_data, cargo_file)
+            store_json(cargo_data, cargo_file)
             return cargo_data
 
     def backup_cargo_data(self):

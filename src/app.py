@@ -168,7 +168,7 @@ class SETS():
         Creates external files before starting the app.
         """
         if not self.config.autosave_path.exists():
-            store_json(empty_build(), str(self.config.autosave_path))
+            store_json(empty_build(), self.config.autosave_path)
 
     def init_backend(self):
         """
