@@ -362,10 +362,10 @@ class SETS():
         menu_layout.setColumnStretch(2, 2)
         left_button_group = {
             'Save': {'callback': self.build_loader.save_build_callback},
+            'Save As': {'callback': self.build_loader.save_build_as_callback},
             'Open': {'callback': self.build_loader.load_build_callback},
             'Clear Current Tab': {'callback': lambda: self.build.clear_build_callback(
-                self.tabbers.build_tabber.currentIndex())},
-            'Clear All Tabs': {'callback': self.build.clear_all}
+                self.tabbers.build_tabber.currentIndex())}
         }
         menu_layout.addLayout(
             create_button_series2(self.theme, left_button_group), 0, 0, alignment=ALEFT | ATOP)
@@ -387,6 +387,7 @@ class SETS():
         center_buttons = create_button_series2(self.theme, center_button_group, 'heavy_button')
         menu_layout.addLayout(center_buttons, 0, 1)
         right_button_group = {
+            'Clear All Tabs': {'callback': self.build.clear_all},
             'Export': {'callback': self.export_window.invoke},
             'Settings': {'callback': lambda: self.tabbers.switch(5)},
         }
