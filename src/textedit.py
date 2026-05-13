@@ -314,3 +314,12 @@ def sanitize_equipment_name(name: str) -> str:
 
 def wiki_url(page_name: str, prefix: str = ''):
     return (WIKI_URL + prefix + page_name).replace(' ', '_')
+
+
+def format_path(path: str):
+    if len(path) < 2:
+        return path
+    path = path.replace(chr(92), '/')
+    if path[1] == ':' and path[0] >= 'a' and path[0] <= 'z':
+        path = path[0].capitalize() + path[1:]
+    return path

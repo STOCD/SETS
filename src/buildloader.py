@@ -35,7 +35,7 @@ class BuildLoader():
         Loads build from file
         """
         load_path = browse_path(
-            self._config.config_subfolders['library'], SETS_FILE_FILTER, parent_window=self._window)
+            self.get_library_path(), SETS_FILE_FILTER, parent_window=self._window)
         if load_path is not None:
             self.load_build_file(load_path)
             self._current_build_path = load_path
@@ -59,7 +59,7 @@ class BuildLoader():
             proposed_filename = f"({self._build['space']['ship']})"
         if self._build['space']['ship_name'] != '':
             proposed_filename = f"{self._build['space']['ship_name']} {proposed_filename}"
-        preset_path = self._config.config_subfolders['library'] / proposed_filename
+        preset_path = self.get_library_path() / proposed_filename
         if self._settings.default_save_format == 'PNG':
             file_types = 'PNG image (*.png);;JSON file (*.json);;Any File (*.*)'
         else:
@@ -74,7 +74,7 @@ class BuildLoader():
         Loads skills from file
         """
         load_path = browse_path(
-            self._config.config_subfolders['library'], SETS_FILE_FILTER, parent_window=self._window)
+            self.get_library_path(), SETS_FILE_FILTER, parent_window=self._window)
         if load_path is not None:
             self.load_skill_tree_file(load_path)
 
@@ -82,7 +82,7 @@ class BuildLoader():
         """
         Save skills to file
         """
-        preset_path = self._config.config_subfolders['library'] / 'Skill Tree'
+        preset_path = self.get_library_path() / 'Skill Tree'
         if self._settings.default_save_format == 'PNG':
             file_types = 'PNG image (*.png);;JSON file (*.json);;Any File (*.*)'
         else:
@@ -185,6 +185,16 @@ class BuildLoader():
             image = self._window.grab().toImage()
             self.encode_in_image(image, json__dumps(skill_tree))
             image.save(filepath)
+
+    def get_library_path(self) -> Path:
+        """
+        Returns current library path.
+        """
+        if self._settings.library_path != '':
+            path = Path(self._settings.library_path)
+            if path.is_dir():
+                return path
+        return self._config.config_subfolders['library']
 
     def merge_build(self, original_build: dict[str, dict[str]], new_build: dict[str, dict[str]]):
         """
@@ -379,7 +389,7 @@ class BuildLoader():
         Loads legacy build from image file
         """
         load_path = browse_path(
-            self._config.config_subfolders['library'],
+            self.get_library_path(),
             'PNG image (*.png);;Any File (*.*)', parent_window=self._window)
         if load_path is not None:
             if load_path.suffix.lower() != '.png':
