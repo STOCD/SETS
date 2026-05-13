@@ -549,6 +549,7 @@ class AppTheme:
                 'background-color': '#000000',
                 'border-style': 'none',
                 'color': '@fg',
+                'font': '@font'
                 # 'margin': 0,
                 # 'padding': 0,
             },
@@ -747,8 +748,10 @@ class AppTheme:
                 'border-top-style': 'solid',
                 'border-top-width': 1,
                 'border-top-color': '@bc',
+                'font': '@font',
                 'margin': (0, 0, 3, 0),
-                'padding': (3, 10, 0, 10)
+                'padding': (3, 10, 0, 10),
+
             },
             # horizontal seperator
             'hr': {
@@ -758,7 +761,7 @@ class AppTheme:
             },
             # horizontal sliding selector
             'slider': {
-                'font': ('Roboto Mono', 11, 'Normal'),
+                'font': ('Roboto Mono', 11, 'normal'),
                 'color': '@fg',
                 '::groove:horizontal': {
                     'border-style': 'none',

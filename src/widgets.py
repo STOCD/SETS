@@ -298,6 +298,7 @@ class Thread(QThread):
     done: Signal = Signal()
 
     def __init__(self, target: Callable, args: tuple = (), kwargs: dict[str] = {}):
+        super().__init__()
         self._target: Callable = target
         self._args: tuple = args
         self._kwargs: dict[str] = kwargs

@@ -28,7 +28,7 @@ from .widgetbuilder import (
     create_annotated_slider2, create_button2, create_button_series2, create_checkbox2,
     create_combo_box2, create_entry2, create_frame2, create_item_button2, create_label2)
 from .widgets import (
-    DoffCombobox, GridLayout, HBoxLayout, ImageLabel, ItemButton, ShipButton, ShipImage,
+    DoffCombobox, GridLayout, HBoxLayout, ImageLabel, ItemButton, ItemSlot, ShipButton, ShipImage,
     Tabbers, Thread, TooltipLabel, VBoxLayout)
 
 # only for developing; allows to terminate the qt event loop with keyboard interrupt
@@ -76,7 +76,6 @@ class SETS():
         self.app, self.window = self.create_main_window()
         self.cache_icons()
         self.cargo.load_static_data()
-        self.setup_main_layout()
         self.build_loader: BuildLoader = BuildLoader(
             self.build2, self.cargo, self.config, self.settings, self.window)
         self.export_window = ExportWindow(self.theme2, self.window, self.build2, self.cargo)
@@ -88,6 +87,7 @@ class SETS():
         self.ship_selector_window.dialog_result.connect(self.build2.finish_ship_pick)
         self.context_menu: ContextMenu = ContextMenu(self.theme2, self.build2, self.cargo)
         self.context_menu.edit_slot.connect(self.edit_window.edit_item)
+        self.setup_main_layout()
         self.window.show()
         self._backend_thread: Thread = Thread(self.init_backend)
         self._backend_thread.done.connect(self.complete_app_init)
@@ -194,6 +194,7 @@ class SETS():
         self.splash.set_loading_text('Loading Images...')
         self._backend_thread = Thread(self.images.load_images)
         self._backend_thread.start()
+        self.splash.show_splash(False)
 
     def cache_icons(self):
         """
@@ -209,8 +210,8 @@ class SETS():
         self.theme2.icons['ground'] = load_icon('ground_icon.png', self.app_dir2, icon_size)
         icon_size = (self.theme2.opt.box_width, self.theme2.opt.box_width)
         self.theme2.icons['tac'] = load_icon('tac_icon.png', self.app_dir2, icon_size)
-        self.theme2.icons['sci'] = load_icon('sci_icon.png', icon_size)
-        self.theme2.icons['eng'] = load_icon('eng_icon.png', icon_size)
+        self.theme2.icons['sci'] = load_icon('sci_icon.png', self.app_dir2, icon_size)
+        self.theme2.icons['eng'] = load_icon('eng_icon.png', self.app_dir2, icon_size)
         self.theme2.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir2, size=(25, 25))
         self.theme2.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
         icon_size = (self.theme2.opt.box_height, self.theme2.opt.box_width * 182 / 106)
@@ -238,8 +239,9 @@ class SETS():
         """
         app = QApplication(argv)
         font_database = QFontDatabase()
-        font_database.addApplicationFont(self.app_dir2 / 'local' / 'Overpass-VariableFont_wght.ttf')
-        font_database.addApplicationFont(self.app_dir2 / 'local' / 'RobotoMono-Regular.ttf')
+        font_database.addApplicationFont(
+            str(self.app_dir2 / 'local' / 'Overpass-VariableFont_wght.ttf'))
+        font_database.addApplicationFont(str(self.app_dir2 / 'local' / 'RobotoMono-Regular.ttf'))
         app.setStyleSheet(self.theme2.create_style_sheet(self.theme2['app']['style']))
         window = QWidget()
         window.setWindowIcon(load_icon('SETS_icon_small.png', self.app_dir2))
@@ -315,12 +317,14 @@ class SETS():
             pos = button.mapToGlobal(QPoint(0, 0))
         else:
             pos = None
-        self.picker_window.pick_item(items, pos, equipment, modifiers, image_suffix)
+        slot = ItemSlot(environment, build_key, build_subkey, boff_id, equipment)
+        self.picker_window.pick_item(items, pos, slot, modifiers, image_suffix)
 
     def setup_main_layout(self):
         """
         Creates the main layout and places it into the main window.
         """
+        self.build2._building = True
         # master layout: banner, borders and splash screen
         layout = VBoxLayout()
         background_frame = create_frame2(
@@ -448,12 +452,13 @@ class SETS():
         self.setup_settings_frame()
 
         content_frame.setLayout(content_layout)
+        self.build2._building = False
 
     def setup_ship_frame(self):
         """
         Creates ship info frame
         """
-        frame = self.widgets.sidebar_frames[0]
+        frame = self.tabbers.sidebar_frames[0]
         csp = self.theme2['defaults']['csp'] * self.theme2.scale
         layout = VBoxLayout(margins=csp, spacing=csp)
 
@@ -493,7 +498,7 @@ class SETS():
         dc_label.setSizePolicy(dc_label_size_policy)
         self.build2.ship.dc = dc_label
         ship_layout.addWidget(dc_label, 1, 2, alignment=ARIGHT)
-        info_button = create_button2(self.theme, 'Ship Info', style_override={'margin': 0})
+        info_button = create_button2(self.theme2, 'Ship Info', style_override={'margin': 0})
         info_button.clicked.connect(self.build2.ship_info_callback)
         ship_layout.addWidget(info_button, 1, 3, alignment=ARIGHT)
         name_label = create_label2(self.theme2, 'Ship Name:')
@@ -581,7 +586,7 @@ class SETS():
         label_layout.addWidget(icon_label, alignment=ALEFT)
         icon_label.hide()
         label = create_combo_box2(
-            self.theme2, size_policy=SMAXMAX, style_override=self.theme['boff_combo'])
+            self.theme2, size_policy=SMAXMAX, style_override=self.theme2['boff_combo'])
         label.currentTextChanged.connect(
             lambda new: self.build2.boff_profession_callback_space(boff_id, new))
         label.addItems(label_options)
@@ -614,17 +619,17 @@ class SETS():
         layout = VBoxLayout(spacing=m)
         label_layout = HBoxLayout(spacing=m)
         label_layout.setAlignment(ALEFT)
-        prof_label = create_combo_box2(self.theme2, style_override=self.theme['boff_combo'])
+        prof_label = create_combo_box2(self.theme2, style_override=self.theme2['boff_combo'])
         prof_label.currentTextChanged.connect(
             lambda new: self.build2.boff_label_callback_ground(boff_id, 'boff_profs', new))
         prof_label.addItems(CAREERS)
         widget_storage.boff_profs[boff_id] = prof_label
         label_layout.addWidget(prof_label)
-        spec_label = create_combo_box2(self.theme2, style_override=self.theme['boff_combo'])
+        spec_label = create_combo_box2(self.theme2, style_override=self.theme2['boff_combo'])
         spec_label.currentTextChanged.connect(
             lambda new: self.build2.boff_label_callback_ground(boff_id, 'boff_specs', new))
         spec_label.addItems(GROUND_BOFF_SPECS)
-        widget_storage['boff_specs'][boff_id] = spec_label
+        widget_storage.boff_specs[boff_id] = spec_label
         label_layout.addWidget(spec_label)
         layout.addLayout(label_layout)
         button_layout = HBoxLayout(spacing=m)
@@ -655,7 +660,7 @@ class SETS():
         for row in range(3):
             for col in range(4):
                 i = row * 4 + col
-                button = create_item_button2(self)
+                button = create_item_button2(self.theme2)
                 button.clicked.connect(
                     lambda subkey=i, bt=button: self.picker(environment, 'traits', subkey, bt))
                 button.rightclicked.connect(lambda event, subkey=i: self.context_menu.invoke(
@@ -708,13 +713,13 @@ class SETS():
         doff_layout.setColumnStretch(1, 1)
         widget_storage = self.build2.space if environment == 'space' else self.build2.ground
         for i in range(6):
-            spec_combo = create_combo_box2(self.theme2, style_override=self.theme['doff_combo'])
+            spec_combo = create_combo_box2(self.theme2, style_override=self.theme2['doff_combo'])
             spec_combo.currentTextChanged.connect(
                 lambda spec, id=i: self.build2.doff_spec_callback(spec, environment, id))
             doff_layout.addWidget(spec_combo, i, 0)
             widget_storage.doffs_spec[i] = spec_combo
             variant_combo = create_combo_box2(
-                self.theme2, style_override=self.theme['doff_combo'], class_=DoffCombobox)
+                self.theme2, style_override=self.theme2['doff_combo'], class_=DoffCombobox)
             variant_combo.currentTextChanged.connect(
                 lambda variant, id=i: self.build2.doff_variant_callback(variant, environment, id))
             doff_layout.addWidget(variant_combo, i, 1)
@@ -727,9 +732,9 @@ class SETS():
 
         Parameters:
         - :param group_data: skill group data
-        - :param id_offset: index of the first skill node in self.widgets and self.build
+        - :param id_offset: index of the first skill node in self.build
         """
-        layout = GridLayout(spacing=self.theme['defaults']['csp'] * self.config.ui_scale)
+        layout = GridLayout(spacing=self.theme2['defaults']['csp'] * self.config.ui_scale)
         # one skill with 3 ranks
         if group_data['grouping'] == 'column':
             for index, node in enumerate(group_data['nodes']):
@@ -819,7 +824,7 @@ class SETS():
             layout.addWidget(segment, row, column, alignment=AHCENTER)
             segment_index += 1
         button = create_item_button2(self.theme2)
-        button.clicked.connect(lambda: self.build2.skill_unlock_callback(self, career, 4))
+        button.clicked.connect(lambda: self.build2.skill_unlock_callback(career, 4))
         layout.addWidget(button, 1, column, alignment=AHCENTER)
         self.build2.skills.unlocks[career][4] = button
 
@@ -829,7 +834,7 @@ class SETS():
 
         Parameters:
         - :param group_data: skill group data
-        - :param id: index of the skill node in self.widgets and self.build
+        - :param id: index of the skill node in self.build
         - :param node_id: 0 or 1 for first or second node
         """
         button = create_item_button2(self.theme2)
@@ -963,7 +968,7 @@ class SETS():
         """
         Creates Ground build frame
         """
-        frame = self.widgets.build_frames[1]
+        frame = self.tabbers.build_frames[1]
         isp = self.theme2['defaults']['isp'] * 2 * self.theme2.scale
         layout = GridLayout(margins=isp, spacing=isp)
         layout.setColumnStretch(0, 1)
@@ -1227,10 +1232,10 @@ class SETS():
         self.build2.skills.space_desc = desc_edit
         sidebar_layout.addWidget(desc_edit, 1, 0, 1, 2)
         load_skills_button = create_button2(self.theme2, 'Load Skills')
-        load_skills_button.clicked.connect(self.load_skills_callback)
+        load_skills_button.clicked.connect(self.build_loader.load_skills_callback)
         sidebar_layout.addWidget(load_skills_button, 2, 0, alignment=AHCENTER)
         save_skills_button = create_button2(self.theme2, 'Save Skills')
-        save_skills_button.clicked.connect(self.save_skills_callback)
+        save_skills_button.clicked.connect(self.build_loader.save_skills_callback)
         sidebar_layout.addWidget(save_skills_button, 2, 1, alignment=AHCENTER)
         sidebar_frame.setLayout(sidebar_layout)
 
@@ -1314,10 +1319,11 @@ class SETS():
             self.build2.skills.unlocks['ground'][i] = button
             row -= 3
         icon_label = create_label2(self.theme2, '', style='unlock_label')
-        icon_label.setPixmap(self.cache.icons['ground'])
+        icon_label.setPixmap(self.theme2.icons['ground'])
         bonus_bar_layout.addWidget(icon_label, 16, 1, alignment=AHCENTER)
-        self.build2.skills.count_labels['ground'] = create_label2(self.theme2, '0', 'label_subhead')
-        bonus_bar_layout.addWidget(self.widgets.skill_count_ground, 17, 1, alignment=AHCENTER)
+        count_label = create_label2(self.theme2, '0', 'label_subhead')
+        bonus_bar_layout.addWidget(count_label, 17, 1, alignment=AHCENTER)
+        self.build2.skills.count_labels['ground'] = count_label
         bonus_bar_container.setLayout(bonus_bar_layout)
         col_layout.addWidget(bonus_bar_container, 0, 2)
         frame.setLayout(col_layout)
@@ -1333,13 +1339,13 @@ class SETS():
         desc_edit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         desc_edit.textChanged.connect(lambda: self.build2.set(
             'ground', 'skill_desc', value=desc_edit.toPlainText(), autosave=False))
-        self.widgets.build['skill_desc']['ground'] = desc_edit
+        self.build2.skills.ground_desc = desc_edit
         sidebar_layout.addWidget(desc_edit, 1, 0, 1, 2)
         load_skills_button = create_button2(self.theme2, 'Load Skills')
-        load_skills_button.clicked.connect(self.load_skills_callback)
+        load_skills_button.clicked.connect(self.build_loader.load_skills_callback)
         sidebar_layout.addWidget(load_skills_button, 2, 0, alignment=AHCENTER)
         save_skills_button = create_button2(self.theme2, 'Save Skills')
-        save_skills_button.clicked.connect(self.save_skills_callback)
+        save_skills_button.clicked.connect(self.build_loader.save_skills_callback)
         sidebar_layout.addWidget(save_skills_button, 2, 1, alignment=AHCENTER)
         sidebar_frame.setLayout(sidebar_layout)
 

@@ -60,7 +60,7 @@ class ImageManager():
         """
         image = self._images[image_name]
         if image.isNull():
-            image.load(self._images_dir / get_image_file_name(image_name))
+            image.load(str(self._images_dir / get_image_file_name(image_name)))
         return image
 
     def get_alt(self, image_name: str, image_suffix: str = '') -> QImage:

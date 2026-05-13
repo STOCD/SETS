@@ -71,6 +71,7 @@ def create_button_series2(
                 be a normal button; the bool value indicates the default state of the button
             - "stretch": stretch value for the button
             - "align": alignment flag for button
+            - "size": size policy for button
     - :param style: key for theme, determines style preset
     - :param shape: row / column
     - :param separator: string seperator displayed between buttons (optional)
@@ -106,6 +107,8 @@ def create_button_series2(
                 bt.clicked[bool].connect(detail['callback'])
             else:
                 bt.clicked.connect(detail['callback'])
+        if 'size' in detail:
+            bt.setSizePolicy(detail['size'])
         stretch = detail['stretch'] if 'stretch' in detail else 0
         if 'align' in detail:
             layout.addWidget(bt, stretch, detail['align'])
