@@ -45,7 +45,7 @@ chmod 755 "${PKGDIR}/usr/bin/${PKGNAME}"
 
 echo "[Info]  Copying app icon."
 mkdir -p "${PKGDIR}/usr/share/icons/hicolor/256x256/apps"
-cp "assets/SETS_icon_small.png" "${PKGDIR}/usr/share/icons/hicolor/256x256/apps/sets.png"
+cp "local/SETS_icon_small.png" "${PKGDIR}/usr/share/icons/hicolor/256x256/apps/sets.png"
 
 echo "[Info]  Copying desktop file."
 mkdir -p "${PKGDIR}/usr/share/applications"
