@@ -47,7 +47,7 @@ class CargoManager():
         }
         self.ground_doffs: dict[str, dict[str, dict[str]]] = dict()
         self.space_doffs: dict[str, dict[str, dict[str]]] = dict()
-        self.boff_abilities: dict[str, dict[str, dict[str, list[str]] | dict[str, str]]] = {
+        self.boff_abilities: dict[str, dict[str, list[list[str]] | dict[str, str]]] = {
             'space': self.boff_dict(),
             'ground': self.boff_dict(),
             'all': dict()
@@ -81,42 +81,58 @@ class CargoManager():
         (Down-) loads cargo data or gets cached cargo data.
         """
         images_updated = False
-        self.ships = self.get_cached_data('ships.json')
-        if self.ships is None:
-            self.cache_ship_data()
-            images_updated = True
-        self.equipment = self.get_cached_data('equipment.json')
-        if self.equipment is None:
-            self.cache_equipment_data()
-            images_updated = True
-        self.space_traits = self.get_cached_data('space_traits.json')
-        self.ground_traits = self.get_cached_data('ground_traits.json')
-        if self.space_traits is None or self.ground_traits is None:
-            self.cache_trait_data()
-            images_updated = True
-        self.starship_traits = self.get_cached_data('starship_traits.json')
-        if self.starship_traits is None:
-            self.cache_starship_trait_data()
-            images_updated = True
-        self.boff_abilities = self.get_cached_data('boff_abilities.json')
-        if self.boff_abilities is None:
-            self.cache_boff_data()
-            images_updated = True
-        self.modifiers = self.get_cached_data('modifiers.json')
-        if self.modifiers is None:
-            self.cache_modifier_data()
-        self.space_doffs = self.get_cached_data('space_doffs.json')
-        self.ground_doffs = self.get_cached_data('ground_doffs.json')
-        if self.space_doffs is None or self.ground_doffs is None:
-            self.cache_duty_officer_data()
-        alt_images = self.get_cached_data('alt_images.json')
-        if alt_images is None:
-            alt_images = dict()
+        force_image_update = False
         all_images = self.get_cached_data('images_list.json')
         if all_images is None:
             image_set = set()
+            force_image_update = True
         else:
             image_set = set(all_images)
+        alt_images = self.get_cached_data('alt_images.json')
+        if alt_images is None:
+            alt_images = set()
+            force_image_update = True
+        self.ships = self.get_cached_data('ships.json')
+        if self.ships is None:
+            self.cache_ship_data()
+        equipment_data = self.get_cached_data('equipment.json')
+        if equipment_data is None or force_image_update:
+            self.cache_equipment_data()
+            images_updated = True
+        else:
+            self.equipment = equipment_data
+        space_trait_data = self.get_cached_data('space_traits.json')
+        ground_trait_data = self.get_cached_data('ground_traits.json')
+        if space_trait_data is None or ground_trait_data is None or force_image_update:
+            self.cache_trait_data()
+            images_updated = True
+        else:
+            self.space_traits = space_trait_data
+            self.ground_traits = ground_trait_data
+        starship_trait_data = self.get_cached_data('starship_traits.json')
+        if starship_trait_data is None or force_image_update:
+            self.cache_starship_trait_data()
+            images_updated = True
+        else:
+            self.starship_traits = starship_trait_data
+        boff_data = self.get_cached_data('boff_abilities.json')
+        if boff_data is None or force_image_update:
+            self.cache_boff_data()
+            images_updated = True
+        else:
+            self.boff_abilities = boff_data
+        modifier_data = self.get_cached_data('modifiers.json')
+        if modifier_data is None:
+            self.cache_modifier_data()
+        else:
+            self.modifiers = modifier_data
+        space_doff_data = self.get_cached_data('space_doffs.json')
+        ground_doff_data = self.get_cached_data('ground_doffs.json')
+        if space_doff_data is None or ground_doff_data is None:
+            self.cache_duty_officer_data()
+        else:
+            self.space_doffs = space_doff_data
+            self.ground_doffs = ground_doff_data
         if images_updated:
             alt_images.update(self.alt_images)
             store_json__new(alt_images, self._folders['cache'] / 'alt_images.json')
@@ -136,9 +152,10 @@ class CargoManager():
         - :param file_name: name of the cache file to load
         """
         file_path = self._folders['cache'] / file_name
-        last_modified = file_path.stat().st_mtime
-        if time() - last_modified < SEVEN_DAYS_IN_SECONDS:
-            return load_json__new(file_path)
+        if file_path.is_file():
+            last_modified = file_path.stat().st_mtime
+            if time() - last_modified < SEVEN_DAYS_IN_SECONDS:
+                return load_json__new(file_path)
         return None
 
     def store_failed_images(self):
@@ -229,8 +246,8 @@ class CargoManager():
                 # catch wrong values in trait['environment'] (cargo issue)
                 except (KeyError, AttributeError):
                     pass
-        store_json__new(self.space_traits, 'space_traits.json')
-        store_json__new(self.ground_traits, 'ground_traits.json')
+        store_json__new(self.space_traits, self._folders['cache'] / 'space_traits.json')
+        store_json__new(self.ground_traits, self._folders['cache'] / 'ground_traits.json')
 
     def cache_starship_trait_data(self):
         """
@@ -254,7 +271,7 @@ class CargoManager():
                     f"<p style='{styles.trait_subheader}'>Starship Trait</p><p style='margin:0'>"
                     f"{ship_trait['short']}</p>{parse_wikitext(ship_trait['detailed'], styles)}")
             }
-        store_json__new(self.starship_traits, 'starship_traits.json')
+        store_json__new(self.starship_traits, self._folders['cache'] / 'starship_traits.json')
 
     def cache_boff_data(self):
         """
@@ -291,7 +308,7 @@ class CargoManager():
                         f"{parse_wikitext(dewikify(boff_ability[f'rank{decimal}info']), styles)}")
             self.boff_abilities['all'][boff_name] = ability_item
         self.image_set |= self.boff_abilities['all'].keys()
-        store_json__new(self.boff_abilities, 'boff_abilities.json')
+        store_json__new(self.boff_abilities, self._folders['cache'] / 'boff_abilities.json')
 
     def cache_modifier_data(self):
         """
@@ -323,7 +340,7 @@ class CargoManager():
         self.modifiers['uni_consoles'].update(self.modifiers['sci_consoles'])
         self.modifiers['uni_consoles'].update(self.modifiers['eng_consoles'])
         self.modifiers['uni_consoles'].update(self.modifiers['tac_consoles'])
-        store_json__new(self.modifiers, 'modifiers.json')
+        store_json__new(self.modifiers, self._folders['cache'] / 'modifiers.json')
 
     def cache_duty_officer_data(self):
         """
@@ -342,8 +359,8 @@ class CargoManager():
             elif doff['shipdutytype'] is not None:
                 self.cache_doff_single(self.space_doffs, doff)
                 self.cache_doff_single(self.ground_doffs, doff)
-        store_json__new(self.space_doffs, 'space_doffs.json')
-        store_json__new(self.ground_doffs, 'ground_doffs.json')
+        store_json__new(self.space_doffs, self._folders['cache'] / 'space_doffs.json')
+        store_json__new(self.ground_doffs, self._folders['cache'] / 'ground_doffs.json')
 
     def cache_doff_single(self, cache: dict, doff: dict):
         """
@@ -419,12 +436,12 @@ class CargoManager():
 
     def boff_dict(self):
         return {
-            'Tactical': [dict(), dict(), dict(), dict()],
-            'Engineering': [dict(), dict(), dict(), dict()],
-            'Science': [dict(), dict(), dict(), dict()],
-            'Intelligence': [dict(), dict(), dict(), dict()],
-            'Command': [dict(), dict(), dict(), dict()],
-            'Pilot': [dict(), dict(), dict(), dict()],
-            'Temporal': [dict(), dict(), dict(), dict()],
-            'Miracle Worker': [dict(), dict(), dict(), dict()],
+            'Tactical': [list(), list(), list(), list()],
+            'Engineering': [list(), list(), list(), list()],
+            'Science': [list(), list(), list(), list()],
+            'Intelligence': [list(), list(), list(), list()],
+            'Command': [list(), list(), list(), list()],
+            'Pilot': [list(), list(), list(), list()],
+            'Temporal': [list(), list(), list(), list()],
+            'Miracle Worker': [list(), list(), list(), list()],
         }

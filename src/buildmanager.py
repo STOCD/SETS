@@ -35,7 +35,7 @@ class SpaceBuild():
         self.engines: list[ItemButton] = [None]
         self.experimental: list[ItemButton] = [None]
         self.experimental_label: QLabel = [None]
-        self.fore_weapons: list[ItemButton] = [None]
+        self.fore_weapons: list[ItemButton] = [None] * 5
         self.hangars: list[ItemButton] = [None] * 2
         self.hangars_label: QLabel = None
         self.rep_traits: list[ItemButton] = [None] * 5
@@ -44,7 +44,7 @@ class SpaceBuild():
         self.sec_def: list[ItemButton] = [None]
         self.sec_def_label: QLabel = [None]
         self.shield: list[ItemButton] = [None]
-        self.starship_traits: list[ItemButton] = [None]
+        self.starship_traits: list[ItemButton] = [None] * 7
         self.tac_consoles: list[ItemButton] = [None] * 5
         self.tac_consoles_label: QLabel = None
         self.traits: list[ItemButton] = [None] * 12
@@ -249,10 +249,7 @@ class BuildManager():
         self.character.secondary.setCurrentText(self._build_data['captain']['secondary_spec'])
 
         # Space Build Section
-        if ship == '' or ship == '<Pick Ship>':
-            self.align_space_frame(ship_data, clear=True)
-        else:
-            self.align_space_frame(ship_data)
+        self.align_space_frame(ship_data)
         self.load_equipment_cat('fore_weapons', 'space')
         self.load_equipment_cat('aft_weapons', 'space')
         self.load_equipment_cat('experimental', 'space')
@@ -350,7 +347,7 @@ class BuildManager():
 
         self.update_starship_traits(starship_traits, clear)
 
-        boff_specs = map(lambda s: get_boff_spec(self, s), ship_data['boffs'])
+        boff_specs = map(lambda s: get_boff_spec(s), ship_data['boffs'])
         if 'Science Destroyer' in ship_data['type']:
             for boff_num, boff_details in enumerate(sorted(boff_specs, reverse=True)):
                 if (boff_details[0] == 3 and boff_details[1] == 'Tactical'
@@ -567,7 +564,7 @@ class BuildManager():
         only
 
         Parameters:
-        - :param build_key: key to self.build and self.widgets
+        - :param build_key: key to self._build_data
         - :param target_quantity: number of slots that should be available in this category
         - :param clear: True to clear build
         - :param can_hide: hides/shows category label when target_quantity is 0/None
@@ -591,7 +588,7 @@ class BuildManager():
 
     def update_starship_traits(self, target_quantity: int, clear: bool = False):
         """
-        Shows/hides appropriate amount of starship trait buttons; updates `self.build`
+        Shows/hides appropriate amount of starship trait buttons; updates `self._build_data`
 
         Parameters:
         - :param target_quantity: number of slots that should be available in this category
@@ -691,7 +688,7 @@ class BuildManager():
         Clears buttons and build; ground build only
 
         Parameters:
-        - :param build_key: key to self.build and self.widgets
+        - :param build_key: key to self._build_data
         """
         category: list[ItemButton] = getattr(self.ground, build_key)
         for subkey, button in enumerate(category):
@@ -706,7 +703,7 @@ class BuildManager():
         - :param build_key: trait category
         - :param environment: space/ground
         """
-        for subkey, item in enumerate(self.build[environment][build_key]):
+        for subkey, item in enumerate(self._build_data[environment][build_key]):
             if item is not None and item != '':
                 self.slot_trait_item(item, environment, build_key, subkey)
             else:
@@ -720,7 +717,7 @@ class BuildManager():
         Parameters:
         - :param item: item to be slotted
         - :param environment: space/ground
-        - :param build_key: key to self.build[environment]
+        - :param build_key: key to self._build_data[environment]
         - :param build_subkey: index of the item within its build_key (category)
         """
         self._build_data[environment][build_key][build_subkey] = item
@@ -738,7 +735,7 @@ class BuildManager():
         Parameters:
         - :param item: item to be slotted
         - :param environment: space/ground
-        - :param build_key: key to self.build[environment]
+        - :param build_key: key to self._build_data[environment]
         - :param build_subkey: index of the item within its build_key (category)
         """
         item_name = item['item']
@@ -764,7 +761,7 @@ class BuildManager():
         Parameters:
         - :param item: item to be slotted
         - :param environment: space/ground
-        - :param build_key: key to self.build[environment]
+        - :param build_key: key to self._build_data[environment]
         - :param build_subkey: index of the item within its build_key (category)
         - :param boff_id: id of the boff seat; assumes non-boff item when `-1` or not supplied
         """
@@ -796,11 +793,11 @@ class BuildManager():
                     for i, mod in enumerate(new_item['modifiers']):
                         if mod not in self._cache.modifiers[type_]:
                             new_item['modifiers'][i] = ''
-                self.slot_equipment_item(self, new_item, slot.environment, slot.type, slot.index)
+                self.slot_equipment_item(new_item, slot.environment, slot.type, slot.index)
             else:
                 if slot.boff_id is None:
                     self.slot_trait_item(
-                        self, {'item': new_item['item']}, slot.environment, slot.type, slot.index)
+                        {'item': new_item['item']}, slot.environment, slot.type, slot.index)
                 elif slot.type == 'boffs':
                     ability_name, _, ability_rank = new_item['item'].rpartition(' ')
                     self._build_data[slot.environment]['boffs'][slot.boff_id][slot.index] = {
@@ -911,7 +908,7 @@ class BuildManager():
 
     def load_doffs(self, environment: str):
         """
-        Updates UI to show doffs in self.build
+        Updates UI to show doffs in self._build_data
 
         Parameters:
         - :param environment: "space" / "ground"
@@ -933,7 +930,7 @@ class BuildManager():
 
     def load_skill_pages(self):
         """
-        Updates UI to show skill trees in self.build
+        Updates UI to show skill trees in self._build_data
         """
         self.skills.space_desc.setPlainText(self._build_data['skill_desc']['space'])
         self._skill_state['space_points_eng'] = 0
@@ -957,7 +954,7 @@ class BuildManager():
             skill_points = self._skill_state[f'space_points_{career}']
             self.skills.count_labels[career].setText(str(skill_points))
             for unlock_id, unlock_choice in enumerate(self._build_data['skill_unlocks'][career]):
-                self.set_skill_unlock_space(self, career, unlock_id, unlock_choice, skill_points)
+                self.set_skill_unlock_space(career, unlock_id, unlock_choice, skill_points)
             if skill_points > 24:
                 skill_points = 24
             for i in range(skill_points):
@@ -1314,9 +1311,9 @@ class BuildManager():
             self.skills.space[career][skill_id].clear_overlay()
             self.skills.space[career][skill_id].highlight = False
             self._build_data['space_skills'][career][skill_id] = False
-            self._cache.skills['space_points_total'] -= 1
-            self._cache.skills[f'space_points_{career}'] -= 1
-            self._cache.skills['space_points_rank'][int(skill_id / 6)] -= 1
+            self._skill_state['space_points_total'] -= 1
+            self._skill_state[f'space_points_{career}'] -= 1
+            self._skill_state['space_points_rank'][int(skill_id / 6)] -= 1
             segment_index: int = self._skill_state[f'space_points_{career}']
             if segment_index < 24:
                 self.skills.bonus_bars[career][segment_index].setChecked(False)
@@ -1397,7 +1394,7 @@ class BuildManager():
             self.skills.bonus_bars['ground'][segment_index].setChecked(False)
             if segment_index % 2 == 1:
                 button_index = (segment_index - 1) // 2
-                self.set_skill_unlock_ground(self, button_index, None)
+                self.set_skill_unlock_ground(button_index, None)
         else:
             self.skills.ground[skill_group][skill_id].set_overlay(self._images.overlays.check)
             self.skills.ground[skill_group][skill_id].highlight = True
@@ -1417,7 +1414,7 @@ class BuildManager():
 
         Parameters:
         - :param career: "eng" / "tac" / "sci"
-        - :param skill_id: id of the skill node (index in self.build and self.widgets.build)
+        - :param skill_id: id of the skill node (index in self._build_data)
         - :param grouping: type of skill grouping: "column" / "pair+1" / "separate"
         """
         space_skills = self._build_data['space_skills']

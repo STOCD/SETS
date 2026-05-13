@@ -65,7 +65,7 @@ def load_icon(filename: str, app_directory: Path, size: tuple = tuple()) -> QIco
     - :param path: path to icon
     - :param app_directory: absolute path to the app directory
     """
-    icon = QIcon(app_directory / 'local' / filename)
+    icon = QIcon(str(app_directory / 'local' / filename))
     if len(size) == 2:
         return icon.pixmap(*size)
     return icon
