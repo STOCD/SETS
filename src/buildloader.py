@@ -118,6 +118,7 @@ class BuildLoader():
         elif 'versionJSON' in build_data:
             build_data = json__loads(self.compensate_old_build(json__dumps(build_data)))
             new_build.update(self.convert_old_build(build_data))
+            self.update_build_version(new_build)
         else:
             self.merge_build(new_build, build_data)
             self.update_build_version(new_build)
@@ -406,6 +407,7 @@ class BuildLoader():
             if 'versionJSON' in build_data:
                 new_build = empty_build()
                 new_build.update(self.convert_old_build(build_data))
+                self.update_build_version(new_build)
                 self._build.data = new_build
                 try:
                     self._build.load_build()
@@ -461,7 +463,7 @@ class BuildLoader():
         """
         converts build from old spec to current spec
         """
-        new_build = empty_build(self)
+        new_build = empty_build()
 
         # space
         self.map_build_items(build, new_build['space'], BUILD_CONVERSION['space'])
