@@ -1,31 +1,25 @@
 name: sets_deb_build
 
 services:
-  deb_build_base:
+  sets_deb_build:
     image: deb_build_base
     build:
       context: ../..
       dockerfile: distribution/debian/deb_build_base.Dockerfile
-
-  sets_deb_build:
-    depends_on:
-      deb_build_base:
-        condition: service_completed_successfully
-    image: setsdeb
-    build:
-      context: ../..
-      dockerfile: distribution/debian/build_deb.Dockerfile
     container_name: running_sets_deb_build
     volumes:
       - type: bind
-        source: ../../dist/
+        source: ../../
         target: /mnt/
         read_only: false
     command:
       - /bin/sh
       - -c
       - |
+        mkdir -p /build
         cd /build
+        cp -r /mnt/distribution/ /mnt/local/ /mnt/src/ /mnt/main.py /mnt/pyproject.toml /mnt/LICENSE /mnt/README.md ./
         distribution/build_pyinstaller.sh
         distribution/debian/package_deb.sh
-        cp dist/sets.deb /mnt/sets.deb
+        mkdir -p /mnt/dist
+        cp dist/sets.deb /mnt/dist/sets.deb
