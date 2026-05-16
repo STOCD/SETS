@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Natural Language :: English",
     "Topic :: Games/Entertainment",
-    "Development Status :: 4 - Beta"
+    "Development Status :: 5 - Production/Stable"
 ]
 dependencies = [
   "PySide6==6.11.0",

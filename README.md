@@ -16,7 +16,7 @@ Download the latest package from the [release](https://github.com/STOCD/SETS/rel
 Download the latest package from the [release](https://github.com/STOCD/SETS/releases) page. Run `sudo apt install -f /path/to/package-file` to install the app.
 
 ### Script version using PIP
-Install the app globally or in a python virtual environment by running `python -m pip install sets`. Start the app using the `sets` command. If the app is installed in a python virtual environment, make sure to activate it before trying to start the app.
+Install the app globally or in a python virtual environment by running `python -m pip install sto-sets`. Start the app using the `sets` command. If the app is installed in a python virtual environment, make sure to activate it before trying to start the app.
 
 ### Script (all systems; development version)
 *Before installation, make sure python 3 is installed on your system alongside the python package manager pip.*
