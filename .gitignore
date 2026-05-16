@@ -6,3 +6,7 @@ dist/
 build/
 *.py[cod]
 *.spec
+distribution/arch/pkg/
+distribution/arch/src
+distribution/arch/*.tar*
+
