@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "SETS"
+name = "STO-SETS"
 description = "A Star Trek Online build tool in Python"
 readme = "README.md"
 requires-python = ">=3.14"
