@@ -2,20 +2,14 @@ name: Build Wheel and Publish to PyPI
 
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag name for this release (e.g. v1.2.3)"
-        required: true
 
 jobs:
   build_and_publish:
     runs-on: ubuntu-latest
     permissions:
-      it-token: write
+      id-token: write
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.tag }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
