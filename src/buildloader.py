@@ -143,7 +143,7 @@ class BuildLoader():
         elif extension == '.png':
             image = self._window.grab().toImage()
             self.encode_in_image(image, json__dumps(self._build.data))
-            image.save(filepath)
+            image.save(str(filepath))
 
     def load_skill_tree_file(self, filepath: Path):
         """
@@ -189,7 +189,7 @@ class BuildLoader():
         elif extension == '.png':
             image = self._window.grab().toImage()
             self.encode_in_image(image, json__dumps(skill_tree))
-            image.save(filepath)
+            image.save(str(filepath))
 
     def get_library_path(self) -> Path:
         """
