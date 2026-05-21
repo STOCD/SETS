@@ -1,6 +1,6 @@
 # Maintainer: Shinga <test@example.com>
 pkgname=sets
-pkgver=3.0.0
+pkgver=3.0.1
 pkgrel=1
 pkgdesc="SETS - STO Equipment and Trait Selector"
 arch=('x86_64')

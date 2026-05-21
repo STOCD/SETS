@@ -1,3 +1,9 @@
+sets (3.0.1-1) stable; urgency=low
+
+  * Release: https://github.com/STOCD/SETS/releases/tag/v3.0.1
+
+ -- Shinga  <test@example.org>  Thu, 21 May 2026 22:25:59 +0200
+
 sets (3.0.0-1) stable; urgency=low
 
   * Initial release.
