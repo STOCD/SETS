@@ -9,7 +9,7 @@ license=('GPL-3.0')
 depends=('python')
 makedepends=('python' 'python-virtualenv' 'python-wheel' 'python-setuptools' 'git' 'unzip')
 source=("https://github.com/STOCD/SETS/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('a355599e0953c025da25cb426b523b6a18ad45c778383f1051a6765bf3bc8e43')
+sha256sums=('d26526fe168d49e2493567948177fbbf40c1f1af90227725c447a1308f7a6157')
 
 build() {
   cd "$srcdir"
