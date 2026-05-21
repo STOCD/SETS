@@ -348,7 +348,8 @@ class BuildManager():
         self.update_starship_traits(starship_traits, clear)
 
         boff_specs = map(lambda s: get_boff_spec(s), ship_data['boffs'])
-        if 'Science Destroyer' in ship_data['type']:
+        if ('Science Destroyer' in ship_data['type']
+                or 'Science Destroyer Warbird' in ship_data['type']):
             for boff_num, boff_details in enumerate(sorted(boff_specs, reverse=True)):
                 if (boff_details[0] == 3 and boff_details[1] == 'Tactical'
                         or boff_details[0] == 4 and boff_details[1] == 'Science'):
