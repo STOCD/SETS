@@ -217,8 +217,8 @@ class SETS():
         self.theme.icons['tac'] = load_icon('tac_icon.png', self.app_dir2, icon_size)
         self.theme.icons['sci'] = load_icon('sci_icon.png', self.app_dir2, icon_size)
         self.theme.icons['eng'] = load_icon('eng_icon.png', self.app_dir2, icon_size)
-        self.theme.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir2, size=(25, 25))
-        self.theme.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
+        self.images.icons['tac-small'] = load_icon('tac-small.svg', self.app_dir2, size=(25, 25))
+        self.images.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
         icon_size = (self.theme.opt.box_height, self.theme.opt.box_width * 182 / 106)
         self.theme.icons['STOCD'] = load_icon('stocd.png', self.app_dir2, icon_size)
 
