@@ -517,7 +517,7 @@ class BuildLoader():
                     new_build['ground']['boff_specs'][boff_id] = 'Command'
                 for i, ability in enumerate(build['boffs'][f'groundBoff_{boff_id}']):
                     if ability is None or ability == '':
-                        new_build['ground']['boffs'][boff_id][i]
+                        new_build['ground']['boffs'][boff_id][i] = ''
                     else:
                         new_build['ground']['boffs'][boff_id][i] = {'item': ability}
         except KeyError:
