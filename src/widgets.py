@@ -296,6 +296,7 @@ class Thread(QThread):
     """
     result: Signal = Signal(object)
     done: Signal = Signal()
+    error: Signal = Signal(object)
 
     def __init__(self, target: Callable, args: tuple = (), kwargs: dict[str] = {}):
         super().__init__()
@@ -318,9 +319,19 @@ class Thread(QThread):
     def run(self):
         """
         This function will be executed in a separate thread.
+
+        `done` is always emitted, even if the target raises, so callers waiting
+        on it (e.g. the splash screen) are never left hanging. Exceptions are
+        re-emitted via `error` so they can be logged or surfaced in the UI.
         """
-        self.result.emit(self._target(*self._args, **self._kwargs))
-        self.done.emit()
+        try:
+            self.result.emit(self._target(*self._args, **self._kwargs))
+        except BaseException as exc:
+            import traceback
+            traceback.print_exc()
+            self.error.emit(exc)
+        finally:
+            self.done.emit()
 
 
 class ShipButton(QLabel):

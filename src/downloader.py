@@ -2,7 +2,7 @@ from json import loads as json__loads, JSONDecodeError
 from os import getenv as os__getenv
 from pathlib import Path
 from requests import Session
-from requests.exceptions import Timeout
+from requests.exceptions import RequestException
 from time import time
 from threading import Thread
 from typing import Callable
@@ -93,7 +93,7 @@ class Downloader(QObject):
                 response.encoding = 'utf-8'
                 return json__loads(compensate_json(response.text))
             return None
-        except (Timeout, JSONDecodeError):
+        except (RequestException, JSONDecodeError, ValueError):
             return None
 
     def download_cargo_table(self, url: str, file_name: str) -> dict | list | None:
