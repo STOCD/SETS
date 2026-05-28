@@ -413,7 +413,13 @@ class CargoManager():
                         if cargo_data is not None:
                             store_json(cargo_data, cargo_file)
                             return cargo_data
-                # TODO what happens when both backups fail?
+                # Download failed and no usable backup exists (typical on a
+                # fresh install when the wiki/GitHub cache is unreachable).
+                # Raise so the caller surfaces a real error instead of silently
+                # returning None — which would crash with TypeError further up.
+                raise RuntimeError(
+                    f"Could not obtain cargo table '{filename}': download "
+                    f"failed and no backup is available.")
             else:
                 return self.get_cargo_data(filename, url, ignore_cache_age=True)
         else:
