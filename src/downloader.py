@@ -2,7 +2,7 @@ from json import loads as json__loads, JSONDecodeError
 from os import getenv as os__getenv
 from pathlib import Path
 from requests import Session
-from requests.exceptions import Timeout
+from requests.exceptions import RequestException
 from time import time
 from threading import Thread
 from typing import Callable
@@ -33,6 +33,7 @@ class ReturnValueThread(Thread):
 class Downloader(QObject):
     """Downloads images and cargo tables"""
 
+    write_log: Signal = Signal(str)
     progress_init: Signal = Signal(int)
     progress_step: Signal = Signal()
 
@@ -93,7 +94,7 @@ class Downloader(QObject):
                 response.encoding = 'utf-8'
                 return json__loads(compensate_json(response.text))
             return None
-        except (Timeout, JSONDecodeError):
+        except (RequestException, JSONDecodeError):
             return None
 
     def download_cargo_table(self, url: str, file_name: str) -> dict | list | None:
@@ -109,6 +110,7 @@ class Downloader(QObject):
         cargo_data = self.fetch_json(url)
         if cargo_data is None:
             cache_url = f'{GITHUB_CACHE_URL}/cargo/{file_name}'
+            self.write_log.emit(f'Falling back to secondary cache at "{cache_url}"')
             cargo_data = self.fetch_json(cache_url)
         return cargo_data
 

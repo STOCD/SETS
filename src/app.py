@@ -20,6 +20,7 @@ from .downloader import Downloader
 from .exportwindow import ExportWindow
 from .imagemanager import ImageManager
 from .iofunc import browse_path, delete_folder_contents, load_icon, open_url, store_json
+from .logger import Logger
 from .picker import ItemEditor, Picker, ShipSelector
 from .splash import SplashScreen
 from .textedit import format_path, format_skill_tooltip
@@ -59,12 +60,15 @@ class SETS():
         QDir.addSearchPath('local_folder', self.app_dir / 'local')
         self.theme: AppTheme = AppTheme(self.config.ui_scale)
         self.init_environment()
+        self.logger: Logger = Logger(self.config)
         self.downloader = Downloader(
             self.config.config_subfolders['images'],
             self.config.config_subfolders['ship_images'])
+        self.downloader.write_log.connect(self.logger.log_event)
         self.cargo: CargoManager = CargoManager(
             self.config.config_subfolders, self.app_dir2, self.downloader, self.settings,
             self.theme)
+        self.cargo.write_log.connect(self.logger.log_event)
         self.images: ImageManager = ImageManager(
             Path(self.config.config_subfolders['images']),
             Path(self.config.config_subfolders['ship_images']),
@@ -157,6 +161,7 @@ class SETS():
         Prepares config.
         """
         self.config.autosave_path = self.config.config_dir / self.config.autosave_filename
+        self.config.log_path = self.config.config_dir / self.config.log_filename
         self.config.ui_scale = self.settings.ui_scale
         if os.name == 'nt':
             self.config.home_dir = Path(os.getenv('USERPROFILE'))
@@ -169,6 +174,8 @@ class SETS():
         """
         if not self.config.autosave_path.exists():
             store_json(empty_build(), self.config.autosave_path)
+        if not self.config.log_path.exists():
+            self.config.log_path.touch()
 
     def init_backend(self):
         """

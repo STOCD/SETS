@@ -1,6 +1,8 @@
 from pathlib import Path
 from time import time
 
+from PySide6.QtCore import QObject, Signal
+
 from .config import SETSSettings
 from .constants import (
     CAREERS, BOFF_RANKS, DOFF_QUERY_URL, EQUIPMENT_TYPES, ITEM_QUERY_URL, MODIFIER_QUERY,
@@ -14,8 +16,10 @@ from .textedit import (
 from .theme import AppTheme
 
 
-class CargoManager():
+class CargoManager(QObject):
     """Manages Cargo data and cache"""
+
+    write_log: Signal = Signal(str)
 
     def __init__(
             self, folders: dict[str, Path], app_dir: Path, downloader: Downloader,
@@ -24,6 +28,7 @@ class CargoManager():
         Parameters:
         - :param folders: folder names and paths of config folder
         """
+        super().__init__()
         self._folders: dict[str, Path] = folders
         self._app_dir: Path = app_dir
         self._downloader: Downloader = downloader
@@ -398,8 +403,10 @@ class CargoManager():
                     return cargo_data
 
         # download cargo data if loading from cache failed or data should be updated
+        self.write_log.emit(f'Downloading cargo data from "{url}"')
         cargo_data = self._downloader.download_cargo_table(url, filename)
         if cargo_data is None:
+            self.write_log.emit(f'Cargo data "{filename}" could not be downloaded')
             if ignore_cache_age:
                 backup_path = self._folders['backups'] / filename
                 auto_backup_path = self._folders['auto_backups'] / filename
@@ -413,7 +420,7 @@ class CargoManager():
                         if cargo_data is not None:
                             store_json(cargo_data, cargo_file)
                             return cargo_data
-                # TODO what happens when both backups fail?
+                self.write_log.emit(f'Fatal: Cargo data "{filename}" could not be retrieved')
             else:
                 return self.get_cargo_data(filename, url, ignore_cache_age=True)
         else:

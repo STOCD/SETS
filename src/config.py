@@ -8,7 +8,7 @@ class SETSConfig():
 
     __slots__ = ('autosave_filename', 'autosave_path', 'box_height', 'box_width', 'config_dir',
                  'config_subfolders', 'home_dir', 'link_discord', 'link_downloads', 'link_github',
-                 'link_website', 'settings_file', 'ui_scale')
+                 'link_website', 'log_filename', 'log_path', 'settings_file', 'ui_scale')
 
     def __init__(self):
         self.autosave_filename: str = 'autosave.json'
@@ -30,6 +30,8 @@ class SETSConfig():
         self.link_downloads: str = 'https://github.com/STOCD/SETS/releases'
         self.link_github: str = 'https://github.com/STOCD'
         self.link_website: str = 'https://stobuilds.com/apps/sets'
+        self.log_filename: str = 'sets-downloads.log'
+        self.log_path: Path = Path()
         self.settings_file: str = 'SETS_settings.ini'
         self.ui_scale: float = 1.0
 
