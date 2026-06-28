@@ -184,11 +184,11 @@ SHIP_TEMPLATE = {
     'name': '<Pick Ship>',
     'type': [],
     'boffs': [
-        'Commander Universal-Miracle Worker',
-        'Commander Universal-Command',
-        'Commander Universal-Intelligence',
-        'Commander Universal-Pilot',
         'Commander Universal-Temporal',
+        'Commander Universal-Pilot',
+        'Commander Universal-Miracle Worker',
+        'Commander Universal-Intelligence',
+        'Commander Universal-Command',
         'Commander Universal'
     ],
     'abilities': [
