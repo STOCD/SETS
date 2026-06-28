@@ -16,15 +16,15 @@ classifiers = [
     "Development Status :: 5 - Production/Stable"
 ]
 dependencies = [
-  "PySide6==6.11.0",
-  "requests==2.34.0",
+  "PySide6==6.11.1",
+  "requests==2.34.2",
   "numpy==2.4.4"
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 pyinst = [
-    "pyinstaller==6.19.0"
+    "pyinstaller==6.21.0"
 ]
 
 [project.urls]
