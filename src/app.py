@@ -260,6 +260,15 @@ class SETS():
         window.setWindowTitle('STO Equipment and Trait Selector')
         if self.settings.state__geometry:
             window.restoreGeometry(self.settings.state__geometry)
+        screen = window.screen()
+        if screen is not None:
+            available = screen.availableGeometry()
+            if window.width() > available.width() or window.height() > available.height():
+                window.resize(
+                    min(window.width(), available.width()),
+                    min(window.height(), available.height()))
+            if not available.contains(window.frameGeometry()):
+                window.move(available.topLeft())
         window.closeEvent = self.main_window_close_callback
         app.focusWindowChanged.connect(self.hide_tooltips)
         QThread.currentThread().setPriority(QThread.Priority.TimeCriticalPriority)
@@ -356,9 +365,13 @@ class SETS():
         tabber_layout.addWidget(splash_tabber)
         main_layout.addLayout(tabber_layout)
         background_frame.setLayout(main_layout)
-        content_frame = create_frame2(self.theme)
+        content_scroll = QScrollArea()
+        content_scroll.setWidgetResizable(True)
+        content_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content_inner = create_frame2(self.theme)
+        content_scroll.setWidget(content_inner)
         splash_frame = create_frame2(self.theme)
-        splash_tabber.addTab(content_frame, 'Main')
+        splash_tabber.addTab(content_scroll, 'Main')
         splash_tabber.addTab(splash_frame, 'Splash')
         self.setup_splash(splash_frame)
 
@@ -464,7 +477,7 @@ class SETS():
         self.setup_ground_skill_frame()
         self.setup_settings_frame()
 
-        content_frame.setLayout(content_layout)
+        content_inner.setLayout(content_layout)
         self.build._building = False
 
     def setup_ship_frame(self):
@@ -1151,6 +1164,7 @@ class SETS():
         col_layout.setColumnStretch(2, 1)
         scroll_frame = create_frame2(self.theme)
         scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
         scroll_area.setSizePolicy(SMINMIN)
         scroll_area.setHorizontalScrollBarPolicy(SCROLLOFF)
         scroll_area.setVerticalScrollBarPolicy(SCROLLON)
@@ -1427,6 +1441,7 @@ class SETS():
         scroll_layout.setSpacing(isp)
         scroll_frame = create_frame2(self.theme)
         scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
         scroll_area.setSizePolicy(SMINMIN)
         scroll_area.setHorizontalScrollBarPolicy(SCROLLOFF)
         scroll_area.setVerticalScrollBarPolicy(SCROLLON)
