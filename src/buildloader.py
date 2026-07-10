@@ -8,7 +8,7 @@ from zlib import compress as zlib_compress, decompress as zlib_decompress
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QWidget
 
-from .buildhelpers import empty_build, get_boff_spec
+from .buildhelpers import empty_build, parse_boff_stations
 from .buildmanager import BuildManager
 from .cargomanager import CargoManager
 from .config import SETSConfig, SETSSettings
@@ -476,7 +476,7 @@ class BuildLoader():
         new_build['space']['traits'][9] = elite_captain_trait
 
         ship_data = self._cargo.ships[new_build['space']['ship']]
-        boff_data = sorted(map(lambda s: get_boff_spec(s), ship_data['boffs']), reverse=True)
+        boff_data = sorted(parse_boff_stations(ship_data['boffs']), reverse=True)
         boff_data_old = []
         for boff_id, boff_profession in enumerate(build['boffseats']['space']):
             if f'spaceBoff_{boff_id}' in build['boffs'] and boff_profession is not None:

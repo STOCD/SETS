@@ -151,18 +151,23 @@ def get_variable_slot_counts(ship_data: dict[str], ship_tier: str) -> tuple[int]
     return uni_consoles, eng_consoles, sci_consoles, tac_consoles, devices, starship_traits
 
 
-def get_boff_spec(seat_details: str) -> tuple[int, str, str]:
+def parse_boff_stations(stations: list[str]) -> list[tuple[int, str, str]]:
     """
     Returns rank, profession and specialization from cargo string
 
     Parameters:
-    - :param seat_details: contains rank, profession and specialization:
+    - :param stations: list of strings containing rank, profession and specialization:
     "<rank> <profession>-<specialization>"
     """
-    if '-' in seat_details:
-        rank_and_profession, spec = seat_details.split('-')
-    else:
-        rank_and_profession = seat_details
-        spec = ''
-    rank_name, _, profession = rank_and_profession.rpartition(' ')
-    return (BOFF_RANKS[rank_name], profession, spec)
+    parsed_stations = list()
+    for station in stations:
+        if station == '':
+            continue
+        if '-' in station:
+            rank_and_profession, spec = station.split('-')
+        else:
+            rank_and_profession = station
+            spec = ''
+        rank_name, _, profession = rank_and_profession.rpartition(' ')
+        parsed_stations.append((BOFF_RANKS[rank_name.strip()], profession.strip(), spec.strip()))
+    return parsed_stations

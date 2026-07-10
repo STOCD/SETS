@@ -3,7 +3,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QCheckBox, QComboBox, QLabel, QLineEdit, QPlainTextEdit, QPushButton
 
-from .buildhelpers import get_boff_spec, get_variable_slot_counts, empty_build
+from .buildhelpers import get_variable_slot_counts, empty_build, parse_boff_stations
 from .cargomanager import CargoManager
 from .constants import (
     EQUIPMENT_TYPES, PRIMARY_SPECS, SECONDARY_SPECS, SHIP_TEMPLATE, SKILL_POINTS_FOR_RANK, SPECIES,
@@ -347,17 +347,18 @@ class BuildManager():
 
         self.update_starship_traits(starship_traits, clear)
 
-        boff_specs = map(lambda s: get_boff_spec(s), ship_data['boffs'])
+        boff_specs = sorted(parse_boff_stations(ship_data['boffs']), reverse=True)
+        boff_num = -1
         if ('Science Destroyer' in ship_data['type']
                 or 'Science Destroyer Warbird' in ship_data['type']):
-            for boff_num, boff_details in enumerate(sorted(boff_specs, reverse=True)):
+            for boff_num, boff_details in enumerate(boff_specs):
                 if (boff_details[0] == 3 and boff_details[1] == 'Tactical'
                         or boff_details[0] == 4 and boff_details[1] == 'Science'):
                     self.update_boff_seat(boff_num, *boff_details, clear, sci_destroyer_seat=True)
                 else:
                     self.update_boff_seat(boff_num, *boff_details, clear)
         else:
-            for boff_num, boff_details in enumerate(sorted(boff_specs, reverse=True)):
+            for boff_num, boff_details in enumerate(boff_specs):
                 self.update_boff_seat(boff_num, *boff_details, clear)
         for boff_to_hide in range(boff_num + 1, 6):
             self.update_boff_seat(boff_to_hide, rank=0, profession='', clear=clear, hide_seat=True)
