@@ -79,6 +79,9 @@ class ImageLabel(QWidget):
 
 
 class ShipImage(ImageLabel):
+
+    rightclicked: Signal = Signal()
+
     def paintEvent(self, event):
         super().paintEvent(event)
         if not self.p.isNull():
@@ -92,6 +95,12 @@ class ShipImage(ImageLabel):
             new_p = self.p.scaledToWidth(w, Qt.TransformationMode.SmoothTransformation)
             painter.drawImage(abs(w - current_width) // 2, abs(h - current_height) // 2, new_p)
             self.setFixedHeight(new_p.height())
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if (event.button() == Qt.MouseButton.RightButton
+                and self.rect().contains(event.localPos().toPoint())):
+            self.rightclicked.emit()
+        event.accept()
 
 
 class ItemButton(QFrame):
@@ -167,12 +176,10 @@ class ItemButton(QFrame):
         if not self.isEnabled():
             return
         if (event.button() == Qt.MouseButton.LeftButton
-                and event.localPos().x() < self.width()
-                and event.localPos().y() < self.height()):
+                and self.rect().contains(event.localPos().toPoint())):
             self.clicked.emit()
         elif (event.button() == Qt.MouseButton.RightButton
-                and event.localPos().x() < self.width()
-                and event.localPos().y() < self.height()):
+                and self.rect().contains(event.localPos().toPoint())):
             self.rightclicked.emit(event)
         event.accept()
 

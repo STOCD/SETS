@@ -151,6 +151,8 @@ class ImageManager(QObject):
         - :image_name: filename of the image
         - :param threaded_worker: thread object supplying signals
         """
+        if image_name == '':
+            return self.empty
         image_path = self._ship_images_dir / quote_plus(image_name)
         image = QImage(image_path)
         if image.isNull():
@@ -199,3 +201,13 @@ class ImageManager(QObject):
         for image_name, image in self._images.items():
             if image.isNull():
                 image.load(f'{image_dir}/{get_image_file_name(image_name)}')
+
+    def delete_ship_image(self, image_name: str):
+        """
+        Attempts to delete a ship image.
+
+        Parameters:
+        - :param image_name: name of the ship image
+        """
+        image_path = self._ship_images_dir / quote_plus(image_name)
+        image_path.unlink(missing_ok=True)

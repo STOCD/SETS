@@ -4,7 +4,8 @@ from pathlib import Path
 from PySide6.QtCore import QDir, QPoint, Qt, QThread
 from PySide6.QtGui import QCloseEvent, QFontDatabase, QTextOption
 from PySide6.QtWidgets import (
-    QApplication, QFrame, QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QTabWidget, QWidget)
+    QApplication, QFrame, QLineEdit, QMessageBox, QPlainTextEdit, QPushButton, QScrollArea,
+    QTabWidget, QWidget)
 
 from .buildhelpers import empty_build
 from .buildloader import BuildLoader
@@ -332,6 +333,23 @@ class SETS():
         slot = ItemSlot(environment, build_key, build_subkey, boff_id, equipment)
         self.picker_window.pick_item(items, pos, slot, modifiers, image_suffix)
 
+    def refresh_ship_image(self):
+        """
+        Deletes current ship image and tries to fetch it again.
+        """
+        current_ship = self.build['space']['ship']
+        if current_ship != '' and current_ship != '<Pick Ship>':
+            answer = QMessageBox.question(
+                self.window, 'SETS - Refresh Ship Image',
+                'Do you want to delete the current ship image and try to download it again?',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+            ship_image = self.cargo.ships[current_ship]['image'][5:]
+            if ship_image != '':
+                self.images.delete_ship_image(ship_image)
+                self.build.set_ship_image(ship_image)
+
     def setup_main_layout(self):
         """
         Creates the main layout and places it into the main window.
@@ -479,6 +497,7 @@ class SETS():
         image_layout = GridLayout()
         ship_image = ShipImage()
         ship_image.setSizePolicy(SMINMIN)
+        ship_image.rightclicked.connect(self.refresh_ship_image)
         self.build.ship.image = ship_image
         image_layout.addWidget(ship_image, 0, 0)
         image_frame.setLayout(image_layout)
