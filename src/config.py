@@ -41,10 +41,12 @@ class SETSConfig():
 
 class SETSSettings():
 
-    __slots__ = ('_settings', 'default_mark', 'default_save_format', 'default_rarity',
-                 'library_path', 'picker_relative', 'pref_backup', 'ui_scale', 'state__geometry')
+    __slots__ = ('_settings', 'auto_adjust_scale', 'default_mark', 'default_save_format',
+                 'default_rarity', 'library_path', 'picker_relative', 'pref_backup', 'ui_scale',
+                 'state__geometry')
 
     def __init__(self, settings_file_path: Path):
+        self.auto_adjust_scale: int = 1
         self.default_mark: str = ''
         self.default_save_format: str = 'JSON'
         self.default_rarity: str = 'Common'

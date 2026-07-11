@@ -4,7 +4,7 @@ from pathlib import Path
 from PySide6.QtCore import QDir, QPoint, Qt, QThread
 from PySide6.QtGui import QCloseEvent, QFontDatabase, QTextOption
 from PySide6.QtWidgets import (
-    QApplication, QFrame, QLineEdit, QMessageBox, QPlainTextEdit, QPushButton, QScrollArea,
+    QApplication, QFrame, QLineEdit, QPlainTextEdit, QPushButton, QScrollArea,
     QTabWidget, QWidget)
 
 from .buildhelpers import empty_build
@@ -17,6 +17,7 @@ from .constants import (
     PRIMARY_SPECS, RARITIES, SCROLLOFF, SCROLLON, SECONDARY_SPECS, SMAXMAX, SMAXMIN, SMINMAX,
     SMINMIN, SMIXMAX)
 from .contextmenu import ContextMenu
+from .dialogs import DialogsWrapper
 from .downloader import Downloader
 from .exportwindow import ExportWindow
 from .imagemanager import ImageManager
@@ -84,6 +85,7 @@ class SETS():
         self.app, self.window = self.create_main_window()
         self.cache_icons()
         self.cargo.load_static_data()
+        self.dialogs: DialogsWrapper = DialogsWrapper(self.window, self.theme)
         self.build_loader: BuildLoader = BuildLoader(
             self.build, self.cargo, self.config, self.settings, self.window)
         self.export_window = ExportWindow(self.theme, self.window, self.build, self.cargo)
@@ -97,6 +99,10 @@ class SETS():
         self.context_menu.edit_slot.connect(self.edit_window.edit_item)
         self.setup_main_layout()
         self.window.show()
+        self.abort_start: bool = False
+        if self.adjust_window_size():
+            self.abort_start = True
+            return
         self._backend_thread: Thread = Thread(self.init_backend)
         self._backend_thread.done.connect(self.complete_app_init)
         self._backend_thread.start()
@@ -107,6 +113,8 @@ class SETS():
 
         :return: exit code of event loop
         """
+        if self.abort_start:
+            return 0
         return self.app.exec()
 
     def setup_config_dir(self, dir_path: Path) -> None | OSError:
@@ -229,6 +237,7 @@ class SETS():
         self.images.icons['sci-small'] = load_icon('sci-small.svg', self.app_dir2, size=(25, 25))
         icon_size = (self.theme.opt.box_height, self.theme.opt.box_width * 182 / 106)
         self.theme.icons['STOCD'] = load_icon('stocd.png', self.app_dir2, icon_size)
+        self.theme.icons['info'] = load_icon('info.svg', self.app_dir2)
 
     def main_window_close_callback(self, event: QCloseEvent):
         """
@@ -265,6 +274,29 @@ class SETS():
         app.focusWindowChanged.connect(self.hide_tooltips)
         QThread.currentThread().setPriority(QThread.Priority.TimeCriticalPriority)
         return app, window
+
+    def adjust_window_size(self) -> bool:
+        """
+        Checks whether the window fits the screen and rescales if necessary. Returns `True` if the
+        ui scale was adjusted, `False` otherwise.
+        """
+        if self.settings.auto_adjust_scale == 0:
+            return False
+        screen_size = self.window.screen().size()
+        window_size = self.window.size()
+        if window_size.width() > screen_size.width() or window_size.height() > screen_size.height():
+            horizontal_ratio = screen_size.width() / window_size.width()
+            vertical_ratio = screen_size.height() / window_size.height()
+            new_scale = int(min(horizontal_ratio, vertical_ratio) * self.settings.ui_scale * 100)
+            new_scale = max(0.5, (new_scale - new_scale % 2) / 100)
+            info = ('At the current display resolution and display scale setting SETS will not '
+                    'fit the screen. Reduce UI Scale to fit the screen? \n\nRequires manual '
+                    'restart. This dialog can be disabled in the settings.')
+            if self.dialogs.confirm('Adjust UI Scale', info) == 1:
+                self.settings.ui_scale = new_scale
+                self.settings.store_settings()
+                return True
+        return False
 
     def init_ui(self):
         """
@@ -339,11 +371,8 @@ class SETS():
         """
         current_ship = self.build['space']['ship']
         if current_ship != '' and current_ship != '<Pick Ship>':
-            answer = QMessageBox.question(
-                self.window, 'SETS - Refresh Ship Image',
-                'Do you want to delete the current ship image and try to download it again?',
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            if answer != QMessageBox.StandardButton.Yes:
+            message = 'Do you want to delete the current ship image and try to download it again?'
+            if self.dialogs.confirm('Refresh Ship Image', message) == 0:
                 return
             ship_image = self.cargo.ships[current_ship]['image'][5:]
             if ship_image != '':
@@ -1519,6 +1548,14 @@ class SETS():
         library_path_button = create_button2(self.theme, 'Browse')
         library_path_button.clicked.connect(lambda: self.browse_library_path(library_path_entry))
         sec_1.addWidget(library_path_button, 6, 4)
+        rescale_label = create_label2(self.theme, 'Adjust UI Scale on Startup')
+        sec_1.addWidget(rescale_label, 7, 0, alignment=ALEFT)
+        rescale_combo = create_combo_box2(self.theme, style_override={'font': '@small_text'})
+        rescale_combo.addItems(('Disabled', 'Enabled'))
+        rescale_combo.setCurrentIndex(self.settings.auto_adjust_scale)
+        rescale_combo.currentIndexChanged.connect(
+            lambda new_i: self.settings.set('auto_adjust_scale', new_i))
+        sec_1.addWidget(rescale_combo, 7, 2, alignment=ALEFT | AVCENTER)
         scroll_layout.addLayout(sec_1)
 
         # second section
