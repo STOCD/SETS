@@ -417,6 +417,7 @@ class ShipSelector(QDialog):
         self.setFixedSize(*size)
         self.move(*pos)
         self._ship_list.scrollToTop()
+        self._search_bar.setFocus()
         self.open()
 
     @Slot(int)
