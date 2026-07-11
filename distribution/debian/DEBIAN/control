@@ -1,7 +1,7 @@
 Package: sets
 Maintainer: Shinga
 Architecture: all
-Version: 3.0.2
+Version: 3.1.0
 Section: misc
 Priority: optional
 Standards-Version: 4.7.2
