@@ -164,7 +164,7 @@ class Downloader(QObject):
             with open(filepath, 'wb') as image_file:
                 image_file.write(image_response.content)
         else:
-            url = f'{GITHUB_CACHE_URL}/ship_images/{quote_plus(name)}'
+            url = f'{GITHUB_CACHE_URL}/ship_images/{quote_plus(name).replace('%', '%25')}'
             image_response = session.get(url)
             if image_response.ok:
                 with open(filepath, 'wb') as image_file:
