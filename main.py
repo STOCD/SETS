@@ -7,7 +7,7 @@ from src import SETS
 
 class Launcher():
 
-    __version__ = '3.1.0'
+    __version__ = '3.1.1'
 
     @staticmethod
     def base_path() -> str:
