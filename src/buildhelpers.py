@@ -167,6 +167,8 @@ def parse_boff_stations(stations: list[str]) -> list[tuple[int, str, str]]:
             continue
         if '-' in station:
             rank_and_profession, spec = station.split('-')
+            if spec.strip().startswith('Temporal'):
+                spec = 'Temporal'
         else:
             rank_and_profession = station
             spec = ''

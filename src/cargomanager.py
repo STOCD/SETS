@@ -290,6 +290,8 @@ class CargoManager(QObject):
         for boff_ability in boff_cargo:
             boff_region = boff_ability['region'].lower()
             boff_type = boff_ability['type']
+            if boff_type == 'Temporal Operative':
+                boff_type = 'Temporal'
             if boff_type not in boff_types or boff_region != 'space' and boff_region != 'ground':
                 continue
             boff_name = boff_ability['name']
