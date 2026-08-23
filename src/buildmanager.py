@@ -1196,10 +1196,9 @@ class BuildManager():
             profession, specialization = new_spec.split(' / ')
             if specialization == 'Temporal Operative':
                 specialization = 'Temporal'
-            # Lt. Commander rank contains all abilities
-            all_abilities = self._cache.boff_abilities['space'][specialization][2]
             for ability_num, ability in enumerate(self._build_data['space']['boffs'][boff_id]):
-                if ability is not None and ability != '' and ability['item'] not in all_abilities:
+                if (ability is not None and ability != '' and f"{ability['item']} {ability['rank']}"
+                        not in self._cache.boff_abilities['space'][specialization][ability_num]):
                     self._build_data['space']['boffs'][boff_id][ability_num] = ''
                     self.space.boffs[boff_id][ability_num].clear()
         else:
